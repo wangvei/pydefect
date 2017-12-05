@@ -8,6 +8,14 @@ import atom
 import itertools as it
 import sys  
 
+__author__ = "Yu Kumagai"
+__copyright__ = ""
+__version__ = "0.1"
+__maintainer__ = "Yu Kumagai"
+__email__ = "yuuukuma@gmail.com"
+__status__ = "Development"
+__date__ = "December 4, 2017"
+
 def _neatly_output_numbers(list_number):
     """
     Eg, [1, 2, 3, 5, 6, 8, 11, 12, 13] -> 1..3, 5, 6, 8, 11..13
