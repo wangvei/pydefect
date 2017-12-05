@@ -8,8 +8,6 @@ from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
 from pymatgen.core.periodic_table import Element
 #from pymatgen.core.periodic_table import Element, Specie, get_el_sp
 
-#import parse_poscar as ppos
-#import parse_potcar as ppot
 import atom
 import itertools as it
 import sys  
@@ -25,12 +23,11 @@ __date__ = "December 4, 2017"
 class DefectIn():
 
     def __init__(self, structure, charges=False, dopants=False, interstitials=False, 
-                 antisites=False, ElNeg_diff=1.0, irreguar=None, symbreak=True, symprec=1e-5):
+                 is_antisite=False, ElNeg_diff=1.0, irreguar=None, symbreak=True, symprec=1e-5):
 
         # only vasp5 POSCAR format is supported.
         self.dopants = dopants
         self.interstitials = interstitials
-        self.antisites = antisites
         self.ElNeg_diff = ElNeg_diff
         self.symbreak = symbreak
         self.symprec = symprec
@@ -48,10 +45,10 @@ class DefectIn():
         electron_negativity = {}
         oxidation_states = {}
 
-        for s in structure.symbol_set: 
-            print(s)
+        for s in structure.symbol_set + dopants: 
             are_elements[s] = 0
         
+            # Obtain electron negativity and oxidation states.
             try: 
                 electron_negativity[s] = float(atom.electron_negativity[s])
             except:
@@ -80,80 +77,76 @@ class DefectIn():
 
         # Atoms are sorted by symmetry.
         self.structure = Structure(structure.lattice, elements, frac_coords)
+        # repr_frac_coords = ["Mg1", "Mg", nr_sites, repr_coords]
         self.repr_frac_coords = repr_frac_coords
 
-        if antisites = True:
-            x = []
-            for i in list(it.combinations(name.keys(), 2)):
-                if name[i[0]][0:-1] == name[i[1]][0:-1]: continue
-            
-                ENdiff = abs(electron_negativity[name[i[0]][0:-1]] - \
-                             electron_negativity[name[i[1]][0:-1]])
-                if ENdiff < opts.antisite:
-                    name1 = name[i[0]][0:-1] + "_" + name[i[1]]
-                    name2 = name[i[1]][0:-1] + "_" + name[i[0]]
-        
-                    if not name1 in antisite: antisite.append(name1)
-                    if not name2 in antisite: antisite.append(name2)
+        if is_antisite = True:
+            # ex.             Mg_O1
+            # antisites = [[ "Mg", "O1"], ...]
+            antisites = []
+            for r in self.repr_frac_coords:
+                for s in structure.symbol_set:
+                    if r[1] = s: continue
+                    ENdiff = electron_negativity[r[1]] - electron_negativity[s]
+                    if abs(ENdiff) < opts.antisite: antisites.append([s, r[0])
+            self.antisites = antisites       
 
-        # Obtain electron negativity and formal charges.
+    @classmethod
+    def from_file(cls, poscar="POSCAR",dopants=False, interstitials=False, 
+                  antisites=False, ElNeg_diff=1.0, symbreak=True, symprec=1e-5):
+        """
+        Construct DefectIn class object from a POSCAR file.
+        """
+        structure = Structure.from_file(poscar)
+        return cls(structure, dopants=False, interstitials=False, 
+                   antisites=False, ElNeg_diff=1.0, symbreak=True, symprec=1e-5)
+ 
+    def to(self, filename1="defect.in",filename2="DPOSCAR"):
+        """
+        Print readable defect.in file.
+        """
+        _pretty_printing_defect_in(filename=filename1) 
+        self.structure.to(fmt="poscar",filename=filename2)
+                
+    def _pretty_printing_defect_in(self,filename="defect.in"):
+        i = 1
+        for r in self.repr_frac_coords():
+        
+            print(" Name:{}".format(r[0]))
+            print("  Rep:{}".format(str(i))
+            print(" Equi:{}".format(str(i) + ".." + str(i + r[2] - 1))
+            i += r[2]        
+            print("Coord:{} %7.5f %7.5f %7.5f" % tuple(r[3]))
+            _print_ElNeg(electron_negativity[r[1]])
+            _print_oxidation_states(oxidation_states[r[1]])
+
+        if self.interstitials:
+            if not len(self.interstitials) % 3 == 0:
+                raise ValueError("The interstitial coordinates are not proper.")
+
+            print " Int_site:", tuple([opts.interstitials[i:i + 3]
+                               for i in range(0, len(opts.interstitials), 3)])
+        if self.is_antisite:
+            print(" Antisite:",)
+            print(" ".join(antisites))
         
         
-#        # Note that "lattice_vectors" is a list so that the index should be reduced by 1.
-#        for i in sorted(atom_map):
-#            print " Name:", name[i]
-#            print "  Rep:", i
-#            print " Equi:", _pretty_printing_numbers(atom_map[i])
-#            print "Coord: %7.5f %7.5f %7.5f" % tuple(atomic_pos[i-1])
-#            print "ElNeg:", electron_negativity[name[i][0:-1]]
-#            print "Charg:",
-#            if charge[name[i][0:-1]] > 0:
-#                print ' '.join(['%-2s' % (str(i),) 
-#                                          for i in range(0, charge[name[i][0:-1]] + 1)])
-#            else:
-#                print ' '.join(['%-2s' % (str(i),) 
-#                                          for i in range(charge[name[i][0:-1]], 1)])
-#            print ""
-#        
-#        if opts.interstitials:
-#            if not len(opts.interstitials) % 3 == 0:
-#                print "The interstitial coordinates are not proper. Bye."
-#                sys.exit(1)
-#            print " Int_site:", tuple([opts.interstitials[i:i + 3]
-#                                         for i in range(0, len(opts.interstitials), 3)])
-#        
-#        if opts.antisite:
-#            print " Antisite:",
-#        
-#            antisite = []
-#            for i in list(it.combinations(name.keys(), 2)):
-#                if name[i[0]][0:-1] == name[i[1]][0:-1]: continue
-#            
-#                ENdiff = abs(electron_negativity[name[i[0]][0:-1]] - \
-#                             electron_negativity[name[i[1]][0:-1]])
-#                if ENdiff < opts.antisite:
-#                    name1 = name[i[0]][0:-1] + "_" + name[i[1]]
-#                    name2 = name[i[1]][0:-1] + "_" + name[i[0]]
-#        
-#                    if not name1 in antisite: antisite.append(name1)
-#                    if not name2 in antisite: antisite.append(name2)
-#        
-#            print " ".join(antisite)
-#        
+
+
+    def _print_ElNeg(self, ElNeg):
+            print("ElNeg:{}".format(ElNeg))
+
+
+    def _print_oxidation_states(self, os):
+            print("Charg:{}",)
+            if o > 0:
+                print(' '.join(['%-2s' % (str(i),) for i in range(0, os + 1)]))
+            else:
+                print(' '.join(['%-2s' % (str(i),) for i in range(os, 1)]))
+            print("")
+
+
 #        if opts.dopants:
-#            for i, elem in enumerate(opts.dopants):
-#                try: 
-#                    electron_negativity[elem] = atom.electron_negativity[elem]
-#                except:
-#                    print "The electron negativity of", elem, "cannot be obtained."
-#                    electron_negativity[elem] = "N.A."
-#            
-#                try: 
-#                    charge[elem] = atom.formal_charges[elem]
-#                except:
-#                    print "The electron negativity of", elem, "cannot be obtained."
-#                    charge[elem] = "N.A."
-#            
 #            for i in range(len(opts.dopants)):
 #                print " Name:", opts.dopants[i]
 #                print "ElNeg:", electron_negativity[opts.dopants[i]]
@@ -178,32 +171,12 @@ class DefectIn():
 #        print "Irregular:"
 
 
-    @classmethod
-    def from_file(cls, poscar="POSCAR",dopants=False, interstitials=False, 
-                  antisites=False, ElNeg_diff=1.0, symbreak=True, symprec=1e-5):
-        """
-        Construct DefectIn class object from a POSCAR file.
-        """
-        structure = Structure.from_file(poscar)
-        return cls(structure, dopants=False, interstitials=False, 
-                   antisites=False, ElNeg_diff=1.0, symbreak=True, symprec=1e-5)
-
 
     @classmethod
     def from_defect_in(cls, defectin="defect.in"):
         """
         Construct DefectIn class object from a defect.in file.
         """
-        pass
-
-    def to(self, filename1="defect.in",filename2="DPOSCAR"):
-        """
-        Print readable defect.in file.
-        """
-        _pretty_printing_defect_in(filename=filename1) 
-        self.structure.to(fmt="poscar",filename=filename2)
-                
-    def _pretty_printing_defect_in(self,filename="defect.in"):
         pass
 
 
