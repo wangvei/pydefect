@@ -1,0 +1,32 @@
+  Name: Sr1
+   Rep: 1
+ Equiv: 1..12
+ Coord: 0.0000000 0.0000000 0.0000000
+EleNeg: 0.95
+Charge: 2
+
+  Name: Zn1
+   Rep: 13
+ Equiv: 13..36
+ Coord: 0.1667443 0.0001595 0.6291329
+EleNeg: 1.65
+Charge: 2
+
+  Name: N1
+   Rep: 37
+ Equiv: 37..60
+ Coord: 0.1666838 0.0000332 0.2759668
+EleNeg: 3.04
+Charge: 5
+
+Int_site: [[0.0, 0.0, 0.125]]
+Antisite: Zn_Sr1 N_Sr1 Sr_Zn1 N_Zn1 Sr_N1 Zn_N1
+
+Dopant: Sb
+EleNeg: 2.05
+Charge: 5
+
+Dopant_site: Sb_Sr1 Sb_Zn1 Sb_N1
+
+Sym_break: False
+Irregular: Ag_Sr1
