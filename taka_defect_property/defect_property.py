@@ -1,5 +1,9 @@
 #!/usr/bin/env python
 
+import sys
+import json
+from monty.json import MSONable
+
 from pymatgen.core.lattice import Lattice
 from pymatgen.core.structure import Structure
 from pymatgen.core.periodic_table import Element, get_el_sp
@@ -14,7 +18,7 @@ __email__ = "takahashi.akira.36m@gmail.com"
 __status__ = "Development"
 __date__ = "December 4, 2017"
 
-class DefectProperty:
+class DefectProperty(MSONable):
     """
     Object for properties of defect.
     This information is used for correction and analyzation.
@@ -66,7 +70,7 @@ class DefectProperty:
 
     def as_dict(self):
         d = {"energy" : self.energy,
-             "structure" : self.structure,
+             "structure" : self.structure.to(fmt="json"),
              "atomic_site_pot" : self.atomic_site_pot}
         return d
 
@@ -76,9 +80,28 @@ class DefectProperty:
                    __structure=d["structure"],
                    __atomic_site_pot=d["atomic_site_pot"])
 
-    def write_file(self):
-        pass
+    @classmethod
+    def from_str(cls, s): 
+        d = json.load(s)
+        d["structure"] = Structure.from_dict(d["structure"])
+        return(cls(from_dict(d)))
+
+    def to(self, filename=None):
+        s = str(self.as_dict())
+        if filename:
+            with open(filename, 'w') as f:
+                f.write(s)
+        else:
+            return s
 
     @classmethod
     def from_file(cls, filename):
-        pass
+        with open(filename) as f:
+        #with open("nish.dat") as f:
+            print("file is")
+            print(f)
+            d = json.load(f)
+            print(d)
+            sys.exit()
+            #return 1
+            return(cls(from_dict(d)))
