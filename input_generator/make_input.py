@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-
+from __future__ import print_function
 import os
 import shutil
 import numpy as np
@@ -13,6 +13,7 @@ from pymatgen.core.periodic_table import Element
 import atom
 import itertools as it
 import sys  
+import ruamel.yaml as yaml
 
 __author__ = "Yu Kumagai"
 __copyright__ = "Copyright 2017, Oba group"
@@ -24,48 +25,83 @@ __date__ = "December 4, 2017"
 
 #class MakeParticularInput():
 
+SETTINGS_FILE = os.path.join(os.path.expanduser("~"), ".pydefect.yaml")
+
+def _laad_potcar_dir():
+    try:
+        with open(SETTINGS_FILE, "rt") as f:
+            d = yaml.safe_load(f)
+    except:
+        assert IOError('.pydefect.yaml at the home directory cannot be opened.'):
+
+    for k, v in d.items():
+        if k == "DEFAULT_POTCAR":
+            potcar_dir = v 
+
+    if not potcar_dir:
+        assert ValueError('DEFAULT_POTCAR is not set in .pydefect.yaml'):
+
+    return potcar_dir
+
+
 class MakeInput():
 
     def __init__(self, atomic_sites={}, dopant_charges={}, substitutions=[], 
                  interstitial_sites=[], incar="INCAR", poscar="DPOSCAR", 
                  kpoints="KPONTS", run="run.sh", cutoff=4.0, rand_distance=0.2):
         """
-        Args:
-            atomic_sites: a dictionary of atomic site index.
-                          {"Mg1": 1, "O1":33}
-            substitutions (antisites & substituted dopants): ["Al_Mg_0", "Mg_O1_2"]
-            interstitial_sites: a list of lists with intersitial sites.
-                               [[0,0,0], [0.5, 0.5, 0.5]]
-                         ---->    i1           i2
-            dopants (for intersititals): ["Al", "Ga"]
-            oxidation_states: a dictionary of oxidation states for host and doped atoms.
-                             {"Mg": 2, "O":-2, "Al": 3}
-
+        
         + POTCAR files are fetched from ~/.pydefect.yaml
 
+        Terminology:
+            name: specie name + irreducible atom index
+          specie: specie name
+          charge: oxidation state, a single integer number
+             Rep: representative position for *name* in structure object
+            --------------------------------------------------------------
+        Args:
+            atomic_sites: a dictionary of atomic site index.
+                          {name : [Rep, charge], ...}
+          dopant_charges: {specie : charge, ...}
+           substitutions: sum of antisites and dopant_sites ["Al_Mg1", ...]
+      interstitial_sites: a list of lists with intersitial sites.
+                          [[0, 0, 0], [0.1, 0.1, 0.1], ...]
+                     ---->     i1            i2
         """
         # TODO1: check if the input files exist.
 
+        default_potcar_path = _laad_potcar_dir()
         structure = Structure.from_file(poscar)                                 
+
 
        # construct perfect
         self.make_dir_three_input_files("perfect", incar, kpoints, run)
         shutil.copyfile(poscar, "perfect/POSCAR") 
+        make_POTCAR("perfect", atomic_sites.keys(), default_potcar_path)
 
        # construct vacancies
+
+        self.make_dir_three_input_files("perfect", incar, kpoints, run)
+
+
+    def make_POTCAR(self, potcar_path, species, default_potcar_path):
+        with open(potcar_path'/POTCAR', 'w') as potcar:
+            for s in species:
+                potcar_file_name = default_potcar_path + "/POTCAR_" + s
+                shutil.copyfileobj(open(potcar_file_name), outfile)
+
         
-    def make_dir_three_input_files(self,dirname,incar, potcar, kpoints, run):
+    def make_dir_three_input_files(self,dirname,incar, kpoints, run):
         if not os.path.exists(dirname):
             os.makedirs(dirname) 
             shutil.copyfile(incar,dirname + "/INCAR")
-            shutil.copyfile(potcar,dirname + "/POTCAR")
             shutil.copyfile(kpoints,dirname + "/KPOINTS")
             shutil.copyfile(run, dirname + "/" + run)
+
 
     @classmethod
     def from_defect_in(cls, poscar="DPOSCAR", defect_in="defect.in"):
         """
-
         Construct four variables:
             name: specie name + irreducible atom index
           specie: specie name
