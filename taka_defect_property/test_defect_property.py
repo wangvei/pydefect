@@ -4,13 +4,14 @@ import sys
 from defect_property import DefectProperty
 
 dir_name = sys.argv[1]
-dp = DefectProperty.from_directory(dir_name)
-d = dp.as_dict()
-print(d["energy"])
-print(d["structure"])
-print(d["atomic_site_pot"])
-print(d)
-print(dp)
-print(dp.to())
-dp.to(filename="hoge.dat")
-dp2 = DefectProperty.from_file("hoge.dat")
+dp_from_dir = DefectProperty.from_directory(dir_name)
+dp_from_dir.to(filename="dp_from_dir.dat")
+dp_file = DefectProperty.from_file("dp_from_dir.dat")
+dp_file.to(filename="dp_from_file.dat")
+d = dp_from_dir.as_dict()
+dp_dict = DefectProperty.from_dict(d)
+dp_dict.to(filename="dp_from_dict.dat")
+s = dp_from_dir.to()
+dp_str = DefectProperty.from_str(s)
+dp_str.to(filename="dp_from_str.dat")
+

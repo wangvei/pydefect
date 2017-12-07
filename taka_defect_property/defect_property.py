@@ -2,7 +2,6 @@
 
 import sys
 import json
-from monty.json import MSONable
 
 from pymatgen.core.lattice import Lattice
 from pymatgen.core.structure import Structure
@@ -18,7 +17,7 @@ __email__ = "takahashi.akira.36m@gmail.com"
 __status__ = "Development"
 __date__ = "December 4, 2017"
 
-class DefectProperty(MSONable):
+class DefectProperty():
     """
     Object for properties of defect.
     This information is used for correction and analyzation.
@@ -70,24 +69,37 @@ class DefectProperty(MSONable):
 
     def as_dict(self):
         d = {"energy" : self.energy,
-             "structure" : self.structure.to(fmt="json"),
+             "structure" : self.structure,
              "atomic_site_pot" : self.atomic_site_pot}
         return d
 
     @classmethod
     def from_dict(cls, d):
-        return cls(__energy=d["energy"],
-                   __structure=d["structure"],
-                   __atomic_site_pot=d["atomic_site_pot"])
+        st_item = d["structure"]
+        if isinstance(st_item, Structure):
+            structure = st_item
+        elif isinstance(st_item, str):
+            structure = Structure.from_str(st_item, fmt="json")
+        elif isinstance(st_item, dict):
+            structure = Structure.from_dict(st_item)
+        else:
+            raise TypeError("Failed to convert an element of dictionary named 'structure', or no item named 'structure' input. ")
+        return cls(energy=d["energy"],
+                   structure=structure,
+                   atomic_site_pot=d["atomic_site_pot"])
 
     @classmethod
     def from_str(cls, s): 
-        d = json.load(s)
-        d["structure"] = Structure.from_dict(d["structure"])
-        return(cls(from_dict(d)))
+        print(s)
+        d = json.loads(s)
+        #print(d["structure"])
+        #d["structure"] = Structure.from_dict(d["structure"])
+        return(cls.from_dict(d))
 
     def to(self, filename=None):
-        s = str(self.as_dict())
+        d = self.as_dict()
+        d["structure"] = d["structure"].to(fmt="json")
+        s = json.dumps(d, indent=4)
         if filename:
             with open(filename, 'w') as f:
                 f.write(s)
@@ -97,11 +109,5 @@ class DefectProperty(MSONable):
     @classmethod
     def from_file(cls, filename):
         with open(filename) as f:
-        #with open("nish.dat") as f:
-            print("file is")
-            print(f)
             d = json.load(f)
-            print(d)
-            sys.exit()
-            #return 1
-            return(cls(from_dict(d)))
+        return(cls.from_dict(d))
