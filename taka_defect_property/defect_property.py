@@ -28,21 +28,21 @@ class DefectProperty():
     """
 
     def __init__(self, structure, energy, atomic_site_pot):
-        self.__structure = structure
-        self.__energy = energy
-        self.__atomic_site_pot = atomic_site_pot
+        self._structure = structure
+        self._energy = energy
+        self._atomic_site_pot = atomic_site_pot
     
     @property
     def structure(self):
-        return self.__structure
+        return self._structure
 
     @property
     def energy(self):
-        return self.__energy
+        return self._energy
 
     @property
     def atomic_site_pot(self):
-        return self.__atomic_site_pot
+        return self._atomic_site_pot
 
     @staticmethod
     def from_directory(dirname):
