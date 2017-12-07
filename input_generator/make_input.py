@@ -26,9 +26,9 @@ __date__ = "December 4, 2017"
 
 class MakeInput():
 
-    def __init__(self, vacancy_sites=[], antisites=[], interstitial_sites=[], 
-                 dopants=[], incar="INCAR", poscar="DPOSCAR", kpoints="KPONTS", run="run.sh",
-                 cutoff=4.0, rand_distance=0.2):
+    def __init__(self, atomic_sites={}, dopant_charges={}, substitutions=[], 
+                 interstitial_sites=[], incar="INCAR", poscar="DPOSCAR", 
+                 kpoints="KPONTS", run="run.sh", cutoff=4.0, rand_distance=0.2):
         """
         Args:
             atomic_sites: a dictionary of atomic site index.
@@ -65,12 +65,23 @@ class MakeInput():
     @classmethod
     def from_defect_in(cls, poscar="DPOSCAR", defect_in="defect.in"):
         """
-        Construct 
+
+        Construct four variables:
+            name: specie name + irreducible atom index
+          specie: specie name
+          charge: oxidation state, a single integer number
+             Rep: representative position for *name* in structure object
+            --------------------------------------------------------------
+            atomic_sites: {name : [Rep, charge], ...}
+          dopant_charges: {specie : charge, ...}
+           substitutions: sum of antisites and dopant_sites ["Al_Mg1", ...]
+      interstitial_sites: [[0, 0, 0], [0.1, 0.1, 0.1], ...]
         """
 
         defect_in = open(defect_in)                                          
-        atomic_sites = {} # host_atoms[name(str)] = [int(rep), [charge(int)]]         
-        dopant_charges = {} # [name(str), ..]
+
+        atomic_sites = {}
+        dopant_charges = {}
                                                                                     
         while True:                                                                 
             line = defects_in.readline().split()                                    
@@ -96,22 +107,22 @@ class MakeInput():
                     if line[0] == "Charge:": 
                         dopant_charges[name] = line[1]
                     elif line == "": break
-                dopants_charge[name] = int(line[1])
+                dopant_charges[name] = int(line[1])
 
             elif line[0] == "Int_site:":                                              
-                b = [_get_num(line[i]) for i in range(1, len(line))]                
+                b = [self._get_num(line[i]) for i in range(1, len(line))]                
                 interstitial_sites = [b[i:i + 3] for i in range(0, len(b), 3)]       
-            elif line[0] == "Antisite:": anti_sites = line[1:]                         
+            elif line[0] == "Antisite:": antisites = line[1:]                         
             elif line[0] == "Dopant_site:": dopant_sites = line[1:]                         
             elif line[0] == "Sym_break:": sym_break = line[1]                         
             elif line[0] == "Irregular:": irredular_defects = line[1:]                                        
 
                 break                                                               
-        substitutions = anti_sites + dopant_sites
+        substitutions = antisites + dopant_sites
                                                                                     
-        return cls(structure, dopants=dopants, interstitials=interstitials, 
-                   is_antisite=is_antisite, ElNeg_diff=ElNeg_diff, 
-                   symbreak=symbreak, symprec=symprec)
+        return cls(self, atomic_sites={}, dopant_charges={}, substitutions=[], 
+                   interstitial_sites=[], incar="INCAR", poscar="DPOSCAR", 
+                   kpoints="KPONTS", run="run.sh", cutoff=4.0, rand_distance=0.2)
 
                                                                                    
     def get_elements_from_host_atoms(host_atoms):                                   
@@ -134,5 +145,6 @@ class MakeInput():
                                                                                     
         return elements    
 
-def get_num(x):                                                                
+
+def _get_num(x):                                                                
     return float(''.join(i for i in x if i.isdigit() or i == '.'))  

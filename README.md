@@ -4,7 +4,8 @@ This README would normally document whatever steps are necessary to get your app
 
 ### What is this repository for? ###
 
-* Point-defect enveironment.
+* Automatic constructor of point-defect enveironment, and analyzer of vasp 
+  calculation results.
 * 0.1.0
 * [Learn Markdown](https://bitbucket.org/tutorials/markdowndemo)
 
