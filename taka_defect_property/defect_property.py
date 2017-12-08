@@ -2,6 +2,7 @@
 
 import sys
 import json
+import copy
 
 from pymatgen.core.lattice import Lattice
 from pymatgen.core.structure import Structure
@@ -42,7 +43,7 @@ class DefectProperty():
 
     @property
     def atomic_site_pot(self):
-        return self._atomic_site_pot
+        return copy.copy(self._atomic_site_pot)
 
     @staticmethod
     def from_directory(dirname):

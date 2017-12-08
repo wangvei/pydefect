@@ -36,6 +36,7 @@ class DefectCorrector:
     def __init__(self, defect_property, perfect_property):
         self.__defect_property = defect_property
         self.__perfect_property = perfect_property
+        self.__defect_index = 1 #TODO temporary magic number, but must be automatically read!!!
 
     @property
     def defect_property(self):
@@ -47,7 +48,7 @@ class DefectCorrector:
 
 
     def __determine_ewald_param(self, real_lattice, reciprocal_lattice):
-        INIT_EWALD_PARAM = 0.01
+        INIT_EWALD_PARAM = 0.010111311355097064
         PROD_CUTOFF_FWHM = 25.0 #product of cutoff radius of G-vector and gaussian FWHM.
                                 #increasing this value, both accuracy and computational cost will be increased
         def make_lattice_set(lattice_vectors, max_length, include_self): 
@@ -98,9 +99,20 @@ class DefectCorrector:
                 ewald_param *= diff_real_recipro  ** 0.17
 
     def correct(self):
+        #potential.sh 0 0
         real_lattice = self.perfect_property.structure.lattice
         reciprocal_lattice = self.perfect_property.structure.lattice.reciprocal_lattice
         ewald_param = self.__determine_ewald_param(real_lattice, reciprocal_lattice)
         print(ewald_param)
+        #potential.sh step 1
+        ref_pot = self.perfect_property.atomic_site_pot
+        defect_pot = self.defect_property.atomic_site_pot
+        print(ref_pot)
+        print(defect_pot)
+        defect_pot[0]="NISHIYA!!!!!!!!!!!!!!!!!!!!!!!!!"
+        print(self.defect_property.atomic_site_pot)
+        print(defect_pot)
+        
+
     
 
