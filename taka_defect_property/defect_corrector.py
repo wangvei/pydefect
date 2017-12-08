@@ -107,12 +107,15 @@ class DefectCorrector:
         #potential.sh step 1
         ref_pot = self.perfect_property.atomic_site_pot
         defect_pot = self.defect_property.atomic_site_pot
-        print(ref_pot)
-        print(defect_pot)
-        defect_pot[0]="NISHIYA!!!!!!!!!!!!!!!!!!!!!!!!!"
-        print(self.defect_property.atomic_site_pot)
-        print(defect_pot)
-        
+        #This part (removing defect_index of atomic_site_pot) must be written for defect type (Vac, Int, Sub).
+        #Currently can be applied to only substitutional. 
+        if len(ref_pot) != len(defect_pot):
+            sys.exit("Sorry, current version can not be applied to neither vacancy nor interstitial defect.")
+        ref_pot = np.delete(ref_pot, self.__defect_index-1) #reference_potential.txt
+        defect_pot = np.delete(defect_pot, self.__defect_index-1) 
+        diff_pot = - (defect_pot - ref_pot) # vasp_potential.txt
+        print(diff_pot)
+        #potential.sh step 2
 
     
 
