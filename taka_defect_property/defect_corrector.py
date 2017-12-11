@@ -3,6 +3,8 @@
 import sys
 import math
 import numpy as np
+import scipy
+from functools import reduce
 from itertools import product
 from pymatgen.core.lattice import Lattice
 from pymatgen.core.structure import Structure
@@ -57,6 +59,7 @@ class DefectCorrector:
         """
 
         self.__lattice_vect = self.defect_property.structure.lattice.matrix
+        self.__volume = self.defect_property.structure.lattice.volume
         self.__defect_pos = self.defect_property.structure.cart_coords[self.__defect_index-1]
         atomic_pos = self.defect_property.structure.cart_coords
         self.__atomic_pos_wo_defect = np.delete(atomic_pos, self.__defect_index-1, 0)
@@ -105,26 +108,93 @@ class DefectCorrector:
         reciprocal_lattice_vect = \
         self.perfect_property.structure.lattice.reciprocal_lattice.matrix
         root_det_dielectric = np.sqrt(np.linalg.det(self.dielectric_tensor))
-        ewald_param = INIT_EWALD_PARAM
-        volume = np.linalg.det(real_lattice)
+        self.__ewald_param = INIT_EWALD_PARAM
         while True:
-            ewald = ewald_param / math.pow(volume, float(1)/3) * root_det_dielectric
+            ewald = self.__ewald_param / math.pow(self.__volume, float(1)/3) * root_det_dielectric
             max_G_vector_norm = 2 * ewald * PROD_CUTOFF_FWHM
-            set_G_vectors = self.__make_lattice_set(reciprocal_lattice_vect, 
+            self.__set_G_vectors = self.__make_lattice_set(reciprocal_lattice_vect, 
                                              max_G_vector_norm, 
                                              include_self=False)
             max_R_vector_norm = PROD_CUTOFF_FWHM / ewald
-            set_R_vectors = self.__make_lattice_set(real_lattice, 
+            self.__set_R_vectors = self.__make_lattice_set(real_lattice, 
                                              max_R_vector_norm,
                                              include_self=True)
-            print("ewald_param= %f" % ewald_param)
-            print("Number of R vectors = %f" % len(set_R_vectors))
-            print("Number of G vectors = %f" % len(set_G_vectors))
-            diff_real_recipro = (float(len(set_R_vectors)) / len(set_G_vectors)) 
+            print("ewald_param= %f" % self.__ewald_param)
+            print("Number of R vectors = %f" % len(self.__set_R_vectors))
+            print("Number of G vectors = %f" % len(self.__set_G_vectors))
+            diff_real_recipro = (float(len(self.__set_R_vectors)) / len(self.__set_G_vectors)) 
             if (diff_real_recipro > 1/1.05) and (diff_real_recipro < 1.05):
-                return ewald_param
+                return None
             else:
-                ewald_param *= diff_real_recipro  ** 0.17
+                self.__ewald_param *= diff_real_recipro  ** 0.17
+
+    def __calc_ewald_real_pot(self, atomic_pos_wrt_defect):
+        """
+        \sum erfc(ewald*\sqrt(R*\epsilon_inv*R)) 
+                     / \sqrt(det(\epsilon)) / \sqrt(R*\epsilon_inv*R) [1/A]
+        """
+        root_det_epsilon = np.sqrt(np.linalg.det(self.dielectric_tensor))
+        epsilon_inv = np.linalg.inv(self.dielectric_tensor)
+        ewald = self.__ewald_param / math.pow(self.__volume, float(1)/3) * root_det_epsilon
+        each = np.zeros(len(self.__set_R_vectors))
+        for i, R in enumerate(self.__set_R_vectors):
+            # Skip the potential caused by the defect itself
+            r = R - atomic_pos_wrt_defect
+            if np.linalg.norm(r) < 1e-8: 
+                continue
+            root_R_epsilonI_R = np.sqrt(reduce(np.dot, [r.T, epsilon_inv, r]))
+            each[i] = scipy.special.erfc(ewald * root_R_epsilonI_R) \
+                                 / root_R_epsilonI_R
+
+        return np.sum(each) / (4 * np.pi * root_det_epsilon)
+
+    def __calc_ewald_recipro_pot(self, atomic_pos_wrt_defect=np.zeros(3)):
+        """
+        \sum exp(-G*\epsilon*G/(4*ewald**2)) / G*\epsilon*G [1/A]
+        """
+        root_det_epsilon = np.sqrt(np.linalg.det(self.dielectric_tensor))
+        ewald = self.__ewald_param / math.pow(self.__volume, float(1)/3) * root_det_epsilon
+        each = np.zeros(len(self.__set_G_vectors))
+
+        for i, G in enumerate(self.__set_G_vectors):
+            G_epsilon_G = reduce(np.dot, [G.T, self.dielectric_tensor, G]) # [1/A^2]
+            each[i] = np.exp(- G_epsilon_G / 4.0 / ewald ** 2) \
+                       / G_epsilon_G * np.cos(np.dot(G, atomic_pos_wrt_defect)) # [A^2]
+
+        return np.sum(each) / self.__volume
+
+    def __calc_ewald_self_potential(self): # [1/A]
+        det_epsilon = np.linalg.det(self.dielectric_tensor)
+        root_det_epsilon = np.sqrt(det_epsilon)
+        ewald = self.__ewald_param / math.pow(self.__volume, float(1)/3) * root_det_epsilon
+        return -ewald / (2.0 * np.pi * np.sqrt(np.pi * det_epsilon))
+
+    def __calc_ewald_diff_potential(self):
+        root_det_epsilon = np.sqrt(np.linalg.det(self.dielectric_tensor))
+        ewald = self.__ewald_param / math.pow(self.__volume, float(1)/3) * root_det_epsilon
+        return -0.25 / self.__volume / ewald ** 2 # [1/A]
+
+    def __calc_model_potential(self):
+        self.__model_pot = [None for i in self.__atomic_pos_wo_defect]
+        coeff = \
+                self.defect_property.charge * \
+                scipy.constants.elementary_charge * \
+                1.0e10 / scipy.constants.epsilon_0 #[V]
+        for i, R in enumerate(self.__atomic_pos_wo_defect):
+            real_part = self.__calc_ewald_real_pot(R-self.__defect_pos)
+            recipro_part = self.__calc_ewald_recipro_pot(R)
+            diff_pot = self.__calc_ewald_diff_potential()
+            self.__model_pot[i] =\
+                    (real_part + recipro_part + diff_pot)*coeff
+            #print(real_part, recipro_part, diff_pot, coeff)
+            #print(self.defect_property.charge, scipy.constants.elementary_charge, scipy.constants.epsilon_0)
+        real_part = self.__calc_ewald_real_pot(np.zeros(3))
+        recipro_part = self.__calc_ewald_recipro_pot(np.zeros(3))
+        diff_pot = self.__calc_ewald_diff_potential()
+        self_pot = self.__calc_ewald_self_potential()
+        model_pot_defect_site = (real_part + recipro_part + diff_pot + self_pot) * coeff
+        print(real_part, recipro_part, diff_pot, self_pot)
+        self.__lattice_energy = model_pot_defect_site * self.defect_property.charge / 2
 
     def correct(self):
         #potential.sh step 1
@@ -147,7 +217,8 @@ class DefectCorrector:
         self.__calc_distances_from_defect() #defect_structure.txt
 
         #potential.sh step 0 and 3
-        ewald_param = self.__determine_ewald_param()
-        print(ewald_param)
-
+        self.__determine_ewald_param()
+        self.__calc_model_potential()
+        print(self.__model_pot)
+        print(self.__lattice_energy)
 
