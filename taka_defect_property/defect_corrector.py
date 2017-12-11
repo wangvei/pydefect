@@ -37,6 +37,8 @@ class DefectCorrector:
         self.__defect_property = defect_property
         self.__perfect_property = perfect_property
         self.__defect_index = 1 #TODO temporary magic number, but must be automatically read!!!
+        if self.perfect_property.structure.lattice != self.defect_property.structure.lattice:
+            sys.exit("Lattice vectors of perfect structure and those of structure with defect is different. Did you set ISIF correctly?")
 
     @property
     def defect_property(self):
@@ -46,47 +48,73 @@ class DefectCorrector:
     def perfect_property(self):
         return self.__perfect_property
 
+    def __calc_distances_from_defect(self):# TODO: Check if this algorithm is consistent with previous version.
+        """
+        Determine the shortest distance at each atom from the image defects.
+        The shortest distance between atom and the defect is searched for iteratively.
+        This algorithm may not be perfect. 
+        (By Yu Kumagai.)
+        """
 
-    def __determine_ewald_param(self, real_lattice, reciprocal_lattice):
+        self.__lattice_vect = self.defect_property.structure.lattice.matrix
+        self.__defect_pos = self.defect_property.structure.cart_coords[self.__defect_index-1]
+        atomic_pos = self.defect_property.structure.cart_coords
+        self.__atomic_pos_wo_defect = np.delete(atomic_pos, self.__defect_index-1, 0)
+#use n_atom for each symbol? (in old defect_structure.py, defect_position)
+        self.__min_distances = [None for i in range(len(self.__atomic_pos_wo_defect))]
+        candidate_distances = [[] for i in range(len(self.__atomic_pos_wo_defect))]
+        for i in range(len(self.__atomic_pos_wo_defect)):
+            for index in product(range(-1,2), range(-1,2), range(-1,2)):
+
+                # TODO: Check if transpose is correct.
+                index_vector = np.dot(np.array(index), self.__lattice_vect.transpose())
+
+                atomic_pos_wrt_defect = (self.__atomic_pos_wo_defect[i] + index_vector) - self.__defect_pos
+                distance = np.linalg.norm(atomic_pos_wrt_defect)
+                candidate_distances[i].append(distance)
+        self.__min_distances[i] = min(candidate_distances[i])
+
+    def __make_lattice_set(self, lattice_vectors, max_length, include_self): 
+        """
+        Return a set of lattice vectors within the max length.
+        Note that angles between any two axes are assumed to be between 60 and 
+        120 deg.
+        """
+        max_int = \
+        [int(max_length / np.linalg.norm(lattice_vectors[i])) + 1 for i in range(3)]
+        vectors = []
+        for index in product(
+                range(-max_int[0], max_int[0]+1),
+                range(-max_int[1], max_int[1]+1),
+                range(-max_int[2], max_int[2]+1)
+                ):
+            if (not include_self) and index == (0, 0, 0): 
+                continue
+            vector = np.dot(lattice_vectors.transpose(), np.array(index))
+            norm = np.linalg.norm(vector)
+            if norm < max_length: 
+                vectors.append(vector)
+        return np.array(vectors)
+
+    def __determine_ewald_param(self):
         INIT_EWALD_PARAM = 0.010111311355097064
         PROD_CUTOFF_FWHM = 25.0 #product of cutoff radius of G-vector and gaussian FWHM.
                                 #increasing this value, both accuracy and computational cost will be increased
-        def make_lattice_set(lattice_vectors, max_length, include_self): 
-            """
-            Return a set of lattice vectors within the max length.
-            Note that angles between any two axes are assumed to be between 60 and 
-            120 deg.
-            """
-            max_int = \
-            [int(max_length / np.linalg.norm(lattice_vectors[i])) + 1 for i in range(3)]
-            vectors = []
-            for index in product(
-                    range(-max_int[0], max_int[0]+1),
-                    range(-max_int[1], max_int[1]+1),
-                    range(-max_int[2], max_int[2]+1)
-                    ):
-                if index == (0, 0, 0): 
-                    if not include_self:
-                        continue
-                vector = np.dot(lattice_vectors.transpose(), np.array(index))
-                norm = np.linalg.norm(vector)
-                if norm < max_length: 
-                    vectors.append(vector)
-            return np.array(vectors)
 
+        real_lattice = self.__lattice_vect
+        reciprocal_lattice_vect = \
+        self.perfect_property.structure.lattice.reciprocal_lattice.matrix
         root_det_dielectric = np.sqrt(np.linalg.det(self.dielectric_tensor))
         ewald_param = INIT_EWALD_PARAM
-        volume = real_lattice.volume
-        real_lattice_vect = real_lattice.matrix
-        reciprocal_lattice_vect = reciprocal_lattice.matrix
+        volume = np.linalg.det(real_lattice)
         while True:
             ewald = ewald_param / math.pow(volume, float(1)/3) * root_det_dielectric
             max_G_vector_norm = 2 * ewald * PROD_CUTOFF_FWHM
-            set_G_vectors = make_lattice_set(reciprocal_lattice_vect, 
+            set_G_vectors = self.__make_lattice_set(reciprocal_lattice_vect, 
                                              max_G_vector_norm, 
                                              include_self=False)
             max_R_vector_norm = PROD_CUTOFF_FWHM / ewald
-            set_R_vectors = make_lattice_set(real_lattice_vect, 
+            set_R_vectors = self.__make_lattice_set(real_lattice, 
                                              max_R_vector_norm,
                                              include_self=True)
             print("ewald_param= %f" % ewald_param)
@@ -99,11 +127,6 @@ class DefectCorrector:
                 ewald_param *= diff_real_recipro  ** 0.17
 
     def correct(self):
-        #potential.sh 0 0
-        real_lattice = self.perfect_property.structure.lattice
-        reciprocal_lattice = self.perfect_property.structure.lattice.reciprocal_lattice
-        ewald_param = self.__determine_ewald_param(real_lattice, reciprocal_lattice)
-        print(ewald_param)
         #potential.sh step 1
         ref_pot = self.perfect_property.atomic_site_pot
         defect_pot = self.defect_property.atomic_site_pot
@@ -116,6 +139,15 @@ class DefectCorrector:
         diff_pot = - (defect_pot - ref_pot) # vasp_potential.txt
         print(diff_pot)
         #potential.sh step 2
+        #This part (removing defect_index when calculate distances) must be written 
+        #for all defect types (Vac, Int, Sub).
+        #Currently can be applied to only substitutional. 
+        if len(ref_pot) != len(defect_pot):
+            sys.exit("Sorry, current version can not be applied to neither vacancy nor interstitial defect.")
+        self.__calc_distances_from_defect() #defect_structure.txt
 
-    
+        #potential.sh step 0 and 3
+        ewald_param = self.__determine_ewald_param()
+        print(ewald_param)
+
 

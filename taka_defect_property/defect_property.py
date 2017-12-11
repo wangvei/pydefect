@@ -28,10 +28,11 @@ class DefectProperty():
         atomic_site_pot: potential of atomic site
     """
 
-    def __init__(self, structure, energy, atomic_site_pot):
+    def __init__(self, structure, energy, atomic_site_pot, charge):
         self._structure = structure
         self._energy = energy
         self._atomic_site_pot = atomic_site_pot
+        self._charge = charge
     
     @property
     def structure(self):
@@ -45,8 +46,12 @@ class DefectProperty():
     def atomic_site_pot(self):
         return copy.copy(self._atomic_site_pot)
 
+    @property
+    def charge(self):
+        return self._charge
+
     @staticmethod
-    def from_directory(dirname):
+    def from_directory(dirname, charge):
         """
         Reads a DefectProperty object from directory.
 
@@ -66,12 +71,14 @@ class DefectProperty():
         structure = poscar.structure
         energy = vasprun.final_energy
         atomic_site_pot = outcar.electrostatic_potential
-        return DefectProperty(structure, energy, atomic_site_pot)
+        charge = -2 #TODO temporary
+        return DefectProperty(structure, energy, atomic_site_pot, charge)
 
     def as_dict(self):
         d = {"energy" : self.energy,
              "structure" : self.structure,
-             "atomic_site_pot" : self.atomic_site_pot}
+             "atomic_site_pot" : self.atomic_site_pot,
+             "charge" : charge}
         return d
 
     @classmethod
@@ -87,7 +94,8 @@ class DefectProperty():
             raise TypeError("Failed to convert an element of dictionary named 'structure', or no item named 'structure' input. ")
         return cls(energy=d["energy"],
                    structure=structure,
-                   atomic_site_pot=d["atomic_site_pot"])
+                   atomic_site_pot=d["atomic_site_pot"],
+                   charge=d["charge"])
 
     @classmethod
     def from_str(cls, s): 
