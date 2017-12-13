@@ -8,6 +8,10 @@ import re
 import spglib as spg
 import sys
 
+class Defect():
+    
+
+
 
 # def cell_for_spglib(poscar_name, cell):
 #

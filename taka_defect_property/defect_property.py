@@ -25,7 +25,7 @@ class DefectProperty():
     Args:
         structure (Structure, of pymatgen package): Structure object, indicating relaxed structure including a point defect (when using from_file, read file named CONTCAR, not POSCAR-finish (for Oba-lab) ).
         energy (float): energy of VASP result ()
-        atomic_site_pot: potential of atomic site
+        atomic_site_pot: potentials of all atomic sites
     """
 
     def __init__(self, structure, energy, atomic_site_pot, charge):
@@ -71,7 +71,12 @@ class DefectProperty():
         structure = poscar.structure
         energy = vasprun.final_energy
         atomic_site_pot = outcar.electrostatic_potential
-        charge = -2 #TODO temporary
+        try:
+            charge = dirname.split("_")[-1]
+        except:
+            print("The directory name is not proper."        
+            sys.exit(1)
+#        charge = -2 #TODO temporary
         return DefectProperty(structure, energy, atomic_site_pot, charge)
 
     def as_dict(self):

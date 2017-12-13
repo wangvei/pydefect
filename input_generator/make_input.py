@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-from __future__ import print_function
+#from __future__ import print_function
 import os
 import shutil
 import numpy as np
@@ -14,6 +14,7 @@ import atom
 import itertools as it
 import sys
 import ruamel.yaml as yaml
+import parse_poscar as ppos
 
 __author__ = "Yu Kumagai"
 __copyright__ = "Copyright 2017, Oba group"
@@ -44,24 +45,24 @@ def _laad_potcar_dir():
     return potcar_dir
 
 
-class MakeInput():
+class VaspInputMaker():
 
     def __init__(self, atomic_sites={}, dopant_charges={}, substitutions=[],
-                 interstitial_sites=[], incar="INCAR", poscar="DPOSCAR",
-                 kpoints="KPONTS", run="run.sh", cutoff=4.0, rand_distance=0.2):
+                 interstitial_sites=[], incar="INCAR", structure="DPOSCAR",
+                 kpoints="KPONTS", run="run.sh", cutoff=4.0, max_disp=0.2):
         """
 
         + POTCAR files are fetched from ~/.pydefect.yaml
 
         Terminology:
-            name: specie name + irreducible atom index
+       irrepname: specie name + irreducible atom index, eg., Mg1
           specie: specie name
           charge: oxidation state, a single integer number
-             Rep: representative position for *name* in structure object
+             rep: representative position for *name* in structure object
             --------------------------------------------------------------
         Args:
             atomic_sites: a dictionary of atomic site index.
-                          {name : [Rep, charge], ...}
+                          {name : {"rep":xx, "charge":xx}, ...}
           dopant_charges: {specie : charge, ...}
            substitutions: sum of antisites and dopant_sites ["Al_Mg1", ...]
       interstitial_sites: a list of lists with intersitial sites.
@@ -70,11 +71,18 @@ class MakeInput():
         """
         # TODO1: check if the input files exist.
 
-       # construct vacancies
         self.make_dir_three_input_files("perfect", incar, kpoints, run)
 
         default_potcar_path = _laad_potcar_dir()
-        structure = Structure.from_file(poscar)
+
+        if type(structure) = "str":
+            structure = Structure.from_file(poscar)
+        elif type(structure) = "Structure":
+            pass
+        else:
+            raise TypeError 
+
+        random_disp = {"cutoff":self.cutoff, "" 
 
         # Make perfect directory
         if os.path.isdir("perfect"):  
@@ -85,34 +93,19 @@ class MakeInput():
             shutil.copyfile(poscar, "perfect/POSCAR")
             make_POTCAR("perfect", atomic_sites.keys(), default_potcar_path)
         
-#        # Element symbols are obtained from POTCAR, also used for intersititals.
-#        element_symbols = ppot.parsePOTCAR(opts.potcar)[-1]
-        
-        # Begin constructon of directories and POSCAR files for defects.
+       # construct vacancies
         # Vacancies. Charges are sign reversed.
-        for v, k in atomic_sites:
-            for c in range(int(v[1])):
+        make_vacancies(atomic_sites, r_)
+        for name, key in atomic_sites:
+            for charge in range(int(key["charge"])):
 #                specie = ''.join([i for i in k if not i.isdigit()])
-                dirname="Va_"+ k + "_" + c
+                dirname="Va_"+ name + "_" + charge
                 os.mkdir(dirname)
-                make_dir_poscar("Va", removed_atom=v[0], -c, "DPOSCAR", r_param,
-                                removed_atom=host_atoms[removed_atom][0])
-                
-                make_point_defects("DPOSCAR", removed_atom=v[0], 
-                                   added_coord=None, added_atom_symbol=None,
-                                   output_poscar_name=dirname + "POSCAR")
+                make_dir_poscar("Va", name, -charge, "DPOSCAR", r_param,
+                                removed_atom=key["rep"])
 
-        for removed_atom in host_atoms:
-            for charge in host_atoms[removed_atom][1]:
-        
-                make_dir_poscar("Va", removed_atom, -charge, opts.poscar, r_param,
-                                removed_atom=host_atoms[removed_atom][0])
+                
         # Interstitials. 
-        # Need to obtain the element symbols from host_atoms 
-        # E.g., Mg1, Mg2, O1, O2 -> Mg, O
-        # host_elements[Mg] = {0, 1, 2} set
-        host_elements = get_elements_from_host_atoms(host_atoms) 
-        
         for element in host_elements: 
             for interstitial_index, coord in enumerate(interstitial_site):
                 for charge in host_elements[element]:
@@ -157,28 +150,46 @@ class MakeInput():
                     make_dir_poscar(dopant, "i" + str(interstitial_index + 1), charge, 
                                     opts.poscar, r_param, added_coord=coord, 
 
+    def make_vacancies():
 
 
 
+    def make_dir_poscar(inserted_element, removed_name, charge, poscar, r_param,
+                        removed_atom=False, added_coord=False, 
+                        added_atom_symbol=False):
+    """    
+    """    
+
+        name = inserted_element + "_" + removed_name + "_" + str(charge)
+    
+        if os.path.isdir(name): 
+            print "%12s alreadly exist, so is not made."% name
+        else: 
+            sp.call(["mkdir", name])
+            ppos.make_point_defects(poscar, removed_atom, added_coord,
+                                    added_atom_symbol, name + '/POSCAR',
+                                    r_param, header=name)
 
 
+    def make_POTCAR(self, written_potcar_dir, species, default_potcar_dir):
+    """    
+    Construct POTCAR file from a given default_potcar_path and species names.
 
-
-
-
-    def make_POTCAR(self, potcar_path, species, default_potcar_path):
-        with open(potcar_path'/POTCAR', 'w') as potcar:
+    """    
+        with open(written_potcar_dir + '/POTCAR', 'w') as potcar:
             for s in species:
                 potcar_file_name = default_potcar_path + "/POTCAR_" + s
-                shutil.copyfileobj(open(potcar_file_name), outfile)
+                shutil.copyfileobj(open(potcar_file_name), potcar)
 
 
-    def make_dir_three_input_files(self,dirname,incar, kpoints, run):
+    def make_dir_three_input_files(self, dirname, incar, kpoints, runshell):
+    """    
+    """    
         if not os.path.exists(dirname):
             os.makedirs(dirname)
-            shutil.copyfile(incar,dirname + "/INCAR")
-            shutil.copyfile(kpoints,dirname + "/KPOINTS")
-            shutil.copyfile(run, dirname + "/" + run)
+        shutil.copyfile(incar, dirname + "/INCAR")
+        shutil.copyfile(kpoints, dirname + "/KPOINTS")
+        shutil.copyfile(runshell, dirname + "/" + runshell)
 
 
     @classmethod
@@ -190,7 +201,6 @@ class MakeInput():
           charge: oxidation state, a single integer number
              Rep: representative position for *name* in structure object
             --------------------------------------------------------------
-            atomic_sites: {name : [Rep, charge], ...}
           dopant_charges: {specie : charge, ...}
            substitutions: sum of antisites and dopant_sites ["Al_Mg1", ...]
       interstitial_sites: [[0, 0, 0], [0.1, 0.1, 0.1], ...]
@@ -198,52 +208,18 @@ class MakeInput():
 
         defect_in = open(defect_in)
 
-        atomic_sites = {}
-        dopant_charges = {}
+        from defect_input import DefectIn
 
-        while True:
-            line = defects_in.readline().split()
+        a = DefectIn().from_str_file(poscar, defect_in)
 
-            if line == []: continue
-            if line[0] == "Name:":
-                name = line[1]
-                atomic_sites[name] = [None, None]
-                while True:
-                    line = defects_in.readline().split()
-                    if line[0] == "Rep:":
-                        atomic_sites[name][0] = int(line[1])
-                    elif line[0] == "Charge:":
-                        atomic_sites[name][1] = int(line[1])
-                    elif line == "": break
-                if atomic_sites[name][0] == None or atomic_sites[name][1] == None:
-                    raise ValueError("defect.in type file is not appropriate.")
-
-            elif line[0] == "Dopant":
-                name = line[1]
-                while True:
-                    line = defects_in.readline().split()
-                    if line[0] == "Charge:":
-                        dopant_charges[name] = line[1]
-                    elif line == "": break
-                dopant_charges[name] = int(line[1])
-
-            elif line[0] == "Int_site:":
-                b = [self._get_num(line[i]) for i in range(1, len(line))]
-                interstitial_sites = [b[i:i + 3] for i in range(0, len(b), 3)]
-            elif line[0] == "Antisite:": antisites = line[1:]
-            elif line[0] == "Dopant_site:": dopant_sites = line[1:]
-            elif line[0] == "Sym_break:": sym_break = line[1]
-            elif line[0] == "Irregular:": irredular_defects = line[1:]
-
-                break
-        substitutions = antisites + dopant_sites
+        
 
         return cls(self, atomic_sites={}, dopant_charges={}, substitutions=[],
                    interstitial_sites=[], incar="INCAR", poscar="DPOSCAR",
                    kpoints="KPONTS", run="run.sh", cutoff=4.0, rand_distance=0.2)
 
 
-    def _get_elements_from_host_atoms(self, host_atoms):
+    def _get_elements_from_names(self, host_atoms):
         """
         host_atoms[name(str)] = [int(rep), [charge(int)]]
         Return element names with charges, which are one-size-fits-all.
@@ -252,11 +228,11 @@ class MakeInput():
         """
         elements = {}
 
-        for atom in host_atoms:
+        for name in names:
             # Remove number. E.g., Mg1 -> Mg
-            name = atom[0:-1]
-            if name not in elements:
-                elements[name] = set()
+            element = name[0:-1]
+            if element not in elements:
+                elements[element] = set()
 
             for charge in host_atoms[atom][1]:
                 elements[name].add(charge)

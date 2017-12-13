@@ -1,8 +1,6 @@
 #!/usr/bin/env python
 
-from __future__ import print_function
-
-import argparse
+#from __future__ import print_function
 import itertools as it
 import numpy as np
 import sys
@@ -59,13 +57,13 @@ class DefectIn():
             try:
                 electron_negativity[s] = float(atom.electron_negativity[s])
             except:
-                warnings.warn("The electron negativity of", s, "is unavailable.")
+                warnings.warn("The electron negativity of " + s + " is unavailable.")
                 electron_negativity[s] = "N.A."
 
             try:
                 oxidation_states[s] = Element(s).common_oxidation_states[-1]
             except:
-                warnings.warn("The oxidation state of", s, "is unavailable.")
+                warnings.warn("The oxidation state of " + s + " is unavailable.")
                 oxidation_states[s] = "N.A."
 
         self.electron_negativity = electron_negativity
@@ -94,7 +92,11 @@ class DefectIn():
             for r in self.repr_frac_coords:
                 for s in structure.symbol_set:
                     if r[1] == s: continue
-                    ENdiff = electron_negativity[r[1]] - electron_negativity[s]
+                    try:
+                        ENdiff = electron_negativity[r[1]] - electron_negativity[s]
+                    except:
+                        # It's a fictitious number
+                        ENdiff = 100
                     if abs(ENdiff) < ElNeg_diff:
                         antisites.append([s, r[0]])
             self.antisites = antisites
@@ -117,57 +119,58 @@ class DefectIn():
         """
         Construct DefectIn class object from a POSCAR file.
         """
+
         structure = Structure.from_file(poscar)
 
         return cls(structure, dopants=dopants, interstitials=interstitials,
                    is_antisite=is_antisite, ElNeg_diff=ElNeg_diff, irregular=irregular,
                    symbreak=symbreak, symprec=symprec)
 
-    #    @classmethod
-    #    def from_defect_in(cls, poscar="DPOSCAR", defectin="defect.in"):
-    #        """
-    #        Construct DefectIn class object from a defect.in file.
-    #        """
-    #
-    #        structure = Structure.from_file(poscar)
-    #
-    #        defects_in = open(defects_in_name)
-    #        host_atoms = {} # host_atoms[name(str)] = [int(rep), [charge(int)]]
-    #        dopants = {} # dopants [name(str)] = [charge(int)]
-    #        interstitial_site = [] # [[i1(float)], [i2(float)], .. ]
-    #        anti_site = [] # e.g. [Mg1_O1, O1_Mg1, ...]
-    #
-    #        while True:
-    #            line = defects_in.readline().split()
-    #
-    #            if line == []: continue
-    #            if line[0] == "Name:":
-    #                if line[1][-1].isdigit():
-    #                    host_atoms[line[1]] = []
-    #                    # Representative atom index
-    #                    host_atoms[line[1]].append(int(defects_in.readline().split()[1]))
-    #                    # skip 3 lines
-    #                    for i in range(3): defects_in.readline()
-    #                    # Charge list
-    #                    host_atoms[line[1]].append(
-    #                                [int(i) for i in defects_in.readline().split()[1:]])
-    #                else:
-    #                    defects_in.readline()
-    #                    dopants[line[1]] = \
-    #                               [int(i) for i in defects_in.readline().split()[1:]]
-    #
-    #            if line[0] == "Int_site:":
-    #                b = [_get_num(line[i]) for i in range(1, len(line))]
-    #                interstitial_site = [b[i:i + 3] for i in range(0, len(b), 3)]
-    #            if line[0] == "Antisite:": anti_site = line[1:]
-    #            if line[0] == "Sym_break:": sym_break = line[1]
-    #            if line[0] == "Irregular:":
-    #                irredular_defects = line[1:]
-    #                break
-    #
-    #        return cls(structure, dopants=dopants, interstitials=interstitials,
-    #                   is_antisite=is_antisite, ElNeg_diff=ElNeg_diff,
-    #                   symbreak=symbreak, symprec=symprec)
+    @classmethod
+    def from_defect_in(cls, poscar="DPOSCAR", defectin="defect.in"):
+        """
+        Construct DefectIn class object from a defect.in file.
+        """
+ 
+        structure = Structure.from_file(poscar)
+ 
+        defects_in = open(defects_in_name)
+        host_atoms = {} # host_atoms[name(str)] = [int(rep), [charge(int)]]
+        dopants = {} # dopants [name(str)] = [charge(int)]
+        interstitial_site = [] # [[i1(float)], [i2(float)], .. ]
+        anti_site = [] # e.g. [Mg1_O1, O1_Mg1, ...]
+ 
+        while True:
+            line = defects_in.readline().split()
+ 
+            if line == []: continue
+            if line[0] == "Name:":
+                if line[1][-1].isdigit():
+                    host_atoms[line[1]] = []
+                    # Representative atom index
+                    host_atoms[line[1]].append(int(defects_in.readline().split()[1]))
+                    # skip 3 lines
+                    for i in range(3): defects_in.readline()
+                    # Charge list
+                    host_atoms[line[1]].append(
+                                [int(i) for i in defects_in.readline().split()[1:]])
+                else:
+                    defects_in.readline()
+                    dopants[line[1]] = \
+                               [int(i) for i in defects_in.readline().split()[1:]]
+ 
+            if line[0] == "Int_site:":
+                b = [_get_num(line[i]) for i in range(1, len(line))]
+                interstitial_site = [b[i:i + 3] for i in range(0, len(b), 3)]
+            if line[0] == "Antisite:": anti_site = line[1:]
+            if line[0] == "Sym_break:": sym_break = line[1]
+            if line[0] == "Irregular:":
+                irredular_defects = line[1:]
+                break
+ 
+        return cls(structure, dopants=dopants, interstitials=interstitials,
+                   is_antisite=is_antisite, ElNeg_diff=ElNeg_diff,
+                   symbreak=symbreak, symprec=symprec)
 
     #    def get_elements_from_host_atoms(host_atoms):
     #        """
@@ -196,7 +199,7 @@ class DefectIn():
         self._print_defect_in(filename=filename1)
         self.structure.to(fmt="poscar", filename=filename2)
 
-    def _print_defect_in(self, filename="defect.in"):
+    def print_defect_in(self, filename="defect.in"):
         i = 1
         #        print(self.repr_frac_coords)
         for r in self.repr_frac_coords:
@@ -241,3 +244,37 @@ class DefectIn():
 
     def _print_charges(self, os):
         print("Charge: {}".format(os))
+
+class NoElementNameError(Exception):
+    pass 
+
+def main():
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-p", "--poscar", dest="poscar", default="POSCAR",
+                        type=str, help="POSCAR name.")
+    parser.add_argument("--potcar", dest="potcar", default="POTCAR",
+                        type=str, help="POTCAR name.")
+    parser.add_argument("-d","--dopants", dest="dopants", default="", nargs="+", 
+                        type=str, help="Dopant elements. Eg. Al Ga In.")
+    parser.add_argument("-i", dest="interstitials", default=False, nargs="+",
+                        type=float, help="Inetrstitials. Eg. 0 0 0  0.5 0.5 0.5.")
+    parser.add_argument("-a","--antisite", dest="is_antisite", action="store_false",
+                        help="Set if antisites are considered.")
+    parser.add_argument("-e","--ElNeg_diff", dest="ElNeg_diff", type=float, default=1.0,
+                        help="Criterion of the electronegativity difference for constructing antisites and impurities.")
+    parser.add_argument("-s","--symbreak", dest="symbreak", action="store_true",
+                        help="Set if symmetry is not broken.")
+    parser.add_argument("--symprec",dest="symprec", type=float, default=0.01,
+                        help="Set the symprec [A].")
+
+    opts = parser.parse_args()
+
+    defect_in = DefectIn.from_str_file(
+                poscar=opts.poscar, dopants=opts.dopants, interstitials=opts.interstitials, 
+                is_antisite=opts.is_antisite, ElNeg_diff=opts.ElNeg_diff,irregular=None, 
+                symbreak=opts.symbreak, symprec=opts.symprec)
+
+    defect_in.print_defect_in() 
+
+if __name__ == "__main__": main()
