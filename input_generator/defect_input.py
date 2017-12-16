@@ -21,13 +21,28 @@ __email__ = "yuuukuma@gmail.com"
 __status__ = "Development"
 __date__ = "December 4, 2017"
 
+class IrrepSpecie():
+    """
+    This class object has various properties related to atoms.
+    """
+
+    def __init__(self, irrepname, element, multiplicity, repr_coord, charge=None):
+        self.irrepname = irrepname
+        self.element = element
+        self.multiplicity = multiplicity
+        self.repr_coord = repr_coord
+
 
 class DefectIn():
-
+    """
+    It generates and parses defect.in file, which controles the input setting 
+    of defect calculations.
+    """
     def __init__(self, structure, dopants=[], interstitials=False,
                  is_antisite=False, ElNeg_diff=1.0, irregular=None, symbreak=True, symprec=1e-5):
 
         # only vasp5 POSCAR format is supported.
+        self.structure = structure
         self.dopants = dopants
         self.interstitials = interstitials
         self.is_antisite = is_antisite
@@ -36,30 +51,23 @@ class DefectIn():
         self.symbreak = symbreak
         self.symprec = symprec
 
-        symm_finder = SpacegroupAnalyzer(structure)
+        symm_finder = SpacegroupAnalyzer(self.structure)
         self.symm_structure = symm_finder.get_symmetrized_structure()
         self.equiv_site_seq = self.symm_structure.equivalent_sites
 
-        elements = []
-        frac_coords = []
-        # repr_frac_coords e.g.,[["Mg1", "Mg", 2, [0, 0, 0]],
-        #                        ["Mg2", "Mg", 4, [0.5, 0.5, 0.5]]]
-        repr_frac_coords = []
-        are_elements = {}
+        irrep_element_index = {}
         electron_negativity = {}
         oxidation_states = {}
 
+        # Obtain electron negativity and oxidation states.
         # intrinsic elements + dopants
         for s in structure.symbol_set + tuple(dopants):
-            are_elements[s] = 0
-
-            # Obtain electron negativity and oxidation states.
+            irrep_element_index[s] = 0
             try:
                 electron_negativity[s] = float(atom.electron_negativity[s])
             except:
                 warnings.warn("The electron negativity of " + s + " is unavailable.")
                 electron_negativity[s] = "N.A."
-
             try:
                 oxidation_states[s] = Element(s).common_oxidation_states[-1]
             except:
@@ -69,55 +77,89 @@ class DefectIn():
         self.electron_negativity = electron_negativity
         self.oxidation_states = oxidation_states
 
+        # dictionary of number of irrep sites for element.
+        # e.g.,  irrep_elements["Mg"] = 2 means Mg element has two inequivalent sites
+        irrep_elements = {}
+        # list of elements, eg [Mg, Mg, O, O]
+        elements = []
+        # list of frac_coords, eg [[0,0,0],[0.5,0,0],...]
+        frac_coords = []
+
         for inequiv_site in self.equiv_site_seq:
             element = inequiv_site[0].species_string
-            are_elements[element] += 1  # increment nr of inequiv site
-            nr_sites = len(inequiv_site)
-            coords = inequiv_site[0].frac_coords
-            repr_frac_coords.append([element + str(are_elements[element]),
-                                     element, nr_sites, coords])
+            irrep_element_index[element] += 1  # increment number of inequiv site
+            multiplicity = len(inequiv_site)
+            repr_coord = inequiv_site[0].frac_coords
+            irrep_elements.append(IrrepSpecie(element + str(irrep_element_index[element]), 
+                                     element, multiplicity, repr_coord))
             for equiv_site in inequiv_site:
                 elements.append(equiv_site.species_string)
                 frac_coords.append(equiv_site.frac_coords)
 
-        # Atoms are sorted by symmetry.
+        # Atoms are sorted by symmetry, which will be written in DPOSCAR
         self.structure = Structure(structure.lattice, elements, frac_coords)
-        # repr_frac_coords = ["Mg1", "Mg", nr_sites, repr_coords]
-        self.repr_frac_coords = repr_frac_coords
+        self.irrep_elements = irrep_elements
 
         if is_antisite:
-            # ex.             Mg_O1
-            # antisites = [[ "Mg", "O1"], ...]
+            # eg. antisites = [[ "Mg", "O1"], ...]
             antisites = []
-            for r in self.repr_frac_coords:
+            for i in self.irrep_elements:
                 for s in structure.symbol_set:
-                    if r[1] == s: continue
+                    if i["element"] == s: continue
                     try:
-                        ENdiff = electron_negativity[r[1]] - electron_negativity[s]
+                        ENdiff = electron_negativity[i["element"]] - electron_negativity[s]
                     except:
                         # It's a fictitious number
                         ENdiff = 100
                     if abs(ENdiff) < ElNeg_diff:
-                        antisites.append([s, r[0]])
+                        antisites.append([s, i["element"]])
             self.antisites = antisites
 
         if dopants:
             dopant_sites = []
-            for r in self.repr_frac_coords:
+            for i in self.irrep_elements:
                 for d in self.dopants:
-                    ENdiff = electron_negativity[r[1]] - electron_negativity[d]
+                    ENdiff = electron_negativity[i["element"]] - electron_negativity[d]
                     if abs(ENdiff) < ElNeg_diff:
-                        dopant_sites.append([d, r[0]])
+                        dopant_sites.append([d, i["element"]])
             self.dopant_sites = dopant_sites
 
-    #    def _return_defect_type_by_ElNeg_diff(self, ElNeg_diff, a, b):
-    #        kkkkkkkkkkk
+    def as_dict(cls, poscar="POSCAR", dopants=[], interstitials=False):
+        """
+        Dict representation of DefectIn class object.
+        """
+        d = {"structure": self.structure,
+             "dopants": self.dopants,
+             "interstitials": self.interstitials,
+             "is_antisite": self.is_antisite,
+             "ElNeg_diff": self.ElNeg_diff,
+             "irregular": self.irregular,
+             "symbreak": self.symbreak,
+             "symprec": self.symprec,
+             "symm_structure": self.symm_structure,
+             "equiv_site_seq": self.equiv_site_seq,
+             "electron_negativity": self.electron_negativity,
+             "oxidation_states": self.oxidation_states,
+             "irrep_elements": self.irrep_elements,
+             "antisites": self.antisites,
+             "dopant_sites": self.dopant_sites}
+        return d
+
+    @classmethod
+    def from_dict(cls, d):
+        return cls(d["structure"], d["dopants"], d["interstitials"],
+                   d["is_antisite"], d["ElNeg_diff"], d["irregular"], 
+                   d["symbreak"], d["symprec"], d["symm_structure"],
+                   d["equiv_site_seq"], d["electron_negativity"],
+                   d["oxidation_states"], d["irrep_elements"],
+                   d["antisites"], d["dopant_sites"])
 
     @classmethod
     def from_str_file(cls, poscar="POSCAR", dopants=[], interstitials=False,
                       is_antisite=False, ElNeg_diff=1.0, irregular=None, symbreak=True, symprec=1e-5):
         """
         Construct DefectIn class object from a POSCAR file.
+        Some parameters are set by default.
         """
 
         structure = Structure.from_file(poscar)
@@ -199,7 +241,7 @@ class DefectIn():
         self._print_defect_in(filename=filename1)
         self.structure.to(fmt="poscar", filename=filename2)
 
-    def print_defect_in(self, filename="defect.in"):
+    def _print_defect_in(self, filename="defect.in"):
         i = 1
         #        print(self.repr_frac_coords)
         for r in self.repr_frac_coords:

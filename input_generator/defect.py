@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+from abc import ABCMeta
 import argparse
 import defect_structure
 import mathematics as lmath
@@ -8,8 +9,183 @@ import re
 import spglib as spg
 import sys
 
-class Defect():
+def add_element(structure, element, coord):
+    """
+    If element exists in *structure*, *element* is inserted just before the 
+    existing species with the same *element*.
+    If not, the *element* is added at the end.
+    """
+    i = 0
+    for specie in structure.species:
+        if element == specie:
+            break
+        i += 1
+    return structure.insert(i, added_element, coord)
+
+
+class Defect(metaclass=ABCMeta):
+    """    
+    A class that defines the structure of a defect.
+    """    
+
+    def get_host_structure(self):
+        return self._host_structure
+
+    @property
+    def is_intrinsic(self):
+        if self._added_element:
+            return self._added_element in self._host_structure.species
+        else:
+            return True
+
+    @property
+    def get_defect_type(self):
+        return self._defect_type
+
+    @abstractmethod
+    def get_defect_coord:
+        raise NotImplementedError()
+
+    @abstractmethod
+    def get_defect_structure:
+        raise NotImplementedError()
+
+    def random_disps(self):
+
+
+#class DefectEntry():
+#    """    
+#    A class that holds a complete information of a defect.
+#    """    
+
+class Vacancy(Defect):
+
+    def __init__(self, structure, removed_atom_index):
+        self._host_structure = structure
+        self._removed_atom_index = removed_atom_index
+        self._defect_structure = structure.remove_sites([i])
+        self._defect_type = "vacancy"
+
+    @property
+    def get_removed_atom_index(self):
+        return self._removed_atom_index
+
+    @property
+    def get_defect_coord(self):
+        """
+        Return np.array of fractional coordinate of a vacancy.
+        """
+        return self._host_structure.frac_coords[i]
+
+
+class Interstitial(Defect):
+        """ """
+
+    def __init__(self, structure, added_coord, element):
+        self._host_structure = structure
+        self._added_coord = added_coord
+        self._added_element = element
+        self._defect_structure = add_element(structure, added_coord, element)
+        self._defect_type = "interstitial"
+
+    @property
+    def get_defect_coord(self):
+        return self._added_coord
+
+    @property
+    def get_added_element(self):
+        return self._added_element
+
+
+class Substitutional(Defect):
+
+    def __init__(self, structure, removed_index, added_element):
+        self._host_structure = structure
+        self._removed_index = removed_index
+        self._added_element = added_element
+        self._coord = self._host_structure.frac_coords[i]
+        self._defect_structure = add_element(structure.remove_sites[removed_index], coord, element)
+        self._defect_type = "substitutional"
+
+    @property
+    def get_defect_coord(self):
+        return self._coord
+
+    @property
+    def get_removed_index(self):
+        return self._removed_index
+
+    @property
+    def get_substituted_element(self):
+        return self._added_element
+
+
+class DefectMaker():
+
+    def __init__(self, structure, removed_index, added_coord, added_element, 
+                 random_parameters={"radius":4.0, "distance":0.2}):
+    """
+    removed_atom yes & added_coord yes & added_element yes -> vac + int    
+    removed_atom  no & added_coord yes & added_element yes -> interstitial 
+    removed_atom yes & added_coord  no & added_element yes -> substitutional
+    removed_atom yes & added_coord  no & added_element  no -> vacancy
+    """
+        self.structure = structure
+        try:
+            if type(defect_position) == int:
+                self.defect_position = structure.frac_coords[i]
+            else:
+                self.defect_position = defect_position
+        else:
+            raise ValueError "The defect_position is not proper."
+
+        if not removed_index and added_coord and added_element:
+            self._defect = Interstitial(structure, removed_index, added_element):
+        elif removed_index and not added_coord and added_element: 
+            self._defect = Substitutional(structure, removed_index, added_element):
+        elif removed_index and not added_coord and not added_element:
+            self._defect = Vacancy(structure, removed_index, added_element):
     
+        if random_parameters:
+            self._defect_structure = perturb_in_a_sphere(self._defect.get_defect_structure, self._defect.get_defect_coord,
+                                                         random_parameters["radius"], random_parameters["distance"])  
+        else
+            self._defect_structure = self._defect.get_defect_structure
+
+
+    def to(self, filename=None):
+        return self.defect_structure.to(self, filename=None)
+
+
+def perturb_in_a_sphere(structure, center, radius, distance):
+    """
+    ORIGINALLY COPIED FROM pymatgen.
+    Performs a random perturbation of the sites in a sphere in a structure 
+    to break symmetries.
+
+    Args:
+        distance (float): Distance in angstroms by which to perturb each
+            site.
+    """
+
+    def get_rand_vec():
+        # deals with zero vectors.
+        vector = np.random.randn(3)
+        vnorm = np.linalg.norm(vector)
+        return vector / vnorm * distance if vnorm != 0 else get_rand_vec()
+
+    sites_in_sphere = [i[0] for i in structure.get_sites_in_sphere(center, radius)]
+
+    for i in range(len(self._sites)):
+        if structure.sites[i] in sites_in_sphere:
+            structure.translate_sites([i], get_rand_vec(), frac_coords=False)
+
+
+class ComplexDefectMaker():
+    pass
+
+
+
 
 
 

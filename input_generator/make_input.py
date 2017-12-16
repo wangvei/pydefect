@@ -55,15 +55,15 @@ class VaspInputMaker():
         + POTCAR files are fetched from ~/.pydefect.yaml
 
         Terminology:
-       irrepname: specie name + irreducible atom index, eg., Mg1
-          specie: specie name
+       irrepname: element name + irreducible atom index, eg., Mg1
+          element: element name
           charge: oxidation state, a single integer number
-             rep: representative position for *name* in structure object
+      repr_coord: representative position for *name* in structure object
             --------------------------------------------------------------
         Args:
             atomic_sites: a dictionary of atomic site index.
-                          {name : {"rep":xx, "charge":xx}, ...}
-          dopant_charges: {specie : charge, ...}
+                          {name : {"repr_coord":xx, "charge":xx}, ...}
+          dopant_charges: {element : charge, ...}
            substitutions: sum of antisites and dopant_sites ["Al_Mg1", ...]
       interstitial_sites: a list of lists with intersitial sites.
                           [[0, 0, 0], [0.1, 0.1, 0.1], ...]
@@ -98,7 +98,7 @@ class VaspInputMaker():
         make_vacancies(atomic_sites, r_)
         for name, key in atomic_sites:
             for charge in range(int(key["charge"])):
-#                specie = ''.join([i for i in k if not i.isdigit()])
+#                element = ''.join([i for i in k if not i.isdigit()])
                 dirname="Va_"+ name + "_" + charge
                 os.mkdir(dirname)
                 make_dir_poscar("Va", name, -charge, "DPOSCAR", r_param,
@@ -171,13 +171,13 @@ class VaspInputMaker():
                                     r_param, header=name)
 
 
-    def make_POTCAR(self, written_potcar_dir, species, default_potcar_dir):
+    def make_POTCAR(self, written_potcar_dir, elements, default_potcar_dir):
     """    
-    Construct POTCAR file from a given default_potcar_path and species names.
+    Construct POTCAR file from a given default_potcar_path and elements names.
 
     """    
         with open(written_potcar_dir + '/POTCAR', 'w') as potcar:
-            for s in species:
+            for s in elements:
                 potcar_file_name = default_potcar_path + "/POTCAR_" + s
                 shutil.copyfileobj(open(potcar_file_name), potcar)
 
@@ -196,12 +196,12 @@ class VaspInputMaker():
     def from_defect_in(cls, poscar="DPOSCAR", defect_in="defect.in"):
         """
         Construct four variables:
-            name: specie name + irreducible atom index
-          specie: specie name
+            name: element name + irreducible atom index
+          element: element name
           charge: oxidation state, a single integer number
              Rep: representative position for *name* in structure object
             --------------------------------------------------------------
-          dopant_charges: {specie : charge, ...}
+          dopant_charges: {element : charge, ...}
            substitutions: sum of antisites and dopant_sites ["Al_Mg1", ...]
       interstitial_sites: [[0, 0, 0], [0.1, 0.1, 0.1], ...]
         """
