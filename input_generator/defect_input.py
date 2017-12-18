@@ -26,18 +26,29 @@ class IrrepElement():
     """
     This class object has various properties related to atoms.
     """
-    def __init__(self, irrepname, element, multiplicity, repr_coord):
+    def __init__(self, irrepname, element, first_index, last_index, repr_coord):
         self.irrepname = irrepname
         self.element = element
-        self.multiplicity = multiplicity
+        self.first_index = first_index
+        self.last_index = last_index
         self.repr_coord = repr_coord
 
     def as_dict(self):
         d = {"irrepname": self.irrepname,
              "element" : self.element,
-             "multiplicity" : self.multiplicity,
+             "first_index" : self.first_index,
+             "last_index" : self.last_index,
              "repr_coord" : self.repr_coord}
         return d
+
+    @classmethod
+    def from_dict(cls, d):
+        return cls(d["irrep_elements"], d["element"], d["first_index"], 
+                   d["last_index"], d["repr_coord"]) 
+
+    @property
+    def multiplicity(self):
+        self.multiplicity = self.start_index - self.end_index 
 
 
 class DefectSetting():
@@ -93,14 +104,13 @@ class DefectSetting():
         """
         Construct DefectSetting class object from a defect.in file.
         """
- 
+
         structure = Structure.from_file(poscar)
         defect_in = open(defect_in_file)
         irrep_elements = []
         electron_negativity = {}
         oxidation_states = {}
-        dopant_sites = []
-        interstitials = [] # [[i1(float)], [i2(float)], .. ]
+        dopants = []
 
         while True:
             line = defect_in.readline().split()
@@ -110,12 +120,15 @@ class DefectSetting():
                 irrepname = line[1]
                 # remove number from irrepname
                 element = ''.join([i for i in irrepname if not i.isdigit()])
+                # skip one line
+                defect_in.readline()
+#                print(defect_in.readline().split()[1:])
                 # Representative atom index
-                first, last = defect_in.readline().split()[1].split("..")
-                multiplicity = int(last) - int(first)
+#                print([int(i) for i in defect_in.readline().split()[1].split("..")])
+                first_last_indices = [int(i) for i in defect_in.readline().split()[1].split("..")]
                 repr_coord = \
                            [float(i) for i in defect_in.readline().split()[1:]]
-                irrep_elements.append(IrrepElement(irrepname, element, multiplicity, repr_coord).as_dict())
+                irrep_elements.append(IrrepElement(irrepname, element, first_last_indices[0], first_last_indices[1], repr_coord).as_dict())
                 electron_negativity[element] = \
                                     float(defect_in.readline().split()[1])
                 oxidation_states[element] = \
@@ -127,20 +140,27 @@ class DefectSetting():
                                         float(defect_in.readline().split()[1])
                 oxidation_states[dopant_element] = \
                                         float(defect_in.readline().split()[1])
+
+            elif line[0] == "Dopant_site:":
+                dopant_sites = line[1:]
+
  
             elif line[0] == "Int_site:":
-                b = [_get_num(line[i]) for i in range(1, len(line))]
+                b = [float(''.join(i for i in line[i] if i.isdigit() or i == '.')) for i in range(1, len(line))]
                 interstitials = [b[i:i + 3] for i in range(0, len(b), 3)]
 
             elif line[0] == "Antisite:": 
                 antisites = line[1:]
-                if anti_site is []: anti_site = False
+                if antisites is []: antisites = False
 
             elif line[0] == "Symbreak:": 
                 symbreak = line[1]
-                if symbreak is not False:
+                if symbreak is not "False":
                     symprec = float(symbreak)
                     symbreak = True
+                elif symbreak is "False":
+                    symprec = None
+                    symbreak = False
 
             elif line[0] == "Include:":
                 include = line[1:]
@@ -149,6 +169,7 @@ class DefectSetting():
                 exclude = line[1:]
 
             else:
+                print(line)
                 raise NotSupportedFlagError
 
         return cls(structure, irrep_elements, dopant_sites, interstitials,
@@ -157,6 +178,7 @@ class DefectSetting():
 
 class NotSupportedFlagError(Exception):
     pass 
+
 
 class DefectIn():
     """
@@ -216,10 +238,11 @@ class DefectIn():
         for inequiv_site in self.equiv_site_seq:
             self._element = inequiv_site[0].species_string
             self._irrep_element_index[self._element] += 1  # increment number of inequiv site
-            self._multiplicity = len(inequiv_site)
+            self._first = len(self._elements) + 1
+            self._last = len(self._elements) + len(inequiv_site)
             self._repr_coord = inequiv_site[0].frac_coords
             self.irrep_elements.append(IrrepElement(self._element + str(self._irrep_element_index[self._element]), 
-                                     self._element, self._multiplicity, self._repr_coord).as_dict())
+                                     self._element, self._first, self._last, self._repr_coord).as_dict())
             for equiv_site in inequiv_site:
                 self._elements.append(equiv_site.species_string)
                 self._frac_coords.append(equiv_site.frac_coords)
@@ -281,16 +304,14 @@ class DefectIn():
     def _print_defect_in(self, filename="defect.in"):
         file = open(filename, 'w')                                             
 
-        i = 1
-        #        print(self.repr_frac_coords)
         for e in self.irrep_elements:
-            file.write("  Name: {}\n".format(e.irrepname))
-            file.write("   Rep: {}\n".format(e.repr_coord))
-            file.write(" Equiv: {}\n".format(str(i) + ".." + str(i + e.multiplicity - 1)))
-            i += e.multiplicity
-            file.write(" Coord: %9.7f %9.7f %9.7f\n" % tuple(e.repr_coord))
-            file.write("EleNeg: {}\n".format(self.electron_negativity[e.element]))
-            file.write("Charge: {}\n\n".format(self.oxidation_states[e.element]))
+    
+            file.write("  Name: {}\n".format(e["irrepname"]))
+            file.write("   Rep: {}\n".format(e["first_index"]))
+            file.write(" Equiv: {}\n".format(str(e["first_index"]) + ".." + str(e["last_index"])))
+            file.write(" Coord: %9.7f %9.7f %9.7f\n" % tuple(e["repr_coord"]))
+            file.write("EleNeg: {}\n".format(self.electron_negativity[e["element"]]))
+            file.write("Charge: {}\n\n".format(self.oxidation_states[e["element"]]))
 
         if self.interstitials:
             coords = [float(i) for i in self.interstitials.split()]

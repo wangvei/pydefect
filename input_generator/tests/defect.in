@@ -1,12 +1,12 @@
   Name: Sc1
-   Rep: [ 0.  0.  0.]
+   Rep: 1
  Equiv: 1..32
  Coord: 0.0000000 0.0000000 0.0000000
 EleNeg: 1.36
 Charge: 3
 
   Name: N1
-   Rep: [ 0.    0.25  0.  ]
+   Rep: 33
  Equiv: 33..64
  Coord: 0.0000000 0.2500000 0.0000000
 EleNeg: 3.04

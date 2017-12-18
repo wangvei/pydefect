@@ -8,10 +8,18 @@ __email__ = "yuuukuma@gmail.com"
 __status__ = "Development"
 __date__ = "December 4, 2017"
 
-a = DefectIn.from_str_file(poscar="POSCAR-ScN64atoms-test", dopants=["Sb"], interstitials="0 0 0.125", symbreak=False, symprec=1e-05, is_antisite=True, ElNeg_diff=3, include="Ag_Sr1", exclude="")
+#a = DefectIn.from_str_file(poscar="POSCAR-ScN64atoms-test", dopants=["Sb"], interstitials="0 0 0.125", symbreak=False, symprec=1e-05, is_antisite=True, ElNeg_diff=3, include="Ag_Sr1", exclude="")
 
-#a = DefectIn.from_str_file(poscar="POSCAR-ScN64atoms-test")
+#print(a.setting.as_dict())
+
 #a.to()
-print(a.setting.as_dict())
+
+c = DefectSetting.from_defect_in()
+
+
+#b = DefectIn.from_str_file(poscar="POSCAR-ScN64atoms-test")
+#print(b.setting.as_dict())
+#
+#b.to()
 
 #b = DefectIn.from_)defect_in()
