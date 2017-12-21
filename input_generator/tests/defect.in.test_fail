@@ -12,16 +12,15 @@ Charge: 3
 EleNeg: 3.04
 Charge: -3
 
-Int_site: [[0.0, 0.0, 0.0]]
+Int_site: [[0.0, 0.0, 0.125]]
 Antisite: 
 
-Dopant: Al
-EleNeg: 1.61
-Charge: 3
+Dopant: Sb
+EleNeg: 2.05
+Charge: -3
 
 Dopant_site: 
 
-Symbreak: 0.2
-Include: 
+Symbreak: False
+Include: Ag_Sr1
 Exclude: 
-Symprec: 0.01

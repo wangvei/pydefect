@@ -12,16 +12,11 @@ Charge: 2
 EleNeg: 3.44
 Charge: -2
 
-Int_site: [[0.1, 0.1, 0.1]]
-Antisite: 
+Antisite: Mg_O1 O_Mg1
 
-Dopant: Al
-EleNeg: 1.61
-Charge: 3
+Symbreak: 0.15
+Include: Va_O1_-1 Va_O1_-2
+Exclude: Va_O1_1 Va_O1_2
+Symprec: 0.001
 
-Dopant_site: 
-
-Symbreak: False
-Include: 
-Exclude: 
-Symprec: 0.01
+Int_site: 0.1 0.1 0.1
