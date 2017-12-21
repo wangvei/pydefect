@@ -76,12 +76,14 @@ class DefectSetting():
              irrep_elements: IrrepElement class object
              dopant_configs: dopant configurations (e.g., Al_Mg)
         interstitial_coords: coordinations of interstitial sites
+                             [[0, 0, 0], [0.1, 0.1, 0.1], ...]                     
+                        ---->     i1            i2         
            antisite_configs: antisite_configs configuraions (e.g., Mg_O)
     """
     def __init__(self, structure, irrep_elements, dopant_configs, 
                  antisite_configs, interstitial_coords, include, exclude, 
                  symbreak, displace, symprec, oxidation_states, 
-                 electron_negativity):
+                 electronegativity):
 
         self.structure = structure
         self.irrep_elements = irrep_elements
@@ -94,7 +96,7 @@ class DefectSetting():
         self.displace = displace
         self.symprec = symprec
         self.oxidation_states = oxidation_states
-        self.electron_negativity = electron_negativity
+        self.electronegativity = electronegativity
 
     def __eq__(self, other):
         if other is None or type(self) != type(other): 
@@ -117,7 +119,7 @@ class DefectSetting():
              "displace": self.displace,
              "symprec": self.symprec,
              "oxidation_states": self.oxidation_states,
-             "electron_negativity": self.electron_negativity}
+             "electronegativity": self.electronegativity}
         return d
 
     def to_json(self):
@@ -137,7 +139,7 @@ class DefectSetting():
                    d["interstitial_coords"], d["antisite_configs"], 
                    d["include"], d["exclude"], d["symbreak"], d["displace"], 
                    d["symprec"], d["oxidation_states"], 
-                   d["electron_negativity"])
+                   d["electronegativity"])
 
     @classmethod
     def from_defect_in(cls, poscar="DPOSCAR", defect_in_file="defect.in"):
@@ -147,16 +149,15 @@ class DefectSetting():
         for writing it.   
         """
 
-        print(poscar)
         structure = Structure.from_file(poscar)
         irrep_elements = []
-        electron_negativity = {}
+        electronegativity = {}
         oxidation_states = {}
         dopants = []
         dopant_configs = []
-        # set default value
-        displace = 0.01
-        symprec = 0.02
+        # set default values
+        displace = 0.1
+        symprec = 0.002
 
         with open(defect_in_file) as defect_in:
             for l in defect_in:
@@ -179,14 +180,14 @@ class DefectSetting():
                     irrep_elements.append(IrrepElement(irrepname, element, 
                                     first_index, last_index, repr_coord))
     
-                    electron_negativity[element] = \
+                    electronegativity[element] = \
                                          float(defect_in.readline().split()[1])
                     oxidation_states[element] = \
                                          float(defect_in.readline().split()[1])
     
                 elif line[0] == "Dopant:":
                     for d in line[1:]:
-                        electron_negativity[d] = \
+                        electronegativity[d] = \
                                          float(defect_in.readline().split()[1])
                         oxidation_states[d] = \
                                          float(defect_in.readline().split()[1])
@@ -205,10 +206,9 @@ class DefectSetting():
                     if antisite_configs is []: antisite_configs = False
     
                 elif line[0] == "Symbreak:": 
-                    symbreak = line[1]
-                    if symbreak == "False":
+                    if line[1] == "False":
                         symbreak = False
-                    elif symbreak == "True":
+                    elif line[1] == "True":
                         symbreak = True
                     else: 
                         try:
@@ -233,7 +233,7 @@ class DefectSetting():
 
         return cls(structure, irrep_elements, dopant_configs, antisite_configs, 
                    interstitial_coords, include, exclude, symbreak, symprec, 
-                   displace, oxidation_states, electron_negativity)
+                   displace, oxidation_states, electronegativity)
 
 class NotSupportedFlagError(Exception):
     pass 
@@ -265,7 +265,7 @@ class DefectIn():
         # irrep_elements_index["Mg"] = 2 means that Mg element has two 
         # inequivalent sites
         self._irrep_element_index = {}
-        self.electron_negativity = {}
+        self.electronegativity = {}
         self.oxidation_states = {}
 
         # Obtain electron negativity and oxidation states.
@@ -273,10 +273,10 @@ class DefectIn():
         for s in structure.symbol_set + tuple(self.dopants):
             self._irrep_element_index[s] = 0
             try:
-                self.electron_negativity[s] = atom.electron_negativity[s]
+                self.electronegativity[s] = atom.electronegativity[s]
             except:
                 warnings.warn("Electronegativity of " + s + " is unavailable.")
-                self.electron_negativity[s] = "N.A."
+                self.electronegativity[s] = "N.A."
             try:
                 self.oxidation_states[s] = atom.charge[s]
             # if one wants to use pmg oxidation states.
@@ -318,8 +318,8 @@ class DefectIn():
                     if i["element"] == s: 
                         continue
                     try:
-                        ENdiff = electron_negativity[i["element"]] \
-                               - electron_negativity[s]
+                        ENdiff = electronegativity[i["element"]] \
+                               - electronegativity[s]
                     except:
                         # It's a fictitious number
                         ENdiff = 100
@@ -331,8 +331,8 @@ class DefectIn():
             for i in self.irrep_elements:
                 for d in dopants:
                     try:
-                        ENdiff = electron_negativity[i["element"]] \
-                               - electron_negativity[d]
+                        ENdiff = electronegativity[i["element"]] \
+                               - electronegativity[d]
                     except:
                         # It's a fictitious number
                         ENdiff = 100
@@ -343,7 +343,7 @@ class DefectIn():
                         self.dopant_configs, self.antisite_configs, 
                         self.interstitial_coords, self.include, self.exclude, 
                         self.symbreak, self.displace, self.symprec, 
-                        self.oxidation_states, self.electron_negativity)
+                        self.oxidation_states, self.electronegativity)
 
     @classmethod
     def from_str_file(cls, poscar, dopants=[], interstitial_coords=False,
@@ -377,7 +377,7 @@ class DefectIn():
                               str(e["first_index"]) + ".." + str(e["last_index"])))
                 f.write(" Coord: %9.7f %9.7f %9.7f\n" % tuple(e["repr_coord"]))
                 f.write("EleNeg: {}\n".format(
-                                           self.electron_negativity[e["element"]]))
+                                           self.electronegativity[e["element"]]))
                 f.write("Charge: {}\n\n".format(
                                               self.oxidation_states[e["element"]]))
     
@@ -401,7 +401,7 @@ class DefectIn():
             if self.dopants:
                 for d in self.dopants:
                     f.write("Dopant: {}\n".format(d))
-                    f.write("EleNeg: {}\n".format(self.electron_negativity[d]))
+                    f.write("EleNeg: {}\n".format(self.electronegativity[d]))
                     f.write("Charge: {}\n".format(self.oxidation_states[d]))
                     f.write("\n")
     
@@ -421,10 +421,10 @@ class DefectIn():
     @staticmethod
     def write_dopant_info(dopant):
         try:
-            electron_negativity = atom.electron_negativity[dopant]
+            electronegativity = atom.electronegativity[dopant]
         except:
-            warnings.warn("Electron negativity of " + s + " is unavailable.")
-            electron_negativity[dopant] = "N.A."
+            warnings.warn("Electronegativity of " + s + " is unavailable.")
+            electronegativity[dopant] = "N.A."
         try:
             oxidation_states = atom.charge[dopant]
         except:
@@ -432,7 +432,7 @@ class DefectIn():
             oxidation_states = "N.A."
 
         print("Dopant: {}".format(dopant))
-        print("EleNeg: {}".format(electron_negativity))
+        print("EleNeg: {}".format(electronegativity))
         print("Charge: {}".format(oxidation_states))
 
 def main():
