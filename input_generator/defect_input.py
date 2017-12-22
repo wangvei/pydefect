@@ -22,14 +22,14 @@ class IrrepElement():
     This class object has some properties related to irreducible atoms.
     The atomic indices need to be sorted.
 
-    **CAUTION**: first_index atomic is assumed to represent irrepname atoms.
+    **CAUTION**: first_index atomic is assumed to represent irreducible atoms.
 
     Args:
-        irrepname: element name with irreducible index (e.g., Mg1)
-        element: element name (e.g., Mg)
-        first_index: first index of *irrepname. 
-        last_index: last index of *irrepname. 
-        repr_coord: representative coordination
+        irrepname (str): element name with irreducible index (e.g., Mg1)
+        element (str): element name (e.g., Mg)
+        first_index (int): first index of *irrepname. 
+        last_index (int): last index of *irrepname. 
+        repr_coord (array): representative coordination
 
     TODO1: Add the site symmetry information.
     """
@@ -341,18 +341,15 @@ class DefectIn():
             for i in self.irrep_elements:
                 for s in structure.symbol_set:
                     if i.element == s: 
-#                    if i["element"] == s: 
                         continue
                     try:
                         ENdiff = electronegativity[i.element] \
                                - electronegativity[s]
-#                        ENdiff = electronegativity[i["element"]] \
                     except:
                         # A fictitious number is inserted for atoms wo electronegativity.
                         ENdiff = 100
                     if abs(ENdiff) < ElNeg_diff:
                         self.antisite_configs.append([s, i.element])
-#                        self.antisite_configs.append([s, i["element"]])
 
         # E.g., dopant_configs = [["Al", "Mg"], ...]
         self.dopant_configs = []
@@ -377,19 +374,20 @@ class DefectIn():
     @classmethod
     def from_str_file(cls, poscar, dopants=[], interstitial_coords=False,
         is_interstitial=False, is_antisite=False, ElNeg_diff=1.0, include=None,
-         exclude=None, symbreak=True, displace=0.2, symprec=1e-2):
+         exclude=None, symbreak=True, displace=0.2, cutoff=3.0, symprec=0.01):
         """
-        Construct DefectIn class object from a POSCAR file.
+        Constructs DefectIn class object from a POSCAR file.
         VERY IMPORTANT: Some parameters are set by default.
         """
         structure = Structure.from_file(poscar)
 
         return cls(structure, dopants, interstitial_coords, is_antisite, 
-                   ElNeg_diff, include, exclude, symbreak, displace, symprec)
+                   ElNeg_diff, include, exclude, symbreak, displace, cutoff, 
+                   symprec)
 
     def to(self, defectin_file="defect.in", poscar_file="DPOSCAR"):
         """
-        Print readable defect.in file.
+        Prints readable defect.in file.
         """
         self._write_defect_in(defectin_file)
         self.structure.to(fmt="poscar", filename=poscar_file)
@@ -407,7 +405,6 @@ class DefectIn():
                                            self.electronegativity[e.element]))
                 f.write("Charge: {}\n\n".format(
                                               self.oxidation_states[e.element]))
-    
             f.write("Int_site: ")
             if self.interstitial_coords:
                 if type(self.interstitial_coords) == str:
@@ -418,12 +415,10 @@ class DefectIn():
                     coords = self.interstitial_coords
                 f.write(str([coords[i:i + 3] 
                                          for i in range(0, len(coords), 3)]) +"\n")
-    
             if self.antisite_configs is not []:
                 f.write("Antisite: ")
                 f.write(' '.join(i[0] + "_" + i[1] 
                                            for i in self.antisite_configs)+ "\n\n")
-    
             if self.dopants:
                 for d in self.dopants:
                     f.write("Dopant: {}\n".format(d))
@@ -434,12 +429,10 @@ class DefectIn():
                 f.write("Dopant_site: ")
                 f.write(' '.join(i[0] + "_" + i[1] 
                                             for i in self.dopant_configs) + "\n\n")
-    
             if self.symbreak == True:
                 f.write("Symbreak: {}\n".format(self.displace))
             else:
                 f.write("Symbreak: {}\n".format(self.symbreak))
-    
             f.write("Include: {}\n".format(self.include))
             f.write("Exclude: {}\n".format(self.exclude))
             f.write("Symprec: {}\n".format(self.symprec))
