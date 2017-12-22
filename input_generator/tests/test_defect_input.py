@@ -36,14 +36,15 @@ class DefectSettingTest(unittest.TestCase):
         exclude = ["Va_O1_1", "Va_O1_2"]
         symbreak = True
         displace = 0.15
+        cutoff = 3.0
         symprec = 0.001
         oxidation_states = {"Mg": 2, "O": -2}
-        electron_negativity = {"Mg": 1.31, "O": 3.44}
+        electronegativity = {"Mg": 1.31, "O": 3.44}
 
         self._a = DefectSetting(structure, irrep_elements, dopant_configs, 
                  antisite_configs, interstitial_coords, include, exclude, 
-                 symbreak, displace, symprec, oxidation_states, 
-                 electron_negativity)
+                 symbreak, displace, cutoff, symprec, oxidation_states, 
+                 electronegativity)
 
     def test_as_dict(self):
         d = self._a.as_dict()

@@ -53,8 +53,10 @@ def perturb_around_defect(structure, defect_position, cutoff, distance):
     """
 
     if  type(defect_position) == list and len(defect_position) == 3:
-        cartesian_defect_position = structure.lattice.get_cartesian_coords(defect_position)
-        neighbors = structure.get_sites_in_sphere(cartesian_defect_position, cutoff, include_index=True)
+        cartesian_defect_position = \
+                        structure.lattice.get_cartesian_coords(defect_position)
+        neighbors = structure.get_sites_in_sphere(
+                         cartesian_defect_position, cutoff, include_index=True)
     else:
         raise ValueError
 
@@ -88,116 +90,38 @@ def _laad_potcar_dir():
 
     return potcar_dir
 
+def make_POTCAR(dirname, elements, default_potcar_dir):
+    """    
+    Construct POTCAR file from a given default_potcar_path and elements names.
+
+    """    
+    with open(dirname + '/POTCAR', 'w') as potcar:
+        for s in elements:
+            potcar_file_name = default_potcar_path + "/POTCAR_" + s
+            shutil.copyfileobj(open(potcar_file_name), potcar)
+
 
 class VaspInputMaker():
+    """
+    Constructs a set of vasp input files.
+    
+    Args:
+        defect_setting: DefectSetting class object
+        structure: pymatgen structure object
+        incar (str): INCAR file name
+        kpoints (str): KPOINTS file name
+    
+    + POTCAR files are fetched from ~/.pydefect.yaml
+    """
 
-    def __init__(self, defect_setting, incar="INCAR", structure="DPOSCAR",
-                 kpoints="KPONTS", run="run.sh", cutoff=4.0):
-        """
 
-        + POTCAR files are fetched from ~/.pydefect.yaml
+    def __init__(self, defect_setting, structure="DPOSCAR", incar="INCAR", 
+                 kpoints="KPONTS", cutoff=4.0):
 
-        """
-        # TODO1: check if the input files exist.
-
-#        self.make_dir_three_input_files("perfect", incar, kpoints, run)
-#        default_potcar_path = _laad_potcar_dir()
+#class VaspInputSetMaker():
 #
-#        if type(structure) = "str":
-#            structure = Structure.from_file(poscar)
-#        elif type(structure) = "Structure":
-#            pass
-#        else:
-#            raise TypeError 
-#
-#        random_disp = {"cutoff":self.cutoff, "" 
-#
-#        # Make perfect directory
-#        if os.path.isdir("perfect"):  
-#            print "     perfect alreadly exist, so is not made."
-#        else:
-#            os.mkdir("perfect")
-#            self.make_dir_three_input_files("perfect", incar, kpoints, run)
-#            shutil.copyfile(poscar, "perfect/POSCAR")
-#            make_POTCAR("perfect", atomic_sites.keys(), default_potcar_path)
-        
-#       # construct vacancies
-#        # Vacancies. Charges are sign reversed.
-#        make_vacancies(atomic_sites, r_)
-#        for name, key in atomic_sites:
-#            for charge in range(int(key["charge"])):
-##                element = ''.join([i for i in k if not i.isdigit()])
-#                dirname="Va_"+ name + "_" + charge
-#                os.mkdir(dirname)
-#                make_dir_poscar("Va", name, -charge, "DPOSCAR", r_param,
-#                                removed_atom=key["rep"])
-#
-#                
-#        # Interstitials. 
-#        for element in host_elements: 
-#            for interstitial_index, coord in enumerate(interstitial_site):
-#                for charge in host_elements[element]:
-#        
-#                    make_dir_poscar(element, "i" + str(interstitial_index + 1), charge,
-#                                    opts.poscar, r_param, added_coord=coord,
-#                                    added_atom_symbol=element)
-#        # Antisites. 
-#        for a in anti_site: 
-#            # E.g., Mg1_O2 -> insert = Mg1, remove = O2
-#            added_atom, removed_atom = [x for x in a.split("_")]
-#            added_atom_charge = host_elements[added_atom]
-#            removed_atom_charge = [-i for i in host_elements[removed_atom[0:-1]]]
-#        
-#            # Construct the possible charge from charge_b and charge_c
-#            charges =list(set([sum(i) for i in 
-#                             list(it.product(added_atom_charge, removed_atom_charge))]))
-#        
-#            for charge in charges:
-#                make_dir_poscar(added_atom, removed_atom, charge, opts.poscar, r_param, 
-#                                removed_atom=host_atoms[removed_atom][0], 
-#                                added_atom_symbol=added_atom)
-#        
-#        # Dopants. Both substitutional and intersitials are considered.
-#        # dopants[Mg] = [0, 1, 2]
-#        for dopant in dopants:
-#        #for dopant, dopant_charges in enumerate(dopants):
-#            # substituted
-#            for host_removed in host_atoms:
-#                host_atom_charge = [-i for i in host_atoms[host_removed][1]]
-#                charges = list(set([sum(i) for i in list(
-#                                       it.product(dopants[dopant], host_atom_charge))]))
-#                for charge in charges:
-#        
-#                    make_dir_poscar(dopant, host_removed, charge, opts.poscar, r_param,
-#                                    removed_atom=host_atoms[host_removed][0], 
-#                                    added_atom_symbol=dopant)
-#            # Interstitials. 
-#            for interstitial_index, coord in enumerate(interstitial_site):
-#                for charge in dopants[dopant]:
-#        
-#                    make_dir_poscar(dopant, "i" + str(interstitial_index + 1), charge, 
-#                                    opts.poscar, r_param, added_coord=coord, 
-#
-#    def make_vacancies():
-#
-#
-#    def make_dir_poscar(inserted_element, removed_name, charge, poscar, r_param,
-#                        removed_atom=False, added_coord=False, 
-#                        added_atom_symbol=False):
-#    """    
-#    """    
-#
-#        name = inserted_element + "_" + removed_name + "_" + str(charge)
-#    
-#        if os.path.isdir(name): 
-#            print "%12s alreadly exist, so is not made."% name
-#        else: 
-#            sp.call(["mkdir", name])
-#            ppos.make_point_defects(poscar, removed_atom, added_coord,
-#                                    added_atom_symbol, name + '/POSCAR',
-#                                    r_param, header=name)
-#
-#
+#    def __init__(self, defect_setting, incar="INCAR", structure="DPOSCAR",
+#                 kpoints="KPONTS", run="run.sh", cutoff=4.0):
 
 def make_structure(defect_setting, in_name, out_name):
 
@@ -219,16 +143,6 @@ def make_structure(defect_setting, in_name, out_name):
     return {"structure": structure, "defect_position": defect_position}
 
 
-def make_POTCAR(dirname, elements, default_potcar_dir):
-    """    
-    Construct POTCAR file from a given default_potcar_path and elements names.
-
-    """    
-    with open(dirname + '/POTCAR', 'w') as potcar:
-        for s in elements:
-            potcar_file_name = default_potcar_path + "/POTCAR_" + s
-            shutil.copyfileobj(open(potcar_file_name), potcar)
-
 def construct_input_files(defect_setting, in_name, out_name, charge, incar, poscar, 
                           potcar, kpoints, runshell):
     """    
@@ -242,15 +156,16 @@ def construct_input_files(defect_setting, in_name, out_name, charge, incar, posc
 #    else:
 
     # POSCAR
-
-
+    new_structure = make_structure(defect_setting, in_name, out_name)
+    
 
     # POTCAR
-
-
+    elements = 
+    
 
     # INCAR
     shutil.copyfile(incar, dirname + "/INCAR")
+    # NELECT
 
     # KPOINTS & runshell.sh
     os.makedirs(dirname)

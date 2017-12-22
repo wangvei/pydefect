@@ -1,18 +1,13 @@
 #!/usr/bin/env python
 
-#import itertools as it
-#import numpy as np
 import sys
 import warnings
 import json
-from pymatgen.core.periodic_table import Element
 from pymatgen.core.structure import Structure
 from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
 
 import pydefect.input_generator.atom as atom
 from monty.json import MontyEncoder
-
-# from pymatgen.core.periodic_table import Element, Specie, get_el_sp
 
 __author__ = "Yu Kumagai"
 __copyright__ = "Copyright 2017, Oba group"
@@ -72,17 +67,29 @@ class IrrepElement():
 class DefectSetting():
     """
     Args:
-                  structure: pmg Structure/IStructure class object
-             irrep_elements: IrrepElement class object
-             dopant_configs: dopant configurations (e.g., Al_Mg)
-        interstitial_coords: coordinations of interstitial sites
-                             [[0, 0, 0], [0.1, 0.1, 0.1], ...]                     
-                        ---->     i1            i2         
-           antisite_configs: antisite_configs configuraions (e.g., Mg_O)
+        structure: pmg Structure/IStructure class object
+        irrep_elements: IrrepElement class object
+        dopant_configs (array): dopant configurations,
+            e.g., ["Al_Mg", "N_O"].
+        antisite_configs (2x1 array): antisite configuraions, 
+            e.g., [["Mg", "O"], ["O", "Mg"]].
+        interstitial_coords (3x1 array): coordinations of interstitial sites,
+            e.g., [[0, 0, 0], [0.1, 0.1, 0.1], ...].
+        include (array): exceptionally added defect type with a charge state.
+            e.g., ["Va_O_-1", "Va_O_-2"]                     
+        exclude (array): exceptionally removed defect type with a charge state.
+            e.g., ["Va_O_1", "Va_O_2"]                     
+        symbreak (bool): Whether to perturb defect's neighboring atoms for 
+            symmetry breaking.
+        displace (float): Maxmum displacement distance in angstrom.
+        cutoff (float): Cutoff radius for detemining atoms displaced.
+        symprec (float): Precision used for symmetry analysis.
+        oxidation_states (dict): Oxidation states for relevant elements.
+        electronegativity (dict): Electronegativity for relevant elements.
     """
     def __init__(self, structure, irrep_elements, dopant_configs, 
                  antisite_configs, interstitial_coords, include, exclude, 
-                 symbreak, displace, symprec, oxidation_states, 
+                 symbreak, displace, cutoff, symprec, oxidation_states, 
                  electronegativity):
 
         self.structure = structure
@@ -94,6 +101,7 @@ class DefectSetting():
         self.exclude = exclude
         self.symbreak = symbreak
         self.displace = displace
+        self.cutoff = cutoff
         self.symprec = symprec
         self.oxidation_states = oxidation_states
         self.electronegativity = electronegativity
@@ -101,7 +109,7 @@ class DefectSetting():
     def __eq__(self, other):
         if other is None or type(self) != type(other): 
             assert TypeError
-        print(self.__dict__, other.__dict__)
+#        print(self.__dict__, other.__dict__)
         return self.__dict__ == other.__dict__
 
     def as_dict(self):
@@ -117,6 +125,7 @@ class DefectSetting():
              "exclude": self.exclude,
              "symbreak": self.symbreak,
              "displace": self.displace,
+             "cutoff": self.cutoff,
              "symprec": self.symprec,
              "oxidation_states": self.oxidation_states,
              "electronegativity": self.electronegativity}
@@ -138,13 +147,13 @@ class DefectSetting():
         return cls(d["structure"], irrep_elements, d["dopant_configs"],
                    d["interstitial_coords"], d["antisite_configs"], 
                    d["include"], d["exclude"], d["symbreak"], d["displace"], 
-                   d["symprec"], d["oxidation_states"], 
+                   d["cutoff"], d["symprec"], d["oxidation_states"], 
                    d["electronegativity"])
 
     @classmethod
     def from_defect_in(cls, poscar="DPOSCAR", defect_in_file="defect.in"):
         """
-        Construct DefectSetting class object from a defect.in file.
+        Construct DefectSetting class object by parsing a defect.in file.
         Currently, format of the defect.in file is inflexible, so be careful
         for writing it.   
         """
@@ -155,15 +164,16 @@ class DefectSetting():
         oxidation_states = {}
         dopants = []
         dopant_configs = []
-        # set default values
-        displace = 0.1
-        symprec = 0.002
+        displace = None
+        cutoff = None
+        symprec = None
 
         with open(defect_in_file) as defect_in:
             for l in defect_in:
                 line = l.split()
      
-                if line == []: continue
+                if line == []: 
+                    continue
                 elif line[0] == "Name:":
                     irrepname = line[1]
                     # remove irreducible index number from irrepname
@@ -184,32 +194,25 @@ class DefectSetting():
                                          float(defect_in.readline().split()[1])
                     oxidation_states[element] = \
                                          float(defect_in.readline().split()[1])
-    
                 elif line[0] == "Dopant:":
                     for d in line[1:]:
                         electronegativity[d] = \
                                          float(defect_in.readline().split()[1])
                         oxidation_states[d] = \
                                          float(defect_in.readline().split()[1])
-    
                 elif line[0] == "Dopant_site:":
                     dopant_configs = line[1:]
-     
                 elif line[0] == "Int_site:":
                     b = [float(''.join(i for i in line[i] if i.isdigit() or 
                                        i == '.')) for i in range(1, len(line))]
                     interstitial_coords = [b[i:i + 3] 
                                                   for i in range(0, len(b), 3)]
-    
                 elif line[0] == "Antisite:": 
                     antisite_configs = line[1:]
                     if antisite_configs is []: antisite_configs = False
-    
                 elif line[0] == "Symbreak:": 
                     if line[1] == "False":
                         symbreak = False
-                    elif line[1] == "True":
-                        symbreak = True
                     else: 
                         try:
                             displace = float(symbreak)
@@ -217,23 +220,22 @@ class DefectSetting():
                         except:
                             raise NotSupportedFlagError(
                                            "Symbreak flag is not appropriate.")
-    
+                elif line[0] == "Cutoff:":
+                    cutoff = float(line[1])
+                elif line[0] == "Symprec:":
+                    symprec = float(line[1])
                 elif line[0] == "Include:":
                     include = line[1:]
-    
                 elif line[0] == "Exclude:":
                     exclude = line[1:]
-    
-                elif line[0] == "Symprec:":
-                    exclude = float(line[1])
-    
                 else:
                     raise NotSupportedFlagError(
                                            line[0] + " flag is not supported!")
 
         return cls(structure, irrep_elements, dopant_configs, antisite_configs, 
-                   interstitial_coords, include, exclude, symbreak, symprec, 
-                   displace, oxidation_states, electronegativity)
+                   interstitial_coords, include, exclude, symbreak, displace, 
+                   cutoff, symprec, oxidation_states, electronegativity)
+
 
 class NotSupportedFlagError(Exception):
     pass 
@@ -241,13 +243,30 @@ class NotSupportedFlagError(Exception):
 
 class DefectIn():
     """
-    It generates and parses defect.in file, which controles the input setting 
+    It generates defect.in file, which controles the input setting 
     of defect calculations.
+
+    Args:
+        dopants (array): dopant names, e.g., ["Al", "N"]
+        interstitial_coords (3x1 array): coordinations of interstitial sites,
+            e.g., [[0, 0, 0], [0.1, 0.1, 0.1], ...].
+        is_antisite (bool): Whether to consider antisite defects.
+        ElNeg_diff (float): Electronegativity difference used for determining
+            sets of antisites and dopant sites. 
+        include (array): exceptionally added defect type with a charge state.
+            e.g., ["Va_O_-1", "Va_O_-2"]                     
+        exclude (array): exceptionally removed defect type with a charge state.
+            e.g., ["Va_O_1", "Va_O_2"]                     
+        symbreak (bool): Whether to perturb defect's neighboring atoms for 
+            symmetry breaking.
+        displace (float): Maxmum displacement distance in angstrom.
+        cutoff (float): Cutoff radius for detemining atoms displaced.
+        symprec (float): Precision used for symmetry analysis.
     """
 
     def __init__(self, structure, dopants, interstitial_coords, is_antisite, 
                  ElNeg_diff, include="", exclude="", symbreak=False, 
-                 displace=0.2, symprec=0.01):
+                 displace=0.2, cutoff=3.0, symprec=0.01):
 
         self.dopants = dopants
         self.interstitial_coords = interstitial_coords
@@ -256,9 +275,11 @@ class DefectIn():
         self.include = include
         self.exclude = exclude
         self.symbreak = symbreak
-        self.symprec = symprec
         self.displace = displace
-        # only vasp5 POSCAR format is supported.
+        self.cutoff = cutoff
+        self.symprec = symprec
+        # only vasp5 POSCAR format is supported for getting the elements names.
+        # equivalent_positions: Equivalent positions from SpacegroupAnalyzer.
         self.equiv_site_seq = \
      SpacegroupAnalyzer(structure).get_symmetrized_structure().equivalent_sites
 
@@ -268,10 +289,9 @@ class DefectIn():
         self.electronegativity = {}
         self.oxidation_states = {}
 
-        # Obtain electron negativity and oxidation states.
+        # Get electron negativity and oxidation states.
         # intrinsic elements + dopants
         for s in structure.symbol_set + tuple(self.dopants):
-            self._irrep_element_index[s] = 0
             try:
                 self.electronegativity[s] = atom.electronegativity[s]
             except:
@@ -279,30 +299,35 @@ class DefectIn():
                 self.electronegativity[s] = "N.A."
             try:
                 self.oxidation_states[s] = atom.charge[s]
-            # if one wants to use pmg oxidation states.
+            # if one wants to use pmg oxidation states. Then, needs to import Element class
 #                oxidation_states[s] = Element(s).common_oxidation_states[-1]
             except:
                 warnings.warn("Oxidation state of " + s + " is unavailable.")
                 self.oxidation_states[s] = "N.A."
 
-        # e.g.,  irrep_elements[0] = "IrrepSpecie object"
+        # irrep_elements (aray): a set of IrrepElement class objects
         self.irrep_elements = []
-        # list of elements, eg [Mg, Mg, O, O]
+        # list of element names for all atoms, e.g., ["Mg", "Mg", "O", "O"]
         self._elements = []
-        # list of frac_coords, eg [[0,0,0],[0.5,0,0],...]
+        # an array of frac_coords for all atoms, e.g., [[0, 0, 0], ...]
         self._frac_coords = []
 
         for inequiv_site in self.equiv_site_seq:
             self._element = inequiv_site[0].species_string
-            # increment number of inequiv site
-            self._irrep_element_index[self._element] += 1
+            if self._element not in self._irrep_element_index.keys():
+                self._irrep_element_index[self._element] = 1
+            else:
+                # increment number of inequiv site
+                self._irrep_element_index[self._element] += 1
             self._first = len(self._elements) + 1
             self._last = len(self._elements) + len(inequiv_site)
             self._repr_coord = inequiv_site[0].frac_coords
+            # E.g., IrrepElement("Mg1", "Mg", 1, 32, [0, 0, 0])
             self.irrep_elements.append(IrrepElement(self._element 
                                + str(self._irrep_element_index[self._element]), 
                                  self._element, self._first, self._last, 
-                                 self._repr_coord).as_dict())
+                                 self._repr_coord))
+#                                 self._repr_coord).as_dict())
             for equiv_site in inequiv_site:
                 self._elements.append(equiv_site.species_string)
                 self._frac_coords.append(equiv_site.frac_coords)
@@ -310,80 +335,81 @@ class DefectIn():
         # Atoms are sorted by symmetry, which will be written in DPOSCAR
         self.structure = Structure(structure.lattice, 
                                              self._elements, self._frac_coords)
+        # E.g., antisite_configs = [["Mg", "O1"], ...]
         self.antisite_configs = []
         if is_antisite is True:
-            # eg. antisite_configs = [[ "Mg", "O1"], ...]
             for i in self.irrep_elements:
                 for s in structure.symbol_set:
-                    if i["element"] == s: 
+                    if i.element == s: 
+#                    if i["element"] == s: 
                         continue
                     try:
-                        ENdiff = electronegativity[i["element"]] \
+                        ENdiff = electronegativity[i.element] \
                                - electronegativity[s]
+#                        ENdiff = electronegativity[i["element"]] \
                     except:
-                        # It's a fictitious number
+                        # A fictitious number is inserted for atoms wo electronegativity.
                         ENdiff = 100
                     if abs(ENdiff) < ElNeg_diff:
-                        self.antisite_configs.append([s, i["element"]])
+                        self.antisite_configs.append([s, i.element])
+#                        self.antisite_configs.append([s, i["element"]])
 
+        # E.g., dopant_configs = [["Al", "Mg"], ...]
         self.dopant_configs = []
         if dopants:
             for i in self.irrep_elements:
                 for d in dopants:
                     try:
-                        ENdiff = electronegativity[i["element"]] \
+                        ENdiff = electronegativity[i.element] \
                                - electronegativity[d]
                     except:
-                        # It's a fictitious number
+                        # A fictitious number is inserted for atoms wo electronegativity.
                         ENdiff = 100
                     if abs(ENdiff) < ElNeg_diff:
-                        self.dopant_configs.append([d, i["element"]])
+                        self.dopant_configs.append([d, i.element])
 
         self.setting = DefectSetting(self.structure, self.irrep_elements, 
                         self.dopant_configs, self.antisite_configs, 
                         self.interstitial_coords, self.include, self.exclude, 
-                        self.symbreak, self.displace, self.symprec, 
+                        self.symbreak, self.displace, self.cutoff, self.symprec, 
                         self.oxidation_states, self.electronegativity)
 
     @classmethod
     def from_str_file(cls, poscar, dopants=[], interstitial_coords=False,
-                 is_antisite=False, ElNeg_diff=1.0, include=None, 
-                 exclude=None, symbreak=True, displace=0.2, symprec=1e-5):
+        is_interstitial=False, is_antisite=False, ElNeg_diff=1.0, include=None,
+         exclude=None, symbreak=True, displace=0.2, symprec=1e-2):
         """
         Construct DefectIn class object from a POSCAR file.
-        Some parameters are set by default.
+        VERY IMPORTANT: Some parameters are set by default.
         """
-
         structure = Structure.from_file(poscar)
 
         return cls(structure, dopants, interstitial_coords, is_antisite, 
                    ElNeg_diff, include, exclude, symbreak, displace, symprec)
 
-    def to(self, filename1="defect.in", filename2="DPOSCAR"):
+    def to(self, defectin_file="defect.in", poscar_file="DPOSCAR"):
         """
         Print readable defect.in file.
         """
-        self._write_defect_in(filename=filename1)
-        self.structure.to(fmt="poscar", filename=filename2)
+        self._write_defect_in(defectin_file)
+        self.structure.to(fmt="poscar", filename=poscar_file)
 
-
-    def _write_defect_in(self, filename="defect.in"):
-        with open(filename, 'w') as f:
+    def _write_defect_in(self, defectin_file="defect.in"):
+        with open(defectin_file, 'w') as f:
 
             for e in self.irrep_elements:
-                f.write("  Name: {}\n".format(e["irrepname"]))
-                f.write("   Rep: {}\n".format(e["first_index"]))
+                f.write("  Name: {}\n".format(e.irrepname))
+                f.write("   Rep: {}\n".format(e.first_index))
                 f.write(" Equiv: {}\n".format(
-                              str(e["first_index"]) + ".." + str(e["last_index"])))
-                f.write(" Coord: %9.7f %9.7f %9.7f\n" % tuple(e["repr_coord"]))
+                              str(e.first_index) + ".." + str(e.last_index)))
+                f.write(" Coord: %9.7f %9.7f %9.7f\n" % tuple(e.repr_coord))
                 f.write("EleNeg: {}\n".format(
-                                           self.electronegativity[e["element"]]))
+                                           self.electronegativity[e.element]))
                 f.write("Charge: {}\n\n".format(
-                                              self.oxidation_states[e["element"]]))
+                                              self.oxidation_states[e.element]))
     
             f.write("Int_site: ")
             if self.interstitial_coords:
-                print(self.interstitial_coords)
                 if type(self.interstitial_coords) == str:
                     coords = [float(i) for i in self.interstitial_coords.split()]
                     if not len(coords) % 3 == 0:
@@ -419,7 +445,7 @@ class DefectIn():
             f.write("Symprec: {}\n".format(self.symprec))
 
     @staticmethod
-    def write_dopant_info(dopant):
+    def print_dopant_info(dopant):
         try:
             electronegativity = atom.electronegativity[dopant]
         except:
@@ -464,10 +490,10 @@ def main():
     opts = parser.parse_args()
 
     if opts.print_dopant:
-        DefectIn.write_dopant_info(opts.print_dopant)
+        DefectIn.print_dopant_info(opts.print_dopant)
     else:
-        defect_in = DefectIn.from_str_file( 
-                    opts.poscar, opts.dopants, opts.interstitial_coords, 
+        defect_in = DefectIn.from_str_file( opts.poscar, opts.dopants, 
+                    opts.interstitial_coords, opts.is_interstitial, 
                     opts.is_antisite, opts.ElNeg_diff, opts.include, 
                     opts.exclude, opts.symbreak, opts.displace, opts.symprec)
         defect_in.to()
