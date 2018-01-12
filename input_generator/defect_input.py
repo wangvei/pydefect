@@ -20,7 +20,7 @@ __date__ = "December 4, 2017"
 class IrrepElement():
     """
     This class object has some properties related to irreducible atoms.
-    The atomic indices need to be sorted.
+    In the structure, the atomic indices need to be sorted.
 
     **CAUTION**: first_index atomic is assumed to represent irreducible atoms.
 
@@ -43,7 +43,7 @@ class IrrepElement():
 
     def __eq__(self, other):
         if other is None or type(self) != type(other): 
-            assert TypeError
+            raise TypeError
         return self.__dict__ == other.__dict__
 
     def as_dict(self):
@@ -66,6 +66,9 @@ class IrrepElement():
 
 class DefectSetting():
     """
+    This class object holds all the information on the setting of the point 
+    defect calculations.
+
     Args:
         structure: pmg Structure/IStructure class object
         irrep_elements: IrrepElement class object
@@ -108,7 +111,7 @@ class DefectSetting():
 
     def __eq__(self, other):
         if other is None or type(self) != type(other): 
-            assert TypeError
+            raise TypeError
 #        print(self.__dict__, other.__dict__)
         return self.__dict__ == other.__dict__
 
@@ -155,7 +158,7 @@ class DefectSetting():
         """
         Construct DefectSetting class object by parsing a defect.in file.
         Currently, format of the defect.in file is inflexible, so be careful
-        for writing it.   
+        for manipulating it.   
         """
 
         structure = Structure.from_file(poscar)
@@ -241,10 +244,10 @@ class NotSupportedFlagError(Exception):
     pass 
 
 
-class DefectIn():
+class DefectInMaker():
     """
-    It generates defect.in file, which controles the input setting 
-    of defect calculations.
+    This class generates defect.in file, which controles the setting of 
+    point defect calculations.
 
     Args:
         dopants (array): dopant names, e.g., ["Al", "N"]
@@ -299,7 +302,8 @@ class DefectIn():
                 self.electronegativity[s] = "N.A."
             try:
                 self.oxidation_states[s] = atom.charge[s]
-            # if one wants to use pmg oxidation states. Then, needs to import Element class
+            # if one wants to use pmg oxidation states. Then, needs to import 
+            # Element class
 #                oxidation_states[s] = Element(s).common_oxidation_states[-1]
             except:
                 warnings.warn("Oxidation state of " + s + " is unavailable.")
@@ -346,7 +350,8 @@ class DefectIn():
                         ENdiff = electronegativity[i.element] \
                                - electronegativity[s]
                     except:
-                        # A fictitious number is inserted for atoms wo electronegativity.
+                        # A fictitious number is inserted for atoms w/o 
+                        # electronegativity.
                         ENdiff = 100
                     if abs(ENdiff) < ElNeg_diff:
                         self.antisite_configs.append([s, i.element])
@@ -360,7 +365,8 @@ class DefectIn():
                         ENdiff = electronegativity[i.element] \
                                - electronegativity[d]
                     except:
-                        # A fictitious number is inserted for atoms wo electronegativity.
+                        # A fictitious number is inserted for atoms w/o 
+                        # electronegativity.
                         ENdiff = 100
                     if abs(ENdiff) < ElNeg_diff:
                         self.dopant_configs.append([d, i.element])
@@ -368,15 +374,16 @@ class DefectIn():
         self.setting = DefectSetting(self.structure, self.irrep_elements, 
                         self.dopant_configs, self.antisite_configs, 
                         self.interstitial_coords, self.include, self.exclude, 
-                        self.symbreak, self.displace, self.cutoff, self.symprec, 
-                        self.oxidation_states, self.electronegativity)
+                        self.symbreak, self.displace, self.cutoff, 
+                        self.symprec, self.oxidation_states, 
+                        self.electronegativity)
 
     @classmethod
     def from_str_file(cls, poscar, dopants=[], interstitial_coords=False,
         is_interstitial=False, is_antisite=False, ElNeg_diff=1.0, include=None,
          exclude=None, symbreak=True, displace=0.2, cutoff=3.0, symprec=0.01):
         """
-        Constructs DefectIn class object from a POSCAR file.
+        Constructs DefectInMaker class object from a POSCAR file.
         VERY IMPORTANT: Some parameters are set by default.
         """
         structure = Structure.from_file(poscar)
@@ -404,21 +411,23 @@ class DefectIn():
                 f.write("EleNeg: {}\n".format(
                                            self.electronegativity[e.element]))
                 f.write("Charge: {}\n\n".format(
-                                              self.oxidation_states[e.element]))
+                                             self.oxidation_states[e.element]))
             f.write("Int_site: ")
             if self.interstitial_coords:
                 if type(self.interstitial_coords) == str:
-                    coords = [float(i) for i in self.interstitial_coords.split()]
+                    coords = [float(i) 
+                                     for i in self.interstitial_coords.split()]
                     if not len(coords) % 3 == 0:
-                        raise ValueError("The interstitial coordinates are not proper.")
+                        raise ValueError(
+                                "The interstitial coordinates are not proper.")
                 else:
                     coords = self.interstitial_coords
                 f.write(str([coords[i:i + 3] 
-                                         for i in range(0, len(coords), 3)]) +"\n")
+                                     for i in range(0, len(coords), 3)]) +"\n")
             if self.antisite_configs is not []:
                 f.write("Antisite: ")
                 f.write(' '.join(i[0] + "_" + i[1] 
-                                           for i in self.antisite_configs)+ "\n\n")
+                                       for i in self.antisite_configs)+ "\n\n")
             if self.dopants:
                 for d in self.dopants:
                     f.write("Dopant: {}\n".format(d))
@@ -428,7 +437,7 @@ class DefectIn():
     
                 f.write("Dopant_site: ")
                 f.write(' '.join(i[0] + "_" + i[1] 
-                                            for i in self.dopant_configs) + "\n\n")
+                                        for i in self.dopant_configs) + "\n\n")
             if self.symbreak == True:
                 f.write("Symbreak: {}\n".format(self.displace))
             else:
@@ -456,7 +465,8 @@ class DefectIn():
 
 def main():
     import argparse
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+
     parser.add_argument("-p", "--poscar", dest="poscar", default="POSCAR",
                         type=str, help="POSCAR name.")
     parser.add_argument("-d","--dopants", dest="dopants", default="", nargs="+", 
@@ -483,9 +493,9 @@ def main():
     opts = parser.parse_args()
 
     if opts.print_dopant:
-        DefectIn.print_dopant_info(opts.print_dopant)
+        DefectInMaker.print_dopant_info(opts.print_dopant)
     else:
-        defect_in = DefectIn.from_str_file( opts.poscar, opts.dopants, 
+        defect_in = DefectInMaker.from_str_file( opts.poscar, opts.dopants, 
                     opts.interstitial_coords, opts.is_interstitial, 
                     opts.is_antisite, opts.ElNeg_diff, opts.include, 
                     opts.exclude, opts.symbreak, opts.displace, opts.symprec)

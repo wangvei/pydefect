@@ -496,17 +496,18 @@ def get_angles(lattice_vectors):
     return angles
 
 
-parser = argparse.ArgumentParser()
-parser.add_argument("-p", "--poscar", dest="poscar", default="POSCAR",
-                    type=str, help="POSCAR name.")
-parser.add_argument("--nion", dest="nion", action="store_true",
-                    help="Print a number of ions in POSCAR file.")
-parser.add_argument("-r", "--radius", dest="radius", action="store_true",
-                    help="Print a radius of a sphere fitting inside the cell.")
-parser.add_argument("-v", "--volume", dest="volume", action="store_true",
-                    help="Print volume of the cell.")
-
 if __name__ == "__main__":
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-p", "--poscar", dest="poscar", default="POSCAR",
+                        type=str, help="POSCAR name.")
+    parser.add_argument("--nion", dest="nion", action="store_true",
+                        help="Print a number of ions in POSCAR file.")
+    parser.add_argument("-r", "--radius", dest="radius", action="store_true",
+                        help="Print a radius of a sphere fitting inside the cell.")
+    parser.add_argument("-v", "--volume", dest="volume", action="store_true",
+                        help="Print volume of the cell.")
+
     opts = parser.parse_args()
     (lattice_vectors, symbols, num_atoms, atom_pos) \
         = parsePOSCAR(opts.poscar)

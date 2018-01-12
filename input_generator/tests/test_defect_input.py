@@ -53,7 +53,7 @@ class DefectSettingTest(unittest.TestCase):
     def test_to_json(self):
         self.assertTrue(self._a.to_json())
 
-class DefectInTest(unittest.TestCase):
+class DefectInMakerTest(unittest.TestCase):
 
     def setUp(self):
         structure = Structure.from_file("POSCAR-MgO64atoms")
