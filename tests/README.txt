@@ -1,12 +1,11 @@
 0. prerequisite: 
     a. Unit-cell calculations with 
-        a-1. Unit-cell lattice must be optimized.
-        a-2. Band-edge position for the defect formation energies.
-        a-3. Accurate DOS for the carrier concentration analysis.
-
-    b. POSCAR for a perfect supercell.
+        a-1. unit-cell lattice being optimized
+        a-2. band-edge positions from band structure calculation for the defect formation energies
+        a-3. accurate DOS for the carrier concentration analysis
+    b. Relaxed POSCAR for a perfect supercell.
     c. INCAR and KPOINTS for defect calculations.
-       INCAR does not include NELECT that will be determined automatically.
+       INCAR must not include NELECT that will be determined automatically.
     d. ~/.pydefect.yaml that contains the information of director for 
        default potcars. An example is located in this directory.
        e.g., DEFAULT_POTCAR: /home/common/default_POTCAR
@@ -14,12 +13,12 @@
        e.g.,
         /home/common/default_POTCAR/POTCAR_H
         /home/common/default_POTCAR/POTCAR_He
-        /home/common/default_POTCAR/POTCAR_Li 
+        /home/common/default_POTCAR/POTCAR_Li ...
 
-    E.g.
-       MgO_defect/  <---- parent directory
+    An example of initial file configurations
+       MgO_defect/       <---- parent directory
        MgO_defect/{INCAR,KPOINTS,POSCAR}
-       ~/.pydefect.yaml  <---- parent directory
+       ~/.pydefect.yaml  <---- home directory
 
 1. Make defect.in file from a POSCAR that is a supercell.
     % python defect_input.py  --help
@@ -49,7 +48,8 @@
     This command generates DPOSCAR and the following defect.in file.
     Note that DPOSCAR is a modified POSCAR file, in which sequence of atoms 
     is sorted by element and site symmetry. Example is POSCAR-xx and DPOSCAR-xx
-
+    defect.in file contains a full information of point defect calculations.
+    The user is allowed to modify the input depending on the purpose.
 ------------------------------------------------------------------------------
   Name: Mg1
    Rep: 1
@@ -75,13 +75,14 @@ Symprec: 0.001
 Int_site: 0.1 0.1 0.1
 ------------------------------------------------------------------------------
 
-2. Make directories for point defect calculations. 
-   Each directory's name xx_yy_zz contains information of the defect type.
+2. Make directories for the point defect calculations. 
+   Each directory's name *xx_yy_zz* contains information of the defect type.
         xx : Inserted element name. 
              "Va" means vacancy or no inserted element.
         yy : Removed irreducible atom, e.g. Mg1. 
              "iN", where N is an integer,  means Nth interstitial site.
         zz : Charge state.
+    The name of the perfect calculation is *perfect*. 
 
    Thus, the directory names for this example are as following:
     - MgO_defect/perfect
@@ -92,18 +93,32 @@ Int_site: 0.1 0.1 0.1
 ....
 
     Each directory contains INCAR POSCAR POTCAR KPOINTS.
-     - INCAR is copied from a parent directory. Then, NELECT will be added based on the charge state.
-     - POSCAR is constructed based on defect.in and POSCAR in parent directory.
+     - INCAR is copied from a parent directory. Then, NELECT will be added based on the defect type and charge state.
+     - POSCAR is constructed based on the representative atoms written in defect.in and POSCAR in parent directory.
        First line for comments denotes the defect position. 
      - POTCAR is constructed based on element names written at 6th line in DPOSCAR file.
        The default potcar directory path is set in .pydefect.yaml.
      - KPOINTS is simply copied from a parent directory.
+
+    Warning:
+        1. When incorrect element name(s) are used, assert IncorrectElementNameError.
+
 ------------------------------------------------------------------------------
 3. Run vasp for each directory.
+
+    After calculations, the following three files are needed for postprocess.
+    - POSCAR-initial: initial structure file
+    - POSCAR-final: final structure file
+    - OUTCAR-final: OUTCAR file including the converged results 
+
 ------------------------------------------------------------------------------
 4. Analyze calculation data.
     a. Correct defect formation energies.
+        a-1. Construct a full information JSON file of the defect in each directory.
     b. Quantify local structures and make local structure files for visualization.
+        b-1. Check the change of local structure via structural optimization.
+        b-2. Plot the square of (sums of) one-electron wavefunction(s). 
+            --> Construct vasp input files automatically
     c. Judge if the defect contains shallow defect state.
     d. Gather total and correction energies and plot energy vs Fermi level. 
         d-1. Calculate the Fermi level and carrier concentration at room temperature.
@@ -112,6 +127,9 @@ Int_site: 0.1 0.1 0.1
  
 ------------------------------------------------------------------------------
 Future Works: 
-#. A supercell should be recommended and/or automatically constructed from a 
-   unit cell. 
-#. A unit cell calculation may be also included if needed by option.
+# A supercell should be recommended and/or automatically constructed from a 
+  unit cell. 
+# Interstitial site(s) should be recommended and/or automatically constructed 
+  from a unit cell.
+# Input of cell-size dependence should be automatically constructed. 
+# A unit cell calculation may be also included if needed by option.
