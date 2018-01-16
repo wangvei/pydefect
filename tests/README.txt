@@ -1,8 +1,9 @@
 0. prerequisite: 
     a. Unit-cell calculations with 
         a-1. unit-cell lattice being optimized
-        a-2. band-edge positions from band structure calculation for the defect formation energies
-        a-3. accurate DOS for the carrier concentration analysis
+        a-2. dielectric tensor
+        a-3. band-edge positions from band structure calculation for the defect formation energies
+        a-4. accurate DOS for the carrier concentration analysis
     b. Relaxed POSCAR for a perfect supercell.
     c. INCAR and KPOINTS for defect calculations.
        INCAR must not include NELECT that will be determined automatically.
@@ -18,6 +19,7 @@
     An example of initial file configurations
        MgO_defect/       <---- parent directory
        MgO_defect/{INCAR,KPOINTS,POSCAR}
+       MgO_defect/correction.json 
        ~/.pydefect.yaml  <---- home directory
 
 1. Make defect.in file from a POSCAR that is a supercell.
@@ -114,10 +116,27 @@ Int_site: 0.1 0.1 0.1
 ------------------------------------------------------------------------------
 4. Analyze calculation data.
     a. Correct defect formation energies.
-        a-1. Construct a full information JSON file of the defect in each directory.
-    b. Quantify local structures and make local structure files for visualization.
-        b-1. Check the change of local structure via structural optimization.
-        b-2. Plot the square of (sums of) one-electron wavefunction(s). 
+        a-1. Construct a JSON file named correction.json with 
+            1. dielectric constant 
+            2. reference potential of perfect supercell
+               at the parent directory.
+
+        a-2. Construct a full information JSON file of the defect in each directory.
+            1. defect position
+            2. total energy     
+            3. local structure, its change from the bulk, atomic distances from the defect) 
+
+        a-3. Make local structure files for visualization.
+
+            For a-1, -2, and -3,
+            python analyze_defects.py --perfect $perfect_dir_name --dielectric $dielectric_calc_dir_name 
+
+        a-4. Correct defect formation energies.
+                
+            For a-4
+            python energy_correction.py 
+
+    b. Plot the square of (sums of) one-electron wavefunction(s). 
             --> Construct vasp input files automatically
     c. Judge if the defect contains shallow defect state.
     d. Gather total and correction energies and plot energy vs Fermi level. 
@@ -132,4 +151,5 @@ Future Works:
 # Interstitial site(s) should be recommended and/or automatically constructed 
   from a unit cell.
 # Input of cell-size dependence should be automatically constructed. 
+# Semiautomatic initial setup for complex defect.
 # A unit cell calculation may be also included if needed by option.

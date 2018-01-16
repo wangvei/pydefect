@@ -5,6 +5,7 @@ import numpy as np
 import warnings
 import argparse
 from pymatgen.core.structure import Structure
+from pymatgen.io.vasp.inputs.Poscar import Poscar
 from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
 from pymatgen.core.periodic_table import Element
 #import atom
@@ -56,7 +57,7 @@ def perturb_around_a_point(structure, center, cutoff, distance):
 
     Args:
         center (3x1 array): Fractional coordinates of a central position.
-        cutoff (float): Radius of sphere in which atoms are perturbed [A]. 
+        cutoff (float): Radius of a sphere in which atoms are perturbed [A]. 
         distance (float): Max distance for the perturbation [A].
     """
 
@@ -69,10 +70,10 @@ def perturb_around_a_point(structure, center, cutoff, distance):
     sites = []
     # Since translate_sites accepts only one vector, we need to iterate this.
     for i in neighbors:
-        random_vector = random_vector(normed_random_3D_vector(), distance)
+        vector = random_vector(normed_random_3D_vector(), distance)
         site = i[2]
         sites.append(site)
-        structure.translate_sites(site, random_vector, frac_coords=False)
+        structure.translate_sites(site, vector, frac_coords=False)
 
     return {"structure": structure, "sites": sites}
 
@@ -113,23 +114,19 @@ def _get_int_from_string(x):
     return int(''.join(i for i in x if i.isdigit() or i == '.'))
 
 
-class DefectName():
-    """    
-    Extract defect information from a defect directly name,
-    e.g., "Va_Mg1_-2" --> in_name = "Va", out_name = "Mg1", charge = -2
-    """    
-    def __init__(self, defect_name):
-        try:
-            d = defect_name.split("_")
-            self.in_name = d[0]
-            self.out_name = d[1]
-            self.charge = int(d[2])
-        except:
-            raise ValueError("Defect {} is inappropriate.", defect_name)
+def _defect_name(defect_name):
+    try:
+        d = defect_name.split("_")
+        in_name = d[0]
+        out_name = d[1]
+        charge = int(d[2])
+    except:
+        raise ValueError("Defect {} is improper.", defect_name)
 
-        if not re.match(r'^[a-xA-Z]+[1-9]+$', self.out_name):
-            print(re.match(r'^[a-xA-Z]+[1-9]+$', self.out_name))
-            raise ValueError("Defect {} is inappropriate.", defect_name)
+    if not re.match(r'^[a-xA-Z]+[1-9]+$',out_name):
+        raise ValueError("Defect {} is improper.", defect_name)
+
+    return (in_name, out_name, charge)
 
 
 class VaspInputMaker():
@@ -150,81 +147,86 @@ class VaspInputMaker():
                  incar="INCAR", kpoints="KPONTS"):
 
         if os.path.exists(defect_name):
-            print("{} alreadly exists, so nothing is done.".format(defect_name))     
-
+            print("{} alreadly exists, so do nothing.".format(defect_name))     
+        else:
+            os.makedirs(defect_name)
         self.incar = incar
         self.poscar = poscar
         self.kpoints = kpoints
-        self.defect_name = DefectName(defect_name)
-        # Need deepcopy for structure
+        self.in_name, self.out_name, self.charge = _defect_name(defect_name)
+        # deepcopy is needed for structure
         self.defect_structure = deepcopy(defect_setting.structure)
 
+        # e.g., irrep_element_names = ["Mg1", "O1"]
         irrep_element_names = [irrep_element.irrepname 
                             for irrep_element in defect_setting.irrep_elements]
 
-        print(irrep_element_names)
-        # Vacancy
-        if self.defect_name.in_name == "Va" and \
-                            self.defect_name.out_name in irrep_element_names:
-            for irrep_element in defect_setting.irrep_elements:
-                if self.defect_name.out_name == irrep_element.irrepname:
-                    vacancy_atomic_index = irrep_element.first_index
-                    self.defect_position = irrep_element.repr_coord
-
-            if "vacancy_atomic_index" not in locals():
-                raise ValueError("{} does not exist in defect setting.".format(
-                                                    self.defect_name.out_name))
-            self.defect_structure.remove_sites([vacancy_atomic_index - 1])
-            self.defect_type = "vacancy"
-
-        # Interstitial
-        elif Element.is_valid_symbol(self.defect_name.in_name) and \
-                             re.match(r'^i[0-9]+$', self.defect_name.out_name):
-
-            interstitial_index = \
-                            _get_int_from_string(self.defect_name.out_name) - 1
+        # out
+        if re.match(r'^i[0-9]+$', self.out_name):
+            interstitial_index = _get_int_from_string(self.out_name)
             try:
-                coords = defect_setting.interstitial_coords[interstitial_index]
+                coords = \
+                     defect_setting.interstitial_coords[interstitial_index - 1]
             except:
                 raise ValueError(
-             "Interstitial index {} does not exist".format(interstitial_index))
+                 "Interstitial # {} is not defined".format(interstitial_index))
+        elif self.out_name in irrep_element_names:
             for irrep_element in defect_setting.irrep_elements:
-                candidate_atomic_indices = []
-                if self.defect_name.in_name == irrep_element.element:
-                    candidate_atomic_indices.append(irrep_element.first_index)
-            # Intrinsic atom is inserted just before the same elements.
-            if len(candidate_atomic_indices) > 0:
-                  interstitial_atomic_index = min(candidate_atomic_indices) - 1
-            # Extrinsic atom is appended.
-            else:
-                interstitial_atomic_index = 0
-                
-            self.defect_structure.insert(interstitial_atomic_index, 
-                                             self.defect_name.in_name, coords)
-            self.defect_type = "interstitial"
+                if self.out_name == irrep_element.irrepname:
+                    removed_atomic_index = irrep_element.first_index
+                    coords = irrep_element.repr_coord
+            self.defect_structure.remove_sites([removed_atomic_index - 1])
+        else:
+            raise ValueError("{} is improper.".format(self.out_name))
 
-        # Substitutional + antisite
-        elif Element.is_valid_symbol(self.defect_name.in_name) and \
-                              self.defect_name.out_name in irrep_element_names:
-
-
-
-
-
+        # in
+        if self.in_name == "Va":
+            if not removed_atomic_index:
+                raise ValueError("{} is improper.".format(self.out_name))
+        elif Element.is_valid_symbol(self.in_name):
+            # There may be multiple candidate for inserted element.
+            # E.g., Mg exists in Mg1 and Mg2.
+            # Atom is inserted just before the same elements, 
+            # but foreign atom is inserted first so 1 is set first.
+            candidate_atomic_indices = []
             for irrep_element in defect_setting.irrep_elements:
-                candidate_atomic_indices = []
-                if self.defect_name.in_name == irrep_element.element:
+                if self.in_name == irrep_element.element:
                     candidate_atomic_indices.append(irrep_element.first_index)
-            # Intrinsic atom is inserted just before the same elements.
-            if len(candidate_atomic_indices) > 0:
-                substituted_atomic_index = min(candidate_atomic_indices) - 1
-            # Extrinsic atom is appended.
+            if candidate_atomic_indices == []:
+                interstitial_atomic_index = 1
             else:
-                interstitial_atomic_index = 0
+                interstitial_atomic_index = min(candidate_atomic_indices)
+            self.defect_structure.insert(interstitial_atomic_index - 1, 
+                                                         self.in_name, coords)
+        else:
+            raise ValueError("{} is improper.".format(self.in_name))
 
+        self.defect_structure.to(filename=defect_name + "/POSCAR-Initial")
 
         # randomly perturb neighboring atoms.
-    
+        if defect_setting.displace is not None: 
+            a = perturb_around_a_point(self.defect_structure, coords, 
+                                defect_setting.cutoff, defect_setting.displace)
+            self.defect_structure = a["structure"]
+            self.perturbed_sites = a["sites"]
+        
+        self.defect_structure.to(filename=defect_name + "/POSCAR-DispInitial")
+        self.defect_structure.to(filename=defect_name + "/POSCAR")
+
+        # Construct POTCAR file
+#        with open(defect_name + '/POSCAR', 'r') as incar:
+        p = Poscar.from_file(filename=defect_name + '/POSCAR', False, False)
+        make_POTCAR(defect_name, p.site_symbolds, potcar_dir())
+
+        # Construct INCAR file
+#        with open('INCAR', 'r') as incar:
+#            incar_data = incar.readlines() 
+#
+#        nelect = xx(self.defect_structure, 
+#        a = "NELECT = " + 
+#        incar_data.append()                   
+
+        # Construct KPOINTS file
 
 #    def construct_input_files(defect_setting, in_name, out_name, charge, incar, poscar, 
 #                              potcar, kpoints, runshell):

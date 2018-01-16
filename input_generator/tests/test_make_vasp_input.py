@@ -80,7 +80,7 @@ class VaspInputMakerTest(unittest.TestCase):
         self.interstital2 = "O_i2_-2"
         self.interstital3 = "Al_i1_3"
         self.antisite1 = "Mg_O1_2"
-        self.antisite1 = "O_Mg1_-2"
+        self.antisite2 = "O_Mg1_-2"
 
         structure = Structure.from_file("POSCAR-MgO64atoms")                       
         Mg1 = IrrepElement(irrepname="Mg1", element="Mg", first_index=1, last_index=32, repr_coord=[0, 0, 0]) 
@@ -116,6 +116,13 @@ class VaspInputMakerTest(unittest.TestCase):
         print(in1.defect_structure)
         print(in2.defect_structure)
         print(in3.defect_structure)
+
+    def test_antisite(self):
+        an1 = VaspInputMaker(self.defect_setting, self.antisite1)
+        print(an1.defect_structure)
+#        print(an1.defect_position)
+
+#    def test_substitutional(self):
 
 #class PerturbAroundDefectTest(unittest.TestCase):
 #
