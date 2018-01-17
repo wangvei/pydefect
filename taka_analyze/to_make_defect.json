@@ -1,0 +1,26 @@
+{
+	{
+	  "defect_position":[ # previously set
+		0.0,
+		0.0,
+		0.0
+	  ],
+	  "directory_name" : "Va_O1_2",
+	  "total_energy" : -380.93830115,
+	  "local_structure" : [
+		  [0.5,
+		   0.5,
+		   0.5
+		  ],
+		  [0.25,
+		   0.25,
+		   0.25
+		  ]
+	  ],
+	  "charge" : 2,
+	  "atomic_distance_from_defect" : [
+		  1.86,
+		  0.93
+	  ]
+	}
+}
