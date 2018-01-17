@@ -12,14 +12,7 @@ Charge: 2
 EleNeg: 3.44
 Charge: -2
 
-Int_site: [[0.1, 0.1, 0.1]]
-Antisite: 
-
-Dopant: Al
-EleNeg: 1.61
-Charge: 3
-
-Dopant_site: 
+Int_site: Antisite: 
 
 Symbreak: False
 Include: 

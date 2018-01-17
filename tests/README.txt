@@ -1,7 +1,7 @@
 0. prerequisite: 
     a. Unit-cell calculations with 
         a-1. unit-cell lattice being optimized
-        a-2. dielectric tensor
+        a-2. ionic and electronic dielectric tensors
         a-3. band-edge positions from band structure calculation for the defect formation energies
         a-4. accurate DOS for the carrier concentration analysis
     b. Relaxed POSCAR for a perfect supercell.
@@ -15,6 +15,7 @@
         /home/common/default_POTCAR/POTCAR_H
         /home/common/default_POTCAR/POTCAR_He
         /home/common/default_POTCAR/POTCAR_Li ...
+    f. The correction.json file contains the dielectric tensor values.
 
     An example of initial file configurations
        MgO_defect/       <---- parent directory
@@ -116,10 +117,7 @@ Int_site: 0.1 0.1 0.1
 ------------------------------------------------------------------------------
 4. Analyze calculation data.
     a. Correct defect formation energies.
-        a-1. Construct a JSON file named correction.json with 
-            1. dielectric constant 
-            2. reference potential of perfect supercell
-               at the parent directory.
+        a-1. Add a reference potential of perfect supercell to correction.json with 
 
         a-2. Construct a full information JSON file of the defect in each directory.
             1. defect position
@@ -130,6 +128,15 @@ Int_site: 0.1 0.1 0.1
 
             For a-1, -2, and -3,
             python analyze_defects.py --perfect $perfect_dir_name --dielectric $dielectric_calc_dir_name 
+
+             or 
+
+            For a-1
+            python analyze_defects.py --perfect_ref $perfect_dir_name
+            For a-2
+            python analyze_defects.py --defect_info $defect_dir_name
+            For a-3
+            python analyze_defects.py --defect_structure $defect_dir_name
 
         a-4. Correct defect formation energies.
                 

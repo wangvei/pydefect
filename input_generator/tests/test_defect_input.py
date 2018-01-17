@@ -51,7 +51,14 @@ class DefectSettingTest(unittest.TestCase):
 #        print(d)
 
     def test_to_json(self):
+        print(self._a.to_json())
         self.assertTrue(self._a.to_json())
+
+    def test_to_json_file(self):
+        filename = "defect_input_json_file_test"
+        print(filename)
+        self._a.to_json_file(filename)
+#        self.assertTrue(self._a.to_json())
 
 class DefectInMakerTest(unittest.TestCase):
 

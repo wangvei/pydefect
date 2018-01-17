@@ -1,0 +1,3 @@
+a=`{tail -n 1 model_potential.txt| awk `{print -$2}
+b=‘{tail -n 1 alignment.txt| awk ’{print $3}’}‘
+echo $a $b = $((a+b))

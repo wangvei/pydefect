@@ -140,6 +140,13 @@ class DefectSetting():
         """
         return json.dumps(self.as_dict(), cls=MontyEncoder)
 
+    def to_json_file(self, filename):
+        """
+        Returns a json string representation of the MSONable object.
+        """
+        fw = open(filename, 'w')
+        json.dump(self.as_dict(), fw, indent=2, cls=MontyEncoder)
+
     @classmethod
     def from_dict(cls, d):
         """ NEED TO BE MODIFIED """
@@ -380,7 +387,7 @@ class DefectInMaker():
 
     @classmethod
     def from_str_file(cls, poscar, dopants=[], interstitial_coords=False,
-        is_interstitial=False, is_antisite=False, ElNeg_diff=1.0, include=None,
+         is_antisite=False, ElNeg_diff=1.0, include=None,
          exclude=None, symbreak=True, displace=0.2, cutoff=3.0, symprec=0.01):
         """
         Constructs DefectInMaker class object from a POSCAR file.
@@ -495,10 +502,10 @@ def main():
     if opts.print_dopant:
         DefectInMaker.print_dopant_info(opts.print_dopant)
     else:
-        defect_in = DefectInMaker.from_str_file( opts.poscar, opts.dopants, 
-                    opts.interstitial_coords, opts.is_interstitial, 
-                    opts.is_antisite, opts.ElNeg_diff, opts.include, 
-                    opts.exclude, opts.symbreak, opts.displace, opts.symprec)
+        defect_in = DefectInMaker.from_str_file(opts.poscar, opts.dopants, 
+                    opts.interstitial_coords, opts.is_antisite, 
+                    opts.ElNeg_diff, opts.include, opts.exclude, opts.symbreak,
+                    opts.displace, opts.symprec)
         defect_in.to()
 
 if __name__ == "__main__": main()
