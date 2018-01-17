@@ -95,13 +95,14 @@ Int_site: 0.1 0.1 0.1
     - MgO_defect/Va_O1_0
 ....
 
-    Each directory contains INCAR POSCAR POTCAR KPOINTS.
+    Each directory contains INCAR POSCAR POTCAR KPOINTS defect.json.
      - INCAR is copied from a parent directory. Then, NELECT will be added based on the defect type and charge state.
      - POSCAR is constructed based on the representative atoms written in defect.in and POSCAR in parent directory.
        First line for comments denotes the defect position. 
      - POTCAR is constructed based on element names written at 6th line in DPOSCAR file.
        The default potcar directory path is set in .pydefect.yaml.
      - KPOINTS is simply copied from a parent directory.
+     - defect.json contains the "defect_position". 
 
     Warning:
         1. When incorrect element name(s) are used, assert IncorrectElementNameError.
@@ -120,9 +121,8 @@ Int_site: 0.1 0.1 0.1
         a-1. Add a reference potential of perfect supercell to correction.json with 
 
         a-2. Construct a full information JSON file of the defect in each directory.
-            1. defect position
-            2. total energy     
-            3. local structure, its change from the bulk, atomic distances from the defect) 
+            1. total energy     
+            2. local structure, its change from the bulk, atomic distances from the defect) 
 
         a-3. Make local structure files for visualization.
 
