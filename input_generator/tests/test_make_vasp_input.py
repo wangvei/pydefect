@@ -105,21 +105,79 @@ class VaspInputMakerTest(unittest.TestCase):
                           oxidation_states, electronegativity)  
 
     def test_vacancy(self):
-        va = VaspInputMaker(self.defect_setting, self.vacancy)
-        print(va.defect_structure)
-        print(va.defect_position)
+        va = VaspInputMaker(self.vacancy,self.defect_setting)
+        if va.is_directory == False:
+            va.constructor()
+       
+#        print(va.defect_structure)
+#        print(va.defect_position)
 
     def test_interstitial(self):
-        in1 = VaspInputMaker(self.defect_setting, self.interstital1)
-        in2 = VaspInputMaker(self.defect_setting, self.interstital2)
-        in3 = VaspInputMaker(self.defect_setting, self.interstital3)
-        print(in1.defect_structure)
-        print(in2.defect_structure)
-        print(in3.defect_structure)
+        in1 = VaspInputMaker(self.interstital1, self.defect_setting)
+        in2 = VaspInputMaker(self.interstital2, self.defect_setting)
+        in3 = VaspInputMaker(self.interstital3, self.defect_setting)
 
-    def test_antisite(self):
-        an1 = VaspInputMaker(self.defect_setting, self.antisite1)
-        print(an1.defect_structure)
+        in1.constructor()
+        in2.constructor()
+        in3.constructor()
+
+class VaspInputSetMakerTest(unittest.TestCase):
+
+    def setUp(self):
+
+        structure = Structure.from_file("POSCAR-MgO64atoms")                       
+        Mg1 = IrrepElement(irrepname="Mg1", element="Mg", first_index=1, last_index=32, repr_coord=[0, 0, 0]) 
+        O1 = IrrepElement(irrepname="O1", element="O", first_index=33, last_index=64, repr_coord=[0.25, 0.25, 0.25])
+        irrep_elements = [Mg1, O1]                                                 
+        dopant_configs = "Al_Mg1"                                                  
+        antisite_configs = ["Mg_O1", "O_Mg1"]                                      
+        interstitial_coords = [[0.1, 0.1, 0.1], [0.3, 0.3, 0.3]]
+        include = ["Va_O1_-1", "Va_O1_-2"]                                         
+        exclude = ["Va_O1_1", "Va_O1_2"]                                           
+        symbreak = True                                                            
+        displace = 0.15                                                            
+        cutoff = 3.0                                                               
+        symprec = 0.001                                                            
+        oxidation_states = {"Mg": 2, "O": -2}                                      
+        electronegativity = {"Mg": 1.31, "O": 3.44}                                
+                                                                                   
+        self.defect_setting = \
+            DefectSetting(structure, irrep_elements, dopant_configs,         
+                          antisite_configs, interstitial_coords, include, 
+                          exclude, symbreak, displace, cutoff, symprec, 
+                          oxidation_states, electronegativity)  
+
+    def test(self):        
+        a = VaspInputSetMaker(self.defect_setting)
+        print(a.defect_names)
+#    def test_antisite(self):
+#        an1 = VaspInputMaker(self.defect_setting, self.antisite1)
+#        print(an1.defect_structure)
+#        print(an1.defect_position)
+
+#    def test_substitutional(self):
+
+#class PerturbAroundDefectTest(unittest.TestCase):
+#
+#    def setUp(self):
+#        self.structure = Structure.from_file("POSCAR-MgO64atoms")
+#
+#    def test_atom_index(self):
+##        defect_position = 1
+#        defect_position = [0.1, 0.1, 0.1]
+#        cutoff = 3.0
+#        distance = 0.1
+#        new_structure = perturb_around_defect(self.structure, defect_position, cutoff, distance)
+#
+#
+#    def test_
+#        
+#
+
+
+#    def test_antisite(self):
+#        an1 = VaspInputMaker(self.defect_setting, self.antisite1)
+#        print(an1.defect_structure)
 #        print(an1.defect_position)
 
 #    def test_substitutional(self):
