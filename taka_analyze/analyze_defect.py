@@ -48,6 +48,15 @@ def calc_min_distance_and_its_v2coord(v1, v2, axis):
         candidate_list.append((distance, delta_vect+v2))
     return min(candidate_list, key = lambda t: t[0])
 
+def read_defect_pos(d):
+    if(isinstance(d["defect_position"], list)):
+        defect_pos_frac = np.array(d["defect_position"])
+    elif(isinstance(d["defect_position"], int)):
+        defect_pos_frac = poscar_final.structure.frac_coords[d["defect_position"]]
+    else:
+        raise TypeError("Failed to read defect position. (not list and int)")
+    return defect_pos_frac
+
 def complete_defect_json(dirname):
     poscar_initial = Poscar.from_file(dirname + "/POSCAR-initial")
     poscar_final = Poscar.from_file(dirname + "/POSCAR-final")
@@ -58,8 +67,8 @@ def complete_defect_json(dirname):
     axis_inv = np.linalg.inv(axis)
     with open(dirname+"/defect.json") as f:
         d = json.load(f)
-    defect_pos_frac = d["defect_position"]
-    defect_pos = np.dot(axis, np.array(d["defect_position"]))
+    defect_pos_frac = read_defect_pos(d)
+    defect_pos = np.dot(axis, defect_pos_frac)
     distance_list, displacement_list, angle_list = [], [], []
     with open(dirname+"/structure.txt", 'w') as f:
         f.write("#Defect position (frac)\n")
@@ -102,7 +111,7 @@ def make_local_structure_for_visualization(dirname, rate):
     poscar_final = Poscar.from_file(dirname + "/POSCAR-final")
     with open(dirname+"/defect.json") as f:
         d = json.load(f)
-    defect_pos_frac = d["defect_position"]
+    defect_pos_frac = read_defect_pos(d)
     try:
         distance_list = d["distance_from_defect"]
     except:
