@@ -204,13 +204,13 @@ class DefectSetting():
                     electronegativity[element] = \
                                          float(defect_in.readline().split()[1])
                     oxidation_states[element] = \
-                                         float(defect_in.readline().split()[1])
+                                         int(defect_in.readline().split()[1])
                 elif line[0] == "Dopant:":
                     for d in line[1:]:
                         electronegativity[d] = \
                                          float(defect_in.readline().split()[1])
                         oxidation_states[d] = \
-                                         float(defect_in.readline().split()[1])
+                                         int(defect_in.readline().split()[1])
                 elif line[0] == "Dopant_site:":
                     dopant_configs = line[1:]
                 elif line[0] == "Int_site:":
@@ -226,7 +226,7 @@ class DefectSetting():
                         symbreak = False
                     else: 
                         try:
-                            displace = float(symbreak)
+                            displace = float(line[1])
                             symbreak = True
                         except:
                             raise NotSupportedFlagError(
@@ -347,40 +347,33 @@ class DefectInMaker():
         # Atoms are sorted by symmetry, which will be written in DPOSCAR
         self.structure = Structure(structure.lattice, 
                                              self._elements, self._frac_coords)
-        # E.g., antisite_configs = ["Mg_O1", ...]
+        # E.g., antisite_configs = ["Mg_O", ...]
+        EN_keys = self.electronegativity.keys()
+
         self.antisite_configs = []
         if is_antisite is True:
-            for i in self.irrep_elements:
-                for s in structure.symbol_set:
-                    if i.element == s: 
+            for s1 in structure.symbol_set:
+                for s2 in structure.symbol_set:
+                    if s1 == s2: 
                         continue
-                    try:
-                        ENdiff = self.electronegativity[i.element] \
-                               - self.electronegativity[s]
-                    except:
-                        # A fictitious number is inserted for atoms w/o 
-                        # electronegativity.
-                        ENdiff = 100
-                    print(ENdiff)
-                    if abs(ENdiff) < ElNeg_diff:
-                        self.antisite_configs.append([s, i.element])
-#                        self.antisite_configs.append(s + "_" + i.irrepname)
+                    if s1 in EN_keys and s2 in EN_keys:
+                        if abs(self.electronegativity[s1] - 
+                               self.electronegativity[s2]) < ElNeg_diff:
+                            self.antisite_configs.append([s1, s2])
+                    else:
+                        self.EN_not_defined(s1, s2)
 
         # E.g., dopant_configs = [["Al", "Mg"], ...]
         self.dopant_configs = []
         if dopants:
-            for i in self.irrep_elements:
+            for s1 in structure.symbol_set:
                 for d in dopants:
-                    try:
-                        ENdiff = self.electronegativity[i.element] \
-                               - self.electronegativity[d]
-                    except:
-                        # A fictitious number is inserted for atoms w/o 
-                        # electronegativity.
-                        ENdiff = 100
-                    print(ENdiff)
-                    if abs(ENdiff) < ElNeg_diff:
-                        self.dopant_configs.append([d, i.element])
+                    if s1 in EN_keys and d in EN_keys:
+                        if abs(self.electronegativity[s1] - 
+                               self.electronegativity[d]) < ElNeg_diff:
+                            self.dopant_configs.append([d, s1])
+                    else:
+                        self.EN_not_defined(d, s1)
 
         self.setting = DefectSetting(self.structure, self.irrep_elements, 
                         self.dopant_configs, self.antisite_configs, 
@@ -388,6 +381,10 @@ class DefectInMaker():
                         self.symbreak, self.displace, self.cutoff, 
                         self.symprec, self.oxidation_states, 
                         self.electronegativity)
+
+    def EN_not_defined(self, element1, element2):
+        print("Electronegativity of {} and/or {} is not defined".format(
+                                                           element1, element2))
 
     @classmethod
     def from_str_file(cls, poscar, dopants=[], interstitial_coords=False,
@@ -435,6 +432,7 @@ class DefectInMaker():
                     coords = self.interstitial_coords
                 f.write(str([coords[i:i + 3] 
                                      for i in range(0, len(coords), 3)]) +"\n")
+            else: f.write("\n")
             if self.antisite_configs is not []:
                 f.write("Antisite: ")
                 f.write(' '.join(i[0] + "_" + i[1] 
@@ -455,6 +453,7 @@ class DefectInMaker():
                 f.write("Symbreak: {}\n".format(self.symbreak))
             f.write("Include: {}\n".format(self.include))
             f.write("Exclude: {}\n".format(self.exclude))
+            f.write("Cutoff: {}\n".format(self.cutoff))
             f.write("Symprec: {}\n".format(self.symprec))
 
     @staticmethod
@@ -496,6 +495,8 @@ def main():
                         help="Set if symmetry is not broken.")
     parser.add_argument("--displace", dest="displace", type=float, default=0.2,
                         help="Displacement distance.")
+    parser.add_argument("--cutoff",dest="cutoff", type=float, default=3.0,
+                        help="Set the cutoff [A].")
     parser.add_argument("--symprec",dest="symprec", type=float, default=0.01,
                         help="Set the symprec [A].")
     parser.add_argument("--print_dopant", dest="print_dopant", default=None,
@@ -509,7 +510,7 @@ def main():
         defect_in = DefectInMaker.from_str_file(opts.poscar, opts.dopants, 
                     opts.interstitial_coords, opts.is_antisite, 
                     opts.ElNeg_diff, opts.include, opts.exclude, opts.symbreak,
-                    opts.displace, opts.symprec)
+                    opts.displace, opts.cutoff, opts.symprec)
         defect_in.to()
 
 if __name__ == "__main__": main()
