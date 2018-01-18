@@ -29,7 +29,8 @@ class IrrepElement():
         element (str): element name (e.g., Mg)
         first_index (int): first index of *irrepname. 
         last_index (int): last index of *irrepname. 
-        repr_coord (array): representative coordination
+        repr_coord (array): representative coordination, namely the position
+                            of first_index
 
     TODO1: Add the site symmetry information.
     """
@@ -74,9 +75,9 @@ class DefectSetting():
         irrep_elements: IrrepElement class object
         dopant_configs (array): dopant configurations,
             e.g., ["Al_Mg", "N_O"].
-        antisite_configs (2x1 array): antisite configuraions, 
-            e.g., [["Mg", "O"], ["O", "Mg"]].
-        interstitial_coords (3x1 array): coordinations of interstitial sites,
+        antisite_configs (array): antisite configuraions, 
+            e.g., ["Mg_O", "O_Mg"].
+        i_nterstitial_coords (3x1 array): coordinations of interstitial sites,
             e.g., [[0, 0, 0], [0.1, 0.1, 0.1], ...].
         include (array): exceptionally added defect type with a charge state.
             e.g., ["Va_O_-1", "Va_O_-2"]                     
@@ -346,7 +347,7 @@ class DefectInMaker():
         # Atoms are sorted by symmetry, which will be written in DPOSCAR
         self.structure = Structure(structure.lattice, 
                                              self._elements, self._frac_coords)
-        # E.g., antisite_configs = [["Mg", "O1"], ...]
+        # E.g., antisite_configs = ["Mg_O1", ...]
         self.antisite_configs = []
         if is_antisite is True:
             for i in self.irrep_elements:
@@ -354,14 +355,16 @@ class DefectInMaker():
                     if i.element == s: 
                         continue
                     try:
-                        ENdiff = electronegativity[i.element] \
-                               - electronegativity[s]
+                        ENdiff = self.electronegativity[i.element] \
+                               - self.electronegativity[s]
                     except:
                         # A fictitious number is inserted for atoms w/o 
                         # electronegativity.
                         ENdiff = 100
+                    print(ENdiff)
                     if abs(ENdiff) < ElNeg_diff:
                         self.antisite_configs.append([s, i.element])
+#                        self.antisite_configs.append(s + "_" + i.irrepname)
 
         # E.g., dopant_configs = [["Al", "Mg"], ...]
         self.dopant_configs = []
@@ -369,12 +372,13 @@ class DefectInMaker():
             for i in self.irrep_elements:
                 for d in dopants:
                     try:
-                        ENdiff = electronegativity[i.element] \
-                               - electronegativity[d]
+                        ENdiff = self.electronegativity[i.element] \
+                               - self.electronegativity[d]
                     except:
                         # A fictitious number is inserted for atoms w/o 
                         # electronegativity.
                         ENdiff = 100
+                    print(ENdiff)
                     if abs(ENdiff) < ElNeg_diff:
                         self.dopant_configs.append([d, i.element])
 

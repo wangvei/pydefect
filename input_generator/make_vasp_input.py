@@ -6,7 +6,7 @@ import warnings
 import argparse
 import json
 from pymatgen.core.structure import Structure
-from pymatgen.io.vasp.inputs import Poscar
+#from pymatgen.io.vasp.inputs import Poscar
 from pymatgen.io.vasp.inputs import Potcar
 from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
 from pymatgen.core.periodic_table import Element
@@ -78,8 +78,8 @@ def perturb_around_a_point(structure, center, cutoff, distance):
         sites.append(site)
         structure.translate_sites(site, vector, frac_coords=False)
 
-    return {"structure": structure, "sites": sites}
-
+    return structure, sites
+#    return {"structure": structure, "sites": sites}
 
 def potcar_dir():
     """    
@@ -131,11 +131,10 @@ def _defect_name(defect_name):
 
     return (in_name, out_name, charge)
 
-def get_elements_nions(defect_structure):
-    elements, nions = defect_structure.to(fmt="poscar").split("\n")[5:7]
-    elements = elements.split()
-    nions = [int(i) for i in nions.split()]
-    return elements, nions
+def get_nions(defect_structure):
+    nions = [int(i) 
+             for i in defect_structure.to(fmt="poscar").split("\n")[6].split()]
+    return nions
 
 def get_charge(potcar, nions, charge):
     """
@@ -146,6 +145,12 @@ def get_charge(potcar, nions, charge):
         raise ValueError("Size of elements in POTCAR file is different")
     nelect = sum([v.nelectrons * nions[i] for i, v in enumerate(p)]) - charge
     return nelect        
+
+def extended_range(i):
+    if not type(i) == int:
+        raise AttributeError
+    if i >= 0: return range(i + 1)
+    else : return range(i, 1)
 
 class VaspInputMaker():
     """
@@ -179,8 +184,9 @@ class VaspInputMaker():
             # e.g., irrep_element_names = ["Mg1", "O1"]
             self.irrep_element_names = [irrep_element.irrepname 
                        for irrep_element in self.defect_setting.irrep_elements]
+
     def constructor(self):
-        # out 
+        # analyze out_name
         if re.match(r'^i[0-9]+$', self.out_name):
             interstitial_index = _get_int_from_string(self.out_name)
             try:
@@ -190,6 +196,7 @@ class VaspInputMaker():
                 raise ValueError(
                  "Interstitial # {} is not defined".format(interstitial_index))
         elif self.out_name in self.irrep_element_names:
+            # There may be multiple candidates for inserted element.
             for irrep_element in self.defect_setting.irrep_elements:
                 if self.out_name == irrep_element.irrepname:
                     removed_atomic_index = irrep_element.first_index
@@ -198,19 +205,21 @@ class VaspInputMaker():
         else:
             raise ValueError("{} is improper.".format(self.out_name))
 
-        # in
-        # defect_position means fractional coordinates  for vacancy and 
-        # atomic index for substitutionals and interstitials.
+        # analyze in_name
+        # defect_position: 
+        #    3x1 array for coordinates of vacancy
+        #    integer for atomic index of substitutional or interstitials.
         if self.in_name == "Va":
             if not removed_atomic_index:
                 raise ValueError("{} is improper.".format(self.out_name))
             self.defect_position = defect_coords
         elif Element.is_valid_symbol(self.in_name):
-            # There may be multiple candidate for inserted element.
+            # There may be multiple candidates for inserted element.
             # E.g., Mg exists in Mg1 and Mg2.
-            # Atom is inserted just before the same elements, 
-            # but foreign atom is inserted first.
+            # *in_name* element is inserted just before the same elements, 
+            # othewise to the 1st index.
             candidate_atomic_indices = []
+            # check all the irrep_elements.
             for irrep_element in self.defect_setting.irrep_elements:
                 if self.in_name == irrep_element.element:
                     candidate_atomic_indices.append(irrep_element.first_index)
@@ -230,18 +239,18 @@ class VaspInputMaker():
 
         self.defect_structure.to(filename=self.defect_name + "/POSCAR-Initial")
 
-        # randomly perturb neighboring atoms.
+        # perturb neighboring atoms randomly.
         if self.defect_setting.displace is not None: 
-            a = perturb_around_a_point(self.defect_structure, defect_coords, 
+            self.defect_structure, self.perturbed_sites = \
+                   perturb_around_a_point(self.defect_structure, defect_coords, 
                       self.defect_setting.cutoff, self.defect_setting.displace)
-            self.defect_structure = a["structure"]
-            self.perturbed_sites = a["sites"]
+            self.defect_structure.to(
+                             filename=self.defect_name + "/POSCAR-DispInitial")
         
-        self.defect_structure.to(filename=self.defect_name + "/POSCAR-DispInitial")
         self.defect_structure.to(filename=self.defect_name + "/POSCAR")
 
-        elements, nions = get_elements_nions(self.defect_structure)
-
+        elements = self.defect_structure.symbol_set
+        nions = get_nions(self.defect_structure)
         # Construct POTCAR file
         make_POTCAR(self.defect_name, elements, potcar_dir()) 
         # Construct INCAR file
@@ -260,22 +269,67 @@ class VaspInputSetMaker():
         self.defect_setting = defect_setting
         self.incar = incar
         self.kpoints = kpoints
+        self.elements = self.defect_setting.structure.symbol_set
 
-        # perfect
-        if os.path.exists("perfect"):
-            raise FileExistsError('perfect exists, so do nothing for this.')
+    def _perfect_constructor(self):
+        perfect = "perfect"
+        if os.path.exists(perfect):
+            print("{} alreadly exists, so nothing is done.".format(perfect))
         else:
-            os.makedirs("perfect")
-            self.defect_setting.structure.to(filename="perfect/POSCAR")
-            shutil.copyfile(self.incar, "perfect/INCAR")
-            shutil.copyfile(self.kpoints, "perfect/KPOINTS")
-            elements, nions = get_elements_nions(self.defect_setting.structure)
-            make_POTCAR("perfect", elements, potcar_dir()) 
+            os.makedirs(perfect)
+            self.defect_setting.structure.to(filename=perfect + "/POSCAR")
+            shutil.copyfile(self.incar, perfect + "/INCAR")
+            shutil.copyfile(self.kpoints, perfect + "/KPOINTS")
+            make_POTCAR(perfect, self.elements, potcar_dir()) 
 
-        self.defect_names = []
-        # vacancies          
+    def _vacancy_set(self):
+        name_set = []
         for i in self.defect_setting.irrep_elements:
-            print(i.element)
-            print(oxidation_states[i.element])
-#            for j in range(oxidation_states[i.element]):
-#                self.defect_names.append("Va_" + i.irrepname + "_" + j)
+            oxidation_state = self.defect_setting.oxidation_states[i.element]
+            for o in extended_range(oxidation_state):
+                defect_name = "Va_" + i.irrepname + "_" + str(-o)
+                name_set.append(defect_name)
+        return name_set
+
+    def _interstitial_set(self):
+        name_set = []
+        for e in self.elements:
+            oxidation_state = self.defect_setting.oxidation_states[e]
+            for j in range(len(self.defect_setting.interstitial_coords)):
+                for o in extended_range(oxidation_state):
+                    defect_name = e + "_i"  + str(j + 1) + "_" + str(o)
+                    name_set.append(defect_name)
+        return name_set
+
+    def _antisite_dopant_set(self):
+        name_set = []
+        for a in self.defect_setting.antisite_configs + \
+                                            self.defect_setting.dopant_configs:
+            in_element, out_element = a.split("_")
+            oxidation_state_diff = \
+                             self.defect_setting.oxidation_states[in_element] \
+                           - self.defect_setting.oxidation_states[out_element] 
+            for i in self.defect_setting.irrep_elements:
+                if out_element == i.element:
+                    for o in extended_range(oxidation_state_diff):
+                        defect_name = in_element + "_" + \
+                                      i.irrepname + "_" + str(o)
+                        name_set.append(defect_name)
+        return name_set
+
+    def constructor(self):
+        self._perfect_constructor()
+        self.defect_set = self._vacancy_set() + self._interstitial_set() + \
+                          self._antisite_dopant_set()
+        
+        for i in self.defect_setting.include:
+            self.defect_set.append(i)
+        for e in self.defect_setting.exclude:
+            if e in self.defect_set:
+                self.defect_set.remove(e)
+            else:
+                print("{} does not exist.".format(e))
+
+        for d in self.defect_set:
+            a = VaspInputMaker(d, self.defect_setting, self.incar, self.kpoints):
+            a.constructor()
