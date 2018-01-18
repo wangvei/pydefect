@@ -302,7 +302,6 @@ class VaspInputSetMaker():
             else:
                 print("{} does not exist.".format(e))
 
-        print(self.defect_set)
         for d in self.defect_set:
             a = VaspInputMaker(d, self.defect_setting, self.incar, 
                                self.kpoints)

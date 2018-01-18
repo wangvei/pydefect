@@ -19,20 +19,19 @@ __date__ = "December 4, 2017"
 
 class IrrepElement():
     """
-    This class object has some properties related to irreducible atoms.
-    In the structure, the atomic indices need to be sorted.
-
-    **CAUTION**: first_index atomic is assumed to represent irreducible atoms.
+    This class object holds properties related to irreducible atom set.
+    Note1: atomic indices need to be sorted.
+    Note2: first_index atom is assumed to represent the irreducible atoms.
 
     Args:
         irrepname (str): element name with irreducible index (e.g., Mg1)
         element (str): element name (e.g., Mg)
-        first_index (int): first index of *irrepname. 
-        last_index (int): last index of *irrepname. 
+        first_index (int): first index of irrepname. 
+        last_index (int): last index of irrepname. 
         repr_coord (array): representative coordination, namely the position
                             of first_index
 
-    TODO1: Add the site symmetry information.
+    TODO1: Add the site symmetry information. Maybe difficult...
     """
     def __init__(self, irrepname, element, first_index, last_index, 
                  repr_coord):
@@ -67,7 +66,7 @@ class IrrepElement():
 
 class DefectSetting():
     """
-    This class object holds all the information on the setting of the point 
+    This class object holds full information on the setting of the point 
     defect calculations.
 
     Args:
@@ -77,7 +76,7 @@ class DefectSetting():
             e.g., ["Al_Mg", "N_O"].
         antisite_configs (array): antisite configuraions, 
             e.g., ["Mg_O", "O_Mg"].
-        i_nterstitial_coords (3x1 array): coordinations of interstitial sites,
+        interstitial_coords (3x1 array): coordinations of interstitial sites,
             e.g., [[0, 0, 0], [0.1, 0.1, 0.1], ...].
         include (array): exceptionally added defect type with a charge state.
             e.g., ["Va_O_-1", "Va_O_-2"]                     
@@ -150,7 +149,7 @@ class DefectSetting():
 
     @classmethod
     def from_dict(cls, d):
-        """ NEED TO BE MODIFIED """
+        """  """
         irrep_elements = []
         for i in d["irrep_elements"]:
             irrep_elements.append(IrrepElement.from_dict(i))
@@ -164,9 +163,9 @@ class DefectSetting():
     @classmethod
     def from_defect_in(cls, poscar="DPOSCAR", defect_in_file="defect.in"):
         """
-        Construct DefectSetting class object by parsing a defect.in file.
-        Currently, format of the defect.in file is inflexible, so be careful
-        for manipulating it.   
+        Construct DefectSetting class object from a defect.in file.
+        Currently, format of the defect.in file is not flexible, 
+        so be careful for manipulating it.   
         """
 
         structure = Structure.from_file(poscar)
@@ -248,14 +247,10 @@ class DefectSetting():
                    cutoff, symprec, oxidation_states, electronegativity)
 
 
-class NotSupportedFlagError(Exception):
-    pass 
-
-
 class DefectInMaker():
     """
-    This class generates defect.in file, which controles the setting of 
-    point defect calculations.
+    This class generates defect.in file, which shows the setting of point 
+    defect calculations.
 
     Args:
         dopants (array): dopant names, e.g., ["Al", "N"]
@@ -421,6 +416,7 @@ class DefectInMaker():
                 f.write("Charge: {}\n\n".format(
                                              self.oxidation_states[e.element]))
             f.write("Int_site: ")
+
             if self.interstitial_coords:
                 if type(self.interstitial_coords) == str:
                     coords = [float(i) 
@@ -433,6 +429,7 @@ class DefectInMaker():
                 f.write(str([coords[i:i + 3] 
                                      for i in range(0, len(coords), 3)]) +"\n")
             else: f.write("\n")
+
             if self.antisite_configs is not []:
                 f.write("Antisite: ")
                 f.write(' '.join(i[0] + "_" + i[1] 
@@ -473,24 +470,32 @@ class DefectInMaker():
         print("EleNeg: {}".format(electronegativity))
         print("Charge: {}".format(oxidation_states))
 
+
+class NotSupportedFlagError(Exception):
+    pass 
+
+
 def main():
     import argparse
-    parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-
+    parser = argparse.ArgumentParser(
+                        formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument("-p", "--poscar", dest="poscar", default="POSCAR",
                         type=str, help="POSCAR name.")
     parser.add_argument("-d","--dopants", dest="dopants", default="", nargs="+", 
                         type=str, help="Dopant elements. Eg. Al Ga In.")
-    parser.add_argument("-i", dest="interstitial_coords", default=False, nargs="+",
-                        type=float, help="Inetrstitials. Eg. 0 0 0  0.5 0.5 0.5.")
-    parser.add_argument("-a","--antisite", dest="is_antisite", action="store_false",
+    parser.add_argument("-i", dest="interstitial_coords", default=False, 
+                        nargs="+", type=float, 
+                        help="Inetrstitials. Eg. 0 0 0  0.5 0.5 0.5.")
+    parser.add_argument("-a","--antisite", dest="is_antisite", 
+                        action="store_false",
                         help="Set if antisites are considered.")
-    parser.add_argument("-e","--ElNeg_diff", dest="ElNeg_diff", type=float, default=1.0,
-                        help="Criterion of the electronegativity difference for constructing antisite and impurities.")
+    parser.add_argument("-e","--ElNeg_diff", dest="ElNeg_diff", type=float, 
+                        default=1.0, help="Criterion of the electronegativity \
+                        difference for constructing antisite and impurities.")
     parser.add_argument("--include", dest="include", type=str, default="",
-                        help="Exceptionally included defect type. Eg Va_O2_-1.")
+                        help="Exceptionally included defects. E.g. Va_O2_-1.")
     parser.add_argument("--exclude", dest="exclude", type=str, default="",
-                        help="Exceptionally excluded defect type. Eg Va_O2_0.")
+                        help="Exceptionally excluded defects. E.g. Va_O2_0.")
     parser.add_argument("-s","--symbreak", dest="symbreak", action="store_true",
                         help="Set if symmetry is not broken.")
     parser.add_argument("--displace", dest="displace", type=float, default=0.2,
