@@ -8,7 +8,7 @@ import json
 from pymatgen.core.structure import Structure
 #from pymatgen.io.vasp.inputs import Poscar
 from pymatgen.io.vasp.inputs import Potcar
-from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
+#from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
 from pymatgen.core.periodic_table import Element
 #import atom
 from copy import deepcopy
@@ -18,7 +18,7 @@ import re
 import ruamel.yaml as yaml
 
 #import parse_poscar as ppos
-#import pydefect.input_generator.defect_input.DefectSetting as DefectSetting 
+import pydefect.input_generator.defect_input.DefectSetting as DefectSetting 
 
 __author__ = "Yu Kumagai"
 __copyright__ = "Copyright 2017, Oba group"
@@ -180,7 +180,6 @@ class VaspInputMaker():
             self.in_name, self.out_name, self.charge = _defect_name(defect_name)
             # deepcopy is needed for structure
             self.defect_structure = deepcopy(defect_setting.structure)
-    
             # e.g., irrep_element_names = ["Mg1", "O1"]
             self.irrep_element_names = [irrep_element.irrepname 
                        for irrep_element in self.defect_setting.irrep_elements]
@@ -234,9 +233,9 @@ class VaspInputMaker():
             raise ValueError("{} is improper.".format(self.in_name))
 
         # write a defect position to defect.json file.
-        f = open(self.defect_name + "/defect.json", 'w')
-        json.dump({"defect_position": self.defect_position}, f, indent=2)
-
+        with open(self.defect_name + "/defect.json", 'w') as f:
+            json.dump({"defect_position": self.defect_position}, f, indent=2)
+    
         self.defect_structure.to(filename=self.defect_name + "/POSCAR-Initial")
 
         # perturb neighboring atoms randomly.
@@ -270,6 +269,26 @@ class VaspInputSetMaker():
         self.incar = incar
         self.kpoints = kpoints
         self.elements = self.defect_setting.structure.symbol_set
+
+        self._perfect_constructor()
+        self.defect_set = self._vacancy_set() + self._interstitial_set() + \
+                          self._antisite_dopant_set()
+        
+        for i in self.defect_setting.include:
+            self.defect_set.append(i)
+        for e in self.defect_setting.exclude:
+            if e in self.defect_set:
+                self.defect_set.remove(e)
+            else:
+                print("{} does not exist.".format(e))
+
+        for d in self.defect_set:
+            a = VaspInputMaker(d, self.defect_setting, self.incar, self.kpoints)
+            if a.is_directory == True:
+                print("{} alreadly exists, so nothing is done.".format(d))
+            else:
+                print("{} is constructed.".format(d))
+                a.constructor()
 
     def _perfect_constructor(self):
         perfect = "perfect"
@@ -317,19 +336,24 @@ class VaspInputSetMaker():
                         name_set.append(defect_name)
         return name_set
 
-    def constructor(self):
-        self._perfect_constructor()
-        self.defect_set = self._vacancy_set() + self._interstitial_set() + \
-                          self._antisite_dopant_set()
-        
-        for i in self.defect_setting.include:
-            self.defect_set.append(i)
-        for e in self.defect_setting.exclude:
-            if e in self.defect_set:
-                self.defect_set.remove(e)
-            else:
-                print("{} does not exist.".format(e))
 
-        for d in self.defect_set:
-            a = VaspInputMaker(d, self.defect_setting, self.incar, self.kpoints):
-            a.constructor()
+def main():
+    import argparse
+    parser = argparse.ArgumentParser(
+                        formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser.add_argument("-d","--defectin", dest="defectin",
+                        default="defect.in", type=str, help="defect.in name.")
+    parser.add_argument("-p", "--dposcar", dest="dposcar", default="DPOSCAR",
+                        type=str, help="DPOSCAR name.")
+    parser.add_argument("--incar", dest="incar", default="INCAR", 
+                        type=str, help="INCAR name.")
+    parser.add_argument("--kpoints", dest="kpoints", default="KPOINTS", 
+                        type=str, help="KPOINTS name.")
+
+    opts = parser.parse_args()
+
+    defect_setting = DefectSetting.from_defect_in(poscar=opts.dposcar, 
+                                                  defect_in_file=opts.defectin)
+    VaspInputSetMaker(defect_setting, incar=opts.incar, kpoints=opts.kpoints)
+
+if __name__ == "__main__": main()
