@@ -1,20 +1,7 @@
 {
-  [
-	{
-	  "defect_position":[
-		0.0,
-		0.0,
-		0.0
-	  ],
-	  "directory_name" : "Va_O1_2"
-	},
-	{
-	  "defect_position":[
-		0.0,
-		0.0,
-		0.0
-	  ],
-	  "directory_name" : "Va_O1_1"
-	}
+  "defect_position":[
+	0.0,
+	0.0,
+	0.0
   ]
 }
