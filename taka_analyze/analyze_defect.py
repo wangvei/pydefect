@@ -40,9 +40,8 @@ def add_refpot_to_json(outcar_path, json_path):
     append_to_json(json_path, "reference_potential", ref_pot)
 
 def calc_min_distance_and_its_v2coord(v1, v2, axis):
-    neighbor = (-1, 0, 1)
     candidate_list = []
-    for x, y, z in product(neighbor, repeat=3):
+    for x, y, z in product((-1, 0, 1), repeat=3):
         delta_vect = np.dot(axis, np.array([x, y, z]))
         distance = np.linalg.norm(delta_vect+v2-v1)
         candidate_list.append((distance, delta_vect+v2))
@@ -100,9 +99,12 @@ def complete_defect_json(dirname):
     outcar = Outcar(dirname + "/OUTCAR-final")
     total_energy = outcar.final_energy
     append_to_json(json_name, "total_energy", total_energy)
+    atomic_site_pot = outcar.electrostatic_potential
+    append_to_json(json_name, "atomic_site_pot", atomic_site_pot)
     append_to_json(json_name, "axis", axis.tolist())
     coords_final_frac = poscar_final.structure.frac_coords
     append_to_json(json_name, "frac_coords", coords_final_frac.tolist())
+    append_to_json(json_name, "elements", elements)
     append_to_json(json_name, "displacement", displacement_list)
     append_to_json(json_name, "distance_from_defect", distance_list)
     append_to_json(json_name, "angle", angle_list)
