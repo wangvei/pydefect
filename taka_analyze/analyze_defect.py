@@ -6,6 +6,7 @@ import shutil
 import glob
 import argparse
 import numpy as np
+from copy import deepcopy
 from pymatgen.io.vasp.inputs import Poscar
 from pymatgen.core import Structure
 from pymatgen.io.vasp.outputs import Outcar
@@ -14,14 +15,12 @@ from monty.json import MontyEncoder
 from itertools import product
 
 def append_to_json(file_path, key, val):
-    print("append_to_json")
-    print(file_path)
-    print(os.path.exists(file_path))
+    if not os.path.exists(file_path):
+        sys.exit( f"File( {file_path} ) doesn't exist." )
     with open(file_path) as f:
         d = json.load(f)
-    print(d)
     if key in d:
-        raise ValueError(f"Key( {key} ) is already in file( {file_path} )")
+        sys.exit( f"Key( {key} ) is already in file( {file_path} )" )
     d[key] = val
     backup_path = file_path + "._backup_by_analyze_defect_py"
     shutil.copy(file_path, backup_path)
@@ -37,10 +36,8 @@ def add_refpot_to_json(outcar_path, json_path):
         print("Failed to read reference potential.\
                Specify OUTCAR of perfect structure by -p option.")
         sys.exit()
-        print("read_reference pot") 
     ref_pot = outcar.electrostatic_potential
     append_to_json(json_path, "reference_potential", ref_pot)
-    print(ref_pot)
 
 def calc_min_distance_and_its_v2coord(v1, v2, axis):
     neighbor = (-1, 0, 1)
@@ -63,7 +60,6 @@ def complete_defect_json(dirname):
         d = json.load(f)
     defect_pos_frac = d["defect_position"]
     defect_pos = np.dot(axis, np.array(d["defect_position"]))
-    print(defect_pos)
     distance_list, displacement_list, angle_list = [], [], []
     with open(dirname+"/structure.txt", 'w') as f:
         f.write("#Defect position (frac)\n")
@@ -97,15 +93,31 @@ def complete_defect_json(dirname):
     append_to_json(json_name, "total_energy", total_energy)
     append_to_json(json_name, "axis", axis.tolist())
     coords_final_frac = poscar_final.structure.frac_coords
-    append_to_json(json_name, "cart_coords", coords_final_frac.tolist())
+    append_to_json(json_name, "frac_coords", coords_final_frac.tolist())
     append_to_json(json_name, "displacement", displacement_list)
     append_to_json(json_name, "distance_from_defect", distance_list)
     append_to_json(json_name, "angle", angle_list)
 
-
-
-
-
+def make_local_structure_for_visualization(dirname, rate):
+    poscar_final = Poscar.from_file(dirname + "/POSCAR-final")
+    with open(dirname+"/defect.json") as f:
+        d = json.load(f)
+    defect_pos_frac = d["defect_position"]
+    try:
+        distance_list = d["distance_from_defect"]
+    except:
+        sys.exit(f'Not found "distance_from_defect" in {dirname}/defect.json ')
+    threshold = min(distance_list) * rate
+    poscar_vis = deepcopy(poscar_final) # poscar for visualization
+    remove_list = []
+    for i, d in enumerate(distance_list):
+        if d >= threshold:
+            remove_list.append(i)
+        else:
+            translate = -np.array(defect_pos_frac) + np.array([0.5, 0.5, 0.5])
+            poscar_vis.structure.translate_sites(i, translate)
+    poscar_vis.structure.remove_sites(remove_list)
+    poscar_vis.write_file(dirname+"/POSCAR-local_visualize")
 
 
 if __name__ == "__main__":
@@ -136,6 +148,7 @@ if __name__ == "__main__":
                               Otherwise, procedure will done with all results of defect calculations.\
                               (4.a-2,3 in README.txt)")
     opts = parser.parse_args()
+
     if opts.all or opts.reference_pot:
         print("reference_pot mode")
         outcar_path = opts.perfect_dir + "/OUTCAR-final"
@@ -150,12 +163,18 @@ if __name__ == "__main__":
             if not dirs:
                 print("Warning: No directory matched name defect_*_*_*.")
             for dirname in dirs:
-                print(dirname)
-                #dirname = os.path.abspath(dirname)
                 complete_defect_json(dirname)
     if opts.all or opts.visualize_structure:
-        pass
-        #visualize_structure()
+        print("visual_local_structure mode")
+        RATE = 1.9
+        if opts.defect_dir:
+            make_local_structure_for_visualization(opts.defect_dir, RATE)
+        else:
+            dirs = glob.glob("./defect/*_*_*/")
+            if not dirs:
+                print("Warning: No directory matched name defect_*_*_*.")
+            for dirname in dirs:
+                make_local_structure_for_visualization(dirname, RATE)
         
     
 
