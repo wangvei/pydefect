@@ -52,8 +52,6 @@ def calc_min_distance_and_its_v2coord(v1, v2, axis):
     return min(candidate_list, key = lambda t: t[0])
 
 def complete_defect_json(dirname):
-    outcar = Outcar(dirname + "/OUTCAR-final")
-    total_energy = outcar.final_energy
     poscar_initial = Poscar.from_file(dirname + "/POSCAR-initial")
     poscar_final = Poscar.from_file(dirname + "/POSCAR-final")
     coords_initial = poscar_initial.structure.cart_coords
@@ -66,7 +64,7 @@ def complete_defect_json(dirname):
     defect_pos_frac = d["defect_position"]
     defect_pos = np.dot(axis, np.array(d["defect_position"]))
     print(defect_pos)
-    distance_list, angle_list = [], []
+    distance_list, displacement_list, angle_list = [], [], []
     with open(dirname+"/structure.txt", 'w') as f:
         f.write("#Defect position (frac)\n")
         f.write(f"#{defect_pos_frac[0]: .6f} {defect_pos_frac[0]: .6f} {defect_pos_frac[0]: .6f}\n")
@@ -90,6 +88,20 @@ def complete_defect_json(dirname):
             ne_vf_frac = np.round(np.dot(axis_inv, neighbor_vf),6)
             f.write(f"{e:3s} {str(i+1).rjust(3)}  {ne_vf_frac[0]: .5f}   {ne_vf_frac[1]: .5f}   {ne_vf_frac[2]: .5f}\
        {distance_init:.3f}            {distance:.3f}         {disp:.3f}         {angle}\n")
+            distance_list.append(distance)
+            displacement_list.append(disp)
+            angle_list.append(angle)
+    json_name = dirname + "/defect.json"
+    outcar = Outcar(dirname + "/OUTCAR-final")
+    total_energy = outcar.final_energy
+    append_to_json(json_name, "total_energy", total_energy)
+    append_to_json(json_name, "axis", axis.tolist())
+    coords_final_frac = poscar_final.structure.frac_coords
+    append_to_json(json_name, "cart_coords", coords_final_frac.tolist())
+    append_to_json(json_name, "displacement", displacement_list)
+    append_to_json(json_name, "distance_from_defect", distance_list)
+    append_to_json(json_name, "angle", angle_list)
+
 
 
 
