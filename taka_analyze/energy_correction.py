@@ -7,6 +7,7 @@ import json
 import math
 import numpy as np
 import scipy
+import scipy.stats.mstats as mstats
 from functools import reduce
 from itertools import product
 from pymatgen.core.lattice import Lattice
@@ -104,23 +105,20 @@ def determine_ewald_param(def_structure,
 # max_int(reciprocal) = Y  / (x * l_g) where l_g is axis length of reciprocal lattice, respectively.
 #Then, x = sqrt(l_g / l_r / 2)
 #To calculate ewald_param (not ewald), need to consider cube_root_vol and root_det_dielectric
-    l_r = np.trace(real_lattice) / 3 #approximation
-    l_g = np.trace(reciprocal_lattice) / 3 #approximation
+    l_r = mstats.gmean([np.linalg.norm(v) for v in real_lattice])
+    l_g = mstats.gmean([np.linalg.norm(v) for v in reciprocal_lattice])
     ewald_param = np.sqrt( l_g / l_r / 2 ) * cube_root_vol / root_det_dielectric
     while True:
-        print(root_det_dielectric)
         ewald = ewald_param / cube_root_vol * root_det_dielectric
         max_G_vector_norm = 2 * ewald * PROD_CUTOFF_FWHM
         set_G_vectors = make_lattice_set(reciprocal_lattice, 
                                          max_G_vector_norm, 
                                          include_self=False)
-        print(len(set_G_vectors))
         max_R_vector_norm = PROD_CUTOFF_FWHM / ewald
         set_R_vectors = make_lattice_set(real_lattice, 
                                          max_R_vector_norm,
                                          include_self=True)
-        print(f"Number of R vectors = {len(set_R_vectors)}")
-        print(f"Number of G vectors = {len(set_G_vectors)}")
+        print(f"Number of R, G vectors = {len(set_R_vectors)}, {len(set_G_vectors)}")
         diff_real_recipro = (float(len(set_R_vectors)) / len(set_G_vectors)) 
         if (diff_real_recipro > 1/1.05) and (diff_real_recipro < 1.05):
             return ewald_param
@@ -209,13 +207,12 @@ def correct_energy(dirname):
     with open("./correction.json", 'r') as f:
         correct_json=json.load(f)
 
-
     axis = defect_json["axis"]
     elements = [ Element(e_name) for e_name in defect_json["elements"] ]
     def_coord_frac = defect_json["frac_coords"]
     def_structure = Structure(axis, elements, def_coord_frac)
 
-    #readdefect_pos (fractional coordination)
+    #read defect_pos (fractional coordination)
     if (isinstance(defect_json["defect_position"], int)):
         defect_pos = np.array()
     elif (isinstance(defect_json["defect_position"], list)):
