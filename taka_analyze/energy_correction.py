@@ -77,11 +77,9 @@ def make_lattice_set(lattice_vectors, max_length, include_self):
     max_int = \
     [int(max_length / np.linalg.norm(lattice_vectors[i])) + 1 for i in range(3)]
     vectors = []
-    for index in product(
-            range(-max_int[0], max_int[0]+1),
-            range(-max_int[1], max_int[1]+1),
-            range(-max_int[2], max_int[2]+1)
-            ):
+    for index in product(range(-max_int[0], max_int[0]+1),
+                         range(-max_int[1], max_int[1]+1),
+                         range(-max_int[2], max_int[2]+1)):
         if (not include_self) and index == (0, 0, 0): 
             continue
         vector = np.dot(lattice_vectors.transpose(), np.array(index))
@@ -93,25 +91,34 @@ def make_lattice_set(lattice_vectors, max_length, include_self):
 def determine_ewald_param(def_structure,
                           root_det_dielectric,
                           ):
-    INIT_EWALD_PARAM = 0.010111311355097064
     PROD_CUTOFF_FWHM = 25.0 #product of cutoff radius of G-vector and gaussian FWHM.
-                            #increasing this value, both accuracy and computational cost will be increased
     real_lattice = def_structure.lattice.matrix
-    volume = def_structure.lattice.volume
-    reciprocal_lattice_vect = def_structure.lattice.reciprocal_lattice.matrix
-    ewald_param = INIT_EWALD_PARAM
+    cube_root_vol = math.pow(def_structure.lattice.volume, 1.0/3)
+    reciprocal_lattice = def_structure.lattice.reciprocal_lattice.matrix
+#determine inital ewald parameter to satisfy following:
+# max_int(Real) = max_int(Reciprocal) in make_lattice_set function.
+# Left term:
+# max_int(Real) = 2 * x * Y  / l_r where x, Y, and l_r are ewald,
+# PROD_CUTOFF_FWHM, and axis length of real lattice, respectively.
+# Right term:
+# max_int(reciprocal) = Y  / (x * l_g) where l_g is axis length of reciprocal lattice, respectively.
+#Then, x = sqrt(l_g / l_r / 2)
+#To calculate ewald_param (not ewald), need to consider cube_root_vol and root_det_dielectric
+    l_r = np.trace(real_lattice) / 3 #approximation
+    l_g = np.trace(reciprocal_lattice) / 3 #approximation
+    ewald_param = np.sqrt( l_g / l_r / 2 ) * cube_root_vol / root_det_dielectric
     while True:
-        print("hoge")
-        ewald = ewald_param / math.pow(volume, float(1)/3) * root_det_dielectric
+        print(root_det_dielectric)
+        ewald = ewald_param / cube_root_vol * root_det_dielectric
         max_G_vector_norm = 2 * ewald * PROD_CUTOFF_FWHM
-        set_G_vectors = make_lattice_set(reciprocal_lattice_vect, 
+        set_G_vectors = make_lattice_set(reciprocal_lattice, 
                                          max_G_vector_norm, 
                                          include_self=False)
+        print(len(set_G_vectors))
         max_R_vector_norm = PROD_CUTOFF_FWHM / ewald
         set_R_vectors = make_lattice_set(real_lattice, 
                                          max_R_vector_norm,
                                          include_self=True)
-        print(f"ewald_param= {ewald_param}")
         print(f"Number of R vectors = {len(set_R_vectors)}")
         print(f"Number of G vectors = {len(set_G_vectors)}")
         diff_real_recipro = (float(len(set_R_vectors)) / len(set_G_vectors)) 
