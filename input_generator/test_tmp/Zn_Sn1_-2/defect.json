@@ -1,3 +1,11 @@
 {
-  "defect_position": 1
+  "defect_index": 1,
+  "in_name": "Zn",
+  "defect_coords": [
+    0.0,
+    0.0,
+    0.0
+  ],
+  "charge": -2,
+  "out_name": "Sn1"
 }

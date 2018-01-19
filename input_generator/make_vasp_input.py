@@ -222,9 +222,8 @@ class VaspInputMaker():
         #    3x1 array for coordinates of vacancy
         #    integer for atomic index of substitutional or interstitials.
         if self.in_name == "Va":
-            if not removed_atomic_index:
-                raise ValueError("{} is improper.".format(self.out_name))
-            self.defect_position = defect_coords
+            self.defect_index = removed_atomic_index
+            self.defect_coords = defect_coords
         elif Element.is_valid_symbol(self.in_name):
             # There may be multiple candidates for inserted element.
             # E.g., Mg exists in Mg1 and Mg2.
@@ -239,14 +238,20 @@ class VaspInputMaker():
                 atomic_index = 0
             self.defect_structure.insert(atomic_index, self.in_name, 
                                                                  defect_coords)
-            self.defect_position = atomic_index + 1
+            self.defect_index = atomic_index + 1
+            self.defect_coords = self.defect_structure.\
+                                             frac_coords[atomic_index].tolist()
         else:
             raise ValueError("{} is improper.".format(self.in_name))
 
         os.makedirs(self.defect_name)
         # write a defect position to defect.json file.
-        with open(self.defect_name + "/defect.json", 'w') as f:
-            json.dump({"defect_position": self.defect_position}, f, indent=2)
+        with open(self.defect_name + "/defect.json", 'w') as fw:
+            json.dump({"defect_index": self.defect_index,
+                       "defect_coords": self.defect_coords,
+                       "in_name": self.in_name,
+                       "out_name": self.out_name,
+                       "charge": self.charge}, fw, indent=2)
     
         self.defect_structure.to(filename=self.defect_name + "/POSCAR-Initial")
 

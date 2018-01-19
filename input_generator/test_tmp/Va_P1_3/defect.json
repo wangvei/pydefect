@@ -1,7 +1,11 @@
 {
-  "defect_position": [
+  "defect_index": 109,
+  "in_name": "Va",
+  "defect_coords": [
     0.2916667,
     0.28569,
     0.16069
-  ]
+  ],
+  "charge": 3,
+  "out_name": "P1"
 }

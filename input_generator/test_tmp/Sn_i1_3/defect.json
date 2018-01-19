@@ -1,0 +1,11 @@
+{
+  "defect_index": 55,
+  "in_name": "Sn",
+  "defect_coords": [
+    0.5,
+    0.5,
+    0.5
+  ],
+  "charge": 3,
+  "out_name": "i1"
+}
