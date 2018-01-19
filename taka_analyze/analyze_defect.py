@@ -16,11 +16,11 @@ from itertools import product
 
 def append_to_json(file_path, key, val):
     if not os.path.exists(file_path):
-        sys.exit( f"File( {file_path} ) doesn't exist." )
+        sys.exit( "File( {0} ) doesn't exist.".format([file_path]))
     with open(file_path) as f:
         d = json.load(f)
     if key in d:
-        sys.exit( f"Key( {key} ) is already in file( {file_path} )" )
+        sys.exit( "Key( {0} ) is already in file( {1} )".format([key,file_path]))
     d[key] = val
     backup_path = file_path + "._backup_by_analyze_defect_py"
     shutil.copy(file_path, backup_path)
@@ -71,8 +71,13 @@ def complete_defect_json(dirname):
     distance_list, displacement_list, angle_list = [], [], []
     with open(dirname+"/structure.txt", 'w') as f:
         f.write("#Defect position (frac)\n")
-        f.write(f"#{defect_pos_frac[0]: .6f} {defect_pos_frac[0]: .6f} {defect_pos_frac[0]: .6f}\n")
-        f.write("#" + " " * 8  + "-" * 5 + "coordinations (frac)" + "-" * 5 + " " * 3 +"dist.(init)[A]" + " " * 3 + "dist.(final)[A]  disp.[A]  angle[deg.]\n")
+        #f.write(f"#{defect_pos_frac[0]: .6f} {defect_pos_frac[0]: .6f} {defect_pos_frac[0]: .6f}\n")
+        f.write("#{0: .6f} {1: .6f} {2: .6f}\n".format((defect_pos_frac[0],
+                                                        defect_pos_frac[1],
+                                                        defect_pos_frac[2])))
+        f.write("#" + " " * 8 + "-" * 5 + "coordinations (frac)" \
+                + "-" * 5 + " " * 3 +"dist.(init)[A]" + " " * 3\
+                + "dist.(final)[A]  disp.[A]  angle[deg.]\n")
         for i, (vi, vf, e) in enumerate(zip(coords_initial, coords_final, elements)): # calculate displacement, distance_from_defect, angle
 #To calculate displacement, it is sometimes needed to find atoms in neighbor atoms
 #due to periodical boundary condition.
@@ -90,12 +95,17 @@ def complete_defect_json(dirname):
             else:
                 angle = "-"
             ne_vf_frac = np.round(np.dot(axis_inv, neighbor_vf),6)
-            f.write(f"{e:3s} {str(i+1).rjust(3)}  {ne_vf_frac[0]: .5f}   {ne_vf_frac[1]: .5f}   {ne_vf_frac[2]: .5f}\
-       {distance_init:.3f}            {distance:.3f}         {disp:.3f}         {angle}\n")
+            #f.write(f"{e:3s} {str(i+1).rjust(3)}  {ne_vf_frac[0]: .5f}   {ne_vf_frac[1]: .5f}   {ne_vf_frac[2]: .5f}\
+            f.write("{0:3s} {1}  {2: .5f}   {3: .5f}   {4: .5f}\
+       {5:.3f}            {6:.3f}         {7:.3f}         {8}\n".format(\
+           (e, str(i+1).rjust(3), ne_vf_frac[0], ne_vf_frac[1], ne_vf_frac[2],
+            distance_init, distance, disp, angle)))
             distance_list.append(distance)
             displacement_list.append(disp)
             angle_list.append(angle)
     json_name = dirname + "/defect.json"
+    charge = int(dirname.split("_")[2][:-1])
+    append_to_json(json_name, "charge", charge)
     outcar = Outcar(dirname + "/OUTCAR-final")
     total_energy = outcar.final_energy
     append_to_json(json_name, "total_energy", total_energy)
@@ -117,7 +127,7 @@ def make_local_structure_for_visualization(dirname, rate):
     try:
         distance_list = d["distance_from_defect"]
     except:
-        sys.exit(f'Not found "distance_from_defect" in {dirname}/defect.json ')
+        sys.exit('Not found "distance_from_defect" in {0}/defect.json '.format((dirname)))
     threshold = min(distance_list) * rate
     poscar_vis = deepcopy(poscar_final) # poscar for visualization
     remove_list = []

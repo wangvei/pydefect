@@ -17,8 +17,7 @@ from pymatgen.core.structure import Structure
 from pymatgen.core.periodic_table import Element, get_el_sp
 from pymatgen.io.vasp.inputs import Poscar
 from pymatgen.io.vasp.outputs import Vasprun, Outcar
-#from defect_property import DefectProperty
-from enum import Enum, auto
+from enum import Enum
 
 __author__ = "Akira Takahashi"
 __copyright__ = "Copyright 2017, Oba group"
@@ -76,7 +75,7 @@ def determine_ewald_param(def_structure,
         set_R_vectors = make_lattice_set(real_lattice, 
                                          max_R_vector_norm,
                                          include_self=True)
-        print(f"Number of R, G vectors = {len(set_R_vectors)}, {len(set_G_vectors)}")
+        print("Number of R, G vectors = {0}, {1}".format(len(set_R_vectors), len(set_G_vectors)))
         diff_real_recipro = (float(len(set_R_vectors)) / len(set_G_vectors)) 
         if (diff_real_recipro > 1/1.05) and (diff_real_recipro < 1.05):
             return ewald, set_R_vectors, set_G_vectors
@@ -114,12 +113,10 @@ def calc_ewald_recipro_pot(ewald,
     """
     root_det_epsilon = np.sqrt(np.linalg.det(dielectric_tensor))
     each = np.zeros(len(set_G_vectors))
-
     for i, G in enumerate(set_G_vectors):
         G_epsilon_G = reduce(np.dot, [G.T, dielectric_tensor, G]) # [1/A^2]
         each[i] = np.exp(- G_epsilon_G / 4.0 / ewald ** 2) \
                    / G_epsilon_G * np.cos(np.dot(G, atomic_pos_wrt_defect)) # [A^2]
-
     return np.sum(each) / volume
 
 def calc_ewald_self_potential(ewald, dielectric_tensor): # [1/A]
@@ -177,9 +174,9 @@ def calc_model_pot_and_lat_energy(ewald,
     return model_pot_defect_site, lattice_energy
 
 class _DefType(Enum):
-    VACANCY = auto()
-    SUBSTITUTIONAL = auto()
-    INTERSTITIAL = auto()
+    VACANCY = 1
+    SUBSTITUTIONAL = 2
+    INTERSTITIAL = 3
 
 def correct_energy(dirname, defect_dict, correct_dict):
 
@@ -242,8 +239,6 @@ def correct_energy(dirname, defect_dict, correct_dict):
     print(model_pot)
     print(lattice_energy)
 
-
-
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("-d", "--defect_dir", dest="defect_dir", type=str,
@@ -293,5 +288,4 @@ if __name__ == "__main__":
             correct_energy(dirname,
                            defect_json,
                            correct_json)
-
 
