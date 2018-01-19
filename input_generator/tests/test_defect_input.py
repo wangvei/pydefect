@@ -63,7 +63,7 @@ class DefectSettingTest(unittest.TestCase):
 class DefectInMakerTest(unittest.TestCase):
 
     def setUp(self):
-        structure = Structure.from_file("POSCAR-MgO64atoms")
+        structure = Structure.from_file("POSCAR-MgO64atoms-strange_sequence")
         dopants = ["Al"]
         interstitial_coords = "0.1 0.1 0.1"
         is_antisite = True
@@ -78,8 +78,11 @@ class DefectInMakerTest(unittest.TestCase):
                         is_antisite, ElNeg_diff, include="", exclude="", 
                         symbreak=False, displace=0.2, cutoff=3.0, symprec=0.01)
 
-    def test_to(self):
-        self._b.to()
+    def a(self):
+        print(self._b)        
+
+#    def test_to(self):
+#        self._b.to()
 
 #    def test_from_str_file(self):
 #        self._c = DefectInMaker.from_str_file("POSCAR-MgO64atoms")

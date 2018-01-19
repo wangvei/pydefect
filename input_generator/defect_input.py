@@ -20,7 +20,8 @@ __date__ = "December 4, 2017"
 class IrrepElement():
     """
     This class object holds properties related to irreducible atom set.
-    Note1: atomic indices need to be sorted.
+    Note1: atomic indices need to be sorted. Thus, they can be written in one 
+           sequence.
     Note2: first_index atom is assumed to represent the irreducible atoms.
 
     Args:
@@ -31,7 +32,7 @@ class IrrepElement():
         repr_coord (array): representative coordination, namely the position
                             of first_index
 
-    TODO1: Add the site symmetry information. Maybe difficult...
+    TODO1: Add the site symmetry information.
     """
     def __init__(self, irrepname, element, first_index, last_index, 
                  repr_coord):
@@ -60,7 +61,7 @@ class IrrepElement():
                    d["last_index"], d["repr_coord"]) 
 
     @property
-    def multiplicity(self):
+    def natoms(self):
         return self.last_index - self.first_index + 1
 
 
@@ -81,11 +82,12 @@ class DefectSetting():
         include (array): exceptionally added defect type with a charge state.
             e.g., ["Va_O_-1", "Va_O_-2"]                     
         exclude (array): exceptionally removed defect type with a charge state.
+                         In case some of them don't exist, they'll be ignored.
             e.g., ["Va_O_1", "Va_O_2"]                     
         symbreak (bool): Whether to perturb defect's neighboring atoms for 
-            symmetry breaking.
+                         symmetry breaking.
         displace (float): Maxmum displacement distance in angstrom.
-        cutoff (float): Cutoff radius for detemining atoms displaced.
+        cutoff (float): Cutoff radius in which atoms are displaced.
         symprec (float): Precision used for symmetry analysis.
         oxidation_states (dict): Oxidation states for relevant elements.
         electronegativity (dict): Electronegativity for relevant elements.
@@ -112,7 +114,6 @@ class DefectSetting():
     def __eq__(self, other):
         if other is None or type(self) != type(other): 
             raise TypeError
-#        print(self.__dict__, other.__dict__)
         return self.__dict__ == other.__dict__
 
     def as_dict(self):
@@ -142,14 +143,16 @@ class DefectSetting():
 
     def to_json_file(self, filename):
         """
-        Returns a json string representation of the MSONable object.
+        Returns a json file.
         """
         fw = open(filename, 'w')
         json.dump(self.as_dict(), fw, indent=2, cls=MontyEncoder)
 
     @classmethod
     def from_dict(cls, d):
-        """  """
+        """
+        Construct a DefectSetting class object from a dictionary.
+        """
         irrep_elements = []
         for i in d["irrep_elements"]:
             irrep_elements.append(IrrepElement.from_dict(i))
@@ -167,7 +170,6 @@ class DefectSetting():
         Currently, format of the defect.in file is not flexible, 
         so be careful for manipulating it.   
         """
-
         structure = Structure.from_file(poscar)
         irrep_elements = []
         electronegativity = {}
@@ -257,8 +259,8 @@ class DefectInMaker():
         interstitial_coords (3x1 array): coordinations of interstitial sites,
             e.g., [[0, 0, 0], [0.1, 0.1, 0.1], ...].
         is_antisite (bool): Whether to consider antisite defects.
-        ElNeg_diff (float): Electronegativity difference used for determining
-            sets of antisites and dopant sites. 
+        ElNeg_diff (float): Electronegativity difference for determining sets 
+                            of antisites and dopant sites. 
         include (array): exceptionally added defect type with a charge state.
             e.g., ["Va_O_-1", "Va_O_-2"]                     
         exclude (array): exceptionally removed defect type with a charge state.
@@ -284,18 +286,10 @@ class DefectInMaker():
         self.displace = displace
         self.cutoff = cutoff
         self.symprec = symprec
-        # only vasp5 POSCAR format is supported for getting the elements names.
-        # equivalent_positions: Equivalent positions from SpacegroupAnalyzer.
-        self.equiv_site_seq = \
-     SpacegroupAnalyzer(structure).get_symmetrized_structure().equivalent_sites
-
-        # irrep_elements_index["Mg"] = 2 means that Mg element has two 
-        # inequivalent sites
-        self._irrep_element_index = {}
         self.electronegativity = {}
         self.oxidation_states = {}
 
-        # Get electron negativity and oxidation states.
+        # Get electronegativity and oxidation states.
         # intrinsic elements + dopants
         for s in structure.symbol_set + tuple(self.dopants):
             try:
@@ -305,46 +299,38 @@ class DefectInMaker():
                 self.electronegativity[s] = "N.A."
             try:
                 self.oxidation_states[s] = atom.charge[s]
-            # if one wants to use pmg oxidation states. Then, needs to import 
-            # Element class
-#                oxidation_states[s] = Element(s).common_oxidation_states[-1]
+            # To use pmg oxidation states, uncomment the following
+#               self.oxidation_states[s] = \
+#                                        Element(s).common_oxidation_states[-1]
             except:
                 warnings.warn("Oxidation state of " + s + " is unavailable.")
                 self.oxidation_states[s] = "N.A."
 
+        self.symmetrized_structure = SpacegroupAnalyzer(structure).get_symmetrized_structure()
+        # irrep_elements_index["Mg"] = 2;  Mg has 2 inequivalent sites
+        irrep_element_index = {}
         # irrep_elements (aray): a set of IrrepElement class objects
         self.irrep_elements = []
-        # list of element names for all atoms, e.g., ["Mg", "Mg", "O", "O"]
-        self._elements = []
-        # an array of frac_coords for all atoms, e.g., [[0, 0, 0], ...]
-        self._frac_coords = []
-
-        for inequiv_site in self.equiv_site_seq:
-            self._element = inequiv_site[0].species_string
-            if self._element not in self._irrep_element_index.keys():
-                self._irrep_element_index[self._element] = 1
+        # equivalent_sites: Equivalent positions from SpacegroupAnalyzer.
+        last = 0
+        equiv_sites = self.symmetrized_structure.equivalent_sites
+        for i, e in enumerate(equiv_sites):
+            element = e[0].species_string
+            if element not in irrep_element_index.keys():
+                irrep_element_index[element] = 1
             else:
-                # increment number of inequiv site
-                self._irrep_element_index[self._element] += 1
-            self._first = len(self._elements) + 1
-            self._last = len(self._elements) + len(inequiv_site)
-            self._repr_coord = inequiv_site[0].frac_coords
-            # E.g., IrrepElement("Mg1", "Mg", 1, 32, [0, 0, 0])
-            self.irrep_elements.append(IrrepElement(self._element 
-                               + str(self._irrep_element_index[self._element]), 
-                                 self._element, self._first, self._last, 
-                                 self._repr_coord))
-#                                 self._repr_coord).as_dict())
-            for equiv_site in inequiv_site:
-                self._elements.append(equiv_site.species_string)
-                self._frac_coords.append(equiv_site.frac_coords)
+                # increment number of inequiv site for element
+                irrep_element_index[element] += 1
+            first = last + 1
+            last += len(e)
+            repr_coord = e[0].frac_coords
+            irrepname = element + str(irrep_element_index[element]) 
+            self.irrep_elements.append(
+                     IrrepElement(irrepname, element, first, last, repr_coord))
 
-        # Atoms are sorted by symmetry, which will be written in DPOSCAR
-        self.structure = Structure(structure.lattice, 
-                                             self._elements, self._frac_coords)
-        # E.g., antisite_configs = ["Mg_O", ...]
         EN_keys = self.electronegativity.keys()
 
+        # E.g., antisite_configs = [["Mg, "O"], ...]
         self.antisite_configs = []
         if is_antisite is True:
             for s1 in structure.symbol_set:
@@ -356,30 +342,33 @@ class DefectInMaker():
                                self.electronegativity[s2]) < ElNeg_diff:
                             self.antisite_configs.append([s1, s2])
                     else:
-                        self.EN_not_defined(s1, s2)
+                        self.electronegativity_not_defined(s1, s2)
 
         # E.g., dopant_configs = [["Al", "Mg"], ...]
         self.dopant_configs = []
         if dopants:
-            for s1 in structure.symbol_set:
-                for d in dopants:
+            for d in dopants:
+                if d in structure.symbol_set:
+                    continue
+                for s1 in structure.symbol_set:
                     if s1 in EN_keys and d in EN_keys:
                         if abs(self.electronegativity[s1] - 
                                self.electronegativity[d]) < ElNeg_diff:
                             self.dopant_configs.append([d, s1])
                     else:
-                        self.EN_not_defined(d, s1)
+                        self.electronegativity_not_defined(d, s1)
 
-        self.setting = DefectSetting(self.structure, self.irrep_elements, 
+        self.setting = DefectSetting(
+                        self.symmetrized_structure, self.irrep_elements, 
                         self.dopant_configs, self.antisite_configs, 
                         self.interstitial_coords, self.include, self.exclude, 
                         self.symbreak, self.displace, self.cutoff, 
                         self.symprec, self.oxidation_states, 
                         self.electronegativity)
 
-    def EN_not_defined(self, element1, element2):
-        print("Electronegativity of {} and/or {} is not defined".format(
-                                                           element1, element2))
+    def electronegativity_not_defined(self, element1, element2):
+        print("Electronegativity of {} and/or {} is not defined".\
+                                            format(element1, element2))
 
     @classmethod
     def from_str_file(cls, poscar, dopants=[], interstitial_coords=False,
@@ -400,22 +389,24 @@ class DefectInMaker():
         Prints readable defect.in file.
         """
         self._write_defect_in(defectin_file)
-        self.structure.to(fmt="poscar", filename=poscar_file)
+        # HACK:  pmg has a bug, Symmetrized structure object cannot be poscar
+        Structure.from_str(self.symmetrized_structure.to(fmt="cif"),
+                                fmt="cif").to(fmt="poscar", filename="DPOSCAR")
 
     def _write_defect_in(self, defectin_file="defect.in"):
-        with open(defectin_file, 'w') as f:
+        with open(defectin_file, 'w') as fw:
 
             for e in self.irrep_elements:
-                f.write("  Name: {}\n".format(e.irrepname))
-                f.write("   Rep: {}\n".format(e.first_index))
-                f.write(" Equiv: {}\n".format(
+                fw.write("  Name: {}\n".format(e.irrepname))
+                fw.write("   Rep: {}\n".format(e.first_index))
+                fw.write(" Equiv: {}\n".format(
                               str(e.first_index) + ".." + str(e.last_index)))
-                f.write(" Coord: %9.7f %9.7f %9.7f\n" % tuple(e.repr_coord))
-                f.write("EleNeg: {}\n".format(
+                fw.write(" Coord: %9.7f %9.7f %9.7f\n" % tuple(e.repr_coord))
+                fw.write("EleNeg: {}\n".format(
                                            self.electronegativity[e.element]))
-                f.write("Charge: {}\n\n".format(
+                fw.write("Charge: {}\n\n".format(
                                              self.oxidation_states[e.element]))
-            f.write("Int_site: ")
+            fw.write("Int_site: ")
 
             if self.interstitial_coords:
                 if type(self.interstitial_coords) == str:
@@ -426,32 +417,32 @@ class DefectInMaker():
                                 "The interstitial coordinates are not proper.")
                 else:
                     coords = self.interstitial_coords
-                f.write(str([coords[i:i + 3] 
+                fw.write(str([coords[i:i + 3] 
                                      for i in range(0, len(coords), 3)]) +"\n")
-            else: f.write("\n")
+            else: fw.write("\n")
 
             if self.antisite_configs is not []:
-                f.write("Antisite: ")
-                f.write(' '.join(i[0] + "_" + i[1] 
+                fw.write("Antisite: ")
+                fw.write(' '.join(i[0] + "_" + i[1] 
                                        for i in self.antisite_configs)+ "\n\n")
             if self.dopants:
                 for d in self.dopants:
-                    f.write("Dopant: {}\n".format(d))
-                    f.write("EleNeg: {}\n".format(self.electronegativity[d]))
-                    f.write("Charge: {}\n".format(self.oxidation_states[d]))
-                    f.write("\n")
+                    fw.write("Dopant: {}\n".format(d))
+                    fw.write("EleNeg: {}\n".format(self.electronegativity[d]))
+                    fw.write("Charge: {}\n".format(self.oxidation_states[d]))
+                    fw.write("\n")
     
-                f.write("Dopant_site: ")
-                f.write(' '.join(i[0] + "_" + i[1] 
+                fw.write("Dopant_site: ")
+                fw.write(' '.join(i[0] + "_" + i[1] 
                                         for i in self.dopant_configs) + "\n\n")
             if self.symbreak == True:
-                f.write("Symbreak: {}\n".format(self.displace))
+                fw.write("Symbreak: {}\n".format(self.displace))
             else:
-                f.write("Symbreak: {}\n".format(self.symbreak))
-            f.write("Include: {}\n".format(self.include))
-            f.write("Exclude: {}\n".format(self.exclude))
-            f.write("Cutoff: {}\n".format(self.cutoff))
-            f.write("Symprec: {}\n".format(self.symprec))
+                fw.write("Symbreak: {}\n".format(self.symbreak))
+            fw.write("Include: {}\n".format(self.include))
+            fw.write("Exclude: {}\n".format(self.exclude))
+            fw.write("Cutoff: {}\n".format(self.cutoff))
+            fw.write("Symprec: {}\n".format(self.symprec))
 
     @staticmethod
     def print_dopant_info(dopant):

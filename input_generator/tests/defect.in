@@ -1,19 +1,5 @@
-  Name: Mg1
-   Rep: 1
- Equiv: 1..32
- Coord: 0.0000000 0.0000000 0.0000000
-EleNeg: 1.31
-Charge: 2
-
-  Name: O1
-   Rep: 33
- Equiv: 33..64
- Coord: 0.2500000 0.2500000 0.2500000
-EleNeg: 3.44
-Charge: -2
-
 Int_site: [[0.1, 0.1, 0.1]]
-Antisite: O_Mg Mg_O
+Antisite: Mg_O O_Mg
 
 Dopant: Al
 EleNeg: 1.61
@@ -24,4 +10,5 @@ Dopant_site: Al_Mg Al_O
 Symbreak: False
 Include: 
 Exclude: 
+Cutoff: 3.0
 Symprec: 0.01

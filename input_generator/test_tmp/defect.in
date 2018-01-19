@@ -1,7 +1,7 @@
   Name: Zn1
    Rep: 1
  Equiv: 1..54
- Coord: 0.1666667 0.1666667 0.0000000
+ Coord: 0.5000000 0.5000000 0.0000000
 EleNeg: 1.65
 Charge: 2
 
@@ -20,9 +20,9 @@ EleNeg: 2.19
 Charge: -3
 
 Int_site: 
-Antisite: Zn_Sn Sn_Zn
+Antisite: Zn_Sn Zn_P Sn_Zn Sn_P P_Zn P_Sn
 
-Symbreak: 0.2
+Symbreak: False
 Include: 
 Exclude: 
 Cutoff: 3.0
