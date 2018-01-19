@@ -19,8 +19,14 @@ Charge: 4
 EleNeg: 2.19
 Charge: -3
 
-Int_site: 
+Int_site: [[0.5, 0.5, 0.5]]
 Antisite: Zn_Sn Zn_P Sn_Zn Sn_P P_Zn P_Sn
+
+Dopant: Sc
+EleNeg: 1.36
+Charge: 3
+
+Dopant_site: Sc_Zn Sc_Sn Sc_P
 
 Symbreak: False
 Include: 

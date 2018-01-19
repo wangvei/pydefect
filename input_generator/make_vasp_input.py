@@ -140,7 +140,7 @@ def get_nions(defect_structure):
 
 def get_charge(potcar, nions, charge):
     """
-    Return total charge from POTCAR file times number of ions, and charge.
+    Return total charge from POTCAR file, number of ions, and charge state.
     """
     p = Potcar.from_file(potcar)
     # check only the length of potcar and nions.
@@ -169,15 +169,14 @@ def _print_is_constructing(dirname):
 class VaspInputMaker():
     """
     Construct a set of vasp input files.
-    POTCAR files are fetched from ~/.pydefect.yaml.
+    POTCAR files are fetched from ~/.pydefect.yaml
+    Structure information is stored in defect_setting.
     
     Args:
-        defect_setting: DefectSetting class object
         defect_name (str): defect name defined in PyDefect, e.g., "Va_Mg1_2"
-        poscar (str): DPOSCAR name
+        defect_setting: DefectSetting class object
         incar (str): INCAR name
         kpoints (str): KPOINTS name
-    
     """
 
     def __init__(self, defect_name, defect_setting, incar="INCAR", 
@@ -251,6 +250,7 @@ class VaspInputMaker():
     
         self.defect_structure.to(filename=self.defect_name + "/POSCAR-Initial")
 
+        # vasp input
         # perturb neighboring atoms randomly.
         if self.defect_setting.displace is not None: 
             self.defect_structure, self.perturbed_sites = \

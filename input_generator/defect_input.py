@@ -277,6 +277,8 @@ class DefectInMaker():
                  displace=0.2, cutoff=3.0, symprec=0.01):
 
         self.dopants = dopants
+        if not len(interstitial_coords) % 3 == 0:
+                warnings.warn("Be careful. Interstital site is not proper.")
         self.interstitial_coords = interstitial_coords
         self.is_antisite = is_antisite
         self.ElNeg_diff = ElNeg_diff
@@ -349,6 +351,7 @@ class DefectInMaker():
         if dopants:
             for d in dopants:
                 if d in structure.symbol_set:
+                    warnings.warn("Dopant " + d + " exists in host.")
                     continue
                 for s1 in structure.symbol_set:
                     if s1 in EN_keys and d in EN_keys:
@@ -375,7 +378,7 @@ class DefectInMaker():
          is_antisite=False, ElNeg_diff=1.0, include=None,
          exclude=None, symbreak=True, displace=0.2, cutoff=3.0, symprec=0.01):
         """
-        Constructs DefectInMaker class object from a POSCAR file.
+        Construct DefectInMaker class object from a POSCAR file.
         VERY IMPORTANT: Some parameters are set by default.
         """
         structure = Structure.from_file(poscar)
@@ -386,7 +389,7 @@ class DefectInMaker():
 
     def to(self, defectin_file="defect.in", poscar_file="DPOSCAR"):
         """
-        Prints readable defect.in file.
+        Print readable defect.in file.
         """
         self._write_defect_in(defectin_file)
         # HACK:  pmg has a bug, Symmetrized structure object cannot be poscar
