@@ -1,0 +1,6 @@
+warning: structure for ewald must be extracted from correction_file (only axis is needed)
+Number of R, G vectors = 13687, 10082
+warning: defect index should be automatic implement
+i = 0
+R = 
+[-167.34524354  -52.31774037  -28.08619579]

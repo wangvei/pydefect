@@ -41,10 +41,12 @@ def add_refpot_to_json(outcar_path, json_path):
 
 def calc_min_distance_and_its_v2coord(v1, v2, axis):
     candidate_list = []
-    for x, y, z in product((-1, 0, 1), repeat=3):
-        delta_vect = np.dot(axis, np.array([x, y, z]))
-        distance = np.linalg.norm(delta_vect+v2-v1)
-        candidate_list.append((distance, delta_vect+v2))
+    vect = np.dot(axis, v2 - v1)
+    for index in product((-1, 0, 1), repeat=3):
+        index = np.array(index)
+        delta_vect = np.dot(axis, index)
+        distance = np.linalg.norm(delta_vect+vect)
+        candidate_list.append((distance, v2 + index))
     return min(candidate_list, key = lambda t: t[0])
 
 def read_defect_pos(d):
@@ -59,22 +61,21 @@ def read_defect_pos(d):
 def complete_defect_json(dirname):
     poscar_initial = Poscar.from_file(dirname + "/POSCAR-initial")
     poscar_final = Poscar.from_file(dirname + "/POSCAR-final")
-    coords_initial = poscar_initial.structure.cart_coords
-    coords_final = poscar_final.structure.cart_coords
+    coords_initial = poscar_initial.structure.frac_coords
+    coords_final = poscar_final.structure.frac_coords
     elements = [e.name for e in poscar_final.structure.species]
     axis = poscar_initial.structure.lattice.matrix
     axis_inv = np.linalg.inv(axis)
     with open(dirname+"/defect.json") as f:
         d = json.load(f)
-    defect_pos_frac = read_defect_pos(d)
-    defect_pos = np.dot(axis, defect_pos_frac)
+    defect_pos = read_defect_pos(d)
     distance_list, displacement_list, angle_list = [], [], []
     with open(dirname+"/structure.txt", 'w') as f:
         f.write("#Defect position (frac)\n")
         #f.write(f"#{defect_pos_frac[0]: .6f} {defect_pos_frac[0]: .6f} {defect_pos_frac[0]: .6f}\n")
-        f.write("#{0: .6f} {1: .6f} {2: .6f}\n".format(defect_pos_frac[0],
-                                                       defect_pos_frac[1],
-                                                       defect_pos_frac[2]))
+        f.write("#{0: .6f} {1: .6f} {2: .6f}\n".format(defect_pos[0],
+                                                       defect_pos[1],
+                                                       defect_pos[2]))
         f.write("#" + " " * 8 + "-" * 5 + "coordinations (frac)" \
                 + "-" * 5 + " " * 3 +"dist.(init)[A]" + " " * 3\
                 + "dist.(final)[A]  disp.[A]  angle[deg.]\n")
@@ -88,17 +89,20 @@ def complete_defect_json(dirname):
             distance, _ = calc_min_distance_and_its_v2coord(defect_pos, vf, axis)
             if disp >= 0.1:
             #if disp >= 0:
-                v1 = defect_pos - vi
-                v2 = neighbor_vf - vi
+                v1 = np.dot(axis, defect_pos - vi)
+                v2 = np.dot(axis, neighbor_vf - vi)
                 cosine = np.dot(v1, v2)/(np.linalg.norm(v1) * np.linalg.norm(v2))
                 angle = 180 - np.degrees(np.arccos(np.clip(cosine, -1, 1)))
             else:
                 angle = "-"
-            ne_vf_frac = np.round(np.dot(axis_inv, neighbor_vf),6)
+            ne_vf_frac = neighbor_vf
             #f.write(f"{e:3s} {str(i+1).rjust(3)}  {ne_vf_frac[0]: .5f}   {ne_vf_frac[1]: .5f}   {ne_vf_frac[2]: .5f}\
-            f.write("{0:3s} {1}  {2: .5f}   {3: .5f}   {4: .5f}\
-       {5:.3f}            {6:.3f}         {7:.3f}         {8}\n".format(\
+            f.write("{0:3s} {1}  {2: .5f}   {3: .5f}   {4: .6f}\
+        {5:.3f}            {6:.3f}         {7:.3f}         {8}\n".format(\
             e, str(i+1).rjust(3), ne_vf_frac[0], ne_vf_frac[1], ne_vf_frac[2],
+#            f.write("{0:3s} {1}  {2: .5f}   {3: .5f}   {4: .5f}\
+#       {5:.3f}            {6:.3f}         {7:.3f}         {8}\n".format(\
+#            e, str(i+1).rjust(3), vf[0], vf[1], vf[2],
             distance_init, distance, disp, angle))
             distance_list.append(distance)
             displacement_list.append(disp)

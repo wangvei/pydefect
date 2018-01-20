@@ -65,6 +65,7 @@ def determine_ewald_param(def_structure,
     l_r = mstats.gmean([np.linalg.norm(v) for v in real_lattice])
     l_g = mstats.gmean([np.linalg.norm(v) for v in reciprocal_lattice])
     ewald_param = np.sqrt( l_g / l_r / 2 ) * cube_root_vol / root_det_dielectric
+
     while True:
         ewald = ewald_param / cube_root_vol * root_det_dielectric
         max_G_vector_norm = 2 * ewald * PROD_CUTOFF_FWHM
@@ -78,13 +79,15 @@ def determine_ewald_param(def_structure,
         print("Number of R, G vectors = {0}, {1}".format(len(set_R_vectors), len(set_G_vectors)))
         diff_real_recipro = (float(len(set_R_vectors)) / len(set_G_vectors)) 
         if (diff_real_recipro > 1/1.05) and (diff_real_recipro < 1.05):
+            ewald_param = ewald * cube_root_vol / root_det_dielectric
             return ewald, set_R_vectors, set_G_vectors
         else:
             ewald_param *= diff_real_recipro  ** 0.17
 
 def calc_ewald_real_pot(ewald, dielectric_tensor,
-                        set_R_vectors, 
-                        atomic_pos_wrt_defect):
+                        set_R_vectors
+                        ):
+                        #atomic_pos_wrt_defect):
     """
     \sum erfc(ewald*\sqrt(R*\epsilon_inv*R)) 
                  / \sqrt(det(\epsilon)) / \sqrt(R*\epsilon_inv*R) [1/A]
@@ -94,10 +97,10 @@ def calc_ewald_real_pot(ewald, dielectric_tensor,
     each = np.zeros(len(set_R_vectors))
     for i, R in enumerate(set_R_vectors):
         # Skip the potential caused by the defect itself
-        r = R - atomic_pos_wrt_defect
-        if np.linalg.norm(r) < 1e-8: 
+        #r = R - atomic_pos_wrt_defect
+        if np.linalg.norm(R) < 1e-8: 
             continue
-        root_R_epsilonI_R = np.sqrt(reduce(np.dot, [r.T, epsilon_inv, r]))
+        root_R_epsilonI_R = np.sqrt(reduce(np.dot, [R.T, epsilon_inv, R]))
         each[i] = scipy.special.erfc(ewald * root_R_epsilonI_R) \
                              / root_R_epsilonI_R
 
@@ -134,17 +137,20 @@ def calc_model_pot_and_lat_energy(ewald,
                                   dielectric_tensor,
                                   volume,
                                   set_R_vectors,
-                                  set_G_vectors):
-    atomic_pos_wrt_defect = [v-defect_pos for v in atomic_pos_wo_defect]
+                                  set_G_vectors,
+                                  axis):
+    #atomic_pos_wrt_defect = [v-defect_pos for v in atomic_pos_wo_defect] 
+    atomic_pos_wrt_defect_frac = [v-defect_pos for v in atomic_pos_wo_defect] #try
+    atomic_pos_wrt_defect = [np.dot(axis, v - defect_pos) for v in atomic_pos_wo_defect] #try
     coeff = charge * sconst.elementary_charge * \
             1.0e10 / sconst.epsilon_0 #[V]
     model_pot = [None for i in atomic_pos_wo_defect]
     for i, r in enumerate(atomic_pos_wo_defect):
+        set_r_vectors = set_R_vectors - atomic_pos_wrt_defect[i]
         real_part\
             = calc_ewald_real_pot(ewald,
                                   dielectric_tensor,
-                                  set_R_vectors,
-                                  r)
+                                  set_r_vectors)
         recipro_part \
             = calc_ewald_recipro_pot(ewald,
                                      dielectric_tensor, 
@@ -154,12 +160,10 @@ def calc_model_pot_and_lat_energy(ewald,
         diff_pot = calc_ewald_diff_potential(ewald, volume)
         model_pot[i] \
             = (real_part + recipro_part + diff_pot) * coeff
-        #print(real_part, recipro_part, diff_pot, coeff)
-        #print(self.defect_property.charge, scipy.constants.elementary_charge, scipy.constants.epsilon_0)
     real_part = calc_ewald_real_pot(ewald, 
                                     dielectric_tensor, 
-                                    set_R_vectors,
-                                    np.zeros(3))
+                                    set_R_vectors)
+                                    #np.zeros(3))
     recipro_part = calc_ewald_recipro_pot(ewald,
                                           dielectric_tensor,
                                           set_G_vectors,
@@ -169,9 +173,33 @@ def calc_model_pot_and_lat_energy(ewald,
     self_pot = calc_ewald_self_potential(ewald, dielectric_tensor)
     model_pot_defect_site \
         = (real_part + recipro_part + diff_pot + self_pot) * coeff
-    print(real_part, recipro_part, diff_pot, self_pot)
     lattice_energy = model_pot_defect_site * charge / 2
-    return model_pot_defect_site, lattice_energy
+    return model_pot, model_pot_defect_site, lattice_energy
+
+def get_distance_two_planes(lattice_vectors):
+    # (a_i \times a_j) \ddot a_k / |a_i \times  a_j| 
+    distance = np.zeros(3, dtype=float)
+    for i in range(3):
+        a_i_times_a_j = np.cross(lattice_vectors[i-2], lattice_vectors[i-1])
+        a_k = lattice_vectors[i]
+        distance[i] = abs(np.dot(a_i_times_a_j, a_k)) \
+                         / np.linalg.norm(a_i_times_a_j)
+    return distance
+
+def get_max_sphere_radius(lattice_vectors):
+    # Maximum radius of a sphere fitting inside the unit cell.
+    return max(get_distance_two_planes(lattice_vectors)) / 2.0
+
+def calc_average_potential_difference(distance,
+                                      abinitio_pot,
+                                      model_pot,
+                                      axis):
+    distance_threshold = get_max_sphere_radius(axis)
+    pot_diff = []
+    for (d, a, m) in zip(distance, abinitio_pot, model_pot):
+        if d > distance_threshold:
+            pot_diff.append(a - m)
+    return np.mean(pot_diff)
 
 class _DefType(Enum):
     VACANCY = 1
@@ -200,18 +228,20 @@ def correct_energy(dirname, defect_dict, correct_dict):
     if len(def_pot) == len(ref_pot):
         def_type = _DefType.SUBSTITUTIONAL
         defect_index = read_dpos
+        atomic_pos_wo_defect = np.delete(def_coord_frac, defect_index-1, 0)
     elif len(def_pot) == len(ref_pot)+1:
+        def_type = _DefType.INTERSTITIAL
         defect_index = read_dpos
         def_pot = np.delete(def_pot, defect_index-1)
-        def_type = _DefType.INTERSTITIAL
+        atomic_pos_wo_defect = np.delete(def_coord_frac, defect_index-1, 0)
     elif len(def_pot) == len(ref_pot)-1:
         def_type = _DefType.VACANCY
-        defect_index = 9 #in outcar, index 1~, temporary hard coding
+        defect_index = 192 #in outcar, index 1~, temporary hard coding
         ref_pot = np.delete(ref_pot, defect_index-1)
         print("warning: defect index should be automatic implement")
+        atomic_pos_wo_defect = def_coord_frac
     else:
         raise ValueError("This code can not applied to more than one defect.")
-    atomic_pos_wo_defect = np.delete(def_coord_frac, defect_index-1, 0)
 
     diff_pot = -(def_pot - ref_pot)
 
@@ -227,7 +257,7 @@ def correct_energy(dirname, defect_dict, correct_dict):
     set_R_vectors = np.array(correct_json["set_R_vector"])
     set_G_vectors = np.array(correct_json["set_G_vector"])
 #potential.sh 3
-    model_pot, lattice_energy \
+    model_pot, model_pot_site, lattice_energy \
         =  calc_model_pot_and_lat_energy(ewald,
                                          charge,
                                          atomic_pos_wo_defect,
@@ -235,9 +265,20 @@ def correct_energy(dirname, defect_dict, correct_dict):
                                          dielectric_tensor,
                                          volume,
                                          set_R_vectors,
-                                         set_G_vectors)
-    print(model_pot)
-    print(lattice_energy)
+                                         set_G_vectors,
+                                         axis)
+    print("model pot on site = {0}".format(model_pot_site))
+    print("lattice energy = {0}".format(lattice_energy))
+    ave_pot_diff\
+        =calc_average_potential_difference(distances_from_defect,
+                                           diff_pot,
+                                           model_pot,
+                                           axis)
+    print("potential difference = {0}".format(ave_pot_diff))
+    alignment = -1.0 * ave_pot_diff * charge
+    print("alignment-like term = {0}".format(alignment))
+
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
