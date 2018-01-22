@@ -285,8 +285,12 @@ class DefectInMaker():
                  displace=0.2, cutoff=3.0, symprec=0.01):
 
         self.dopants = dopants
-        if not len(interstitial_coords) % 3 == 0:
-                warnings.warn("Be careful. Interstital site is not proper.")
+        
+        if interstitial_coords:
+            if not len(interstitial_coords) % 3 == 0:
+                comment="The number of intersitial coordinates cannot be \
+                         divided by 3."
+                raise ValueError(comment)
         self.interstitial_coords = interstitial_coords
         self.is_antisite = is_antisite
         self.ElNeg_diff = ElNeg_diff
@@ -383,7 +387,7 @@ class DefectInMaker():
                                             format(element1, element2))
 
     @classmethod
-    def from_str_file(cls, poscar, dopants=[], interstitial_coords=False,
+    def from_structure_file(cls, poscar, dopants=[], interstitial_coords=False,
          is_antisite=False, ElNeg_diff=1.0, include=None,
          exclude=None, symbreak=True, displace=0.2, cutoff=3.0, symprec=0.01):
         """
@@ -489,9 +493,8 @@ def main():
                         type=str, help="POSCAR name.")
     parser.add_argument("-d","--dopants", dest="dopants", default="", nargs="+", 
                         type=str, help="Dopant elements. Eg. Al Ga In.")
-    parser.add_argument("-i", dest="interstitial_coords", default=False, 
-                        nargs="+", type=float, 
-                        help="Inetrstitials. Eg. 0 0 0  0.5 0.5 0.5.")
+    parser.add_argument("-i", dest="interstitial_coords",  nargs="+", default=None,
+                        type=float, help="Inetrstitials. Eg. 0.5 0.5 0.5.")
     parser.add_argument("-a","--antisite", dest="is_antisite", 
                         action="store_false",
                         help="Set if antisites are considered.")
@@ -518,7 +521,7 @@ def main():
     if opts.print_dopant:
         DefectInMaker.print_dopant_info(opts.print_dopant)
     else:
-        defect_in = DefectInMaker.from_str_file(opts.poscar, opts.dopants, 
+        defect_in = DefectInMaker.from_structure_file(opts.poscar, opts.dopants, 
                     opts.interstitial_coords, opts.is_antisite, 
                     opts.ElNeg_diff, opts.include, opts.exclude, opts.symbreak,
                     opts.displace, opts.cutoff, opts.symprec)

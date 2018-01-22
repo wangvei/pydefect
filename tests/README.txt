@@ -15,12 +15,41 @@
         /home/common/default_POTCAR/POTCAR_H
         /home/common/default_POTCAR/POTCAR_He
         /home/common/default_POTCAR/POTCAR_Li ...
-    f. The correction.json file contains the dielectric tensor values.
+    f. The correction.txt contains the dielectric tensor, and ewald parameter and accuracy.
+        ----------------------------------------------------------------------
+        dielectric_tensor = x x x   x x x   x x x
+        ewald_parameter =  22
+        ewald_accuracy =  xx # This can be omitted if default value is fine.
+        ----------------------------------------------------------------------
+    g. The defect_energy.txt contains the band-edge positions and chemical 
+    potentials of competing phases 
+        ----------------------------------------------------------------------
+        vbm_pbe =                                                                          
+        cbm_pbe =                                                                          
+        band_gap_pbe =                                                                     
+                                                                                           
+        vbm_gw =                                                                           
+        cbm_gw =                                                                           
+        band_gap_gw =                                                                      
+                                                                                           
+        # substances                                                                       
+        energy_Cu =                                                                        
+        energy_In =                                                                        
+        energy_Se =                                                                        
+                                                                                           
+        chem_pot_name = Cu-rich A B                                                        
+        #                  Cu    In   Se                                                   
+        chem_pot_Cu-rich = -1.4 -0.2  0                                                    
+        chem_pot_A = -1.4 -0.2  0                                                          
+        chem_pot_B = -1.3 -1.2 -0.2
+        ----------------------------------------------------------------------
+
 
     An example of initial file configurations
        MgO_defect/       <---- parent directory
        MgO_defect/{INCAR,KPOINTS,POSCAR}
-       MgO_defect/correction.json 
+       MgO_defect/correction.txt
+       MgO_defect/defect_energy.txt
        ~/.pydefect.yaml  <---- home directory
 
 1. Make defect.in file from a POSCAR that is a supercell.
@@ -145,11 +174,20 @@ Int_site: 0.1 0.1 0.1
 
     b. Plot the square of (sums of) one-electron wavefunction(s). 
             --> Construct vasp input files automatically
+
     c. Judge if the defect contains shallow defect state.
+
     d. Gather total and correction energies and plot energy vs Fermi level. 
+        python3 plot_energy.py --band_edge gw --chempot Cu-rich
+        python3 plot_energy.py --chempot A # When a tag does not exist, it means all.
+        python3 plot_energy.py --band_edge gw gga
+       See also aforementioned example of defect_energy.txt.
+    
         d-1. Calculate the Fermi level and carrier concentration at room temperature.
         d-2. Calculate the Fermi level and carrier concentration quenched from a growth temperature to room temperature.
+
     e. Defect eigenvalues with respect to the band edge positions.
+
  
 ------------------------------------------------------------------------------
 Future Works: 
