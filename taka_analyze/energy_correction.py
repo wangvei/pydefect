@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 
 import sys
+sys.path.append("/Users/takahashi/psi/bitbucket/chempotdiag/")
+import chem_pot
 import argparse
 import glob
 import json
@@ -278,6 +280,7 @@ def correct_energy(dirname, defect_dict, correct_dict):
     alignment = -1.0 * ave_pot_diff * charge
     print("alignment-like term = {0}".format(alignment))
 
+def plot_fermi_vs_formation():
 
 
 if __name__ == "__main__":
