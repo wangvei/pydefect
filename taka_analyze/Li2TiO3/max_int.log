@@ -1,0 +1,6 @@
+warning: structure for ewald must be extracted from correction_file (only axis is needed)
+max_int
+[12, 20, 11]
+max_int
+[18, 11, 19]
+Number of R, G vectors = 13687, 10082

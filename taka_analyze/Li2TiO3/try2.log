@@ -1,0 +1,6 @@
+warning: structure for ewald must be extracted from correction_file (only axis is needed)
+warning: defect index should be automatic implement
+model pot on site = -0.20241622262779732
+lattice energy = -0.20241622262779732
+potential difference = 0.029182503963826538
+alignment-like term = -0.058365007927653076
