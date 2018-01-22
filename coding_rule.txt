@@ -1,0 +1,33 @@
+Based on coding rule of pymatgen of Materials Project.
+
+Naming:
+	Function:
+		Use verb firstly.
+		Write by small capital and use underscore.
+		e.g.
+			move_directory(src, dist)	
+			read_setting(filename)
+
+Spacing:
+	-Immediately inside parentheses, brackets or braces (PEP8)
+	e.g.
+		OK : function(array[1], {key: 2})
+		NG : function( array[1], { key: 2 } )
+
+	-Excepting above brackets rule,
+	 place one whitespace before/after operator.
+	 e.g.
+		OK : function(1 + 2)
+			 a = (-b + c) * 2
+		NG : function(1+2)
+			 a=(-b+c)*2
+			 a = ( -b + c) * 2
+
+Abbreviation:
+(If you catch up good abbreviation, please consult and add it to this file.)
+
+	dict = dictionary
+	coords = coordninates
+	sym = symmetry
+	fw = file of writing mode
+	fr = file of reading mode
