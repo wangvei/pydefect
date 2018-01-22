@@ -1,0 +1,90 @@
+1. 
+Make parsers of correction.txt and defect_energy.txt in the parent directory and
+defect_position.json and calc_results.json in each defect directory.
+
+
+++++ correction.txt ++++
+dielectric_tensor = x x x   x x x   x x x
+ewald_parameter =  
+ewald_accuracy = 
+
+
+++++ defect_energy.txt ++++
+vbm_pbe = 
+cbm_pbe =
+band_gap_pbe =
+
+vbm_gw = 
+cbm_gw =
+band_gap_gw = 
+
+# substances
+energy_Cu =  
+energy_In = 
+energy_Se = 
+
+chem_pot_name = Cu-rich A B
+#                  Cu    In   Se
+chem_pot_Cu-rich = -1.4 -0.2  0
+chem_pot_A = -1.4 -0.2  0
+chem_pot_B = -1.3 -1.2 -0.2
+
+
+++++ defect_position.json ++++
+{
+  "defect_coords": [
+    0,
+    0,
+    0
+  ]
+}
+
++ defect_index
+
+
+++++ calc_results.json ++++
+
+* reference_potential
+* energy
+distance_from_defect
+....
+
+
+
+2.
+* Modify defect_input.py
+New defect.in
+--------------------------------------------------
+ Irreducible elements: Mg1
+  Representative atom: 1
+     Equivalent atoms: 1..32
+Factional coordinates: 0.0000000 0.0000000 0.0000000
+    Electronegativity: 1.31
+      Oxidation state: 2
+
+ Irreducible elements: O1
+  Representative atom: 33
+     Equivalent atoms: 33..64
+Factional coordinates: 0.2500000 0.2500000 0.2500000
+    Electronegativity: 3.44
+      Oxidation state: -2
+
+Interstital sites: 
+Antisites: 
+
+Maximum Displacement: 0
+
+Exceptionally included: 
+Exceptionally exclude: 
+Region of atoms perturbed: 3.0
+Symprec: 0.01
+--------------------------------------------------
+* Change names of functions and classes.
+
+
+3.
+* Modify make_vasp_inputs.py
+Extract a part of which vasp is not involved.
+
+
+
