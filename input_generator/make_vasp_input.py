@@ -212,7 +212,7 @@ class VaspInputMaker():
             for irrep_element in self.defect_setting.irrep_elements:
                 if self.out_name == irrep_element.irrepname:
                     removed_atomic_index = irrep_element.first_index
-                    defect_coords = irrep_element.repr_coord
+                    defect_coords = irrep_element.repr_coords
             self.defect_structure.remove_sites([removed_atomic_index - 1])
         else:
             raise ValueError("{} is improper.".format(self.out_name))

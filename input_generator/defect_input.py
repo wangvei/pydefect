@@ -19,7 +19,8 @@ __date__ = "December 4, 2017"
 
 class IrrepElement():
     """
-    This class object holds properties related to irreducible atom set.
+    >> IrreducibleSite()
+    This class object holds properties related to irreducible (irrep) atom set.
     Note1: atomic indices need to be sorted. Thus, they can be written in one 
            sequence.
     Note2: first_index atom is assumed to represent the irreducible atoms.
@@ -29,18 +30,18 @@ class IrrepElement():
         element (str): element name (e.g., Mg)
         first_index (int): first index of irrepname. 
         last_index (int): last index of irrepname. 
-        repr_coord (array): representative coordination, namely the position
+        repr_coords (array): representative coordinates, namely the position
                             of first_index
 
     TODO1: Add the site symmetry information.
     """
     def __init__(self, irrepname, element, first_index, last_index, 
-                 repr_coord):
+                 repr_coords):
         self.irrepname = irrepname
         self.element = element
         self.first_index = first_index
         self.last_index = last_index
-        self.repr_coord = repr_coord
+        self.repr_coords = repr_coords
 
     def __eq__(self, other):
         if other is None or type(self) != type(other): 
@@ -52,16 +53,19 @@ class IrrepElement():
              "element" : self.element,
              "first_index" : self.first_index,
              "last_index" : self.last_index,
-             "repr_coord" : self.repr_coord}
+             "repr_coords" : self.repr_coords}
         return d
 
     @classmethod
     def from_dict(cls, d):
         return cls(d["irrepname"], d["element"], d["first_index"], 
-                   d["last_index"], d["repr_coord"]) 
+                   d["last_index"], d["repr_coords"]) 
 
     @property
     def natoms(self):
+        """
+        Return number of atoms in a given (super)cell.
+        """
         return self.last_index - self.first_index + 1
 
 
@@ -80,13 +84,14 @@ class DefectSetting():
         interstitial_coords (3x1 array): coordinations of interstitial sites,
             e.g., [[0, 0, 0], [0.1, 0.1, 0.1], ...].
         include (array): exceptionally added defect type with a charge state.
-            e.g., ["Va_O_-1", "Va_O_-2"]                     
+            e.g., ["Va_O1_-1", "Va_O1_-2"]                     
         exclude (array): exceptionally removed defect type with a charge state.
                          In case some of them don't exist, they'll be ignored.
-            e.g., ["Va_O_1", "Va_O_2"]                     
-        symbreak (bool): Whether to perturb defect's neighboring atoms for 
+            e.g., ["Va_O1_1", "Va_O1_2"]                     
+        is_sym_broken (bool): Whether to perturb defect's neighboring atoms for 
+#        symbreak (bool): Whether to perturb defect's neighboring atoms for 
                          symmetry breaking.
-        displace (float): Maxmum displacement distance in angstrom.
+        displace (float): Maximum displacement distance in angstrom.
         cutoff (float): Cutoff radius in which atoms are displaced.
         symprec (float): Precision used for symmetry analysis.
         oxidation_states (dict): Oxidation states for relevant elements.
@@ -115,6 +120,7 @@ class DefectSetting():
         if other is None or type(self) != type(other): 
             raise TypeError
         return self.__dict__ == other.__dict__
+#        return self.as_dict() == other.as_dict()
 
     def as_dict(self):
         """
@@ -135,19 +141,6 @@ class DefectSetting():
              "electronegativity": self.electronegativity}
         return d
 
-    def to_json(self):
-        """
-        Returns a json string representation of the MSONable object.
-        """
-        return json.dumps(self.as_dict(), cls=MontyEncoder)
-
-    def to_json_file(self, filename):
-        """
-        Returns a json file.
-        """
-        fw = open(filename, 'w')
-        json.dump(self.as_dict(), fw, indent=2, cls=MontyEncoder)
-
     @classmethod
     def from_dict(cls, d):
         """
@@ -162,6 +155,21 @@ class DefectSetting():
                    d["include"], d["exclude"], d["symbreak"], d["displace"], 
                    d["cutoff"], d["symprec"], d["oxidation_states"], 
                    d["electronegativity"])
+
+    def to_json(self):
+        """
+        Returns a json string representation of the MSONable object.
+        """
+        return json.dumps(self.as_dict(), cls=MontyEncoder)
+
+    def to_json_file(self, filename):
+        """
+        Returns a json file.
+        """
+        fw = open(filename, 'w')
+        json.dump(self.as_dict(), fw, indent=2, cls=MontyEncoder)
+
+    #def from_json():
 
     @classmethod
     def from_defect_in(cls, poscar="DPOSCAR", defect_in_file="defect.in"):
@@ -197,10 +205,10 @@ class DefectSetting():
                     # Representative atom index
                     first_index, last_index = [int(i) 
                           for i in defect_in.readline().split()[1].split("..")]
-                    repr_coord = \
+                    repr_coords = \
                            [float(i) for i in defect_in.readline().split()[1:]]
                     irrep_elements.append(IrrepElement(irrepname, element, 
-                                    first_index, last_index, repr_coord))
+                                    first_index, last_index, repr_coords))
     
                     electronegativity[element] = \
                                          float(defect_in.readline().split()[1])
@@ -262,12 +270,12 @@ class DefectInMaker():
         ElNeg_diff (float): Electronegativity difference for determining sets 
                             of antisites and dopant sites. 
         include (array): exceptionally added defect type with a charge state.
-            e.g., ["Va_O_-1", "Va_O_-2"]                     
+            e.g., ["Va_O1_-1", "Va_O1_-2"]                     
         exclude (array): exceptionally removed defect type with a charge state.
-            e.g., ["Va_O_1", "Va_O_2"]                     
+            e.g., ["Va_O1_1", "Va_O1_2"]                     
         symbreak (bool): Whether to perturb defect's neighboring atoms for 
             symmetry breaking.
-        displace (float): Maxmum displacement distance in angstrom.
+        displace (float): Maximum displacement distance in angstrom.
         cutoff (float): Cutoff radius for detemining atoms displaced.
         symprec (float): Precision used for symmetry analysis.
     """
@@ -308,27 +316,28 @@ class DefectInMaker():
                 warnings.warn("Oxidation state of " + s + " is unavailable.")
                 self.oxidation_states[s] = "N.A."
 
-        self.symmetrized_structure = SpacegroupAnalyzer(structure).get_symmetrized_structure()
-        # irrep_elements_index["Mg"] = 2;  Mg has 2 inequivalent sites
-        irrep_element_index = {}
+        self.symmetrized_structure = \
+                      SpacegroupAnalyzer(structure).get_symmetrized_structure()
+        # num_irrep_elements["Mg"] = 2 means Mg has 2 inequivalent sites
+        num_irrep_elements = {}
         # irrep_elements (aray): a set of IrrepElement class objects
         self.irrep_elements = []
-        # equivalent_sites: Equivalent positions from SpacegroupAnalyzer.
+        # equivalent_sites: Equivalent site indices from SpacegroupAnalyzer.
         last = 0
         equiv_sites = self.symmetrized_structure.equivalent_sites
         for i, e in enumerate(equiv_sites):
             element = e[0].species_string
-            if element not in irrep_element_index.keys():
-                irrep_element_index[element] = 1
+            if element not in num_irrep_elements.keys():
+                num_irrep_elements[element] = 1
             else:
                 # increment number of inequiv site for element
-                irrep_element_index[element] += 1
+                num_irrep_elements[element] += 1
             first = last + 1
-            last += len(e)
-            repr_coord = e[0].frac_coords
-            irrepname = element + str(irrep_element_index[element]) 
+            last = last + len(e)
+            repr_coords = e[0].frac_coords
+            irrepname = element + str(num_irrep_elements[element]) 
             self.irrep_elements.append(
-                     IrrepElement(irrepname, element, first, last, repr_coord))
+                     IrrepElement(irrepname, element, first, last, repr_coords))
 
         EN_keys = self.electronegativity.keys()
 
@@ -404,7 +413,7 @@ class DefectInMaker():
                 fw.write("   Rep: {}\n".format(e.first_index))
                 fw.write(" Equiv: {}\n".format(
                               str(e.first_index) + ".." + str(e.last_index)))
-                fw.write(" Coord: %9.7f %9.7f %9.7f\n" % tuple(e.repr_coord))
+                fw.write(" Coord: %9.7f %9.7f %9.7f\n" % tuple(e.repr_coords))
                 fw.write("EleNeg: {}\n".format(
                                            self.electronegativity[e.element]))
                 fw.write("Charge: {}\n\n".format(
@@ -449,6 +458,9 @@ class DefectInMaker():
 
     @staticmethod
     def print_dopant_info(dopant):
+        """
+        This is used for adding dopant information a posteriori.
+        """
         try:
             electronegativity = atom.electronegativity[dopant]
         except:
