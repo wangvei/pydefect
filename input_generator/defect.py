@@ -1,539 +1,59 @@
 #!/usr/bin/env python
 
-from abc import ABCMeta
-import argparse
-import defect_structure
-import mathematics as lmath
-import numpy as np
-import re
-import spglib as spg
-import sys
+__author__ = "Yu Kumagai"
+__copyright__ = "Copyright 2017, Oba group"
+__version__ = "0.1"
+__maintainer__ = "Yu Kumagai"
+__email__ = "yuuukuma@gmail.com"
+__status__ = "Development"
+__date__ = "December 4, 2017"
 
-def add_element(structure, element, coord):
+class IrreducibleSite():
     """
-    If element exists in *structure*, *element* is inserted just before the 
-    existing species with the same *element*.
-    If not, the *element* is added at the end.
-    """
-    i = 0
-    for specie in structure.species:
-        if element == specie:
-            break
-        i += 1
-    return structure.insert(i, added_element, coord)
-
-
-class Defect(metaclass=ABCMeta):
-    """    
-    A class that defines the structure of a defect.
-    """    
-
-    def get_host_structure(self):
-        return self._host_structure
-
-    @property
-    def is_intrinsic(self):
-        if self._added_element:
-            return self._added_element in self._host_structure.species
-        else:
-            return True
-
-    @property
-    def get_defect_type(self):
-        return self._defect_type
-
-    @abstractmethod
-    def get_defect_coord:
-        raise NotImplementedError()
-
-    @abstractmethod
-    def get_defect_structure:
-        raise NotImplementedError()
-
-    def random_disps(self):
-
-
-#class DefectEntry():
-#    """    
-#    A class that holds a complete information of a defect.
-#    """    
-
-class Vacancy(Defect):
-
-    def __init__(self, structure, removed_atom_index):
-        self._host_structure = structure
-        self._removed_atom_index = removed_atom_index
-        self._defect_structure = structure.remove_sites([i])
-        self._defect_type = "vacancy"
-
-    @property
-    def get_removed_atom_index(self):
-        return self._removed_atom_index
-
-    @property
-    def get_defect_coord(self):
-        """
-        Return np.array of fractional coordinate of a vacancy.
-        """
-        return self._host_structure.frac_coords[i]
-
-
-class Interstitial(Defect):
-        """ """
-
-    def __init__(self, structure, added_coord, element):
-        self._host_structure = structure
-        self._added_coord = added_coord
-        self._added_element = element
-        self._defect_structure = add_element(structure, added_coord, element)
-        self._defect_type = "interstitial"
-
-    @property
-    def get_defect_coord(self):
-        return self._added_coord
-
-    @property
-    def get_added_element(self):
-        return self._added_element
-
-
-class Substitutional(Defect):
-
-    def __init__(self, structure, removed_index, added_element):
-        self._host_structure = structure
-        self._removed_index = removed_index
-        self._added_element = added_element
-        self._coord = self._host_structure.frac_coords[i]
-        self._defect_structure = add_element(structure.remove_sites[removed_index], coord, element)
-        self._defect_type = "substitutional"
-
-    @property
-    def get_defect_coord(self):
-        return self._coord
-
-    @property
-    def get_removed_index(self):
-        return self._removed_index
-
-    @property
-    def get_substituted_element(self):
-        return self._added_element
-
-
-class DefectMaker():
-
-    def __init__(self, structure, removed_index, added_coord, added_element, 
-                 random_parameters={"radius":4.0, "distance":0.2}):
-    """
-    removed_atom yes & added_coord yes & added_element yes -> vac + int    
-    removed_atom  no & added_coord yes & added_element yes -> interstitial 
-    removed_atom yes & added_coord  no & added_element yes -> substitutional
-    removed_atom yes & added_coord  no & added_element  no -> vacancy
-    """
-        self.structure = structure
-        try:
-            if type(defect_position) == int:
-                self.defect_position = structure.frac_coords[i]
-            else:
-                self.defect_position = defect_position
-        else:
-            raise ValueError "The defect_position is not proper."
-
-        if not removed_index and added_coord and added_element:
-            self._defect = Interstitial(structure, removed_index, added_element):
-        elif removed_index and not added_coord and added_element: 
-            self._defect = Substitutional(structure, removed_index, added_element):
-        elif removed_index and not added_coord and not added_element:
-            self._defect = Vacancy(structure, removed_index, added_element):
-    
-        if random_parameters:
-            self._defect_structure = perturb_in_a_sphere(self._defect.get_defect_structure, self._defect.get_defect_coord,
-                                                         random_parameters["radius"], random_parameters["distance"])  
-        else
-            self._defect_structure = self._defect.get_defect_structure
-
-
-    def to(self, filename=None):
-        return self.defect_structure.to(self, filename=None)
-
-
-def perturb_in_a_sphere(structure, center, radius, distance):
-    """
-    ORIGINALLY COPIED FROM pymatgen.
-    Performs a random perturbation of the sites in a sphere in a structure 
-    to break symmetries.
+    This class object holds properties related to irreducible atom set.
+    Note1: atomic indices need to be sorted. Thus, they can be written in one 
+           sequence.
+    Note2: first_index atom is assumed to represent the irreducible atoms.
 
     Args:
-        distance (float): Distance in angstroms by which to perturb each
-            site.
+        irreducible_name (str): element name with irreducible index (e.g., Mg1)
+        element (str): element name (e.g., Mg)
+        first_index (int): first index of irreducible_name. 
+        last_index (int): last index of irreducible_name. 
+        repr_coords (array): representative coordinates, namely the position
+                            of first_index
+
+    TODO1: Add the site symmetry information.
     """
-
-    def get_rand_vec():
-        # deals with zero vectors.
-        vector = np.random.randn(3)
-        vnorm = np.linalg.norm(vector)
-        return vector / vnorm * distance if vnorm != 0 else get_rand_vec()
-
-    sites_in_sphere = [i[0] for i in structure.get_sites_in_sphere(center, radius)]
-
-    for i in range(len(self._sites)):
-        if structure.sites[i] in sites_in_sphere:
-            structure.translate_sites([i], get_rand_vec(), frac_coords=False)
-
-
-class ComplexDefectMaker():
-    pass
-
-
-
-
-
-
-# def cell_for_spglib(poscar_name, cell):
-#
-def make_spg_cell(poscar_name):
-    lattice_vectors, symbols, num_atoms, atom_pos = parsePOSCAR(poscar_name)
-    distinguish_atoms = \
-        [i for i in range(len(num_atoms)) for j in range(num_atoms[i])]
-
-    cell = tuple([lattice_vectors, atom_pos, distinguish_atoms])
-
-    return cell
-
-
-def symmetryPOSCAR(poscar_name, use_magmoms=False,
-                   symprec=1e-5, angle_tolerance=-1.0):
-    cell = make_spg_cell(poscar_name)
-
-    return spg.get_symmetry_dataset(cell)
-
-
-def get_atom_mapping(poscar_name, use_magmoms=False,
-                     symprec=1e-5, angle_tolerance=-1.0):
-    spglib_atom_mapping = \
-        symmetryPOSCAR(poscar_name, use_magmoms=use_magmoms, symprec=symprec,
-                       angle_tolerance=angle_tolerance)["equivalent_atoms"]
-
-    atom_map = {}
-
-    for i, a in enumerate(spglib_atom_mapping):
-
-        atom_index = a + 1
-
-        if not atom_index in atom_map:
-            atom_map[atom_index] = []
-
-        atom_map[atom_index].append(i + 1)
-
-    return atom_map
-
-
-def parsePOSCAR(poscar_name, potcar_name=None):
-    poscar = open(poscar_name)
-    # skip the comment at the first line
-    poscar.readline()
-    # normalization factor
-    normalization = float(poscar.readline().split()[0])
-    # lattice vectors
-    lattice_vectors = []
-    for i in range(3):
-        lattice_vectors.append([float(x) for x in poscar.readline().split()])
-
-    lattice_vectors = np.array(lattice_vectors) * normalization
-    # symbols and numbers of atoms
-    line = poscar.readline().split()
-    if line[0].isdigit():  # determine whether first item is integer or not.
-        num_atoms = np.array([int(x) for x in line])
-        symbols = ["X" for i in range(len(num_atoms))]
-    else:
-        symbols = line
-        line = poscar.readline().split()
-        num_atoms = np.array([int(x) for x in line])
-
-    line = poscar.readline().split()
-    if line[0][0] == "S":  # Read 1 line if the selective dynamics is turned on.
-        poscar.readline()
-
-    # Fractional coordinates of atoms
-    atom_pos = np.zeros((num_atoms.sum(), 3), dtype=float)
-    for i in range(num_atoms.sum()):
-        atom_pos[i, :] = \
-            [float(x) for x in poscar.readline().split()[0:3]]
-    poscar.close()
-    # lattice_vectors, num_atoms and atom_pos are numpy arrays.
-    return lattice_vectors, symbols, num_atoms, atom_pos
-
-
-def printPOSCAR(lattice_vectors, num_atoms, atom_pos, header="",
-                symbols=None, normalization=1.0):
-    print header
-    print normalization
-
-    for i in range(3):
-        print "%22.16f %22.16f %22.16f" % tuple(lattice_vectors[i])
-
-    if symbols:
-        print "%3s " * len(symbols) % tuple(symbols)
-    print "%3i " * len(num_atoms) % tuple(num_atoms)
-    print "Direct"
-
-    for i in range(num_atoms.sum()):
-        print "%22.16f %22.16f %22.16f" % \
-              tuple(p - np.floor(p) for p in atom_pos[i])
-
-
-def writePOSCAR(lattice_vectors, num_atoms, atom_pos, file_name, header="",
-                symbols=None, normalization=1.0, note=None):
-    f = open(file_name, 'w')
-    print >> f, header
-    print >> f, normalization
-
-    for i in range(3):
-        print >> f, "%22.16f %22.16f %22.16f" % tuple(lattice_vectors[i])
-
-    if symbols:
-        print >> f, "%3s " * len(symbols) % tuple(symbols)
-
-    print >> f, "%3i " * len(num_atoms) % tuple(num_atoms)
-    print >> f, "Direct"
-
-    x = 0
-    for i in range(len(num_atoms)):
-        for j in range(num_atoms[i]):
-            if note is None:
-                print >> f, "%22.16f %22.16f %22.16f %3s" % \
-                            tuple(p - np.floor(p) for p in atom_pos[x]) + symbols[i]
-            else:
-                print >> f, "%22.16f %22.16f %22.16f %3s %2s" % \
-                            tuple([p - np.floor(p) for p in atom_pos[x]] + [symbols[i], note[x]])
-
-            x += 1
-
-    #        print >> f, "%22.16f %22.16f %22.16f" % \
-    #                            tuple(p - np.floor(p) for p in atom_pos[i])
-
-    f.close()
-
-
-def write_empty_sphere(site, file_name):
-    f = open(file_name, 'a')
-    print >> f, "Empty (spheres)"
-    print >> f, "1"
-    print >> f, "%22.16f %22.16f %22.16f" % tuple(site)
-    f.close()
-
-
-def make_point_defects(poscar_name, removed_atom, added_coord, added_atom_symbol,
-                       output_poscar_name, random_parameters=False, header="", empty=True):
-    # removed_atom : atom index
-    # added_coord : fractional coordinates:
-    # added_atom_symbol : element name
-    # random_parameters["cutoff"]: Cutoff [A] to determine atoms for considering the randomization.
-    # random_parameters["max_disp"]: Maximum distance for the random displacement.
-    # -------------------------------------------------------------------------
-    # removed_atom yes & added_coord yes & added_atom_symbol yes -> vac + int
-    # removed_atom  no & added_coord yes & added_atom_symbol yes -> interstitial
-    # removed_atom yes & added_coord  no & added_atom_symbol yes -> substitute
-    # removed_atom yes & added_coord  no & added_atom_symbol  no -> vacancy
-
-    lattice_vectors, symbols, num_atoms, atom_pos = parsePOSCAR(poscar_name)
-
-    # Removed one atom from the original atom set in poscar_name.
-    if removed_atom:
-        for i in range(len(num_atoms)):
-            if sum(num_atoms[0:i + 1]) >= removed_atom:
-                num_atoms[i] -= 1
-                break
-
-        # Removed or replaced site. This is also used for empty sphere.
-        vacant_coord = atom_pos[removed_atom - 1]
-        atom_pos = np.delete(atom_pos, removed_atom - 1, axis=0)
-
-    # ------ define defect site ------
-    # defect_site: vacancy + intersitial
-    if removed_atom and added_coord:
-        substituted_coord = added_coord
-        defect_coord = [(vacant_coord[i] + added_coord[i]) / 2 for i in range(3)]
-    # defect_site: interstitial
-    elif added_coord:
-        substituted_coord = added_coord
-        defect_coord = added_coord
-    # defect_site: substitutional
-    elif added_atom_symbol:
-        substituted_coord = vacant_coord
-        defect_coord = vacant_coord
-    else:
-        # defect_site: vacancy
-        defect_coord = vacant_coord
-    # --------------------------------
-
-    if added_atom_symbol:
-        # native defects
-        if added_atom_symbol in symbols:
-            num_atoms[symbols.index(added_atom_symbol)] += 1
-            add_index = np.sum(num_atoms[0:symbols.index(added_atom_symbol)])
-        # foreign species
-        else:
-            symbols = [added_atom_symbol] + symbols
-            num_atoms = np.insert(num_atoms, 0, 1, axis=0)
-            add_index = 0
-
-        atom_pos = np.insert(atom_pos, add_index, substituted_coord, axis=0)
-
-    if random_parameters is not False:
-        atom_pos, displaced_atom_index = random_displaces(lattice_vectors,
-                 atom_pos, defect_coord, random_parameters["cutoff"], random_parameters["max_disp"])
-    else:
-        displaced_atom_index = ["" for i in range(len(atom_pos))]
-
-        # "interstitial" or "substitutional"
-    if (not removed_atom and added_coord and added_atom_symbol) \
-            or (removed_atom and not added_coord and added_atom_symbol):
-        header += " Defect index " + str(add_index + 1)
-    # the others
-    else:
-        header += " Defect position " + " ".join(map(str, defect_coord))
-
-    writePOSCAR(lattice_vectors, num_atoms, atom_pos, output_poscar_name,
-                header, symbols=symbols, note=displaced_atom_index)
-
-    # Add an empty sphere in cases of "vacancy + intersitial" or "vacancy".
-
-
-#    if (removed_atom and not added_coord and not added_atom_symbol and empty) \
-#    or (removed_atom and     added_coord and     added_atom_symbol and empty):
-#        write_empty_sphere(vacant_coord, output_poscar_name)
-
-def random_displace(lattice_vectors, distance):
-    random_disp_cartesian_vector = \
-        lmath.random_three_vector() * distance * np.random.random()
-
-    return np.dot(np.linalg.inv(lattice_vectors), random_disp_cartesian_vector)
-
-
-def random_displaces(lattice_vectors, atom_pos, center, cutoff, distance):
-    """
-    Add random displacement of [0, *distance*) lenght if the distance from
-    *center* to *atom_pos* is shorter than cutoff.
-    """
-    distances = defect_structure.distances_from_point(
-        lattice_vectors, atom_pos, center)
-    displaced_atom = []
-
-    for i, d in enumerate(distances):
-        if d < cutoff:
-            atom_pos[i] += random_displace(lattice_vectors, distance)
-            displaced_atom.append("D")
-        else:
-            displaced_atom.append("")
-
-    # Return the set of fractional coordinates and signature of displaced atom.
-    return atom_pos, displaced_atom
-
-
-def get_distance(lattice_vectors, fractional_vectors):
-    return np.linalg.norm(np.dot(lattice_vectors, fractional_vectors))
-
-
-def get_cartesian_coordinates(lattice_vectors, fractional_vectors):
-    return np.array([np.dot(lattice_vectors, f) for f in fractional_vectors])
-
-
-def get_reciprocal_lattice_wo_2Pi(lattice_vectors):  # wo 2*Pi
-    reciprocal_lattice = np.array(
-        [np.cross(lattice_vectors[i - 2], lattice_vectors[i - 1])
-         / get_volume(lattice_vectors) for i in range(3)])
-
-    return reciprocal_lattice
-
-
-def get_reciprocal_lattice(lattice_vectors):
-    return 2.0 * np.pi * get_reciprocal_lattice_wo_2Pi(lattice_vectors)
-
-
-def get_half_maximum_lattice(lattice_vectors):
-    return np.max(get_lattice_constants(lattice_vectors)) / 2.0
-
-
-def get_volume(lattice_vectors):
-    return np.linalg.det(lattice_vectors)
-
-
-def get_distance_two_planes(lattice_vectors):
-    # (a_i \times a_j) \ddot a_k / |a_i \times  a_j| 
-    distance = np.zeros(3, dtype=float)
-    for i in range(3):
-        a_i_times_a_j = np.cross(lattice_vectors[i - 2], lattice_vectors[i - 1])
-        a_k = lattice_vectors[i]
-        distance[i] = abs(np.dot(a_i_times_a_j, a_k)) \
-                      / np.linalg.norm(a_i_times_a_j)
-    return distance
-
-
-def get_min_sphere_radius(lattice_vectors):
-    # Minimum radius of a sphere fitting inside the unit cell.
-    return min(get_distance_two_planes(lattice_vectors)) / 2.0
-
-
-def get_max_sphere_radius(lattice_vectors):
-    # Maximum radius of a sphere fitting inside the unit cell.
-    return max(get_distance_two_planes(lattice_vectors)) / 2.0
-
-
-def get_lattice_constants(lattice_vectors):
-    return [np.linalg.norm(lattice_vectors[i]) for i in range(3)]
-
-
-def get_angles(lattice_vectors):
-    angles = np.zeros(3, dtype=float)
-
-    for r in range(3):
-        angles[r] = np.dot(lattice_vectors[r - 2], lattice_vectors[r - 1]) \
-                    / np.linalg.norm(lattice_vectors[r - 2]) \
-                    / np.linalg.norm(lattice_vectors[r - 1])
-        angles[r] = np.arccos(angles[r]) * 180.0 / np.pi
-
-    return angles
-
-
-if __name__ == "__main__":
-
-    parser = argparse.ArgumentParser()
-    parser.add_argument("-p", "--poscar", dest="poscar", default="POSCAR",
-                        type=str, help="POSCAR name.")
-    parser.add_argument("--nion", dest="nion", action="store_true",
-                        help="Print a number of ions in POSCAR file.")
-    parser.add_argument("-r", "--radius", dest="radius", action="store_true",
-                        help="Print a radius of a sphere fitting inside the cell.")
-    parser.add_argument("-v", "--volume", dest="volume", action="store_true",
-                        help="Print volume of the cell.")
-
-    opts = parser.parse_args()
-    (lattice_vectors, symbols, num_atoms, atom_pos) \
-        = parsePOSCAR(opts.poscar)
-    if opts.nion:
-        print sum(num_atoms)
-    elif opts.radius:
-        print "Maximum radius of spheres on lattice point occupying space = %10.5f [A]" \
-              % (get_max_sphere_radius(lattice_vectors))
-    elif opts.volume:
-        print "%12.4f" % get_volume(lattice_vectors)
-    else:
-        lattice_constants = get_lattice_constants(lattice_vectors)
-        lattice_angles = get_angles(lattice_vectors)
-        print get_reciprocal_lattice(lattice_vectors)
-        print "lattice matrix [A]"
-        print "%12.7f %12.7f %12.7f" % tuple(lattice_vectors[0])
-        print "%12.7f %12.7f %12.7f" % tuple(lattice_vectors[1])
-        print "%12.7f %12.7f %12.7f" % tuple(lattice_vectors[2])
-        print "lattice constatns [A]"
-        print "%12.7f %12.7f %12.7f" % tuple(lattice_constants)
-        print "lattice angles [deg.]"
-        print "%12.4f %12.4f %12.4f" % tuple(lattice_angles)
-        print "lattice volume [A^3]"
-        print "%12.4f" % get_volume(lattice_vectors)
-        #    print symmetryPOSCAR(opts.poscar)
-        print "Atom mapping"
-        print get_atom_mapping(opts.poscar)
-        #    print interatomic_distances(lattice_vectors,atom_pos,[0,0,0])
-        sys.exit(0)
+    def __init__(self, irreducible_name, element, first_index, last_index, 
+                 repr_coords):
+        self.irreducible_name = irreducible_name
+        self.element = element
+        self.first_index = first_index
+        self.last_index = last_index
+        self.repr_coords = repr_coords
+
+    def __eq__(self, other):
+        if other is None or type(self) != type(other): 
+            raise TypeError
+        return self.__dict__ == other.__dict__
+
+    def as_dict(self):
+        d = {"irreducible_name": self.irreducible_name,
+             "element" : self.element,
+             "first_index" : self.first_index,
+             "last_index" : self.last_index,
+             "repr_coords" : self.repr_coords}
+        return d
+
+    @classmethod
+    def from_dict(cls, d):
+        return cls(d["irreducible_name"], d["element"], d["first_index"], 
+                   d["last_index"], d["repr_coords"]) 
+
+    @property
+    def natoms(self):
+        """
+        Return number of atoms in a given (super)cell.
+        """
+        return self.last_index - self.first_index + 1

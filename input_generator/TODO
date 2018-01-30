@@ -51,35 +51,36 @@ distance_from_defect
 
 
 
-2.
-* Modify defect_input.py
-New defect.in
---------------------------------------------------
- Irreducible elements: Mg1
-  Representative atom: 1
-     Equivalent atoms: 1..32
-Factional coordinates: 0.0000000 0.0000000 0.0000000
-    Electronegativity: 1.31
-      Oxidation state: 2
-
- Irreducible elements: O1
-  Representative atom: 33
-     Equivalent atoms: 33..64
-Factional coordinates: 0.2500000 0.2500000 0.2500000
-    Electronegativity: 3.44
-      Oxidation state: -2
-
-Interstital sites: 
-Antisites: 
-
-Maximum Displacement: 0
-
-Exceptionally included: 
-Exceptionally exclude: 
-Region of atoms perturbed: 3.0
-Symprec: 0.01
---------------------------------------------------
-* Change names of functions and classes.
+####### 2.
+####### * Modify defect_input.py
+####### New defect.in
+####### --------------------------------------------------
+#######  Irreducible elements: Mg1
+#######   Representative atom: 1
+#######      Equivalent atoms: 1..32
+####### Factional coordinates: 0.0000000 0.0000000 0.0000000
+#######     Electronegativity: 1.31
+#######       Oxidation state: 2
+####### 
+#######  Irreducible elements: O1
+#######   Representative atom: 33
+#######      Equivalent atoms: 33..64
+####### Factional coordinates: 0.2500000 0.2500000 0.2500000
+#######     Electronegativity: 3.44
+#######       Oxidation state: -2
+####### 
+####### Interstital sites: 
+####### Antisites: 
+####### 
+####### Maximum Displacement: 0
+####### 
+####### Exceptionally included: 
+####### Exceptionally exclude: 
+####### Region of atoms perturbed: 3.0
+####### Symprec: 0.01
+####### --------------------------------------------------
+####### * Change names of functions and classes.
+####### * Stop if the number of interstitial coords is not divided by three.
 
 
 3.
