@@ -80,8 +80,9 @@ def get_charge(potcar, nions, charge):
 
 class VaspInputMaker(InputMaker):
     """
-    Construct a set of vasp input files.
-    POTCAR files are fetched from ~/.pydefect.yaml
+    Constructs a set of vasp input files.
+    POSCARs are constructed automatically.
+    POTCARs are fetched from ~/.pydefect.yaml
     
     Args:
         defect_name (str): defect name defined in PyDefect, e.g., "Va_Mg1_2"

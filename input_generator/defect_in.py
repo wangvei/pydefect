@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 import warnings
-import json
+
 from pymatgen.core.structure import Structure
 from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
 import atom
@@ -16,6 +16,12 @@ __maintainer__ = "Yu Kumagai"
 __email__ = "yuuukuma@gmail.com"
 __status__ = "Development"
 __date__ = "December 4, 2017"
+
+# Following defaults determine the condition of automatic defect calculations.
+_EN_DIFF = 1.0
+_DISTANCE = 0.2
+_CUTOFF = 3.0
+_SYMPREC = 0.01
 
 class DefectSetting():
     """
@@ -50,6 +56,7 @@ class DefectSetting():
         self.structure = structure
         self.irreducible_sites = irreducible_sites
         self.dopant_configs = dopant_configs
+        self.dopants = [d.split("_")[0] for d in dopant_configs]
         self.antisite_configs = antisite_configs
         self.interstitial_coords = interstitial_coords
         self.included = included
@@ -132,10 +139,8 @@ class DefectSetting():
                     #  --> [0, 0, 0, 0.25, 0.25, 0.25]
                     b = [float(''.join( i for i in line[i] if i.isdigit()
                                      or i == '.')) for i in range(2, len(line))]
-                    # TODO: If the numbers for interstitial cannot be divided
-                    #       by 3. Return Error.
-                    #  [0, 0, 0, 0.25, 0.25, 0.25]
-                    #  --> [[0, 0, 0], [0.25, 0.25, 0.25]]
+                    # If the numbers for interstitial coords cannot be divided
+                    # by 3, return Error.
                     try:
                         interstitial_coords =[b[i:i + 3]
                                                 for i in range(int(len(b) / 3))]
@@ -177,6 +182,88 @@ class DefectSetting():
                    distance, cutoff, symprec, oxidation_states,
                    electronegativity)
 
+    @classmethod
+    def from_basic_settings(cls, poscar, dopants=[], interstitial_coords=[],
+                            is_antisite=True, EN_diff=_EN_DIFF, included="",
+                            excluded="", distance=_DISTANCE, cutoff=_CUTOFF,
+                            symprec=_SYMPREC):
+        """
+        Generates DefectSetting object with some default settings.
+
+        Args:
+            dopants (array): dopant element names, e.g., ["Al", "N"]
+            is_antisite (bool): Whether to consider antisite defects.
+            EN_diff (float): Electronegativity (EN) difference for determining
+                             sets of antisites and dopant sites.
+        """
+
+        structure = Structure.from_file(poscar)
+        # Set electronegativity and oxidation states of elements and dopants
+        electronegativity = {}
+        oxidation_states = {}
+        for s in structure.symbol_set + tuple(dopants):
+            electronegativity[s] = cls.get_electronegativity(s)
+            oxidation_states[s] = cls.get_oxidation_states(s)
+
+        symmetrized_structure = \
+                       SpacegroupAnalyzer(structure).get_symmetrized_structure()
+        # num_irreducible_sites["Mg"] = 2 means Mg has 2 inequivalent sites
+        num_irreducible_sites = {}
+        # irreducible_sites (aray): a set of IrreducibleSite class objects
+        irreducible_sites = []
+        # equivalent_sites: Equivalent site indices from SpacegroupAnalyzer.
+        last = 0
+        equiv_sites = symmetrized_structure.equivalent_sites
+        for i, e in enumerate(equiv_sites):
+            element = e[0].species_string
+            if element not in num_irreducible_sites.keys():
+                num_irreducible_sites[element] = 1
+            else:
+                # increment number of inequivalent sites for element
+                num_irreducible_sites[element] += 1
+            first = last + 1
+            last = last + len(e)
+            repr_coords = e[0].frac_coords
+            irreducible_name = element + str(num_irreducible_sites[element])
+            irreducible_sites.append(IrreducibleSite(
+                           irreducible_name, element, first, last, repr_coords))
+
+        EN_keys = electronegativity.keys()
+
+        # E.g., antisite_configs = [["Mg, "O"], ...]
+        antisite_configs = []
+        if is_antisite is True:
+            for s1 in structure.symbol_set:
+                for s2 in structure.symbol_set:
+                    if s1 == s2:
+                        continue
+                    if s1 in EN_keys and s2 in EN_keys:
+                        if abs(electronegativity[s1] -
+                               electronegativity[s2]) < EN_diff:
+                                              antisite_configs.append([s1, s2])
+                    else:
+                        cls.electronegativity_not_defined(s1, s2)
+
+        # E.g., dopant_configs = [["Al", "Mg"], ...]
+        dopant_configs = []
+        if dopants:
+            for d in dopants:
+                if d in structure.symbol_set:
+                    warnings.warn("Dopant " + d + " exists in host.")
+                    continue
+                for s1 in structure.symbol_set:
+                    if s1 in EN_keys and d in EN_keys:
+                        if abs(electronegativity[s1] -
+                               electronegativity[d]) < EN_diff:
+                            dopant_configs.append([d, s1])
+                    else:
+                        cls.electronegativity_not_defined(d, s1)
+
+        return cls(symmetrized_structure, irreducible_sites, dopant_configs,
+                   antisite_configs, interstitial_coords, included, excluded,
+                   distance, cutoff, symprec, oxidation_states,
+                   electronegativity)
+
     def as_dict(self):
         """
         Dict representation of DefectSetting class object.
@@ -193,187 +280,42 @@ class DefectSetting():
              "symprec": self.symprec,
              "oxidation_states": self.oxidation_states,
              "electronegativity": self.electronegativity}
-
         return d
-
-    def to_json(self):
-        """
-        Returns a json string representation of the MSONable object.
-        """
-        return json.dumps(self.as_dict(), cls=MontyEncoder)
 
     def to_json_file(self, filename):
         """
         Returns a json file.
         """
-        fw = open(filename, 'w')
-        json.dump(self.as_dict(), fw, indent=2, cls=MontyEncoder)
-
-
-# The following default setting determines the condition of automatic defect
-# calculations.
-_EN_DIFF = 1.0
-_DISTANCE = 0.2
-_CUTOFF = 3.0
-_SYMPREC = 0.01
-
-class DefectInMaker():
-    """
-    This class generates DefectSetting object with some default settings.
-
-    Args:
-        dopants (array): dopant element names, e.g., ["Al", "N"]
-        interstitial_coords (3x1 array): coordinations for interstitial sites,
-                                         e.g., [[0, 0, 0], [0.1, 0.1, 0.1], ..]
-        is_antisite (bool): Whether to consider antisite defects.
-        EN_diff (float): Electronegativity (EN) difference for determining sets
-                         of antisites and dopant sites.
-        included (array): exceptionally added defect type with a charge state.
-                          e.g., ["Va_O1_-1", "Va_O1_-2"]
-        excluded (array): exceptionally removed defect type with a charge state.
-                          e.g., ["Va_O1_1", "Va_O1_2"]
-        distance (float): Maximum displacement distance in angstrom.
-        cutoff (float): Cutoff radius for detemining atoms displaced.
-        symprec (float): Precision used for symmetry analysis.
-    """
-
-    def __init__(self, structure, dopants, interstitial_coords, is_antisite,
-                 EN_diff=_EN_DIFF, included="", excluded="", distance=_DISTANCE,
-                 cutoff=_CUTOFF, symprec=_SYMPREC):
-
-        self.dopants = dopants
-        if interstitial_coords:
-            if not len(interstitial_coords) % 3 == 0:
-                raise ValueError("Interstitial coords is not a multiple of 3.")
-        self.interstitial_coords = interstitial_coords
-        self.is_antisite = is_antisite
-        self.EN_diff = EN_diff
-        self.included = included
-        self.excluded = excluded
-        self.distance = distance
-        self.cutoff = cutoff
-        self.symprec = symprec
-        self.electronegativity = {}
-        self.oxidation_states = {}
-
-        # Set electronegativity and oxidation states for both intrinsic elements
-        # and dopants
-        for s in structure.symbol_set + tuple(self.dopants):
-            try:
-                self.electronegativity[s] = atom.electronegativity[s]
-            except:
-                warnings.warn("Electronegativity of " + s + " is unavailable.")
-                self.electronegativity[s] = "N.A."
-            try:
-                self.oxidation_states[s] = atom.charge[s]
-            except:
-                warnings.warn("Oxidation state of " + s + " is unavailable.")
-                self.oxidation_states[s] = "N.A."
-
-        self.symmetrized_structure = \
-                       SpacegroupAnalyzer(structure).get_symmetrized_structure()
-        # num_irreducible_sites["Mg"] = 2 means Mg has 2 inequivalent sites
-        num_irreducible_sites = {}
-        # irreducible_sites (aray): a set of IrreducibleSite class objects
-        self.irreducible_sites = []
-        # equivalent_sites: Equivalent site indices from SpacegroupAnalyzer.
-        last = 0
-        equiv_sites = self.symmetrized_structure.equivalent_sites
-        for i, e in enumerate(equiv_sites):
-            element = e[0].species_string
-            if element not in num_irreducible_sites.keys():
-                num_irreducible_sites[element] = 1
-            else:
-                # increment number of inequiv site for element
-                num_irreducible_sites[element] += 1
-            first = last + 1
-            last = last + len(e)
-            repr_coords = e[0].frac_coords
-            irreducible_name = element + str(num_irreducible_sites[element])
-            self.irreducible_sites.append(IrreducibleSite(
-                           irreducible_name, element, first, last, repr_coords))
-
-        EN_keys = self.electronegativity.keys()
-
-        # E.g., antisite_configs = [["Mg, "O"], ...]
-        self.antisite_configs = []
-        if is_antisite is True:
-            for s1 in structure.symbol_set:
-                for s2 in structure.symbol_set:
-                    if s1 == s2:
-                        continue
-                    if s1 in EN_keys and s2 in EN_keys:
-                        if abs(self.electronegativity[s1] -
-                               self.electronegativity[s2]) < EN_diff:
-                            self.antisite_configs.append([s1, s2])
-                    else:
-                        self.electronegativity_not_defined(s1, s2)
-
-        # E.g., dopant_configs = [["Al", "Mg"], ...]
-        self.dopant_configs = []
-        if dopants:
-            for d in dopants:
-                if d in structure.symbol_set:
-                    warnings.warn("Dopant " + d + " exists in host.")
-                    continue
-                for s1 in structure.symbol_set:
-                    if s1 in EN_keys and d in EN_keys:
-                        if abs(self.electronegativity[s1] -
-                               self.electronegativity[d]) < EN_diff:
-                            self.dopant_configs.append([d, s1])
-                    else:
-                        self.electronegativity_not_defined(d, s1)
-
-        self.setting = DefectSetting(
-            self.symmetrized_structure, self.irreducible_sites,
-            self.dopant_configs, self.antisite_configs,
-            self.interstitial_coords, self.included, self.excluded,
-            self.distance, self.cutoff,
-            self.symprec, self.oxidation_states,
-            self.electronegativity)
-
-    @staticmethod
-    def electronegativity_not_defined(e1, e2):
-        print("Electronegativity of {} and/or {} is not defined".format(e1, e2))
-
-    @classmethod
-    def from_structure_file(cls, poscar, dopants=[], interstitial_coords=False,
-                            is_antisite=False, EN_diff=_EN_DIFF, included=None,
-                            excluded=None, distance=_EN_DIFF, cutoff=_CUTOFF,
-                            symprec=_SYMPREC):
-        """
-        Construct DefectInMaker class object from a POSCAR file.
-        """
-        structure = Structure.from_file(poscar)
-        return cls(structure, dopants, interstitial_coords, is_antisite,
-                   EN_diff, included, excluded, distance, cutoff,
-                   symprec)
+        with open(filename, 'w') as fw:
+            json.dump(self.as_dict(), fw, indent=2, cls=MontyEncoder)
 
     def to(self, defectin_file="defect.in", poscar_file="DPOSCAR"):
         """
-        Print readable defect.in file.
+        Prints readable defect.in file.
         """
         self._write_defect_in(defectin_file)
         # HACK: pmg has a bug, Symmetrized structure object cannot be poscar
-        Structure.from_str(self.symmetrized_structure.to(fmt="cif"),
-                           fmt="cif").to(fmt="poscar", filename="DPOSCAR")
+        Structure.from_str(self.structure.to(fmt="cif"), fmt="cif").to(
+                                             fmt="poscar", filename=poscar_file)
 
     def _write_defect_in(self, defectin_file="defect.in"):
         with open(defectin_file, 'w') as fw:
 
             for e in self.irreducible_sites:
-                fw.write("  Irreducible element: {}\n".format(e.irreducible_name))
+                fw.write("  Irreducible element: {}\n".format(
+                                                            e.irreducible_name))
                 fw.write("     Equivalent atoms: {}\n".format(
                     str(e.first_index) + ".." + str(e.last_index)))
-                fw.write("Factional coordinates: %9.7f %9.7f %9.7f\n" % tuple(e.repr_coords))
+                fw.write("Factional coordinates: %9.7f %9.7f %9.7f\n" % \
+                                                           tuple(e.repr_coords))
                 fw.write("    Electronegativity: {}\n".format(
-                    self.electronegativity[e.element]))
+                                             self.electronegativity[e.element]))
                 fw.write("      Oxidation state: {}\n\n".format(
-                    self.oxidation_states[e.element]))
+                                              self.oxidation_states[e.element]))
             fw.write("Interstitial coordinates: ")
             if self.interstitial_coords:
                 fw.write(str([self.interstitial_coords[i:i + 3] for i in
-                              range(0, len(self.interstitial_coords), 3)]) + "\n")
+                            range(0, len(self.interstitial_coords), 3)]) + "\n")
             else:
                 fw.write("\n")
 
@@ -383,10 +325,12 @@ class DefectInMaker():
                                   for i in self.antisite_configs) + "\n\n")
             if self.dopants:
                 for d in self.dopants:
-                    if not d in self.symmetrized_structure.symbol_set:
+                    if not d in self.structure.symbol_set:
                         fw.write("   Dopant element: {}\n".format(d))
-                        fw.write("Electronegativity: {}\n".format(self.electronegativity[d]))
-                        fw.write("  Oxidation state: {}\n\n".format(self.oxidation_states[d]))
+                        fw.write("Electronegativity: {}\n".format(
+                                                     self.electronegativity[d]))
+                        fw.write("  Oxidation state: {}\n\n".format(
+                                                      self.oxidation_states[d]))
 
                 fw.write("Substituted defects: ")
                 fw.write(' '.join(i[0] + "_" + i[1]
@@ -394,28 +338,49 @@ class DefectInMaker():
             fw.write("Maximum Displacement: {}\n\n".format(self.distance))
             fw.write("Exceptionally included: {}\n".format(self.included))
             fw.write("Exceptionally excluded: {}\n".format(self.excluded))
-            fw.write("Cutoff region of atoms perturbed: {}\n".format(self.cutoff))
+            fw.write("Cutoff region of atoms perturbed: {}\n".format(
+                                                                   self.cutoff))
             fw.write("Symprec: {}\n".format(self.symprec))
 
     @staticmethod
-    def print_dopant_info(dopant):
-        """
-        This is used for adding dopant information a posteriori.
-        """
+    def get_electronegativity(s):
         try:
-            electronegativity = atom.electronegativity[dopant]
+            return atom.electronegativity[s]
         except:
             warnings.warn("Electronegativity of " + s + " is unavailable.")
-            electronegativity[dopant] = "N.A."
+            return None
+
+    @staticmethod
+    def get_oxidation_states(s):
         try:
-            oxidation_states = atom.charge[dopant]
+            return atom.charge[s]
         except:
             warnings.warn("Oxidation state of " + s + " is unavailable.")
-            oxidation_states = "N.A."
+            return None
 
-        print("   Dopant element: {}".format(dopant))
-        print("Electronegativity: {}".format(electronegativity))
-        print("  Oxidation state: {}".format(oxidation_states))
+    @staticmethod
+    def electronegativity_not_defined(e1, e2):
+        print("Electronegativity of {} and/or {} is not defined".format(e1, e2))
+
+def print_dopant_info(dopant):
+    """
+    This is used for adding dopant information a posteriori.
+    """
+    # TODO: check if the dopant is element.
+    try:
+        electronegativity = atom.electronegativity[dopant]
+    except:
+        warnings.warn("Electronegativity of " + s + " is unavailable.")
+        electronegativity[dopant] = "N.A."
+    try:
+        oxidation_states = atom.charge[dopant]
+    except:
+        warnings.warn("Oxidation state of " + s + " is unavailable.")
+        oxidation_states = "N.A."
+
+    print("   Dopant element: {}".format(dopant))
+    print("Electronegativity: {}".format(electronegativity))
+    print("  Oxidation state: {}".format(oxidation_states))
 
 
 class NotSupportedFlagError(Exception):
@@ -454,16 +419,17 @@ def main():
                         help="Set precision used for symmetry analysis [A].")
     parser.add_argument("--print_dopant", dest="print_dopant", default=None,
                         type=str, help="Print dopant information that can be \
-                                        added a posterori.")
+                                        added a posteriori.")
     opts = parser.parse_args()
 
     if opts.print_dopant:
-        DefectInMaker.print_dopant_info(opts.print_dopant)
+        print_dopant_info(opts.print_dopant)
     else:
-        defect_in = DefectInMaker.from_structure_file(
-                        opts.poscar, opts.dopants, opts.interstitial_coords,
-                        opts.is_antisite, opts.EN_diff, opts.included,
-                        opts.excluded, opts.distance, opts.cutoff, opts.symprec)
-        defect_in.to()
+        defect_setting = DefectSetting.from_basic_settings(
+                         opts.poscar, opts.dopants, opts.interstitial_coords,
+                         opts.is_antisite, opts.EN_diff, opts.included,
+                         opts.excluded, opts.distance, opts.cutoff,
+                         opts.symprec)
+        defect_setting.to()
 
 if __name__ == "__main__": main()
