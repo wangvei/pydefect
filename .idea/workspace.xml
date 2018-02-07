@@ -1,203 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ChangeListManager">
-    <list default="true" id="53a15d07-02b4-4e1f-9994-d2be75aee484" name="Default" comment="">
-      <change beforePath="" afterPath="$PROJECT_DIR$/.idea/codeStyles/codeStyleConfig.xml" />
-      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" afterPath="$PROJECT_DIR$/.idea/misc.xml" />
-      <change beforePath="$PROJECT_DIR$/.idea/pydefect.iml" afterPath="$PROJECT_DIR$/.idea/pydefect.iml" />
+    <list default="true" id="53a15d07-02b4-4e1f-9994-d2be75aee484" name="Default" comment="defect_in.py works well.">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
-      <change beforePath="$PROJECT_DIR$/input_generator/DPOSCAR" afterPath="$PROJECT_DIR$/input_generator/DPOSCAR" />
-      <change beforePath="$PROJECT_DIR$/input_generator/defect.in" afterPath="$PROJECT_DIR$/input_generator/defect.in" />
+      <change beforePath="$PROJECT_DIR$/input_generator/DPOSCAR" afterPath="" />
+      <change beforePath="$PROJECT_DIR$/input_generator/defect.in" afterPath="" />
       <change beforePath="$PROJECT_DIR$/input_generator/defect.py" afterPath="$PROJECT_DIR$/input_generator/defect.py" />
       <change beforePath="$PROJECT_DIR$/input_generator/defect_in.py" afterPath="$PROJECT_DIR$/input_generator/defect_in.py" />
-      <change beforePath="$PROJECT_DIR$/input_generator/input_maker.py" afterPath="$PROJECT_DIR$/input_generator/input_maker.py" />
-      <change beforePath="$PROJECT_DIR$/input_generator/tests/Al_Mg1_0/INCAR" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/input_generator/tests/Al_Mg1_0/KPOINTS" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/input_generator/tests/Al_Mg1_0/POSCAR" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/input_generator/tests/Al_Mg1_0/POSCAR-DispInitial" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/input_generator/tests/Al_Mg1_0/POSCAR-Initial" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/input_generator/tests/Al_Mg1_0/POTCAR" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/input_generator/tests/Al_Mg1_0/defect.json" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/input_generator/tests/Al_Mg1_1/INCAR" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/input_generator/tests/Al_Mg1_1/KPOINTS" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/input_generator/tests/Al_Mg1_1/POSCAR" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/input_generator/tests/Al_Mg1_1/POSCAR-DispInitial" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/input_generator/tests/Al_Mg1_1/POSCAR-Initial" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/input_generator/tests/Al_Mg1_1/POTCAR" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/input_generator/tests/Al_Mg1_1/defect.json" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/input_generator/tests/DPOSCAR" afterPath="$PROJECT_DIR$/input_generator/tests/DPOSCAR" />
-      <change beforePath="$PROJECT_DIR$/input_generator/tests/Mg_O1_0/INCAR" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/input_generator/tests/Mg_O1_0/KPOINTS" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/input_generator/tests/Mg_O1_0/POSCAR" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/input_generator/tests/Mg_O1_0/POSCAR-DispInitial" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/input_generator/tests/Mg_O1_0/POSCAR-Initial" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/input_generator/tests/Mg_O1_0/POTCAR" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/input_generator/tests/Mg_O1_0/defect.json" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/input_generator/tests/Mg_O1_1/INCAR" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/input_generator/tests/Mg_O1_1/KPOINTS" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/input_generator/tests/Mg_O1_1/POSCAR" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/input_generator/tests/Mg_O1_1/POSCAR-DispInitial" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/input_generator/tests/Mg_O1_1/POSCAR-Initial" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/input_generator/tests/Mg_O1_1/POTCAR" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/input_generator/tests/Mg_O1_1/defect.json" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/input_generator/tests/Mg_O1_2/INCAR" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/input_generator/tests/Mg_O1_2/KPOINTS" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/input_generator/tests/Mg_O1_2/POSCAR" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/input_generator/tests/Mg_O1_2/POSCAR-DispInitial" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/input_generator/tests/Mg_O1_2/POSCAR-Initial" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/input_generator/tests/Mg_O1_2/POTCAR" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/input_generator/tests/Mg_O1_2/defect.json" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/input_generator/tests/Mg_O1_3/INCAR" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/input_generator/tests/Mg_O1_3/KPOINTS" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/input_generator/tests/Mg_O1_3/POSCAR" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/input_generator/tests/Mg_O1_3/POSCAR-DispInitial" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/input_generator/tests/Mg_O1_3/POSCAR-Initial" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/input_generator/tests/Mg_O1_3/POTCAR" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/input_generator/tests/Mg_O1_3/defect.json" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/input_generator/tests/Mg_O1_4/INCAR" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/input_generator/tests/Mg_O1_4/KPOINTS" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/input_generator/tests/Mg_O1_4/POSCAR" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/input_generator/tests/Mg_O1_4/POSCAR-DispInitial" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/input_generator/tests/Mg_O1_4/POSCAR-Initial" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/input_generator/tests/Mg_O1_4/POTCAR" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/input_generator/tests/Mg_O1_4/defect.json" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/input_generator/tests/Mg_i1_0/POSCAR" afterPath="$PROJECT_DIR$/input_generator/tests/Mg_i1_0/POSCAR" />
-      <change beforePath="$PROJECT_DIR$/input_generator/tests/Mg_i1_0/POSCAR-DispInitial" afterPath="$PROJECT_DIR$/input_generator/tests/Mg_i1_0/POSCAR-DispInitial" />
-      <change beforePath="$PROJECT_DIR$/input_generator/tests/Mg_i1_0/POSCAR-Initial" afterPath="$PROJECT_DIR$/input_generator/tests/Mg_i1_0/POSCAR-Initial" />
-      <change beforePath="$PROJECT_DIR$/input_generator/tests/Mg_i1_0/defect.json" afterPath="$PROJECT_DIR$/input_generator/tests/Mg_i1_0/defect.json" />
-      <change beforePath="$PROJECT_DIR$/input_generator/tests/Mg_i1_1/POSCAR" afterPath="$PROJECT_DIR$/input_generator/tests/Mg_i1_1/POSCAR" />
-      <change beforePath="$PROJECT_DIR$/input_generator/tests/Mg_i1_1/POSCAR-DispInitial" afterPath="$PROJECT_DIR$/input_generator/tests/Mg_i1_1/POSCAR-DispInitial" />
-      <change beforePath="$PROJECT_DIR$/input_generator/tests/Mg_i1_1/POSCAR-Initial" afterPath="$PROJECT_DIR$/input_generator/tests/Mg_i1_1/POSCAR-Initial" />
-      <change beforePath="$PROJECT_DIR$/input_generator/tests/Mg_i1_1/defect.json" afterPath="$PROJECT_DIR$/input_generator/tests/Mg_i1_1/defect.json" />
-      <change beforePath="$PROJECT_DIR$/input_generator/tests/Mg_i1_2/POSCAR" afterPath="$PROJECT_DIR$/input_generator/tests/Mg_i1_2/POSCAR" />
-      <change beforePath="$PROJECT_DIR$/input_generator/tests/Mg_i1_2/POSCAR-DispInitial" afterPath="$PROJECT_DIR$/input_generator/tests/Mg_i1_2/POSCAR-DispInitial" />
-      <change beforePath="$PROJECT_DIR$/input_generator/tests/Mg_i1_2/POSCAR-Initial" afterPath="$PROJECT_DIR$/input_generator/tests/Mg_i1_2/POSCAR-Initial" />
-      <change beforePath="$PROJECT_DIR$/input_generator/tests/Mg_i1_2/defect.json" afterPath="$PROJECT_DIR$/input_generator/tests/Mg_i1_2/defect.json" />
-      <change beforePath="$PROJECT_DIR$/input_generator/tests/Mg_i2_0/INCAR" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/input_generator/tests/Mg_i2_0/KPOINTS" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/input_generator/tests/Mg_i2_0/POSCAR" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/input_generator/tests/Mg_i2_0/POSCAR-DispInitial" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/input_generator/tests/Mg_i2_0/POSCAR-Initial" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/input_generator/tests/Mg_i2_0/POTCAR" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/input_generator/tests/Mg_i2_0/defect.json" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/input_generator/tests/Mg_i2_1/INCAR" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/input_generator/tests/Mg_i2_1/KPOINTS" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/input_generator/tests/Mg_i2_1/POSCAR" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/input_generator/tests/Mg_i2_1/POSCAR-DispInitial" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/input_generator/tests/Mg_i2_1/POSCAR-Initial" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/input_generator/tests/Mg_i2_1/POTCAR" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/input_generator/tests/Mg_i2_1/defect.json" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/input_generator/tests/Mg_i2_2/INCAR" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/input_generator/tests/Mg_i2_2/KPOINTS" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/input_generator/tests/Mg_i2_2/POSCAR" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/input_generator/tests/Mg_i2_2/POSCAR-DispInitial" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/input_generator/tests/Mg_i2_2/POSCAR-Initial" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/input_generator/tests/Mg_i2_2/POTCAR" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/input_generator/tests/Mg_i2_2/defect.json" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/input_generator/tests/O_Mg1_-1/INCAR" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/input_generator/tests/O_Mg1_-1/KPOINTS" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/input_generator/tests/O_Mg1_-1/POSCAR" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/input_generator/tests/O_Mg1_-1/POSCAR-DispInitial" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/input_generator/tests/O_Mg1_-1/POSCAR-Initial" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/input_generator/tests/O_Mg1_-1/POTCAR" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/input_generator/tests/O_Mg1_-1/defect.json" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/input_generator/tests/O_Mg1_-2/INCAR" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/input_generator/tests/O_Mg1_-2/KPOINTS" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/input_generator/tests/O_Mg1_-2/POSCAR" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/input_generator/tests/O_Mg1_-2/POSCAR-DispInitial" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/input_generator/tests/O_Mg1_-2/POSCAR-Initial" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/input_generator/tests/O_Mg1_-2/POTCAR" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/input_generator/tests/O_Mg1_-2/defect.json" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/input_generator/tests/O_Mg1_-3/INCAR" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/input_generator/tests/O_Mg1_-3/KPOINTS" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/input_generator/tests/O_Mg1_-3/POSCAR" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/input_generator/tests/O_Mg1_-3/POSCAR-DispInitial" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/input_generator/tests/O_Mg1_-3/POSCAR-Initial" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/input_generator/tests/O_Mg1_-3/POTCAR" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/input_generator/tests/O_Mg1_-3/defect.json" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/input_generator/tests/O_Mg1_-4/INCAR" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/input_generator/tests/O_Mg1_-4/KPOINTS" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/input_generator/tests/O_Mg1_-4/POSCAR" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/input_generator/tests/O_Mg1_-4/POSCAR-DispInitial" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/input_generator/tests/O_Mg1_-4/POSCAR-Initial" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/input_generator/tests/O_Mg1_-4/POTCAR" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/input_generator/tests/O_Mg1_-4/defect.json" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/input_generator/tests/O_Mg1_0/INCAR" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/input_generator/tests/O_Mg1_0/KPOINTS" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/input_generator/tests/O_Mg1_0/POSCAR" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/input_generator/tests/O_Mg1_0/POSCAR-DispInitial" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/input_generator/tests/O_Mg1_0/POSCAR-Initial" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/input_generator/tests/O_Mg1_0/POTCAR" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/input_generator/tests/O_Mg1_0/defect.json" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/input_generator/tests/O_i1_-1/POSCAR" afterPath="$PROJECT_DIR$/input_generator/tests/O_i1_-1/POSCAR" />
-      <change beforePath="$PROJECT_DIR$/input_generator/tests/O_i1_-1/POSCAR-DispInitial" afterPath="$PROJECT_DIR$/input_generator/tests/O_i1_-1/POSCAR-DispInitial" />
-      <change beforePath="$PROJECT_DIR$/input_generator/tests/O_i1_-1/POSCAR-Initial" afterPath="$PROJECT_DIR$/input_generator/tests/O_i1_-1/POSCAR-Initial" />
-      <change beforePath="$PROJECT_DIR$/input_generator/tests/O_i1_-1/defect.json" afterPath="$PROJECT_DIR$/input_generator/tests/O_i1_-1/defect.json" />
-      <change beforePath="$PROJECT_DIR$/input_generator/tests/O_i1_-2/POSCAR" afterPath="$PROJECT_DIR$/input_generator/tests/O_i1_-2/POSCAR" />
-      <change beforePath="$PROJECT_DIR$/input_generator/tests/O_i1_-2/POSCAR-DispInitial" afterPath="$PROJECT_DIR$/input_generator/tests/O_i1_-2/POSCAR-DispInitial" />
-      <change beforePath="$PROJECT_DIR$/input_generator/tests/O_i1_-2/POSCAR-Initial" afterPath="$PROJECT_DIR$/input_generator/tests/O_i1_-2/POSCAR-Initial" />
-      <change beforePath="$PROJECT_DIR$/input_generator/tests/O_i1_-2/defect.json" afterPath="$PROJECT_DIR$/input_generator/tests/O_i1_-2/defect.json" />
-      <change beforePath="$PROJECT_DIR$/input_generator/tests/O_i1_0/POSCAR" afterPath="$PROJECT_DIR$/input_generator/tests/O_i1_0/POSCAR" />
-      <change beforePath="$PROJECT_DIR$/input_generator/tests/O_i1_0/POSCAR-DispInitial" afterPath="$PROJECT_DIR$/input_generator/tests/O_i1_0/POSCAR-DispInitial" />
-      <change beforePath="$PROJECT_DIR$/input_generator/tests/O_i1_0/POSCAR-Initial" afterPath="$PROJECT_DIR$/input_generator/tests/O_i1_0/POSCAR-Initial" />
-      <change beforePath="$PROJECT_DIR$/input_generator/tests/O_i1_0/defect.json" afterPath="$PROJECT_DIR$/input_generator/tests/O_i1_0/defect.json" />
-      <change beforePath="$PROJECT_DIR$/input_generator/tests/O_i2_-1/INCAR" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/input_generator/tests/O_i2_-1/KPOINTS" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/input_generator/tests/O_i2_-1/POSCAR" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/input_generator/tests/O_i2_-1/POSCAR-DispInitial" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/input_generator/tests/O_i2_-1/POSCAR-Initial" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/input_generator/tests/O_i2_-1/POTCAR" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/input_generator/tests/O_i2_-1/defect.json" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/input_generator/tests/O_i2_-2/INCAR" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/input_generator/tests/O_i2_-2/KPOINTS" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/input_generator/tests/O_i2_-2/POSCAR" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/input_generator/tests/O_i2_-2/POSCAR-DispInitial" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/input_generator/tests/O_i2_-2/POSCAR-Initial" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/input_generator/tests/O_i2_-2/POTCAR" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/input_generator/tests/O_i2_-2/defect.json" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/input_generator/tests/O_i2_0/INCAR" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/input_generator/tests/O_i2_0/KPOINTS" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/input_generator/tests/O_i2_0/POSCAR" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/input_generator/tests/O_i2_0/POSCAR-DispInitial" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/input_generator/tests/O_i2_0/POSCAR-Initial" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/input_generator/tests/O_i2_0/POTCAR" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/input_generator/tests/O_i2_0/defect.json" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/input_generator/tests/POSCAR-MgO64atoms" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/input_generator/tests/POSCAR-ScN64atoms" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/input_generator/tests/Va_Mg1_-1/POSCAR" afterPath="$PROJECT_DIR$/input_generator/tests/Va_Mg1_-1/POSCAR" />
-      <change beforePath="$PROJECT_DIR$/input_generator/tests/Va_Mg1_-1/POSCAR-DispInitial" afterPath="$PROJECT_DIR$/input_generator/tests/Va_Mg1_-1/POSCAR-DispInitial" />
-      <change beforePath="$PROJECT_DIR$/input_generator/tests/Va_Mg1_-1/POSCAR-Initial" afterPath="$PROJECT_DIR$/input_generator/tests/Va_Mg1_-1/POSCAR-Initial" />
-      <change beforePath="$PROJECT_DIR$/input_generator/tests/Va_Mg1_-1/defect.json" afterPath="$PROJECT_DIR$/input_generator/tests/Va_Mg1_-1/defect.json" />
-      <change beforePath="$PROJECT_DIR$/input_generator/tests/Va_Mg1_-2/POSCAR" afterPath="$PROJECT_DIR$/input_generator/tests/Va_Mg1_-2/POSCAR" />
-      <change beforePath="$PROJECT_DIR$/input_generator/tests/Va_Mg1_-2/POSCAR-DispInitial" afterPath="$PROJECT_DIR$/input_generator/tests/Va_Mg1_-2/POSCAR-DispInitial" />
-      <change beforePath="$PROJECT_DIR$/input_generator/tests/Va_Mg1_-2/POSCAR-Initial" afterPath="$PROJECT_DIR$/input_generator/tests/Va_Mg1_-2/POSCAR-Initial" />
-      <change beforePath="$PROJECT_DIR$/input_generator/tests/Va_Mg1_-2/defect.json" afterPath="$PROJECT_DIR$/input_generator/tests/Va_Mg1_-2/defect.json" />
-      <change beforePath="$PROJECT_DIR$/input_generator/tests/Va_Mg1_0/POSCAR" afterPath="$PROJECT_DIR$/input_generator/tests/Va_Mg1_0/POSCAR" />
-      <change beforePath="$PROJECT_DIR$/input_generator/tests/Va_Mg1_0/POSCAR-DispInitial" afterPath="$PROJECT_DIR$/input_generator/tests/Va_Mg1_0/POSCAR-DispInitial" />
-      <change beforePath="$PROJECT_DIR$/input_generator/tests/Va_Mg1_0/POSCAR-Initial" afterPath="$PROJECT_DIR$/input_generator/tests/Va_Mg1_0/POSCAR-Initial" />
-      <change beforePath="$PROJECT_DIR$/input_generator/tests/Va_Mg1_0/calc_results.json" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/input_generator/tests/Va_Mg1_0/defect_position.json" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/input_generator/tests/Va_O1_-1/INCAR" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/input_generator/tests/Va_O1_-1/KPOINTS" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/input_generator/tests/Va_O1_-1/POSCAR" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/input_generator/tests/Va_O1_-1/POSCAR-DispInitial" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/input_generator/tests/Va_O1_-1/POSCAR-Initial" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/input_generator/tests/Va_O1_-1/POTCAR" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/input_generator/tests/Va_O1_-1/defect.json" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/input_generator/tests/Va_O1_-2/INCAR" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/input_generator/tests/Va_O1_-2/KPOINTS" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/input_generator/tests/Va_O1_-2/POSCAR" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/input_generator/tests/Va_O1_-2/POSCAR-DispInitial" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/input_generator/tests/Va_O1_-2/POSCAR-Initial" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/input_generator/tests/Va_O1_-2/POTCAR" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/input_generator/tests/Va_O1_-2/defect.json" afterPath="" />
-      <change beforePath="$PROJECT_DIR$/input_generator/tests/Va_O1_0/POSCAR" afterPath="$PROJECT_DIR$/input_generator/tests/Va_O1_0/POSCAR" />
-      <change beforePath="$PROJECT_DIR$/input_generator/tests/Va_O1_0/POSCAR-DispInitial" afterPath="$PROJECT_DIR$/input_generator/tests/Va_O1_0/POSCAR-DispInitial" />
-      <change beforePath="$PROJECT_DIR$/input_generator/tests/Va_O1_0/POSCAR-Initial" afterPath="$PROJECT_DIR$/input_generator/tests/Va_O1_0/POSCAR-Initial" />
-      <change beforePath="$PROJECT_DIR$/input_generator/tests/Va_O1_0/defect.json" afterPath="$PROJECT_DIR$/input_generator/tests/Va_O1_0/defect.json" />
-      <change beforePath="$PROJECT_DIR$/input_generator/tests/perfect/POSCAR" afterPath="$PROJECT_DIR$/input_generator/tests/perfect/POSCAR" />
-      <change beforePath="$PROJECT_DIR$/input_generator/tests/test_input_maker.py" afterPath="$PROJECT_DIR$/input_generator/tests/test_input_maker.py" />
-      <change beforePath="$PROJECT_DIR$/input_generator/vasp_input_maker.py" afterPath="$PROJECT_DIR$/input_generator/vasp_input_maker.py" />
+      <change beforePath="$PROJECT_DIR$/input_generator/tests/defect.in" afterPath="$PROJECT_DIR$/input_generator/tests/defect.in" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="TRACKING_ENABLED" value="true" />
@@ -210,18 +20,70 @@
     <favorites_list name="pydefect" />
   </component>
   <component name="FileEditorManager">
-    <leaf>
-      <file leaf-file-name="defect.py" pinned="false" current-in-tab="true">
-        <entry file="file://$PROJECT_DIR$/input_generator/defect.py">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="782">
-              <caret line="46" column="10" lean-forward="false" selection-start-line="46" selection-start-column="10" selection-end-line="46" selection-end-column="10" />
-              <folding />
-            </state>
-          </provider>
-        </entry>
-      </file>
-    </leaf>
+    <splitter split-orientation="horizontal" split-proportion="0.64336777">
+      <split-first>
+        <splitter split-orientation="horizontal" split-proportion="0.47992587">
+          <split-first>
+            <leaf>
+              <file leaf-file-name="defect.py" pinned="false" current-in-tab="false">
+                <entry file="file://$PROJECT_DIR$/input_generator/defect.py">
+                  <provider selected="true" editor-type-id="text-editor">
+                    <state relative-caret-position="544">
+                      <caret line="32" column="27" lean-forward="false" selection-start-line="32" selection-start-column="27" selection-end-line="32" selection-end-column="27" />
+                      <folding />
+                    </state>
+                  </provider>
+                </entry>
+              </file>
+              <file leaf-file-name="defect_in.py" pinned="false" current-in-tab="true">
+                <entry file="file://$PROJECT_DIR$/input_generator/defect_in.py">
+                  <provider selected="true" editor-type-id="text-editor">
+                    <state relative-caret-position="918">
+                      <caret line="321" column="42" lean-forward="false" selection-start-line="321" selection-start-column="42" selection-end-line="321" selection-end-column="42" />
+                      <folding>
+                        <element signature="e#23#38#0" expanded="true" />
+                      </folding>
+                    </state>
+                  </provider>
+                </entry>
+              </file>
+            </leaf>
+          </split-first>
+          <split-second>
+            <leaf>
+              <file leaf-file-name="defect_in.py" pinned="false" current-in-tab="true">
+                <entry file="file://$PROJECT_DIR$/input_generator/defect_in.py">
+                  <provider selected="true" editor-type-id="text-editor">
+                    <state relative-caret-position="391">
+                      <caret line="219" column="13" lean-forward="false" selection-start-line="219" selection-start-column="13" selection-end-line="219" selection-end-column="13" />
+                      <folding>
+                        <element signature="e#23#38#0" expanded="true" />
+                      </folding>
+                    </state>
+                  </provider>
+                </entry>
+              </file>
+            </leaf>
+          </split-second>
+        </splitter>
+      </split-first>
+      <split-second>
+        <leaf>
+          <file leaf-file-name="defect_in.py" pinned="false" current-in-tab="true">
+            <entry file="file://$PROJECT_DIR$/input_generator/defect_in.py">
+              <provider selected="true" editor-type-id="text-editor">
+                <state relative-caret-position="804">
+                  <caret line="55" column="31" lean-forward="false" selection-start-line="55" selection-start-column="31" selection-end-line="55" selection-end-column="31" />
+                  <folding>
+                    <element signature="e#23#38#0" expanded="true" />
+                  </folding>
+                </state>
+              </provider>
+            </entry>
+          </file>
+        </leaf>
+      </split-second>
+    </splitter>
   </component>
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
@@ -233,10 +95,10 @@
         <option value="$PROJECT_DIR$/input_generator/parse_poscar.py" />
         <option value="$PROJECT_DIR$/input_generator/make_input.py" />
         <option value="$PROJECT_DIR$/input_generator/tests/test_input_maker.py" />
-        <option value="$PROJECT_DIR$/input_generator/defect.py" />
-        <option value="$PROJECT_DIR$/input_generator/defect_in.py" />
         <option value="$PROJECT_DIR$/input_generator/input_maker.py" />
         <option value="$PROJECT_DIR$/input_generator/vasp_input_maker.py" />
+        <option value="$PROJECT_DIR$/input_generator/defect.py" />
+        <option value="$PROJECT_DIR$/input_generator/defect_in.py" />
       </list>
     </option>
   </component>
@@ -246,7 +108,7 @@
     <option name="height" value="1417" />
   </component>
   <component name="ProjectView">
-    <navigator currentView="ProjectPane" proportions="" version="1">
+    <navigator proportions="" version="1">
       <flattenPackages />
       <showMembers />
       <showModules />
@@ -259,26 +121,7 @@
       <manualOrder />
       <foldersAlwaysOnTop value="true" />
     </navigator>
-    <panes>
-      <pane id="Scope" />
-      <pane id="Scratches" />
-      <pane id="ProjectPane">
-        <subPane>
-          <expand>
-            <path>
-              <item name="pydefect" type="b2602c69:ProjectViewProjectNode" />
-              <item name="pydefect" type="462c0819:PsiDirectoryNode" />
-            </path>
-            <path>
-              <item name="pydefect" type="b2602c69:ProjectViewProjectNode" />
-              <item name="pydefect" type="462c0819:PsiDirectoryNode" />
-              <item name="input_generator" type="462c0819:PsiDirectoryNode" />
-            </path>
-          </expand>
-          <select />
-        </subPane>
-      </pane>
-    </panes>
+    <panes />
   </component>
   <component name="PropertiesComponent">
     <property name="settings.editor.selected.configurable" value="preferences.sourceCode" />
@@ -363,10 +206,10 @@
   </component>
   <component name="ToolWindowManager">
     <frame x="0" y="23" width="2560" height="1417" extended-state="6" />
-    <editor active="true" />
     <layout>
       <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.0035447027" sideWeight="0.66478556" order="0" side_tool="false" content_ui="combo" />
       <window_info id="TODO" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="6" side_tool="false" content_ui="tabs" />
+      <window_info id="Hierarchy" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.12271644" sideWeight="0.5" order="2" side_tool="false" content_ui="combo" />
       <window_info id="Event Log" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.32980332" sideWeight="0.5013785" order="7" side_tool="true" content_ui="tabs" />
       <window_info id="Run" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.19062027" sideWeight="0.5" order="2" side_tool="false" content_ui="tabs" />
       <window_info id="Version Control" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
@@ -379,13 +222,16 @@
       <window_info id="Message" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="0" side_tool="false" content_ui="tabs" />
       <window_info id="Commander" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.4" sideWeight="0.5" order="0" side_tool="false" content_ui="tabs" />
       <window_info id="Inspection" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.4" sideWeight="0.5" order="5" side_tool="false" content_ui="tabs" />
-      <window_info id="Hierarchy" active="true" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.12271644" sideWeight="0.5" order="2" side_tool="false" content_ui="combo" />
       <window_info id="Find" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
       <window_info id="Ant Build" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.25" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
     </layout>
   </component>
   <component name="VcsContentAnnotationSettings">
     <option name="myLimit" value="2678400000" />
+  </component>
+  <component name="VcsManagerConfiguration">
+    <MESSAGE value="defect_in.py works well." />
+    <option name="LAST_COMMIT_MESSAGE" value="defect_in.py works well." />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager />
@@ -404,6 +250,9 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="4607">
           <caret line="278" column="58" lean-forward="false" selection-start-line="278" selection-start-column="58" selection-end-line="278" selection-end-column="58" />
+          <folding>
+            <element signature="e#23#38#0" expanded="true" />
+          </folding>
         </state>
       </provider>
     </entry>
@@ -425,6 +274,9 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="4641">
           <caret line="280" column="40" lean-forward="false" selection-start-line="280" selection-start-column="40" selection-end-line="280" selection-end-column="40" />
+          <folding>
+            <element signature="e#23#38#0" expanded="true" />
+          </folding>
         </state>
       </provider>
     </entry>
@@ -447,6 +299,9 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="4845">
           <caret line="292" column="0" lean-forward="true" selection-start-line="292" selection-start-column="0" selection-end-line="292" selection-end-column="0" />
+          <folding>
+            <element signature="e#23#38#0" expanded="true" />
+          </folding>
         </state>
       </provider>
     </entry>
@@ -470,6 +325,9 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="3485">
           <caret line="214" column="19" lean-forward="false" selection-start-line="214" selection-start-column="19" selection-end-line="214" selection-end-column="19" />
+          <folding>
+            <element signature="e#23#38#0" expanded="true" />
+          </folding>
         </state>
       </provider>
     </entry>
@@ -512,6 +370,9 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="0">
           <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
+          <folding>
+            <element signature="e#23#38#0" expanded="true" />
+          </folding>
         </state>
       </provider>
     </entry>
@@ -526,6 +387,9 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="0">
           <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
+          <folding>
+            <element signature="e#23#38#0" expanded="true" />
+          </folding>
         </state>
       </provider>
     </entry>
@@ -560,13 +424,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/input_generator/defect_in.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="595">
-          <caret line="38" column="34" lean-forward="false" selection-start-line="38" selection-start-column="34" selection-end-line="38" selection-end-column="34" />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/input_generator/vasp_input_maker.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="765">
@@ -583,9 +440,19 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/input_generator/defect.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="782">
-          <caret line="46" column="10" lean-forward="false" selection-start-line="46" selection-start-column="10" selection-end-line="46" selection-end-column="10" />
+        <state relative-caret-position="544">
+          <caret line="32" column="27" lean-forward="false" selection-start-line="32" selection-start-column="27" selection-end-line="32" selection-end-column="27" />
           <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/input_generator/defect_in.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="391">
+          <caret line="219" column="13" lean-forward="false" selection-start-line="219" selection-start-column="13" selection-end-line="219" selection-end-column="13" />
+          <folding>
+            <element signature="e#23#38#0" expanded="true" />
+          </folding>
         </state>
       </provider>
     </entry>

@@ -12,7 +12,7 @@ class IrreducibleSite():
     """
     This class object holds properties related to irreducible atom set.
     Note1: atomic indices need to be sorted. Thus, they can be written in one 
-           sequence. E.g., 17 .. 32
+           sequence. E.g., 17..32
     Note2: first_index atom is assumed to represent the irreducible atoms.
 
     Args:

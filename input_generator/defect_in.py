@@ -24,19 +24,18 @@ class DefectSetting():
 
     Args:
         structure: pmg Structure/IStructure class object
-        irreducible_sites: IrreducibleSite class object
-        dopant_configs (array): dopant configurations,
-            e.g., ["Al_Mg", "N_O"].
-        antisite_configs (array): antisite configuraions, 
-            e.g., ["Mg_O", "O_Mg"].
+        irreducible_sites: IrreducibleSite class objects
+        dopant_configs (array): dopant configurations, e.g., ["Al_Mg", "N_O"]
+        antisite_configs (array): antisite configuraions, e.g., ["Mg_O", "O_Mg"]
         interstitial_coords (3x1 array): coordinations of interstitial sites,
-            e.g., [[0, 0, 0], [0.1, 0.1, 0.1], ...].
+                                         e.g., [[0, 0, 0], [0.1, 0.1, 0.1], ..]
         included (array): exceptionally added defect type with a charge state.
-            e.g., ["Va_O1_-1", "Va_O1_-2"]                     
+                          e.g., ["Va_O1_-1", "Va_O1_-2"]
         excluded (array): exceptionally removed defect type with a charge state.
-                         In case some of them don't exist, they'll be ignored.
-            e.g., ["Va_O1_1", "Va_O1_2"]                     
-        distance (float): Maximum displacement distance in angstrom.
+                          In case some of them don't exist, they'll be ignored.
+                          e.g., ["Va_O1_1", "Va_O1_2"]
+        distance (float): Maximum displacement distance in angstrom. 0 means
+                          random displacement is not considered.
         cutoff (float): Cutoff radius in which atoms are displaced.
         symprec (float): Precision used for symmetry analysis.
         oxidation_states (dict): Oxidation states for relevant elements.
@@ -65,19 +64,20 @@ class DefectSetting():
         if other is None or type(self) != type(other):
             raise TypeError
         # This must not be "return self.__dict__ == other.__dict__",
-        # because irreducible_sites indicate just pointers.
+        # because irreducible_sites shows just pointers.
         return self.as_dict() == other.as_dict()
 
     @classmethod
     def from_dict(cls, d):
         """
-        Construct a DefectSetting class object from a dictionary.
+        Constructs a DefectSetting class object from a dictionary.
         """
+        # Expansion of irreducible_sites is necessary,
+        # because irreducible_sites shows just pointers.
         irreducible_sites = []
         for i in d["irreducible_sites"]:
             irreducible_sites.append(IrreducibleSite.from_dict(i))
 
-        #        return cls({k: v for k, v in d.items()})
         return cls(d["structure"], irreducible_sites, d["dopant_configs"],
                    d["antisite_configs"], d["interstitial_coords"],
                    d["included"], d["excluded"], d["distance"],
@@ -97,7 +97,7 @@ class DefectSetting():
         """
         Construct DefectSetting class object from a defect.in file.
         Currently, format of the defect.in file is not flexible,
-        so be careful for manipulating it.
+        so be careful when modifying it.
         """
         structure = Structure.from_file(poscar)
         irreducible_sites = []
@@ -108,70 +108,69 @@ class DefectSetting():
         cutoff = None
         symprec = None
 
-        with open(defect_in_file) as defect_in:
-            for l in defect_in:
+        with open(defect_in_file) as di:
+            for l in di:
                 line = l.split()
 
-                if line == []:
-                    continue
+                if line == []: continue
 
                 elif line[0] == "Irreducible":
                     irreducible_name = line[2]
-                    # remove index number from irreducible_name
-                    # e.g., "Mg1" --> "Mg"
+                    # remove index from irreducible_name, e.g., "Mg1" --> "Mg"
                     element = ''.join(
                                [i for i in irreducible_name if not i.isdigit()])
-                    # Skip one line which shows the representative index.
-                    # First_index atom is assumed to represent equivalent atoms.
-                    defect_in.readline()
-                    # Representative atom index
                     first_index, last_index = [int(i)
-                           for i in defect_in.readline().split()[2].split("..")]
-                    repr_coords = \
-                           [float(i) for i in defect_in.readline().split()[2:]]
-                    irreducible_sites.append(
-                        IrreducibleSite(irreducible_name, element, first_index,
-                                        last_index, repr_coords))
-                    electronegativity[element] = \
-                                          float(defect_in.readline().split()[1])
-                    oxidation_states[element] = \
-                                            int(defect_in.readline().split()[2])
+                           for i in di.readline().split()[2].split("..")]
+                    repr_coords = [float(i) for i in di.readline().split()[2:]]
+                    irreducible_sites.append(IrreducibleSite(irreducible_name,
+                                 element, first_index, last_index, repr_coords))
+                    electronegativity[element] = float(di.readline().split()[1])
+                    oxidation_states[element] = int(di.readline().split()[2])
 
-                elif line[0] == "Interstital":
-                    # "Interstital coordinates: 0 0 0" -> [0, 0, 0]
+                elif line[0] == "Interstitial":
+                    # "Interstitial coordinates: 0 0 0 0.25 0.25 0.25"
+                    #  --> [0, 0, 0, 0.25, 0.25, 0.25]
                     b = [float(''.join( i for i in line[i] if i.isdigit()
                                      or i == '.')) for i in range(2, len(line))]
                     # TODO: If the numbers for interstitial cannot be divided
                     #       by 3. Return Error.
-                    interstitial_coords = [b[i:i + 3] for i in range(int(len(b) / 3))]
+                    #  [0, 0, 0, 0.25, 0.25, 0.25]
+                    #  --> [[0, 0, 0], [0.25, 0.25, 0.25]]
+                    try:
+                        interstitial_coords =[b[i:i + 3]
+                                                for i in range(int(len(b) / 3))]
+                    except ValueError:
+                        print("Interstitial coords is not a multiple of 3.")
 
                 elif line[0] == "Antisite":
                     antisite_configs = line[2:]
-                    if antisite_configs is []:
-                        antisite_configs = False
+                    if antisite_configs is []: antisite_configs = False
 
                 elif line[0] == "Dopant":
                     d = line[2]
-                    electronegativity[d] = \
-                                          float(defect_in.readline().split()[1])
-                    oxidation_states[d] = int(defect_in.readline().split()[2])
+                    electronegativity[d] = float(di.readline().split()[1])
+                    oxidation_states[d] = int(di.readline().split()[2])
 
                 elif line[0] == "Substituted":
                     dopant_configs = line[2:]
+
                 elif line[0] == "Maximum":
                     distance = float(line[2])
+
                 elif line[0] == "Cutoff":
                     cutoff = float(line[5])
+
                 elif line[0] == "Symprec:":
                     symprec = float(line[1])
+
                 elif line[0] == "Exceptionally":
                     if line[1] == "included:":
                         included = line[2:]
                     elif line[1] == "excluded:":
                         excluded = line[2:]
+
                 else:
-                    raise NotSupportedFlagError(
-                        line[0] + " flag is not supported!")
+                    raise NotSupportedFlagError(line[0] + " is not supported!")
 
         return cls(structure, irreducible_sites, dopant_configs,
                    antisite_configs, interstitial_coords, included, excluded,
@@ -211,37 +210,41 @@ class DefectSetting():
         json.dump(self.as_dict(), fw, indent=2, cls=MontyEncoder)
 
 
+# The following default setting determines the condition of automatic defect
+# calculations.
+_EN_DIFF = 1.0
+_DISTANCE = 0.2
+_CUTOFF = 3.0
+_SYMPREC = 0.01
+
 class DefectInMaker():
     """
-    This class generates defect.in file based on some default setting.
+    This class generates DefectSetting object with some default settings.
 
     Args:
         dopants (array): dopant element names, e.g., ["Al", "N"]
         interstitial_coords (3x1 array): coordinations for interstitial sites,
-            e.g., [[0, 0, 0], [0.1, 0.1, 0.1], ...].
+                                         e.g., [[0, 0, 0], [0.1, 0.1, 0.1], ..]
         is_antisite (bool): Whether to consider antisite defects.
-        EN_diff (float): Electronegativity (EN) difference for determining sets 
-                            of antisites and dopant sites. 
+        EN_diff (float): Electronegativity (EN) difference for determining sets
+                         of antisites and dopant sites.
         included (array): exceptionally added defect type with a charge state.
-            e.g., ["Va_O1_-1", "Va_O1_-2"]                     
+                          e.g., ["Va_O1_-1", "Va_O1_-2"]
         excluded (array): exceptionally removed defect type with a charge state.
-            e.g., ["Va_O1_1", "Va_O1_2"]                     
+                          e.g., ["Va_O1_1", "Va_O1_2"]
         distance (float): Maximum displacement distance in angstrom.
         cutoff (float): Cutoff radius for detemining atoms displaced.
         symprec (float): Precision used for symmetry analysis.
     """
 
     def __init__(self, structure, dopants, interstitial_coords, is_antisite,
-                 EN_diff, included="", excluded="", distance=0.2, cutoff=3.0,
-                 symprec=0.01):
+                 EN_diff=_EN_DIFF, included="", excluded="", distance=_DISTANCE,
+                 cutoff=_CUTOFF, symprec=_SYMPREC):
 
         self.dopants = dopants
-
         if interstitial_coords:
             if not len(interstitial_coords) % 3 == 0:
-                comment = "The number of intersitial coordinates cannot be \
-                         divided by 3."
-                raise ValueError(comment)
+                raise ValueError("Interstitial coords is not a multiple of 3.")
         self.interstitial_coords = interstitial_coords
         self.is_antisite = is_antisite
         self.EN_diff = EN_diff
@@ -253,8 +256,8 @@ class DefectInMaker():
         self.electronegativity = {}
         self.oxidation_states = {}
 
-        # Get electronegativity and oxidation states.
-        # intrinsic elements + dopants
+        # Set electronegativity and oxidation states for both intrinsic elements
+        # and dopants
         for s in structure.symbol_set + tuple(self.dopants):
             try:
                 self.electronegativity[s] = atom.electronegativity[s]
@@ -263,15 +266,12 @@ class DefectInMaker():
                 self.electronegativity[s] = "N.A."
             try:
                 self.oxidation_states[s] = atom.charge[s]
-            # To use pmg oxidation states, uncomment the following
-            #               self.oxidation_states[s] = \
-            #                                        Element(s).common_oxidation_states[-1]
             except:
                 warnings.warn("Oxidation state of " + s + " is unavailable.")
                 self.oxidation_states[s] = "N.A."
 
         self.symmetrized_structure = \
-            SpacegroupAnalyzer(structure).get_symmetrized_structure()
+                       SpacegroupAnalyzer(structure).get_symmetrized_structure()
         # num_irreducible_sites["Mg"] = 2 means Mg has 2 inequivalent sites
         num_irreducible_sites = {}
         # irreducible_sites (aray): a set of IrreducibleSite class objects
@@ -290,8 +290,8 @@ class DefectInMaker():
             last = last + len(e)
             repr_coords = e[0].frac_coords
             irreducible_name = element + str(num_irreducible_sites[element])
-            self.irreducible_sites.append(
-                IrreducibleSite(irreducible_name, element, first, last, repr_coords))
+            self.irreducible_sites.append(IrreducibleSite(
+                           irreducible_name, element, first, last, repr_coords))
 
         EN_keys = self.electronegativity.keys()
 
@@ -332,20 +332,19 @@ class DefectInMaker():
             self.symprec, self.oxidation_states,
             self.electronegativity)
 
-    def electronegativity_not_defined(self, element1, element2):
-        print("Electronegativity of {} and/or {} is not defined". \
-              format(element1, element2))
+    @staticmethod
+    def electronegativity_not_defined(e1, e2):
+        print("Electronegativity of {} and/or {} is not defined".format(e1, e2))
 
     @classmethod
     def from_structure_file(cls, poscar, dopants=[], interstitial_coords=False,
-                            is_antisite=False, EN_diff=1.0, included=None,
-                            excluded=None, distance=0.2, cutoff=3.0, symprec=0.01):
+                            is_antisite=False, EN_diff=_EN_DIFF, included=None,
+                            excluded=None, distance=_EN_DIFF, cutoff=_CUTOFF,
+                            symprec=_SYMPREC):
         """
         Construct DefectInMaker class object from a POSCAR file.
-        VERY IMPORTANT: Some parameters are set by default.
         """
         structure = Structure.from_file(poscar)
-
         return cls(structure, dopants, interstitial_coords, is_antisite,
                    EN_diff, included, excluded, distance, cutoff,
                    symprec)
@@ -355,7 +354,7 @@ class DefectInMaker():
         Print readable defect.in file.
         """
         self._write_defect_in(defectin_file)
-        # HACK:  pmg has a bug, Symmetrized structure object cannot be poscar
+        # HACK: pmg has a bug, Symmetrized structure object cannot be poscar
         Structure.from_str(self.symmetrized_structure.to(fmt="cif"),
                            fmt="cif").to(fmt="poscar", filename="DPOSCAR")
 
@@ -364,7 +363,6 @@ class DefectInMaker():
 
             for e in self.irreducible_sites:
                 fw.write("  Irreducible element: {}\n".format(e.irreducible_name))
-                fw.write("  Representative atom: {}\n".format(e.first_index))
                 fw.write("     Equivalent atoms: {}\n".format(
                     str(e.first_index) + ".." + str(e.last_index)))
                 fw.write("Factional coordinates: %9.7f %9.7f %9.7f\n" % tuple(e.repr_coords))
@@ -372,7 +370,7 @@ class DefectInMaker():
                     self.electronegativity[e.element]))
                 fw.write("      Oxidation state: {}\n\n".format(
                     self.oxidation_states[e.element]))
-            fw.write("Interstital coordinates: ")
+            fw.write("Interstitial coordinates: ")
             if self.interstitial_coords:
                 fw.write(str([self.interstitial_coords[i:i + 3] for i in
                               range(0, len(self.interstitial_coords), 3)]) + "\n")
@@ -427,42 +425,45 @@ class NotSupportedFlagError(Exception):
 def main():
     import argparse
     parser = argparse.ArgumentParser(
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+                         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument("-p", "--poscar", dest="poscar", default="POSCAR",
                         type=str, help="POSCAR name.")
-    parser.add_argument("-d", "--dopants", dest="dopants", default="", nargs="+",
-                        type=str, help="Dopant elements. Eg. Al Ga In.")
-    parser.add_argument("-i", dest="interstitial_coords", nargs="+", default=None,
-                        type=float, help="Inetrstitials. Eg. 0.5 0.5 0.5.")
+    parser.add_argument("-d", "--dopants", dest="dopants", default="",
+                        nargs="+", type=str, help="Dopant elements. Eg. Ga In.")
+    parser.add_argument("-i", dest="interstitial_coords", nargs="+",
+                        default=None, type=float,
+                        help="Interstitial coordinates. Eg., 0.5 0.5 0.5.")
     parser.add_argument("-a", "--antisite", dest="is_antisite",
                         action="store_false",
                         help="Set if antisites are not considered.")
-    parser.add_argument("-e", "--EN_diff", dest="EN_diff", type=float,
-                        default=1.0, help="Criterion of the electronegativity \
-                        difference for constructing antisite and impurities.")
+    parser.add_argument("-e", dest="EN_diff", type=float, default=_EN_DIFF,
+                        help="Criterion of the electronegativity difference \
+                              determining antisites and/or impurities.")
     parser.add_argument("--included", dest="included", type=str, default="",
-                        help="Exceptionally included defects. E.g. Va_O2_-1.")
+                        help="Exceptionally included defects. E.g., Va_O2_-1.")
     parser.add_argument("--excluded", dest="excluded", type=str, default="",
-                        help="Exceptionally excluded defects. E.g. Va_O2_0.")
-    parser.add_argument("--distance", dest="distance", type=float, default=0.2,
-                        help="Displacement distance.")
-    parser.add_argument("--cutoff", dest="cutoff", type=float, default=3.0,
-                        help="Set the cutoff [A].")
-    parser.add_argument("--symprec", dest="symprec", type=float, default=0.01,
-                        help="Set the symprec [A].")
+                        help="Exceptionally excluded defects. E.g., Va_O2_0.")
+    parser.add_argument("--distance", dest="distance", type=float,
+                        default=_DISTANCE,
+                        help="Displacement distance. 0 means that \
+                             random displacement is not considered.")
+    parser.add_argument("--cutoff", dest="cutoff", type=float, default=_CUTOFF,
+                        help="Set the cutoff radius [A] in which atoms are \
+                              displaced.")
+    parser.add_argument("--symprec", dest="symprec", type=float, default=_SYMPREC,
+                        help="Set precision used for symmetry analysis [A].")
     parser.add_argument("--print_dopant", dest="print_dopant", default=None,
-                        type=str, help="Print Dopant information.")
-
+                        type=str, help="Print dopant information that can be \
+                                        added a posterori.")
     opts = parser.parse_args()
 
     if opts.print_dopant:
         DefectInMaker.print_dopant_info(opts.print_dopant)
     else:
-        defect_in = DefectInMaker.from_structure_file(opts.poscar, opts.dopants,
-                                                      opts.interstitial_coords, opts.is_antisite,
-                                                      opts.EN_diff, opts.included, opts.excluded,
-                                                      opts.distance, opts.cutoff, opts.symprec)
+        defect_in = DefectInMaker.from_structure_file(
+                        opts.poscar, opts.dopants, opts.interstitial_coords,
+                        opts.is_antisite, opts.EN_diff, opts.included,
+                        opts.excluded, opts.distance, opts.cutoff, opts.symprec)
         defect_in.to()
-
 
 if __name__ == "__main__": main()
