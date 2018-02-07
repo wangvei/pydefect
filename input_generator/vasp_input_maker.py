@@ -13,9 +13,9 @@ from copy import deepcopy
 from pymatgen.core.structure import Structure
 from pymatgen.io.vasp.inputs import Potcar
 from pymatgen.core.periodic_table import Element
-from pydefect.input_generator.defect_input import DefectSetting 
-from pydefect.input_generator.input_maker import InputMaker, 
-                    extended_range, _print_already_exist, _print_is_constructed
+from defect_in import DefectSetting
+from input_maker import InputMaker, extended_range, _print_already_exist, \
+                        _print_is_constructed
 
 __author__ = "Yu Kumagai"
 __copyright__ = "Copyright 2017, Oba group"
@@ -98,21 +98,23 @@ class VaspInputMaker(InputMaker):
         self.kpoints = kpoints
 
     def make_vasp_defect_input_files(self):
-        analyze_name()            
+        self.analyze_defect_name()
         if self.is_directory == True:
-            _print_already_exist(d)
+            _print_already_exist(self.defect_name)
         else:
-            _print_is_constructed(d)
+            _print_is_constructed(self.defect_name)
 
-            make_directory_json()
+            self.make_directory_json()
             self.defect_structure.to(
                                  filename=self.defect_name + "/POSCAR-Initial")
-            if self.perturbed_defect_structure: 
+
+            if not self.defect_setting.distance == 0.0:
+                self.make_perturbed_defect_structure()
                 self.perturbed_defect_structure.to(
                              filename=self.defect_name + "/POSCAR-DispInitial")
                 self.perturbed_defect_structure.to(
                              filename=self.defect_name + "/POSCAR")
-            else
+            else:
                 self.defect_structure.to(filename=self.defect_name + "/POSCAR")
     
             elements = self.defect_structure.symbol_set
@@ -128,19 +130,6 @@ class VaspInputMaker(InputMaker):
             # Construct KPOINTS file
             shutil.copyfile(self.kpoints, self.defect_name + "/KPOINTS")
 
-    @staticmethod
-    def make_vasp_perfect_input_files():
-        perfect = "perfect"
-        if os.path.exists(perfect):
-            _print_already_exist(perfect)
-        else:
-            _print_is_constructed(perfect)
-            os.makedirs(perfect)
-            self.defect_setting.structure.to(filename=perfect + "/POSCAR")
-            shutil.copyfile(self.incar, perfect + "/INCAR")
-            shutil.copyfile(self.kpoints, perfect + "/KPOINTS")
-            make_potcar(perfect, self.elements, potcar_dir()) 
-
 
 class VaspInputSetMaker():
 
@@ -152,26 +141,41 @@ class VaspInputSetMaker():
             raise IOError('{} does not exist.'.format(kpoints))
 
         self.defect_setting = defect_setting
+        self.incar = incar
+        self.kpoints = kpoints
         self.elements = self.defect_setting.structure.symbol_set
 
-        VaspInputMaker.make_vasp_perfect_input_files()
+        self.make_vasp_perfect_input_files()
 
         self.defect_set = self._vacancy_setter() + \
                           self._interstitial_setter() + \
                           self._substitutional_setter()
 
-        for i in self.defect_setting.include:
+        for i in self.defect_setting.included:
             self.defect_set.append(i)
 
-        for e in self.defect_setting.exclude:
+        for e in self.defect_setting.excluded:
             if e in self.defect_set:
                 self.defect_set.remove(e)
             else:
                 print("{} does not exist.".format(e))
 
+        print(self.defect_set)
         for d in self.defect_set:
             a = VaspInputMaker(d, self.defect_setting, incar, kpoints)
-            a.make_vasp_defect_input_files
+            a.make_vasp_defect_input_files()
+
+    def make_vasp_perfect_input_files(self):
+        perfect = "perfect"
+        if os.path.exists(perfect):
+            _print_already_exist(perfect)
+        else:
+            _print_is_constructed(perfect)
+            os.makedirs(perfect)
+            self.defect_setting.structure.to(filename=perfect + "/POSCAR")
+            shutil.copyfile(self.incar, perfect + "/INCAR")
+            shutil.copyfile(self.kpoints, perfect + "/KPOINTS")
+            make_potcar(perfect, self.elements, potcar_dir())
 
     def _vacancy_setter(self):
         name_set = []
@@ -236,7 +240,7 @@ def main():
                 _print_is_constructed(d)
                 a.constructor()
     else:
-        VaspInputSetMaker(defect_setting, incar=opts.incar, 
+        VaspInputSetMaker(defect_setting, incar=opts.incar,
                           kpoints=opts.kpoints)
 
 if __name__ == "__main__": main()

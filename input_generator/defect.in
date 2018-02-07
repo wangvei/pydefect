@@ -1,27 +1,23 @@
-  Name: Sc1
-   Rep: 1
- Equiv: 1..32
- Coord: 0.0000000 0.0000000 0.0000000
-EleNeg: 1.36
-Charge: 3
+  Irreducible element: Mg1
+  Representative atom: 1
+     Equivalent atoms: 1..32
+Factional coordinates: 0.0000000 0.0000000 0.0000000
+    Electronegativity: 1.31
+      Oxidation state: 2
 
-  Name: N1
-   Rep: 33
- Equiv: 33..64
- Coord: 0.0000000 0.2500000 0.0000000
-EleNeg: 3.04
-Charge: -3
+  Irreducible element: O1
+  Representative atom: 33
+     Equivalent atoms: 33..64
+Factional coordinates: 0.2500000 0.2500000 0.2500000
+    Electronegativity: 3.44
+      Oxidation state: -2
 
-Int_site: [[0.0, 0.0, 0.0]]
-Antisite: 
+Interstital coordinates: 
+Antisite defects: 
 
-Dopant: Al
-EleNeg: 1.61
-Charge: 3
+Maximum Displacement: 0.2
 
-Dopant_site: 
-
-Symbreak: 0.2
-Include: 
-Exclude: 
+Exceptionally included: 
+Exceptionally excluded: 
+Cutoff region of atoms perturbed: 3.0
 Symprec: 0.01

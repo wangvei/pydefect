@@ -1,3 +1,11 @@
 {
-  "defect_position": 33
+  "defect_index": 33,
+  "defect_coords": [
+    0.5,
+    0.5,
+    0.5
+  ],
+  "in_name": "O",
+  "out_name": "i1",
+  "charge": 0
 }

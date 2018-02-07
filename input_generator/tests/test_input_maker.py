@@ -1,7 +1,7 @@
 import unittest
-from pydefect.input_generator.input_maker import *
-from pydefect.input_generator.defect import IrreducibleSite
-from pydefect.input_generator.defect_in import DefectSetting
+from ../input_maker import *
+from defect import IrreducibleSite
+from defect_in import DefectSetting
 import numpy as np
 
 __author__ = "Yu Kumagai"
@@ -36,7 +36,7 @@ class RandomVectorTest(unittest.TestCase):
         print("random_3D_vector: ", self.v)
         print("distance: ", self.distance)
         print("norm: ", np.linalg.norm(self.v))
-        self.assertLessEqual(np.linalg.norm(self.v), self.distance) 
+        self.assertLessEqual(np.linalg.norm(self.v), self.distance)
 
 
 class InputMakerTest(unittest.TestCase):
@@ -58,8 +58,7 @@ class InputMakerTest(unittest.TestCase):
         interstitial_coords = [[0.1, 0.1, 0.1], [0.3, 0.3, 0.3]]
         included = ["Va_O1_-1", "Va_O1_-2"]                                         
         excluded = ["Va_O1_1", "Va_O1_2"]                                           
-        symbreak = True                                                            
-        displace = 0.15                                                            
+        displace = 0.15
         cutoff = 3.0                                                               
         symprec = 0.001                                                            
         oxidation_states = {"Mg": 2, "O": -2}                                      
@@ -97,6 +96,9 @@ class InputMakerTest(unittest.TestCase):
         print(in3.defect_index)
         print(in3.defect_coords)
         
+if __name__ == "__main__":
+    unittest.main()
+
 
 #class VaspInputSetMakerTest(unittest.TestCase):
 #
