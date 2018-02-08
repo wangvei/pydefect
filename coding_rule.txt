@@ -23,6 +23,11 @@ Spacing:
 			 a=(-b+c)*2
 			 a = ( -b + c) * 2
 
+Index:
+	-In programing code, index of data begins from 0.
+	-In json file, index of data begins from 0.
+	-In other files which may be read by human, index of data begins from 1.
+
 Abbreviation:
 (If you catch up good abbreviation, please consult and add it to this file.)
 
