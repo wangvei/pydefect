@@ -16,16 +16,20 @@ class Defect():
     """
     This class object holds some properties related to a defect.
     Args:
-        defect_index (int): Position of the defect in the defect supercell.
-                            For vacancy, None.
+        removed_atom_index (int): Atom index removed in the perfect supercell.
+                                  For interstitial, None.
+        inserted_atom_index (int): Atom index inserted in the supercell after
+                                   removing an atom. For vacancy, None.
         defect_coords (3x1 array): coordinates of defect position
         in_name" (str): Inserted element name. "Va" is inserted for vacancies.
-        out_name" (str): Removed element name. "in", where n is an integer,
+        out_name" (str): Removed site name. "in", where n is an integer,
                          is inserted for interstitials. E.g., "i1".
         charge (int): Charge state of the defect
     """
-    def __init__(self, defect_index, defect_coords, in_name, out_name, charge):
-        self.defect_index = defect_index
+    def __init__(self, removed_atom_index, inserted_atom_index, defect_coords,
+                 in_name, out_name, charge):
+        self.removed_atom_index = removed_atom_index
+        self.inserted_atom_index = inserted_atom_index
         self.defect_coords = defect_coords
         self.in_name = in_name
         self.out_name = out_name
@@ -34,7 +38,7 @@ class Defect():
     @classmethod
     def from_dict(cls, d):
         """
-        Constructs
+        Constructs a dictionary.
         """
         return cls(d["defect_index"], d["defect_coords"], d["in_name"],
                    d["out_name"], d["charge"])
@@ -50,7 +54,8 @@ class Defect():
         """
         Dict representation of DefectSetting class object.
         """
-        d = {"defect_index": self.defect_index,
+        d = {"removed_atom_index": self.removed_atom_index,
+             "inserted_atom_index": self.inserted_atom_index,
              "defect_coords": self.defect_coords,
              "in_name": self.in_name,
              "out_name": self.out_name,

@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import warnings
+import json
 
 from pymatgen.core.structure import Structure
 from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
@@ -29,11 +30,13 @@ class DefectSetting():
     defect calculations.
 
     Args:
-        structure: pmg Structure/IStructure class object
+        structure (Structure): pmg Structure/IStructure class object
         irreducible_sites: IrreducibleSite class objects
-        dopant_configs (array): dopant configurations, e.g., ["Al_Mg", "N_O"]
-        antisite_configs (array): antisite configuraions, e.g., ["Mg_O", "O_Mg"]
-        interstitial_coords (3x1 array): coordinations of interstitial sites,
+        dopant_configs (2x1 array): dopant configurations,
+                                    e.g., [["Al", Mg"], ["N", "O"]
+        antisite_configs (array): antisite configurations,
+                                  e.g., [["Mg","O"], ["O", "Mg"]]
+        interstitial_coords (3x1 array): coordinates of interstitial sites,
                                          e.g., [[0, 0, 0], [0.1, 0.1, 0.1], ..]
         included (array): exceptionally added defect type with a charge state.
                           e.g., ["Va_O1_-1", "Va_O1_-2"]
@@ -56,7 +59,8 @@ class DefectSetting():
         self.structure = structure
         self.irreducible_sites = irreducible_sites
         self.dopant_configs = dopant_configs
-        self.dopants = [d.split("_")[0] for d in dopant_configs]
+        # dopant element names are derived from in_name of dopant_configs.
+        self.dopants = set([d[0] for d in dopant_configs])
         self.antisite_configs = antisite_configs
         self.interstitial_coords = interstitial_coords
         self.included = included
@@ -96,7 +100,6 @@ class DefectSetting():
         """
         Construct a DefectSetting class object from a json file.
         """
-        #        print(loadfn(filename))
         return cls.from_dict(loadfn(filename))
 
     @classmethod
@@ -139,17 +142,20 @@ class DefectSetting():
                     #  --> [0, 0, 0, 0.25, 0.25, 0.25]
                     b = [float(''.join( i for i in line[i] if i.isdigit()
                                      or i == '.')) for i in range(2, len(line))]
-                    # If the numbers for interstitial coords cannot be divided
-                    # by 3, return Error.
+                    # If the number for interstitial coords is not divided by 3,
+                    # return Error.
+                    #  [0, 0, 0, 0.25, 0.25, 0.25]
+                    #            --> [[0, 0, 0], [0.25, 0.25, 0.25]]
                     try:
                         interstitial_coords =[b[i:i + 3]
                                                 for i in range(int(len(b) / 3))]
                     except ValueError:
-                        print("Interstitial coords is not a multiple of 3.")
+                        print("Interstitial coordinates isn't a multiple of 3.")
 
                 elif line[0] == "Antisite":
-                    antisite_configs = line[2:]
-                    if antisite_configs is []: antisite_configs = False
+                    antisite_configs = [i.split("_") for i in  line[2:]]
+                    if antisite_configs is []:
+                        antisite_configs = False
 
                 elif line[0] == "Dopant":
                     d = line[2]
@@ -157,7 +163,7 @@ class DefectSetting():
                     oxidation_states[d] = int(di.readline().split()[2])
 
                 elif line[0] == "Substituted":
-                    dopant_configs = line[2:]
+                    dopant_configs = [i.split("_") for i in  line[2:]]
 
                 elif line[0] == "Maximum":
                     distance = float(line[2])
@@ -202,14 +208,14 @@ class DefectSetting():
         electronegativity = {}
         oxidation_states = {}
         for s in structure.symbol_set + tuple(dopants):
-            electronegativity[s] = cls.get_electronegativity(s)
-            oxidation_states[s] = cls.get_oxidation_states(s)
+            electronegativity[s] = get_electronegativity(s)
+            oxidation_states[s] = get_oxidation_states(s)
 
         symmetrized_structure = \
                        SpacegroupAnalyzer(structure).get_symmetrized_structure()
         # num_irreducible_sites["Mg"] = 2 means Mg has 2 inequivalent sites
         num_irreducible_sites = {}
-        # irreducible_sites (aray): a set of IrreducibleSite class objects
+        # irreducible_sites (array): a set of IrreducibleSite class objects
         irreducible_sites = []
         # equivalent_sites: Equivalent site indices from SpacegroupAnalyzer.
         last = 0
@@ -302,20 +308,20 @@ class DefectSetting():
         with open(defectin_file, 'w') as fw:
 
             for e in self.irreducible_sites:
-                fw.write("  Irreducible element: {}\n".format(
+                fw.write("   Irreducible element: {}\n".format(
                                                             e.irreducible_name))
-                fw.write("     Equivalent atoms: {}\n".format(
+                fw.write("      Equivalent atoms: {}\n".format(
                     str(e.first_index) + ".." + str(e.last_index)))
-                fw.write("Factional coordinates: %9.7f %9.7f %9.7f\n" % \
+                fw.write("Fractional coordinates: %9.7f %9.7f %9.7f\n" % \
                                                            tuple(e.repr_coords))
-                fw.write("    Electronegativity: {}\n".format(
+                fw.write("     Electronegativity: {}\n".format(
                                              self.electronegativity[e.element]))
-                fw.write("      Oxidation state: {}\n\n".format(
+                fw.write("       Oxidation state: {}\n\n".format(
                                               self.oxidation_states[e.element]))
+
             fw.write("Interstitial coordinates: ")
             if self.interstitial_coords:
-                fw.write(str([self.interstitial_coords[i:i + 3] for i in
-                            range(0, len(self.interstitial_coords), 3)]) + "\n")
+                fw.write(str(self.interstitial_coords) + "\n")
             else:
                 fw.write("\n")
 
@@ -323,6 +329,7 @@ class DefectSetting():
                 fw.write("Antisite defects: ")
                 fw.write(' '.join(i[0] + "_" + i[1]
                                   for i in self.antisite_configs) + "\n\n")
+
             if self.dopants:
                 for d in self.dopants:
                     if not d in self.structure.symbol_set:
@@ -343,24 +350,29 @@ class DefectSetting():
             fw.write("Symprec: {}\n".format(self.symprec))
 
     @staticmethod
-    def get_electronegativity(s):
-        try:
-            return atom.electronegativity[s]
-        except:
-            warnings.warn("Electronegativity of " + s + " is unavailable.")
-            return None
-
-    @staticmethod
-    def get_oxidation_states(s):
-        try:
-            return atom.charge[s]
-        except:
-            warnings.warn("Oxidation state of " + s + " is unavailable.")
-            return None
-
-    @staticmethod
     def electronegativity_not_defined(e1, e2):
         print("Electronegativity of {} and/or {} is not defined".format(e1, e2))
+
+
+class NotSupportedFlagError(Exception):
+    pass
+
+
+def get_electronegativity(s):
+    try:
+        return atom.electronegativity[s]
+    except:
+        warnings.warn("Electronegativity of " + s + " is unavailable.")
+        return None
+
+
+def get_oxidation_states(s):
+    try:
+        return atom.charge[s]
+    except:
+        warnings.warn("Oxidation state of " + s + " is unavailable.")
+        return None
+
 
 def print_dopant_info(dopant):
     """
@@ -383,10 +395,6 @@ def print_dopant_info(dopant):
     print("  Oxidation state: {}".format(oxidation_states))
 
 
-class NotSupportedFlagError(Exception):
-    pass
-
-
 def main():
     import argparse
     parser = argparse.ArgumentParser(
@@ -405,8 +413,10 @@ def main():
                         help="Criterion of the electronegativity difference \
                               determining antisites and/or impurities.")
     parser.add_argument("--included", dest="included", type=str, default="",
+                        nargs="+",
                         help="Exceptionally included defects. E.g., Va_O2_-1.")
     parser.add_argument("--excluded", dest="excluded", type=str, default="",
+                        nargs="+",
                         help="Exceptionally excluded defects. E.g., Va_O2_0.")
     parser.add_argument("--distance", dest="distance", type=float,
                         default=_DISTANCE,

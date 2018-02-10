@@ -1,8 +1,9 @@
 import unittest
-from ../input_maker import *
+from input_maker import *
 from defect import IrreducibleSite
 from defect_in import DefectSetting
 import numpy as np
+from pymatgen.core.structure import Structure
 
 __author__ = "Yu Kumagai"
 __copyright__ = "Copyright 2017, Oba group"
@@ -13,8 +14,15 @@ __status__ = "Development"
 __date__ = "December 4, 2017"
 
 DEFAULT_POTCAR_DIR="/home/common/default_POTCAR"
+FILENAME_PerturbAroundAPointTest_POSCAR = "examples/POSCAR-MgO64atoms"
+FILENAME_POSCAR_VA1 = "examples/POSCAR-MgO64atoms-Va_Mg1"
+FILENAME_POSCAR_IN1 = "examples/POSCAR-MgO64atoms-O_i1"
+FILENAME_POSCAR_IN3 = "examples/POSCAR-MgO64atoms-Al_i1"
+FILENAME_POSCAR_AS1 = "examples/POSCAR-MgO64atoms-O_Mg"
+FILENAME_POSCAR_SS1 = "examples/POSCAR-MgO64atoms-N_O1"
+#FILENAME_JSON_VA1 = "examples/MgO64atoms-Va_Mg1.json"
 
-class NormedRandom3DVectorTest(unittest.TestCase): 
+class NormedRandom3DVectorTest(unittest.TestCase):
 
     def setUp(self): 
         self.v = normed_random_3D_vector()
@@ -39,93 +47,135 @@ class RandomVectorTest(unittest.TestCase):
         self.assertLessEqual(np.linalg.norm(self.v), self.distance)
 
 
-class InputMakerTest(unittest.TestCase):
+class PerturbAroundAPointTest(unittest.TestCase):
 
     def setUp(self):
-        self.vacancy = "Va_Mg1_-2"
-        self.interstital1 = "Mg_i1_2"
-        self.interstital2 = "O_i2_-2"
-        self.interstital3 = "Al_i1_3"
-        self.antisite1 = "Mg_O1_2"
-        self.antisite2 = "O_Mg1_-2"
+        self.structure = \
+            Structure.from_file(FILENAME_PerturbAroundAPointTest_POSCAR)
+        self.center = [0.0, 0.0, 0.0]
+        self.cutoff = 3.0
+        self.distance = 0.2
 
-        structure = Structure.from_file("POSCAR-MgO64atoms")                       
-        Mg1 = IrreducibleSite(irreducible_name="Mg1", element="Mg", first_index=1, last_index=32, repr_coords=[0, 0, 0]) 
-        O1 = IrreducibleSite(irreducible_name="O1", element="O", first_index=33, last_index=64, repr_coords=[0.25, 0.25, 0.25])
-        irreducible_sites = [Mg1, O1]                                                 
-        dopant_configs = "Al_Mg"                                                  
-        antisite_configs = ["Mg_O", "O_Mg"]                                      
-        interstitial_coords = [[0.1, 0.1, 0.1], [0.3, 0.3, 0.3]]
-        included = ["Va_O1_-1", "Va_O1_-2"]                                         
-        excluded = ["Va_O1_1", "Va_O1_2"]                                           
-        displace = 0.15
-        cutoff = 3.0                                                               
-        symprec = 0.001                                                            
-        oxidation_states = {"Mg": 2, "O": -2}                                      
-        electronegativity = {"Mg": 1.31, "O": 3.44}                                
-                                                                                   
-        self.defect_setting = \
-            DefectSetting(structure, irreducible_sites, dopant_configs,         
-                          antisite_configs, interstitial_coords, included, 
-                          excluded, displace, cutoff, symprec, 
-                          oxidation_states, electronegativity)  
-
-    def test_vacancy(self):
-        va = InputMaker(self.vacancy, self.defect_setting)
-        va.analyze_name()
-        print(vdefect_structure)
-        print(va.defect_index)
-        print(va.defect_coords)
-
-    def test_interstitial(self):
-        in1 = InputMaker(self.interstital1, self.defect_setting)
-        in2 = InputMaker(self.interstital2, self.defect_setting)
-        in3 = InputMaker(self.interstital3, self.defect_setting)
-
-        in1.analyze_name()
-        in2.analyze_name()
-        in3.analyze_name()
-        
-        print(in1.defect_structure)
-        print(in1.defect_index)
-        print(in1.defect_coords)
-        print(in2.defect_structure)
-        print(in2.defect_index)
-        print(in2.defect_coords)
-        print(in3.defect_structure)
-        print(in3.defect_index)
-        print(in3.defect_coords)
-        
-if __name__ == "__main__":
-    unittest.main()
+    def test(self):
+        # TODO: test the displacement distances
+        perturbed_defect_structure, perturbed_sites = \
+        perturb_around_a_point(
+                        self.structure, self.center, self.cutoff, self.distance)
+        true_perturbed_sites = [0, 40, 44, 48, 50, 56, 57]
+        self.assertEqual(perturbed_sites, true_perturbed_sites)
 
 
-#class VaspInputSetMakerTest(unittest.TestCase):
-#
-#    def setUp(self):
-#
-#        structure = Structure.from_file("POSCAR-MgO64atoms")                       
-#        Mg1 = IrreducibleSite(irreducible_name="Mg1", element="Mg", first_index=1, last_index=32, repr_coord=[0, 0, 0]) 
-#        O1 = IrreducibleSite(irreducible_name="O1", element="O", first_index=33, last_index=64, repr_coord=[0.25, 0.25, 0.25])
-#        irrep_elements = [Mg1, O1]                                                 
-#        dopant_configs = ["Al_Mg"]                                                 
-#        antisite_configs = ["Mg_O", "O_Mg"]
-#        interstitial_coords = [[0.1, 0.1, 0.1], [0.3, 0.3, 0.3]]
-#        include = ["Va_O1_-1", "Va_O1_-2"]                                         
-#        exclude = ["Va_O1_1", "Va_O1_2"]                                           
-#        symbreak = True                                                            
-#        displace = 0.15                                                            
-#        cutoff = 3.0                                                               
-#        symprec = 0.001                                                            
-#        oxidation_states = {"Al": 3, "Mg": 2, "O": -2}                                      
-#        electronegativity = {"Al": 1.3, "Mg": 1.31, "O": 3.44}                                
-#                                                                                   
-#        self.defect_setting = \
-#            DefectSetting(structure, irrep_elements, dopant_configs,         
-#                          antisite_configs, interstitial_coords, include, 
-#                          exclude, symbreak, displace, cutoff, symprec, 
-#                          oxidation_states, electronegativity)  
-#
-#    def test(self):        
-#        a = VaspInputSetMaker(self.defect_setting)
-#        a.constructor()
+class DefectInputMakerTest(unittest.TestCase):
+
+    def setUp(self):
+        structure = Structure.from_file(FILENAME_PerturbAroundAPointTest_POSCAR)
+        Mg1 = IrreducibleSite(irreducible_name="Mg1", element="Mg",
+                              first_index=1, last_index=32,
+                              repr_coords=[0, 0, 0])
+        O1 = IrreducibleSite(irreducible_name="O1", element="O",
+                             first_index=33, last_index=64,
+                             repr_coords=[0.25, 0.25, 0.25])
+        irrep_elements = [Mg1, O1]
+        dopant_configs = [["Al", "Mg"], ["Al", "O"], ["N","Mg"], ["N", "O"]]
+        antisite_configs = [["Mg", "O"], ["O","Mg"]]
+        interstitial_coords = [[0.1, 0.1, 0.1]]
+        self.interstitial_coords = interstitial_coords
+        included = ["Va_O1_-1", "Va_O1_-2"]
+        excluded = ["Va_O1_1", "Va_O1_2"]
+        distance = 0.15
+        cutoff = 2.0
+        symprec = 0.001
+        oxidation_states = {"Mg": 2, "O": -2, "Al": 3, "N": -3}
+        electronegativity = {"Mg": 1.31, "O": 3.44, "Al": 1.61, "N": 3.04}
+
+        self._mgo = DefectSetting(
+                   structure, irrep_elements, dopant_configs, antisite_configs,
+                   interstitial_coords, included, excluded, distance, cutoff,
+                   symprec, oxidation_states, electronegativity)
+
+    def test_vacancies(self):
+        vacancy1 = "Va_Mg1_-2"
+        vacancy2 = "Va_Mg2_-2"
+        va1 = DefectInputMaker(vacancy1, self._mgo)
+        va1_check_structure = Structure.from_file(FILENAME_POSCAR_VA1)
+        self.assertTrue(va1.defect_structure, va1_check_structure)
+        with self.assertRaises(ValueError):
+            va2 = DefectInputMaker(vacancy2, self._mgo)
+
+        self.assertEqual(va1.defect_index, 0)
+        self.assertEqual(va1.defect_coords, [0.0, 0.0, 0.0])
+
+    def test_interstitials(self):
+        interstital1 = "O_i1_2"
+        interstital2 = "O_i2_-2"
+        interstital3 = "Al_i1_3"
+        in1 = DefectInputMaker(interstital1, self._mgo)
+        in1_check_structure = Structure.from_file(FILENAME_POSCAR_IN1)
+        self.assertTrue(in1.defect_structure, in1_check_structure)
+        with self.assertRaises(ValueError):
+            DefectInputMaker(interstital2, self._mgo)
+        in3 = DefectInputMaker(interstital3, self._mgo)
+        in3_check_structure = Structure.from_file(FILENAME_POSCAR_IN3)
+        self.assertTrue(in3.defect_structure, in3_check_structure)
+
+        self.assertEqual(in1.defect_index, 32)
+        self.assertEqual(in3.defect_index, 0)
+
+        self.assertEqual(in1.defect_coords, self.interstitial_coords[0])
+        self.assertEqual(in3.defect_coords, self.interstitial_coords[0])
+
+    def test_antisites(self):
+        antisite1 = "O_Mg1_0"
+        as1 = DefectInputMaker(antisite1, self._mgo)
+        as1_check_structure = Structure.from_file(FILENAME_POSCAR_AS1)
+        self.assertTrue(as1.defect_structure, as1_check_structure)
+
+    def test_substituted(self):
+        substituted1 = "N_O1_-2"
+        substituted2 = "N_O2_-2"
+        ss1 = DefectInputMaker(substituted1, self._mgo)
+        ss1_check_structure = Structure.from_file(FILENAME_POSCAR_SS1)
+        self.assertTrue(ss1.defect_structure, ss1_check_structure)
+        with self.assertRaises(ValueError):
+            ss2 = DefectInputMaker(substituted2, self._mgo)
+
+
+class DefectInputSetMakerTest(unittest.TestCase):
+
+    def setUp(self):
+        structure = Structure.from_file(FILENAME_PerturbAroundAPointTest_POSCAR)
+        Mg1 = IrreducibleSite(irreducible_name="Mg1", element="Mg",
+                              first_index=1, last_index=32,
+                              repr_coords=[0, 0, 0])
+        O1 = IrreducibleSite(irreducible_name="O1", element="O",
+                             first_index=33, last_index=64,
+                             repr_coords=[0.25, 0.25, 0.25])
+        irrep_elements = [Mg1, O1]
+        dopant_configs = [["Al", "Mg"]]
+        antisite_configs = [["O","Mg"]]
+        interstitial_coords = [[0.1, 0.1, 0.1]]
+        self.interstitial_coords = interstitial_coords
+        included = ["Va_O1_-1", "Va_O1_-2"]
+        excluded = ["Va_O1_1", "Va_O1_2"]
+        distance = 0.15
+        cutoff = 2.0
+        symprec = 0.001
+        oxidation_states = {"Mg": 2, "O": -2, "Al": 3, "N": -3}
+        electronegativity = {"Mg": 1.31, "O": 3.44, "Al": 1.61, "N": 3.04}
+
+        self._mgo = DefectSetting(
+            structure, irrep_elements, dopant_configs, antisite_configs,
+            interstitial_coords, included, excluded, distance, cutoff,
+            symprec, oxidation_states, electronegativity)
+
+    def test(self):
+        mgo = DefectInputSetMaker(self._mgo)
+        check_defect_set = \
+            ['Va_Mg1_-2', 'Va_Mg1_-1', 'Va_Mg1_0',
+             'Va_O1_0', 'Va_O1_-1', 'Va_O1_-2',
+             'Mg_i1_0', 'Mg_i1_1', 'Mg_i1_2',
+             'O_i1_-2', 'O_i1_-1', 'O_i1_0',
+             'O_Mg1_-4', 'O_Mg1_-3', 'O_Mg1_-2', 'O_Mg1_-1', 'O_Mg1_0',
+             'Al_Mg1_0', 'Al_Mg1_1']
+        self.assertTrue(mgo.defect_set, check_defect_set)
+
