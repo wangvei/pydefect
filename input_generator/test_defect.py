@@ -15,9 +15,11 @@ FILENAME_TO_JSON_FILE_INT = "examples/Mg_i1_1.json"
 class DefectTest(unittest.TestCase):
 
     def setUp(self):
-        self._vac = Defect(defect_index=None, defect_coords=[0, 0, 0],
+        self._vac = Defect(removed_atom_index=1, inserted_atom_index=None,
+                           defect_coords=[0, 0, 0],
                            in_name="Va", out_name="Mg1", charge=-2)
-        self._int = Defect(defect_index=1, defect_coords=[0.5, 0.5, 0.5],
+        self._int = Defect(removed_atom_index=None, inserted_atom_index=1,
+                           defect_coords=[0.5, 0.5, 0.5],
                            in_name="Mg", out_name="i1", charge=1)
 
     def test_dict(self):
@@ -39,8 +41,9 @@ class DefectTest(unittest.TestCase):
 class IrreducibleSiteTest(unittest.TestCase):
     
     def setUp(self):
-        self._mg = IrreducibleSite(irreducible_name="Mg1", element="Mg", first_index=1, 
-                              last_index=32, repr_coords=[0, 0, 0])
+        self._mg = IrreducibleSite(irreducible_name="Mg1", element="Mg",
+                                   first_index=1, last_index=32,
+                                   repr_coords=[0, 0, 0])
 
     def test_dict(self):
         d = IrreducibleSite.from_dict(self._mg.as_dict())

@@ -1,5 +1,6 @@
 {
-  "defect_index": null,
+  "removed_atom_index": 1,
+  "inserted_atom_index": null,
   "defect_coords": [
     0,
     0,

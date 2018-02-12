@@ -12,14 +12,14 @@ __email__ = "yuuukuma@gmail.com"
 __status__ = "Development"
 __date__ = "December 4, 2017"
 
-class Defect():
+class Defect:
     """
     This class object holds some properties related to a defect.
     Args:
         removed_atom_index (int): Atom index removed in the perfect supercell.
-                                  For interstitial, None.
+                                  For interstitial, set to None.
         inserted_atom_index (int): Atom index inserted in the supercell after
-                                   removing an atom. For vacancy, None.
+                                   removing an atom. For vacancy, set to None.
         defect_coords (3x1 array): coordinates of defect position
         in_name" (str): Inserted element name. "Va" is inserted for vacancies.
         out_name" (str): Removed site name. "in", where n is an integer,
@@ -40,13 +40,13 @@ class Defect():
         """
         Constructs a dictionary.
         """
-        return cls(d["defect_index"], d["defect_coords"], d["in_name"],
-                   d["out_name"], d["charge"])
+        return cls(d["removed_atom_index"], d["inserted_atom_index"],
+                   d["defect_coords"], d["in_name"], d["out_name"], d["charge"])
 
     @classmethod
     def json_load(cls, filename):
         """
-        Construct a DefectSetting class object from a json file.
+        Constructs a DefectSetting class object from a json file.
         """
         return cls.from_dict(loadfn(filename))
 
@@ -70,7 +70,7 @@ class Defect():
             json.dump(self.as_dict(), fw, indent=2, cls=MontyEncoder)
 
 
-class IrreducibleSite():
+class IrreducibleSite:
     """
     This class object holds properties related to irreducible atom set.
     Note1: atomic indices need to be sorted. Thus, they can be written in one
@@ -116,6 +116,6 @@ class IrreducibleSite():
     @property
     def natoms(self):
         """
-        Return number of atoms in a given (super)cell.
+        Returns number of atoms in a given (super)cell.
         """
         return self.last_index - self.first_index + 1

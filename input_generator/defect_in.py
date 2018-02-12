@@ -18,10 +18,6 @@ __email__ = "yuuukuma@gmail.com"
 __status__ = "Development"
 __date__ = "December 4, 2017"
 
-<<<<<<< HEAD
-
-class DefectSetting:
-=======
 # Following defaults determine the condition of automatic defect calculations.
 _EN_DIFF = 1.0
 _DISTANCE = 0.2
@@ -29,7 +25,6 @@ _CUTOFF = 3.0
 _SYMPREC = 0.01
 
 class DefectSetting():
->>>>>>> refactoring_defect_in
     """
     This class object holds full information on the setting of the point 
     defect calculations.
@@ -37,17 +32,11 @@ class DefectSetting():
     Args:
         structure (Structure): pmg Structure/IStructure class object
         irreducible_sites: IrreducibleSite class objects
-<<<<<<< HEAD
-        dopant_configs (array): dopant configurations, e.g., ["Al_Mg", "N_O"]
-        antisite_configs (array): antisite configurations, e.g., ["Mg_O", "O_Mg"]
-        interstitial_coords (3x1 array): coordination of interstitial sites,
-=======
         dopant_configs (2x1 array): dopant configurations,
                                     e.g., [["Al", Mg"], ["N", "O"]
         antisite_configs (array): antisite configurations,
                                   e.g., [["Mg","O"], ["O", "Mg"]]
         interstitial_coords (3x1 array): coordinates of interstitial sites,
->>>>>>> refactoring_defect_in
                                          e.g., [[0, 0, 0], [0.1, 0.1, 0.1], ..]
         included (array): exceptionally added defect type with a charge state.
                           e.g., ["Va_O1_-1", "Va_O1_-2"]
@@ -156,7 +145,6 @@ class DefectSetting():
                     oxidation_states[element] = int(di.readline().split()[2])
 
                 elif line[0] == "Interstitial":
-<<<<<<< HEAD
                     # Interstitial coordinates: [[0, 0, 0], [0.2, 0.2, 0.2]]
                     # coords_native = ["[0,", "0," "0],", "0.2", "0.2", "0.2]]"]
                     coords_native = [i for i in range(2, len(line))]
@@ -166,16 +154,6 @@ class DefectSetting():
                                   for i in coords_native]
                     # coords_float = [0, 0, 0, 0.2, 0.2, 0.2]
                     coords_float = [float(i) for i in coords_str]
-=======
-                    # "Interstitial coordinates: 0 0 0 0.25 0.25 0.25"
-                    #  --> [0, 0, 0, 0.25, 0.25, 0.25]
-                    b = [float(''.join( i for i in line[i] if i.isdigit()
-                                     or i == '.')) for i in range(2, len(line))]
-                    # If the number for interstitial coords is not divided by 3,
-                    # return Error.
-                    #  [0, 0, 0, 0.25, 0.25, 0.25]
-                    #            --> [[0, 0, 0], [0.25, 0.25, 0.25]]
->>>>>>> refactoring_defect_in
                     try:
                         # interstitial_coords = [[0, 0, 0], [0.2, 0.2, 0.2]]
                         interstitial_coords = [b[i:i + 3]
@@ -184,13 +162,7 @@ class DefectSetting():
                         print("Interstitial coordinates isn't a multiple of 3.")
 
                 elif line[0] == "Antisite":
-<<<<<<< HEAD
                     antisite_configs = line[2:]
-=======
-                    antisite_configs = [i.split("_") for i in  line[2:]]
-                    if antisite_configs is []:
-                        antisite_configs = False
->>>>>>> refactoring_defect_in
 
                 elif line[0] == "Dopant":
                     d = line[2]
@@ -223,37 +195,11 @@ class DefectSetting():
                    distance, cutoff, symprec, oxidation_states,
                    electronegativity)
 
-<<<<<<< HEAD
-    def as_dict(self):
-        """
-        Dict representation of DefectSetting class object.
-        """
-        d = {"structure":           self.structure,
-             "irreducible_sites":   [i.as_dict() for i in
-                                     self.irreducible_sites],
-             "dopant_configs":      self.dopant_configs,
-             "antisite_configs":    self.antisite_configs,
-             "interstitial_coords": self.interstitial_coords,
-             "included":            self.included,
-             "excluded":            self.excluded,
-             "distance":            self.distance,
-             "cutoff":              self.cutoff,
-             "symprec":             self.symprec,
-             "oxidation_states":    self.oxidation_states,
-             "electronegativity":   self.electronegativity}
-
-        return d
-
-    def to_json(self):
-        """
-        Returns a json string representation of the MSONable object.
-=======
     @classmethod
     def from_basic_settings(cls, poscar, dopants=[], interstitial_coords=[],
                             is_antisite=True, EN_diff=_EN_DIFF, included="",
                             excluded="", distance=_DISTANCE, cutoff=_CUTOFF,
                             symprec=_SYMPREC):
->>>>>>> refactoring_defect_in
         """
         Generates DefectSetting object with some default settings.
 
@@ -263,19 +209,6 @@ class DefectSetting():
             EN_diff (float): Electronegativity (EN) difference for determining
                              sets of antisites and dopant sites.
         """
-<<<<<<< HEAD
-        Returns a json file.
-        """
-        fw = open(filename, 'w')
-        json.dump(self.as_dict(), fw, indent=2, cls=MontyEncoder)
-
-
-# The following default setting determines the condition of automatic defect
-# calculations.
-_EN_DIFF = 1.0
-_DISTANCE = 0.2
-_CUTOFF = 3.0
-_SYMPREC = 0.01
 
 
 class DefectInMaker:
@@ -366,91 +299,34 @@ class DefectInMaker:
         en_keys = self.electronegativity.keys()
 
         # E.g., antisite_configs = [["Mg, "O"], ...]
-=======
-
-        structure = Structure.from_file(poscar)
-        # Set electronegativity and oxidation states of elements and dopants
-        electronegativity = {}
-        oxidation_states = {}
-        for s in structure.symbol_set + tuple(dopants):
-            electronegativity[s] = get_electronegativity(s)
-            oxidation_states[s] = get_oxidation_states(s)
-
-        symmetrized_structure = \
-                       SpacegroupAnalyzer(structure).get_symmetrized_structure()
-        # num_irreducible_sites["Mg"] = 2 means Mg has 2 inequivalent sites
-        num_irreducible_sites = {}
-        # irreducible_sites (array): a set of IrreducibleSite class objects
-        irreducible_sites = []
-        # equivalent_sites: Equivalent site indices from SpacegroupAnalyzer.
-        last = 0
-        equiv_sites = symmetrized_structure.equivalent_sites
-        for i, e in enumerate(equiv_sites):
-            element = e[0].species_string
-            if element not in num_irreducible_sites.keys():
-                num_irreducible_sites[element] = 1
-            else:
-                # increment number of inequivalent sites for element
-                num_irreducible_sites[element] += 1
-            first = last + 1
-            last = last + len(e)
-            repr_coords = e[0].frac_coords
-            irreducible_name = element + str(num_irreducible_sites[element])
-            irreducible_sites.append(IrreducibleSite(
-                           irreducible_name, element, first, last, repr_coords))
-
-        EN_keys = electronegativity.keys()
-
-        # E.g., antisite_configs = [["Mg, "O"], ...]
-        antisite_configs = []
->>>>>>> refactoring_defect_in
         if is_antisite is True:
             for s1 in structure.symbol_set:
                 for s2 in structure.symbol_set:
                     if s1 == s2:
                         continue
-<<<<<<< HEAD
                     if s1 in en_keys and s2 in en_keys:
                         abs_diff = abs(self.electronegativity[s1] -
                                        self.electronegativity[s2])
                         if abs_diff < en_diff:
                             self.antisite_configs.append([s1, s2])
-=======
-                    if s1 in EN_keys and s2 in EN_keys:
-                        if abs(electronegativity[s1] -
-                               electronegativity[s2]) < EN_diff:
-                                              antisite_configs.append([s1, s2])
->>>>>>> refactoring_defect_in
                     else:
                         cls.electronegativity_not_defined(s1, s2)
 
         # E.g., dopant_configs = [["Al", "Mg"], ...]
-<<<<<<< HEAD
-=======
-        dopant_configs = []
->>>>>>> refactoring_defect_in
         if dopants:
             for d in dopants:
                 if d in structure.symbol_set:
                     warnings.warn("Dopant " + d + " exists in host.")
                     continue
                 for s1 in structure.symbol_set:
-<<<<<<< HEAD
                     if d in en_keys and s1 in en_keys:
                         abs_diff = abs(self.electronegativity[d] -
                                        self.electronegativity[s1])
                         if abs_diff < en_diff:
                             self.dopant_configs.append([d, s1])
-=======
-                    if s1 in EN_keys and d in EN_keys:
-                        if abs(electronegativity[s1] -
-                               electronegativity[d]) < EN_diff:
-                            dopant_configs.append([d, s1])
->>>>>>> refactoring_defect_in
                     else:
                         cls.electronegativity_not_defined(d, s1)
 
-<<<<<<< HEAD
         self.setting = \
             DefectSetting(self.symmetrized_structure, self.irreducible_sites,
                           self.dopant_configs, self.antisite_configs,
@@ -458,12 +334,6 @@ class DefectInMaker:
                           self.excluded, self.distance, self.cutoff,
                           self.symprec, self.oxidation_states,
                           self.electronegativity)
-=======
-        return cls(symmetrized_structure, irreducible_sites, dopant_configs,
-                   antisite_configs, interstitial_coords, included, excluded,
-                   distance, cutoff, symprec, oxidation_states,
-                   electronegativity)
->>>>>>> refactoring_defect_in
 
     def as_dict(self):
         """
@@ -483,50 +353,33 @@ class DefectInMaker:
              "electronegativity": self.electronegativity}
         return d
 
-<<<<<<< HEAD
     @classmethod
     def from_structure_file(cls, poscar, dopants=[], interstitial_coords=False,
                             is_antisite=False, en_diff=_EN_DIFF, included=None,
                             excluded=None, distance=_EN_DIFF, cutoff=_CUTOFF,
                             symprec=_SYMPREC):
-=======
-    def to_json_file(self, filename):
->>>>>>> refactoring_defect_in
         """
         Returns a json file.
         """
-<<<<<<< HEAD
         structure = Structure.from_file(poscar)
         return cls(structure, dopants, interstitial_coords, is_antisite,
                    en_diff, included, excluded, distance, cutoff,
                    symprec)
-=======
-        with open(filename, 'w') as fw:
-            json.dump(self.as_dict(), fw, indent=2, cls=MontyEncoder)
->>>>>>> refactoring_defect_in
 
     def to(self, defect_in_file="defect.in", poscar_file="DPOSCAR"):
         """
         Prints readable defect.in file.
         """
-<<<<<<< HEAD
         self._write_defect_in(defect_in_file)
         # HACK: pmg has a bug, Symmetrized structure object cannot be converted
         #       to poscar
         Structure.from_str(self.symmetrized_structure.to(fmt="cif"),
                            fmt="cif").to(fmt="poscar", filename="DPOSCAR")
-=======
-        self._write_defect_in(defectin_file)
-        # HACK: pmg has a bug, Symmetrized structure object cannot be poscar
-        Structure.from_str(self.structure.to(fmt="cif"), fmt="cif").to(
-                                             fmt="poscar", filename=poscar_file)
->>>>>>> refactoring_defect_in
 
     def _write_defect_in(self, defect_in_file="defect.in"):
         with open(defect_in_file, 'w') as fw:
 
             for e in self.irreducible_sites:
-<<<<<<< HEAD
                 fw.write(
                     "  Irreducible element: {}\n".format(e.irreducible_name))
                 fw.write("     Equivalent atoms: {}\n".format(
@@ -541,22 +394,6 @@ class DefectInMaker:
             if self.interstitial_coords:
                 fw.write(str([self.interstitial_coords[i:i + 3] for i in
                             range(0, len(self.interstitial_coords), 3)]) + "\n")
-=======
-                fw.write("   Irreducible element: {}\n".format(
-                                                            e.irreducible_name))
-                fw.write("      Equivalent atoms: {}\n".format(
-                    str(e.first_index) + ".." + str(e.last_index)))
-                fw.write("Fractional coordinates: %9.7f %9.7f %9.7f\n" % \
-                                                           tuple(e.repr_coords))
-                fw.write("     Electronegativity: {}\n".format(
-                                             self.electronegativity[e.element]))
-                fw.write("       Oxidation state: {}\n\n".format(
-                                              self.oxidation_states[e.element]))
-
-            fw.write("Interstitial coordinates: ")
-            if self.interstitial_coords:
-                fw.write(str(self.interstitial_coords) + "\n")
->>>>>>> refactoring_defect_in
             else:
                 fw.write("\n")
 
@@ -567,21 +404,12 @@ class DefectInMaker:
 
             if self.dopants:
                 for d in self.dopants:
-<<<<<<< HEAD
                     if d not in self.symmetrized_structure.symbol_set:
                         fw.write("   Dopant element: {}\n".format(d))
                         fw.write("Electronegativity: {}\n".format(
                             self.electronegativity[d]))
                         fw.write("  Oxidation state: {}\n\n".format(
                             self.oxidation_states[d]))
-=======
-                    if not d in self.structure.symbol_set:
-                        fw.write("   Dopant element: {}\n".format(d))
-                        fw.write("Electronegativity: {}\n".format(
-                                                     self.electronegativity[d]))
-                        fw.write("  Oxidation state: {}\n\n".format(
-                                                      self.oxidation_states[d]))
->>>>>>> refactoring_defect_in
 
                 fw.write("Substituted defects: ")
                 fw.write(' '.join(i[0] + "_" + i[1]
@@ -589,7 +417,6 @@ class DefectInMaker:
             fw.write("Maximum Displacement: {}\n\n".format(self.distance))
             fw.write("Exceptionally included: {}\n".format(self.included))
             fw.write("Exceptionally excluded: {}\n".format(self.excluded))
-<<<<<<< HEAD
             fw.write(
                 "Cutoff region of atoms perturbed: {}\n".format(self.cutoff))
             fw.write("Symprec: {}\n".format(self.symprec))
@@ -614,15 +441,6 @@ class DefectInMaker:
         print("   Dopant element: {}".format(dopant))
         print("Electronegativity: {}".format(electronegativity))
         print("  Oxidation state: {}".format(oxidation_states))
-=======
-            fw.write("Cutoff region of atoms perturbed: {}\n".format(
-                                                                   self.cutoff))
-            fw.write("Symprec: {}\n".format(self.symprec))
-
-    @staticmethod
-    def electronegativity_not_defined(e1, e2):
-        print("Electronegativity of {} and/or {} is not defined".format(e1, e2))
->>>>>>> refactoring_defect_in
 
 
 class NotSupportedFlagError(Exception):
@@ -643,28 +461,6 @@ def get_oxidation_states(s):
     except:
         warnings.warn("Oxidation state of " + s + " is unavailable.")
         return None
-
-
-def print_dopant_info(dopant):
-    """
-    This is used for adding dopant information a posteriori.
-    """
-    # TODO: check if the dopant is element.
-    try:
-        electronegativity = atom.electronegativity[dopant]
-    except:
-        warnings.warn("Electronegativity of " + s + " is unavailable.")
-        electronegativity[dopant] = "N.A."
-    try:
-        oxidation_states = atom.charge[dopant]
-    except:
-        warnings.warn("Oxidation state of " + s + " is unavailable.")
-        oxidation_states = "N.A."
-
-    print("   Dopant element: {}".format(dopant))
-    print("Electronegativity: {}".format(electronegativity))
-    print("  Oxidation state: {}".format(oxidation_states))
-
 
 def main():
     import argparse
@@ -708,20 +504,11 @@ def main():
     if opts.print_dopant:
         print_dopant_info(opts.print_dopant)
     else:
-<<<<<<< HEAD
         defect_in = DefectInMaker.from_structure_file(
             opts.poscar, opts.dopants, opts.interstitial_coords,
             opts.is_antisite, opts.en_diff, opts.included,
             opts.excluded, opts.distance, opts.cutoff, opts.symprec)
 
         defect_in.to()
-=======
-        defect_setting = DefectSetting.from_basic_settings(
-                         opts.poscar, opts.dopants, opts.interstitial_coords,
-                         opts.is_antisite, opts.EN_diff, opts.included,
-                         opts.excluded, opts.distance, opts.cutoff,
-                         opts.symprec)
-        defect_setting.to()
->>>>>>> refactoring_defect_in
 
 if __name__ == "__main__": main()

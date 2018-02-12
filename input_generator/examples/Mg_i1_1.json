@@ -1,0 +1,12 @@
+{
+  "removed_atom_index": null,
+  "inserted_atom_index": 1,
+  "defect_coords": [
+    0.5,
+    0.5,
+    0.5
+  ],
+  "in_name": "Mg",
+  "out_name": "i1",
+  "charge": 1
+}
