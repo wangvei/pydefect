@@ -24,7 +24,8 @@ _DISTANCE = 0.2
 _CUTOFF = 3.0
 _SYMPREC = 0.01
 
-class DefectSetting():
+
+class DefectSetting:
     """
     This class object holds full information on the setting of the point 
     defect calculations.
@@ -122,15 +123,15 @@ class DefectSetting():
             for l in di:
                 line = l.split()
 
-                if line == []: continue
+                if not line: continue
 
                 elif line[0] == "Irreducible":
                     irreducible_name = line[2]
                     # remove index from irreducible_name, e.g., "Mg1" --> "Mg"
-                    element = ''.join(
-                               [i for i in irreducible_name if not i.isdigit()])
-                    first_index, last_index = [int(i)
-                           for i in di.readline().split()[2].split("..")]
+                    element = \
+                       ''.join([i for i in irreducible_name if not i.isdigit()])
+                    first_index, last_index = \
+                        [int(i) for i in di.readline().split()[2].split("..")]
                     repr_coords = [float(i) for i in di.readline().split()[2:]]
                     irreducible_sites.append(IrreducibleSite(irreducible_name,
                                  element, first_index, last_index, repr_coords))
@@ -154,8 +155,6 @@ class DefectSetting():
 
                 elif line[0] == "Antisite":
                     antisite_configs = [i.split("_") for i in  line[2:]]
-                    if antisite_configs is []:
-                        antisite_configs = False
 
                 elif line[0] == "Dopant":
                     d = line[2]
@@ -190,7 +189,7 @@ class DefectSetting():
 
     @classmethod
     def from_basic_settings(cls, poscar, dopants=[], interstitial_coords=[],
-                            is_antisite=True, EN_diff=_EN_DIFF, included="",
+                            is_antisite=True, en_diff=_EN_DIFF, included="",
                             excluded="", distance=_DISTANCE, cutoff=_CUTOFF,
                             symprec=_SYMPREC):
         """
@@ -199,7 +198,7 @@ class DefectSetting():
         Args:
             dopants (array): dopant element names, e.g., ["Al", "N"]
             is_antisite (bool): Whether to consider antisite defects.
-            EN_diff (float): Electronegativity (EN) difference for determining
+            en_diff (float): Electronegativity (EN) difference for determining
                              sets of antisites and dopant sites.
         """
 
@@ -212,7 +211,7 @@ class DefectSetting():
             oxidation_states[s] = get_oxidation_states(s)
 
         symmetrized_structure = \
-                       SpacegroupAnalyzer(structure).get_symmetrized_structure()
+            SpacegroupAnalyzer(structure).get_symmetrized_structure()
         # num_irreducible_sites["Mg"] = 2 means Mg has 2 inequivalent sites
         num_irreducible_sites = {}
         # irreducible_sites (array): a set of IrreducibleSite class objects
@@ -234,7 +233,7 @@ class DefectSetting():
             irreducible_sites.append(IrreducibleSite(
                            irreducible_name, element, first, last, repr_coords))
 
-        EN_keys = electronegativity.keys()
+        en_keys = electronegativity.keys()
 
         # E.g., antisite_configs = [["Mg, "O"], ...]
         antisite_configs = []
@@ -243,10 +242,10 @@ class DefectSetting():
                 for s2 in structure.symbol_set:
                     if s1 == s2:
                         continue
-                    if s1 in EN_keys and s2 in EN_keys:
-                        if abs(electronegativity[s1] -
-                               electronegativity[s2]) < EN_diff:
-                                              antisite_configs.append([s1, s2])
+                    if s1 in en_keys and s2 in en_keys:
+                        if abs(electronegativity[s1] - electronegativity[s2]) \
+                                < en_diff:
+                            antisite_configs.append([s1, s2])
                     else:
                         cls.electronegativity_not_defined(s1, s2)
 
@@ -258,9 +257,9 @@ class DefectSetting():
                     warnings.warn("Dopant " + d + " exists in host.")
                     continue
                 for s1 in structure.symbol_set:
-                    if s1 in EN_keys and d in EN_keys:
-                        if abs(electronegativity[s1] -
-                               electronegativity[d]) < EN_diff:
+                    if s1 in en_keys and d in en_keys:
+                        if abs(electronegativity[s1] - electronegativity[d]) \
+                                < en_diff:
                             dopant_configs.append([d, s1])
                     else:
                         cls.electronegativity_not_defined(d, s1)
@@ -311,8 +310,8 @@ class DefectSetting():
                 fw.write("   Irreducible element: {}\n".format(
                                                             e.irreducible_name))
                 fw.write("      Equivalent atoms: {}\n".format(
-                    str(e.first_index) + ".." + str(e.last_index)))
-                fw.write("Fractional coordinates: %9.7f %9.7f %9.7f\n" % \
+                                 str(e.first_index) + ".." + str(e.last_index)))
+                fw.write("Fractional coordinates: %9.7f %9.7f %9.7f\n" %
                                                            tuple(e.repr_coords))
                 fw.write("     Electronegativity: {}\n".format(
                                              self.electronegativity[e.element]))
@@ -409,7 +408,7 @@ def main():
     parser.add_argument("-a", "--antisite", dest="is_antisite",
                         action="store_false",
                         help="Set if antisites are not considered.")
-    parser.add_argument("-e", dest="EN_diff", type=float, default=_EN_DIFF,
+    parser.add_argument("-e", dest="en_diff", type=float, default=_EN_DIFF,
                         help="Criterion of the electronegativity difference \
                               determining antisites and/or impurities.")
     parser.add_argument("--included", dest="included", type=str, default="",
@@ -437,7 +436,7 @@ def main():
     else:
         defect_setting = DefectSetting.from_basic_settings(
                          opts.poscar, opts.dopants, opts.interstitial_coords,
-                         opts.is_antisite, opts.EN_diff, opts.included,
+                         opts.is_antisite, opts.en_diff, opts.included,
                          opts.excluded, opts.distance, opts.cutoff,
                          opts.symprec)
         defect_setting.to()

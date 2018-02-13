@@ -17,9 +17,9 @@ __status__ = "Development"
 __date__ = "December 4, 2017"
 
 
-def normed_random_3D_vector():
+def normed_random_3d_vector():
     """
-    Generates a random 3D unit vector with a uniform spherical distribution.
+    Generates a random 3d unit vector with a uniform spherical distribution.
     stackoverflow.com/questions/5408276/python-uniform-spherical-distribution
     """
     phi = np.random.uniform(0, np.pi * 2)
@@ -33,10 +33,10 @@ def normed_random_3D_vector():
 
 def random_vector(normed_vector, distance):
     """
-    Return a vector scaled by distance * x, where 0<x<1.
+    Returns a vector scaled by distance * x, where 0<x<1.
 
     Args:
-        normed_vector (3x1 array): Normed 3D vector.
+        normed_vector (3x1 array): Normed 3d vector.
         distance (float): distance
     """
     return normed_vector * distance * np.random.random()
@@ -44,7 +44,7 @@ def random_vector(normed_vector, distance):
 
 def perturb_around_a_point(structure, center, cutoff, distance):
     """
-    Randomly perturb atoms around an input point in a structure.
+    Randomly perturbs atoms around an input point in a structure.
 
     Args:
         structure (Structure): pmg Structure/IStructure class object
@@ -61,7 +61,7 @@ def perturb_around_a_point(structure, center, cutoff, distance):
     sites = []
     # Since translate_sites accepts only one vector, we need to iterate this.
     for i in neighbors:
-        vector = random_vector(normed_random_3D_vector(), distance)
+        vector = random_vector(normed_random_3d_vector(), distance)
         site = i[2]
         sites.append(site)
         structure.translate_sites(site, vector, frac_coords=False)
@@ -71,7 +71,7 @@ def perturb_around_a_point(structure, center, cutoff, distance):
 
 def _get_int_from_string(x):
     """ 
-    Return integer numbers from a string.
+    Returns integer numbers from a string.
 
     Args:
         x (str): a string
@@ -81,7 +81,7 @@ def _get_int_from_string(x):
 
 def parse_defect_name(defect_name):
     """ 
-    Divide defect name by "_" to three part.
+    Divides defect name by "_" to three part.
     E.g., "Va_Mg1_0" --> in_name="Va", out_name="Mg1", charge=0
 
     Args:
@@ -102,7 +102,7 @@ def parse_defect_name(defect_name):
 
 def extended_range(i):
     """
-    Extension of the range method used for positive/negative input value.
+    Extends range method used for positive/negative input value.
     The input value is included even for a positive number.
     E.g., extended_range(3) = [0, 1, 2, 3]
           extended_range(-3) = [-3, -2, -1, 0]
@@ -233,7 +233,7 @@ class DefectInputSetMaker(metaclass=ABCMeta):
                 "as" --> A set of all the antisites.
                 "Va_O" --> A set of all the oxygen vacancies
                 "Va_O1" --> A set of oxygen vacancies at O1 site
-                "Va_O1_2" --> Only Va_O1_2
+                "Va_O1_2" --> Only Va_O1_2 (
                 "Mg_O" --> A set of all the Mg-on-O antisite pairs.
                 "Mg_O1" --> A set of Mg-on-O1 antisite pairs.
                 "Mg_O1_0" --> A set of Mg-on-O1 antisite pairs.
@@ -242,26 +242,29 @@ class DefectInputSetMaker(metaclass=ABCMeta):
     Parameters in use:
     """
 
-    def __init__(self, defect_setting, specific_defects):
+    def __init__(self, defect_setting, specific_defects=None):
 
         self.defect_setting = defect_setting
-        self.elements = self.defect_setting.structure.symbol_set
 
-        # Construct a set of defect class objects.
-        self.defect_set = \
-            self._vacancy_setter() + \
-            self._interstitial_setter() + \
-            self._substitutional_setter()
+        if len(specific_defects.split("_")) == 3:
+            self.defect_set = specific_defects
+        else:
+            self.elements = self.defect_setting.structure.symbol_set
+            # Construct a set of defect class objects.
+            self.defect_set = \
+                self._vacancy_name_setter() + \
+                self._interstitial_name_setter() + \
+                self._substitutional_name_setter()
 
-        for i in self.defect_setting.included:
-            self.defect_set.append(i)
-        for e in self.defect_setting.excluded:
-            if e in self.defect_set:
-                self.defect_set.remove(e)
-            else:
-                print("{} does not exist.".format(e))
+            for i in self.defect_setting.included:
+                self.defect_set.append(i)
+            for e in self.defect_setting.excluded:
+                if e in self.defect_set:
+                    self.defect_set.remove(e)
+                else:
+                    print("{} does not exist.".format(e))
 
-    def _vacancy_setter(self, element=None):
+    def _vacancy_name_setter(self, element=None):
         name_set = []
         for i in self.defect_setting.irreducible_sites:
 
@@ -271,7 +274,7 @@ class DefectInputSetMaker(metaclass=ABCMeta):
                 name_set.append(defect_name)
         return name_set
 
-    def _interstitial_setter(self):
+    def _interstitial_name_setter(self):
         name_set = []
         for e in self.elements:
             oxidation_state = self.defect_setting.oxidation_states[e]
@@ -281,7 +284,7 @@ class DefectInputSetMaker(metaclass=ABCMeta):
                     name_set.append(defect_name)
         return name_set
 
-    def _substitutional_setter(self):
+    def _substitutional_name_setter(self):
         name_set = []
         for a in self.defect_setting.antisite_configs + \
                  self.defect_setting.dopant_configs:

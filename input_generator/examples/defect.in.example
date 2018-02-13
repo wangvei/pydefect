@@ -13,13 +13,13 @@ Fractional coordinates: 0.2500000 0.2500000 0.2500000
 Interstitial coordinates: [[0.1, 0.1, 0.1]]
 Antisite defects: Mg_O O_Mg
 
-   Dopant element: Al
-Electronegativity: 1.61
-  Oxidation state: 3
-
    Dopant element: N
 Electronegativity: 3.04
   Oxidation state: -3
+
+   Dopant element: Al
+Electronegativity: 1.61
+  Oxidation state: 3
 
 Substituted defects: Al_Mg Al_O N_Mg N_O
 
