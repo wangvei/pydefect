@@ -1,28 +1,7 @@
 <component name="ProjectDictionaryState">
   <dictionary name="kuma">
     <words>
-<<<<<<< HEAD
-      <w>dposcar</w>
-      <w>posteriori</w>
-      <w>pymatgen</w>
-=======
-      <w>antisite</w>
-      <w>antisites</w>
-      <w>coords</w>
-      <w>dopant</w>
-      <w>dopants</w>
-      <w>electronegativity</w>
-      <w>incar</w>
-      <w>inequivalent</w>
-      <w>interstitials</w>
-      <w>kpoints</w>
-      <w>kumagai</w>
-      <w>poscar</w>
-      <w>potcar</w>
-      <w>substitutional</w>
-      <w>symmetrized</w>
-      <w>symprec</w>
->>>>>>> refactoring_defect_in
+      <w>vasp</w>
     </words>
   </dictionary>
 </component>

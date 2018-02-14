@@ -226,11 +226,19 @@ class DefectInputSetMaker(metaclass=ABCMeta):
     Parameters in use:
     """
 
-    def __init__(self, defect_setting, specific_defects=None):
-
-
+    def __init__(self, defect_setting, particular_defects=None):
 
         self.defect_setting = defect_setting
+
+        if particular_defects:
+            has_particlular_defects_complete_name = True
+        else:
+            has_particlular_defects_complete_name = False
+
+        for i in particular_defects:
+            if len(i.split("_")) < 3:
+                has_particlular_defects_complete_name = False
+
 
         if len(specific_defects.split("_")) == 3:
             self.defect_set = specific_defects

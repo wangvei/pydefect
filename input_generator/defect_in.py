@@ -141,38 +141,44 @@ class DefectSetting:
             for l in di:
                 line = l.split()
 
-                if not line: continue
+                if not line:
+                    continue
 
                 elif line[0] == "Irreducible":
                     irreducible_name = line[2]
                     # remove index from irreducible_name, e.g., "Mg1" --> "Mg"
                     element = \
-                       ''.join([i for i in irreducible_name if not i.isdigit()])
+                        ''.join(
+                            [i for i in irreducible_name if not i.isdigit()])
                     first_index, last_index = \
                         [int(i) for i in di.readline().split()[2].split("..")]
                     repr_coords = [float(i) for i in di.readline().split()[2:]]
                     irreducible_sites.append(IrreducibleSite(irreducible_name,
-                                 element, first_index, last_index, repr_coords))
+                                                             element,
+                                                             first_index,
+                                                             last_index,
+                                                             repr_coords))
                     electronegativity[element] = float(di.readline().split()[1])
                     oxidation_states[element] = int(di.readline().split()[2])
 
                 elif line[0] == "Interstitial":
                     # "Interstitial coordinates: 0 0 0 0.25 0.25 0.25"
                     #  --> [0, 0, 0, 0.25, 0.25, 0.25]
-                    b = [float(''.join( i for i in line[i] if i.isdigit()
-                                     or i == '.')) for i in range(2, len(line))]
+                    b = [float(''.join(i for i in line[i] if i.isdigit()
+                                       or i == '.')) for i in
+                         range(2, len(line))]
                     # If the number for interstitial coords is not divided by 3,
                     # return Error.
                     #  [0, 0, 0, 0.25, 0.25, 0.25]
                     #            --> [[0, 0, 0], [0.25, 0.25, 0.25]]
                     try:
-                        interstitial_coords =[b[i:i + 3]
-                                                for i in range(int(len(b) / 3))]
+                        interstitial_coords = [b[i:i + 3]
+                                               for i in range(int(len(b) / 3))]
                     except ValueError:
                         print("Interstitial coordinates isn't a multiple of 3.")
 
                 elif line[0] == "Antisite":
-                    antisite_configs = [i.split("_") for i in  line[2:]]
+                    antisite_configs = [i.split("_") for i in line[2:]]
 
                 elif line[0] == "Dopant":
                     d = line[2]
@@ -180,7 +186,7 @@ class DefectSetting:
                     oxidation_states[d] = int(di.readline().split()[2])
 
                 elif line[0] == "Substituted":
-                    dopant_configs = [i.split("_") for i in  line[2:]]
+                    dopant_configs = [i.split("_") for i in line[2:]]
 
                 elif line[0] == "Maximum":
                     distance = float(line[2])
@@ -249,7 +255,7 @@ class DefectSetting:
             repr_coords = e[0].frac_coords
             irreducible_name = element + str(num_irreducible_sites[element])
             irreducible_sites.append(IrreducibleSite(
-                           irreducible_name, element, first, last, repr_coords))
+                irreducible_name, element, first, last, repr_coords))
 
         en_keys = electronegativity.keys()
 
@@ -291,18 +297,19 @@ class DefectSetting:
         """
         Dict representation of DefectSetting class object.
         """
-        d = {"structure": self.structure,
-             "irreducible_sites": [i.as_dict() for i in self.irreducible_sites],
-             "dopant_configs": self.dopant_configs,
-             "antisite_configs": self.antisite_configs,
+        d = {"structure":           self.structure,
+             "irreducible_sites":   [i.as_dict() for i in
+                                     self.irreducible_sites],
+             "dopant_configs":      self.dopant_configs,
+             "antisite_configs":    self.antisite_configs,
              "interstitial_coords": self.interstitial_coords,
-             "included": self.included,
-             "excluded": self.excluded,
-             "distance": self.distance,
-             "cutoff": self.cutoff,
-             "symprec": self.symprec,
-             "oxidation_states": self.oxidation_states,
-             "electronegativity": self.electronegativity}
+             "included":            self.included,
+             "excluded":            self.excluded,
+             "distance":            self.distance,
+             "cutoff":              self.cutoff,
+             "symprec":             self.symprec,
+             "oxidation_states":    self.oxidation_states,
+             "electronegativity":   self.electronegativity}
         return d
 
     def to_json_file(self, filename):
@@ -319,15 +326,12 @@ class DefectSetting:
         self._write_defect_in(defectin_file)
         # HACK: pmg has a bug, Symmetrized structure object cannot be poscar
         Structure.from_str(self.structure.to(fmt="cif"), fmt="cif").to(
-                                             fmt="poscar", filename=poscar_file)
+            fmt="poscar", filename=poscar_file)
 
     def make_defect_name_set(self):
         """
         Returns a set of defect names by default.
         """
-
-        inserted_elements = tuple(self.structure.symbol_set) + \
-                            tuple(self.dopants)
         name_set = []
         # Vacancies
         for i in self.irreducible_sites:
@@ -336,6 +340,8 @@ class DefectSetting:
                 name_set.append("Va_" + i.irreducible_name + "_" + str(o))
 
         # Interstitials
+        inserted_elements = \
+            tuple(self.structure.symbol_set) + tuple(self.dopants)
         for e in inserted_elements:
             os = self.oxidation_states[e]
             for j in range(len(self.interstitial_coords)):
@@ -349,8 +355,8 @@ class DefectSetting:
                     os_diff = self.oxidation_states[in_elem] - \
                               self.oxidation_states[out_elem]
                     for o in extended_range(os_diff):
-                        name_set.append(in_elem + "_" +
-                                        i.irreducible_name + "_" + str(o))
+                        name_set.append(
+                            in_elem + "_" + i.irreducible_name + "_" + str(o))
 
         for i in self.included:
             if i not in name_set:
@@ -371,15 +377,15 @@ class DefectSetting:
 
             for e in self.irreducible_sites:
                 fw.write("   Irreducible element: {}\n".format(
-                                                            e.irreducible_name))
+                    e.irreducible_name))
                 fw.write("      Equivalent atoms: {}\n".format(
-                                 str(e.first_index) + ".." + str(e.last_index)))
+                    str(e.first_index) + ".." + str(e.last_index)))
                 fw.write("Fractional coordinates: %9.7f %9.7f %9.7f\n" %
-                                                           tuple(e.repr_coords))
+                         tuple(e.repr_coords))
                 fw.write("     Electronegativity: {}\n".format(
-                                             self.electronegativity[e.element]))
+                    self.electronegativity[e.element]))
                 fw.write("       Oxidation state: {}\n\n".format(
-                                              self.oxidation_states[e.element]))
+                    self.oxidation_states[e.element]))
 
             fw.write("Interstitial coordinates: ")
             if self.interstitial_coords:
@@ -397,9 +403,9 @@ class DefectSetting:
                     if not d in self.structure.symbol_set:
                         fw.write("   Dopant element: {}\n".format(d))
                         fw.write("Electronegativity: {}\n".format(
-                                                     self.electronegativity[d]))
+                            self.electronegativity[d]))
                         fw.write("  Oxidation state: {}\n\n".format(
-                                                      self.oxidation_states[d]))
+                            self.oxidation_states[d]))
 
                 fw.write("Substituted defects: ")
                 fw.write(' '.join(i[0] + "_" + i[1]
@@ -408,7 +414,7 @@ class DefectSetting:
             fw.write("Exceptionally included: {}\n".format(self.included))
             fw.write("Exceptionally excluded: {}\n".format(self.excluded))
             fw.write("Cutoff region of atoms perturbed: {}\n".format(
-                                                                   self.cutoff))
+                self.cutoff))
             fw.write("Symprec: {}\n".format(self.symprec))
 
     @staticmethod
@@ -460,7 +466,7 @@ def print_dopant_info(dopant):
 def main():
     import argparse
     parser = argparse.ArgumentParser(
-                         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument("-p", "--poscar", dest="poscar", default="POSCAR",
                         type=str, help="POSCAR name.")
     parser.add_argument("-d", "--dopants", dest="dopants", default="",
@@ -487,7 +493,8 @@ def main():
     parser.add_argument("--cutoff", dest="cutoff", type=float, default=_CUTOFF,
                         help="Set the cutoff radius [A] in which atoms are \
                               displaced.")
-    parser.add_argument("--symprec", dest="symprec", type=float, default=_SYMPREC,
+    parser.add_argument("--symprec", dest="symprec", type=float,
+                        default=_SYMPREC,
                         help="Set precision used for symmetry analysis [A].")
     parser.add_argument("--print_dopant", dest="print_dopant", default=None,
                         type=str, help="Print dopant information that can be \
@@ -498,10 +505,11 @@ def main():
         print_dopant_info(opts.print_dopant)
     else:
         defect_setting = DefectSetting.from_basic_settings(
-                         opts.poscar, opts.dopants, opts.interstitial_coords,
-                         opts.is_antisite, opts.en_diff, opts.included,
-                         opts.excluded, opts.distance, opts.cutoff,
-                         opts.symprec)
+            opts.poscar, opts.dopants, opts.interstitial_coords,
+            opts.is_antisite, opts.en_diff, opts.included,
+            opts.excluded, opts.distance, opts.cutoff,
+            opts.symprec)
         defect_setting.to()
+
 
 if __name__ == "__main__": main()
