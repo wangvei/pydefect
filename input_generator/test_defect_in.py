@@ -32,7 +32,7 @@ class DefectSettingTest(unittest.TestCase):
                              first_index=33, last_index=64,
                              repr_coords=[0.25, 0.25, 0.25])
         irrep_elements = [Mg1, O1] 
-        dopant_configs = [["Al", "Mg"], ["Al", "O"], ["N","Mg"], ["N", "O"]]
+        dopant_configs = [["Al", "Mg"], ["Al", "O"], ["N", "Mg"], ["N", "O"]]
         antisite_configs = [["Mg", "O"], ["O","Mg"]]
         interstitial_coords = [[0.1, 0.1, 0.1]]
         included = ["Va_O1_-1", "Va_O1_-2"]
@@ -66,18 +66,22 @@ class DefectSettingTest(unittest.TestCase):
         self.assertTrue(vars(self._mgo_from_defect_in)) == vars(self._mgo)
 
     def test_from_basic_settings(self):
-        self._mgo_from_basic_settings = DefectSetting.from_basic_settings(
-            poscar=FILENAME_DPOSCAR,
-            dopants=["Al", "N"],
-            interstitial_coords=[0.1, 0.1, 0.1],
-            is_antisite=True,
-            en_diff=4.0,
-            included=["Va_O1_-1", "Va_O1_-2"],
-            excluded=["Va_O1_1", "Va_O1_2"],
-            distance=0.15,
-            cutoff=2.0,
-            symprec=0.001)
+        self._mgo_from_basic_settings = \
+            DefectSetting.from_basic_settings(
+                poscar=FILENAME_DPOSCAR,
+                dopants=["Al", "N"],
+                interstitial_coords=[0.1, 0.1, 0.1],
+                is_antisite=True,
+                en_diff=4.0,
+                included=["Va_O1_-1", "Va_O1_-2"],
+                excluded=["Va_O1_1", "Va_O1_2"],
+                distance=0.15,
+                cutoff=2.0,
+                symprec=0.001)
         self.assertTrue(vars(self._mgo_from_basic_settings)) == vars(self._mgo)
+
+    def test_make_defect_name_set(self):
+        print(self._mgo.make_defect_name_set())
 
 # Look the same files but return Failure.
 #    def test_to(self):

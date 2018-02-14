@@ -5,8 +5,8 @@ import json
 
 from pymatgen.core.structure import Structure
 from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
-import atom
-from defect import IrreducibleSite
+import pydefect.input_generator.atom as atom
+from pydefect.input_generator.defect import IrreducibleSite
 from monty.json import MontyEncoder
 from monty.serialization import loadfn
 
@@ -25,6 +25,24 @@ _CUTOFF = 3.0
 _SYMPREC = 0.01
 
 
+def extended_range(i):
+    """
+    Extends range method used for positive/negative input value.
+    The input value is included even for a positive number.
+    E.g., extended_range(3) = [0, 1, 2, 3]
+          extended_range(-3) = [-3, -2, -1, 0]
+
+    Args:
+        i (int): an integer
+    """
+    if not type(i) == int:
+        raise AttributeError
+    if i >= 0:
+        return range(i + 1)
+    else:
+        return range(i, 1)
+
+
 class DefectSetting:
     """
     This class object holds full information on the setting of the point 
@@ -33,11 +51,11 @@ class DefectSetting:
     Args:
         structure (Structure): pmg Structure/IStructure class object
         irreducible_sites: IrreducibleSite class objects
-        dopant_configs (2x1 array): dopant configurations,
+        dopant_configs (Nx2 array): dopant configurations,
                                     e.g., [["Al", Mg"], ["N", "O"]
-        antisite_configs (array): antisite configurations,
+        antisite_configs (Nx2 array): antisite configurations,
                                   e.g., [["Mg","O"], ["O", "Mg"]]
-        interstitial_coords (3x1 array): coordinates of interstitial sites,
+        interstitial_coords (Nx3 array): coordinates of interstitial sites,
                                          e.g., [[0, 0, 0], [0.1, 0.1, 0.1], ..]
         included (array): exceptionally added defect type with a charge state.
                           e.g., ["Va_O1_-1", "Va_O1_-2"]
@@ -302,6 +320,51 @@ class DefectSetting:
         # HACK: pmg has a bug, Symmetrized structure object cannot be poscar
         Structure.from_str(self.structure.to(fmt="cif"), fmt="cif").to(
                                              fmt="poscar", filename=poscar_file)
+
+    def make_defect_name_set(self):
+        """
+        Returns a set of defect names by default.
+        """
+
+        inserted_elements = tuple(self.structure.symbol_set) + \
+                            tuple(self.dopants)
+        name_set = []
+        # Vacancies
+        for i in self.irreducible_sites:
+            os = self.oxidation_states[i.element]
+            for o in extended_range(-os):
+                name_set.append("Va_" + i.irreducible_name + "_" + str(o))
+
+        # Interstitials
+        for e in inserted_elements:
+            os = self.oxidation_states[e]
+            for j in range(len(self.interstitial_coords)):
+                for o in extended_range(os):
+                    name_set.append(e + "_i" + str(j + 1) + "_" + str(o))
+
+        # antisites + substituted dopants
+        for in_elem, out_elem in self.antisite_configs + self.dopant_configs:
+            for i in self.irreducible_sites:
+                if out_elem == i.element:
+                    os_diff = self.oxidation_states[in_elem] - \
+                              self.oxidation_states[out_elem]
+                    for o in extended_range(os_diff):
+                        name_set.append(in_elem + "_" +
+                                        i.irreducible_name + "_" + str(o))
+
+        for i in self.included:
+            if i not in name_set:
+                name_set.append(i)
+            else:
+                print("{} is set to be included, but exists.".format(e))
+
+        for e in self.excluded:
+            if e in name_set:
+                name_set.remove(e)
+            else:
+                print("{} is set to be excluded, but does not exist.".format(e))
+
+        return name_set
 
     def _write_defect_in(self, defectin_file="defect.in"):
         with open(defectin_file, 'w') as fw:

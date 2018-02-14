@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 import os
 import shutil
 import numpy as np
@@ -176,6 +175,7 @@ class VaspDefectInputSetMaker(DefectInputSetMaker):
             shutil.copyfile(self.incar, dir_name + "INCAR")
             shutil.copyfile(self.kpoints, dir_name + "KPOINTS")
             make_potcar(dir_name, self.elements, potcar_dir())
+
 
 def main():
     import argparse

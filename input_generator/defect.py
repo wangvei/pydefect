@@ -12,15 +12,21 @@ __email__ = "yuuukuma@gmail.com"
 __status__ = "Development"
 __date__ = "December 4, 2017"
 
+
 class Defect:
     """
     This class object holds some properties related to a defect.
     Args:
-        removed_atom_index (int): Atom index removed in the perfect supercell.
-                                  For interstitial, set to None.
-        inserted_atom_index (int): Atom index inserted in the supercell after
+        structure (Structure): pmg Structure/IStructure class object
+        removed_atom_index (array of int): Atom index removed in the perfect
+                                           supercell.
+                                           For interstitial, set to None.
+        inserted_atom_index (array of int): Atom index inserted in the supercell after
                                    removing an atom. For vacancy, set to None.
-        defect_coords (3x1 array): coordinates of defect position
+        defect_coords (Nx3 array): coordinates of defect position
+        defect_center (Nx3 array): center of a defect.
+                                   If len(defect_coords) == 1,
+                                   same as defect_coords[0].
         in_name" (str): Inserted element name. "Va" is inserted for vacancies.
         out_name" (str): Removed site name. "in", where n is an integer,
                          is inserted for interstitials. E.g., "i1".

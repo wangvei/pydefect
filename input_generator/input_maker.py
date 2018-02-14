@@ -92,30 +92,13 @@ def parse_defect_name(defect_name):
         in_name = d[0]
         out_name = d[1]
         charge = int(d[2])
-    except:
-        raise ValueError("Defect {} is improper.".format(defect_name))
+    except ValueError:
+        print("Defect {} is improper.".format(defect_name))
 
     if not re.match(r'^[a-xA-Z]+[1-9]+$', out_name):
         raise ValueError("Defect {} is improper.".format(defect_name))
-    return (in_name, out_name, charge)
+    return in_name, out_name, charge
 
-
-def extended_range(i):
-    """
-    Extends range method used for positive/negative input value.
-    The input value is included even for a positive number.
-    E.g., extended_range(3) = [0, 1, 2, 3]
-          extended_range(-3) = [-3, -2, -1, 0]
-
-    Args:
-        i (int): an integer
-    """
-    if not type(i) == int:
-        raise AttributeError
-    if i >= 0:
-        return range(i + 1)
-    else:
-        return range(i, 1)
 
 
 def print_already_exist(name):
@@ -150,6 +133,7 @@ class DefectInputMaker:
                          is inserted for interstitials. E.g., "i1".
         charge (int): Charge state of the defect
     """
+    # TODO: Write down all the args instead of defect_setting
 
     def __init__(self, defect_name, defect_setting):
 
@@ -243,6 +227,8 @@ class DefectInputSetMaker(metaclass=ABCMeta):
     """
 
     def __init__(self, defect_setting, specific_defects=None):
+
+
 
         self.defect_setting = defect_setting
 
