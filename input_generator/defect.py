@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import json
+import numpy as np
 from monty.json import MontyEncoder
 from monty.serialization import loadfn
 
@@ -18,22 +19,21 @@ class Defect:
     This class object holds some properties related to a defect.
     Args:
         structure (Structure): pmg Structure/IStructure class object
-        removed_atom_index (array of int): Atom index removed in the perfect
-                                           supercell.
-                                           For interstitial, set to None.
-        inserted_atom_index (array of int): Atom index inserted in the supercell after
-                                   removing an atom. For vacancy, set to None.
+        removed_atom_index (array of int):
+            Atom index removed in the perfect supercell, starting from 0.
+            For interstitial, set to None.
+        inserted_atom_index (array of int):
+            Atom index inserted in the supercell after removing an atom.
+            For vacancy, set to None.
         defect_coords (Nx3 array): coordinates of defect position
-        defect_center (Nx3 array): center of a defect.
-                                   If len(defect_coords) == 1,
-                                   same as defect_coords[0].
         in_name" (str): Inserted element name. "Va" is inserted for vacancies.
         out_name" (str): Removed site name. "in", where n is an integer,
                          is inserted for interstitials. E.g., "i1".
         charge (int): Charge state of the defect
     """
-    def __init__(self, removed_atom_index, inserted_atom_index, defect_coords,
-                 in_name, out_name, charge):
+    def __init__(self, structure, removed_atom_index, inserted_atom_index,
+                 defect_coords, in_name, out_name, charge):
+        self.structure = structure
         self.removed_atom_index = removed_atom_index
         self.inserted_atom_index = inserted_atom_index
         self.defect_coords = defect_coords
@@ -46,8 +46,9 @@ class Defect:
         """
         Constructs a dictionary.
         """
-        return cls(d["removed_atom_index"], d["inserted_atom_index"],
-                   d["defect_coords"], d["in_name"], d["out_name"], d["charge"])
+        return cls(d["structure"], d["removed_atom_index"],
+                   d["inserted_atom_index"], d["defect_coords"], d["in_name"],
+                   d["out_name"], d["charge"])
 
     @classmethod
     def json_load(cls, filename):
@@ -60,7 +61,8 @@ class Defect:
         """
         Dict representation of DefectSetting class object.
         """
-        d = {"removed_atom_index": self.removed_atom_index,
+        d = {"structure": self.structure,
+             "removed_atom_index": self.removed_atom_index,
              "inserted_atom_index": self.inserted_atom_index,
              "defect_coords": self.defect_coords,
              "in_name": self.in_name,
@@ -74,6 +76,13 @@ class Defect:
         """
         with open(filename, 'w') as fw:
             json.dump(self.as_dict(), fw, indent=2, cls=MontyEncoder)
+
+    def defect_center(self):
+        """
+        Returns coords of defect center by calculating the average coords.
+        If len(defect_coords) == 1, same as defect_coords[0].
+        """
+        return [np.mean(i) for i in np.array(self.defect_coords).transpose()]
 
 
 class IrreducibleSite:

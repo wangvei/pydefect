@@ -1,5 +1,8 @@
+#!/usr/bin/env python
+
 import unittest
 from defect import *
+from pymatgen.core.structure import Structure
 
 __author__ = "Yu Kumagai"
 __copyright__ = "Copyright 2017, Oba group"
@@ -9,18 +12,25 @@ __email__ = "yuuukuma@gmail.com"
 __status__ = "Development"
 __date__ = "December 4, 2017"
 
+FILENAME_VAC_POSCAR = "examples/POSCAR-MgO64atoms-Va_Mg1"
+FILENAME_INT_POSCAR = "examples/POSCAR-MgO64atoms-O_i1"
 FILENAME_TO_JSON_FILE_VAC = "examples/Va_Mg1_-2.json"
 FILENAME_TO_JSON_FILE_INT = "examples/Mg_i1_1.json"
 
 class DefectTest(unittest.TestCase):
 
     def setUp(self):
-        self._vac = Defect(removed_atom_index=1, inserted_atom_index=None,
-                           defect_coords=[0, 0, 0],
-                           in_name="Va", out_name="Mg1", charge=-2)
-        self._int = Defect(removed_atom_index=None, inserted_atom_index=1,
-                           defect_coords=[0.5, 0.5, 0.5],
-                           in_name="Mg", out_name="i1", charge=1)
+        _vac_structure = Structure.from_file(FILENAME_VAC_POSCAR)
+        _int_structure = Structure.from_file(FILENAME_INT_POSCAR)
+
+        self._vac = \
+            Defect(structure=_vac_structure, removed_atom_index=0,
+                   inserted_atom_index=None, defect_coords=[0, 0, 0],
+                   in_name="Va", out_name="Mg1", charge=-2)
+        self._int = \
+            Defect(structure=_int_structure, removed_atom_index=None,
+                   inserted_atom_index=32, defect_coords=[0.1, 0.1, 0.1],
+                   in_name="i1", out_name="Mg1", charge=-2)
 
     def test_dict(self):
         d_vac = Defect.from_dict(self._vac.as_dict())
