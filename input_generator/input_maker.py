@@ -99,7 +99,6 @@ def parse_defect_name(defect_name):
     return in_name, out_name, charge
 
 
-
 def print_already_exist(name):
     """
     Show the following message.
@@ -109,7 +108,7 @@ def print_already_exist(name):
     print("{:>10} already exists, so nothing is done.".format(name))
 
 
-def print_is_constructed(name):
+def print_is_being_constructed(name):
     """
     Show the following message.
     Args:
@@ -192,7 +191,7 @@ class DefectInputSetMaker(metaclass=ABCMeta):
 
     Args:
         defect_setting (DefectSetting): DefectSetting class object.
-        specific_defects (str/list): It specifies a particular defect(s).
+        particular_defects (str/list): It specifies a particular defect(s).
             Specify a type of defects.
                 "Va" --> A set of all the vacancies.
                 "i" --> A set of all the interstitials.
@@ -203,79 +202,48 @@ class DefectInputSetMaker(metaclass=ABCMeta):
                 "Mg_O" --> A set of all the Mg-on-O antisite pairs.
                 "Mg_O1" --> A set of Mg-on-O1 antisite pairs.
                 "Mg_O1_0" --> A set of Mg-on-O1 antisite pairs.
-            List type is also allowed.
-                ["Va", "i"] --> A set of all the vacancies and interstitials.
     Parameters in use:
     """
 
-    def __init__(self, defect_setting, particular_defects=None):
+    def __init__(self, defect_setting, particular_defects=""):
 
         self.defect_setting = defect_setting
+        defect_all_set = defect_setting.make_defect_name_set()
 
-        if particular_defects:
-            has_particlular_defects_complete_name = True
-        else:
-            has_particlular_defects_complete_name = False
+        if len(particular_defects.split("_")) == 3:
+            # CHECK if particular_defects is proper.
+            defect_set = [particular_defects]
 
-        for i in particular_defects:
-            if len(i.split("_")) < 3:
-                has_particlular_defects_complete_name = False
+        elif len(particular_defects.split("_")) == 1:
+            defect_set = []
+            if particular_defects == "Va":
+                in_pattern = "Va"
+                out_pattern = ""
+            elif particular_defects == "i":
+                in_pattern = ""
+                out_pattern = "i[1-9]+$"
+#            elif particular_defects == "as":
+#                in_pattern = ""
+#                in_pattern = ""
 
+        elif len(particular_defects.split("_")) == 2:
+            defect_set = []
+            i, o = [x for x in particular_defects.split("_")]
+            in_pattern = i
+            out_pattern = o + "[1-9]*$"
 
-        if len(specific_defects.split("_")) == 3:
-            self.defect_set = specific_defects
-        else:
-            self.elements = self.defect_setting.structure.symbol_set
-            # Construct a set of defect class objects.
-            self.defect_set = \
-                self._vacancy_name_setter() + \
-                self._interstitial_name_setter() + \
-                self._substitutional_name_setter()
+        if not defect_set:
+            for d in defect_all_set:
+                in_name, out_name = parse_defect_name(d)[0:2]
 
-            for i in self.defect_setting.included:
-                self.defect_set.append(i)
-            for e in self.defect_setting.excluded:
-                if e in self.defect_set:
-                    self.defect_set.remove(e)
-                else:
-                    print("{} does not exist.".format(e))
-
-    def _vacancy_name_setter(self, element=None):
-        name_set = []
-        for i in self.defect_setting.irreducible_sites:
-
-            oxidation_state = self.defect_setting.oxidation_states[i.element]
-            for o in extended_range(-oxidation_state):
-                defect_name = "Va_" + i.irreducible_name + "_" + str(o)
-                name_set.append(defect_name)
-        return name_set
-
-    def _interstitial_name_setter(self):
-        name_set = []
-        for e in self.elements:
-            oxidation_state = self.defect_setting.oxidation_states[e]
-            for j in range(len(self.defect_setting.interstitial_coords)):
-                for o in extended_range(oxidation_state):
-                    defect_name = e + "_i" + str(j + 1) + "_" + str(o)
-                    name_set.append(defect_name)
-        return name_set
-
-    def _substitutional_name_setter(self):
-        name_set = []
-        for a in self.defect_setting.antisite_configs + \
-                 self.defect_setting.dopant_configs:
-            in_element, out_element = a
-            oxidation_state_diff = \
-                self.defect_setting.oxidation_states[in_element] \
-                - self.defect_setting.oxidation_states[out_element]
-            for i in self.defect_setting.irreducible_sites:
-                if out_element == i.element:
-                    for o in extended_range(oxidation_state_diff):
-                        defect_name = in_element + "_" + \
-                                      i.irreducible_name + "_" + str(o)
-                        name_set.append(defect_name)
-        return name_set
+                if re.match(r + re.escape(in_pattern), in_name) and \
+                        re.match(r + re.escape(out_pattern), out_name):
+                    defect_set.append(d)
 
     @abstractmethod
-    def make_perfect_input_files(self):
+    def _make_perfect_input(self):
+        pass
+
+    @abstractmethod
+    def _make_defect_input(self, defect_name):
         pass

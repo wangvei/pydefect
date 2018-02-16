@@ -30,7 +30,7 @@ class DefectTest(unittest.TestCase):
         self._int = \
             Defect(structure=_int_structure, removed_atom_index=None,
                    inserted_atom_index=32, defect_coords=[0.1, 0.1, 0.1],
-                   in_name="i1", out_name="Mg1", charge=-2)
+                   in_name="O", out_name="i1", charge=-2)
 
     def test_dict(self):
         d_vac = Defect.from_dict(self._vac.as_dict())
@@ -47,6 +47,24 @@ class DefectTest(unittest.TestCase):
         jf_int = Defect.json_load(FILENAME_TO_JSON_FILE_INT)
         self.assertTrue(vars(self._int) == vars(jf_int))
 
+    def test_atom_mapping_to_perfect(self):
+        atom_mapping_vac_test = [i for i in range(1, 64)]
+#        print(atom_mapping_vac_test)
+#        print(self._vac.atom_mapping_to_perfect())
+        self.assertEqual(
+            self._vac.atom_mapping_to_perfect(), atom_mapping_vac_test)
+
+        atom_mapping_int_test = \
+            [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18,
+             19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, None, 32, 33,
+             34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50,
+             51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63]
+
+        print(atom_mapping_int_test)
+        print(self._int.atom_mapping_to_perfect())
+        self.assertEqual(
+            self._int.atom_mapping_to_perfect(), atom_mapping_int_test)
+
 
 class IrreducibleSiteTest(unittest.TestCase):
     
@@ -62,3 +80,5 @@ class IrreducibleSiteTest(unittest.TestCase):
     def test_natoms(self):
         self.assertEqual(self._mg.natoms, 32)
 
+if __name__ == "__main__":
+    unittest.main()

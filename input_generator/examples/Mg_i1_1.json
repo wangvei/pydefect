@@ -1274,7 +1274,7 @@
     0.1,
     0.1
   ],
-  "in_name": "i1",
-  "out_name": "Mg1",
+  "in_name": "O",
+  "out_name": "i1",
   "charge": -2
 }

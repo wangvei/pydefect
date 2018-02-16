@@ -13,6 +13,15 @@ __email__ = "yuuukuma@gmail.com"
 __status__ = "Development"
 __date__ = "December 4, 2017"
 
+def get_nions(defect_structure):
+    """
+    Return numbers of ions for elements in defect_structure.
+    """
+    nions = [int(i)
+             for i in defect_structure.to(fmt="poscar").split("\n")[6].split()]
+    return nions
+
+
 
 class Defect:
     """
@@ -83,6 +92,26 @@ class Defect:
         If len(defect_coords) == 1, same as defect_coords[0].
         """
         return [np.mean(i) for i in np.array(self.defect_coords).transpose()]
+
+    def atom_mapping_to_perfect(self):
+        """
+        Returns a list of atom mapping in defect structure to atoms in perfect.
+        """
+        total_nions = sum(get_nions(self.structure))
+        mapping = [i for i in range(total_nions)]
+        in_index = self.inserted_atom_index
+        out_index = self.removed_atom_index
+
+        if in_index:
+            mapping[in_index] = None
+            for i in range(in_index + 1, total_nions):
+                mapping[i] += -1
+
+        if out_index is not None:
+            for i in range(out_index, total_nions):
+                mapping[i] += 1
+
+        return mapping
 
 
 class IrreducibleSite:

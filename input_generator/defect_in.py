@@ -235,7 +235,8 @@ class DefectSetting:
             oxidation_states[s] = get_oxidation_states(s)
 
         symmetrized_structure = \
-            SpacegroupAnalyzer(structure).get_symmetrized_structure()
+            SpacegroupAnalyzer(structure,
+                               symprec=symprec).get_symmetrized_structure()
         # num_irreducible_sites["Mg"] = 2 means Mg has 2 inequivalent sites
         num_irreducible_sites = {}
         # irreducible_sites (array): a set of IrreducibleSite class objects
