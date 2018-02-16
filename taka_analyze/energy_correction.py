@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 
 import sys
-sys.path.append("/Users/takahashi/psi/bitbucket/chempotdiag/")
-import chem_pot
+#sys.path.append("/Users/takahashi/psi/bitbucket/chempotdiag/")
+#import chem_pot
 import argparse
 import glob
 import json
@@ -49,21 +49,25 @@ def make_lattice_set(lattice_vectors, max_length, include_self):
             vectors.append(vector)
     return np.array(vectors)
 
+
 def determine_ewald_param(def_structure,
                           root_det_dielectric):
-    PROD_CUTOFF_FWHM = 25.0 #product of cutoff radius of G-vector and gaussian FWHM.
+    PROD_CUTOFF_FWHM = 25.0
+    #product of cutoff radius of G-vector and gaussian FWHM.
     real_lattice = def_structure.lattice.matrix
     cube_root_vol = math.pow(def_structure.lattice.volume, 1.0/3)
     reciprocal_lattice = def_structure.lattice.reciprocal_lattice.matrix
-#determine inital ewald parameter to satisfy following:
-# max_int(Real) = max_int(Reciprocal) in make_lattice_set function.
-# Left term:
-# max_int(Real) = 2 * x * Y  / l_r where x, Y, and l_r are ewald,
-# PROD_CUTOFF_FWHM, and axis length of real lattice, respectively.
-# Right term:
-# max_int(reciprocal) = Y  / (x * l_g) where l_g is axis length of reciprocal lattice, respectively.
-#Then, x = sqrt(l_g / l_r / 2)
-#To calculate ewald_param (not ewald), need to consider cube_root_vol and root_det_dielectric
+    # determine initial ewald parameter to satisfy following:
+    # max_int(Real) = max_int(Reciprocal) in make_lattice_set function.
+    # Left term:
+    # max_int(Real) = 2 * x * Y  / l_r where x, Y, and l_r are ewald,
+    # PROD_CUTOFF_FWHM, and axis length of real lattice, respectively.
+    # Right term:
+    # max_int(reciprocal) = Y  / (x * l_g)
+    # where l_g is axis length of reciprocal lattice, respectively.
+    # Then, x = sqrt(l_g / l_r / 2)
+    # To calculate ewald_param (not ewald),
+    # need to consider cube_root_vol and root_det_dielectric
     l_r = mstats.gmean([np.linalg.norm(v) for v in real_lattice])
     l_g = mstats.gmean([np.linalg.norm(v) for v in reciprocal_lattice])
     ewald_param = np.sqrt( l_g / l_r / 2 ) * cube_root_vol / root_det_dielectric
@@ -86,10 +90,9 @@ def determine_ewald_param(def_structure,
         else:
             ewald_param *= diff_real_recipro  ** 0.17
 
+
 def calc_ewald_real_pot(ewald, dielectric_tensor,
-                        set_R_vectors
-                        ):
-                        #atomic_pos_wrt_defect):
+                        set_R_vectors):
     """
     \sum erfc(ewald*\sqrt(R*\epsilon_inv*R)) 
                  / \sqrt(det(\epsilon)) / \sqrt(R*\epsilon_inv*R) [1/A]
@@ -99,7 +102,7 @@ def calc_ewald_real_pot(ewald, dielectric_tensor,
     each = np.zeros(len(set_R_vectors))
     for i, R in enumerate(set_R_vectors):
         # Skip the potential caused by the defect itself
-        #r = R - atomic_pos_wrt_defect
+        # r = R - atomic_pos_wrt_defect
         if np.linalg.norm(R) < 1e-8: 
             continue
         root_R_epsilonI_R = np.sqrt(reduce(np.dot, [R.T, epsilon_inv, R]))
@@ -107,6 +110,7 @@ def calc_ewald_real_pot(ewald, dielectric_tensor,
                              / root_R_epsilonI_R
 
     return np.sum(each) / (4 * np.pi * root_det_epsilon)
+
 
 def calc_ewald_recipro_pot(ewald,
                            dielectric_tensor,
@@ -116,7 +120,6 @@ def calc_ewald_recipro_pot(ewald,
     """
     \sum exp(-G*\epsilon*G/(4*ewald**2)) / G*\epsilon*G [1/A]
     """
-    root_det_epsilon = np.sqrt(np.linalg.det(dielectric_tensor))
     each = np.zeros(len(set_G_vectors))
     for i, G in enumerate(set_G_vectors):
         G_epsilon_G = reduce(np.dot, [G.T, dielectric_tensor, G]) # [1/A^2]
@@ -124,13 +127,15 @@ def calc_ewald_recipro_pot(ewald,
                    / G_epsilon_G * np.cos(np.dot(G, atomic_pos_wrt_defect)) # [A^2]
     return np.sum(each) / volume
 
+
 def calc_ewald_self_potential(ewald, dielectric_tensor): # [1/A]
     det_epsilon = np.linalg.det(dielectric_tensor)
-    root_det_epsilon = np.sqrt(det_epsilon)
     return -ewald / (2.0 * np.pi * np.sqrt(np.pi * det_epsilon))
+
 
 def calc_ewald_diff_potential(ewald, volume):
     return -0.25 / volume / ewald ** 2 # [1/A]
+
 
 def calc_model_pot_and_lat_energy(ewald,
                                   charge,
@@ -141,9 +146,8 @@ def calc_model_pot_and_lat_energy(ewald,
                                   set_R_vectors,
                                   set_G_vectors,
                                   axis):
-    #atomic_pos_wrt_defect = [v-defect_pos for v in atomic_pos_wo_defect] 
-    atomic_pos_wrt_defect_frac = [v-defect_pos for v in atomic_pos_wo_defect] #try
-    atomic_pos_wrt_defect = [np.dot(axis, v - defect_pos) for v in atomic_pos_wo_defect] #try
+    atomic_pos_wrt_defect \
+        = [np.dot(axis, v - defect_pos) for v in atomic_pos_wo_defect] #try
     coeff = charge * sconst.elementary_charge * \
             1.0e10 / sconst.epsilon_0 #[V]
     model_pot = [None for i in atomic_pos_wo_defect]
@@ -178,6 +182,7 @@ def calc_model_pot_and_lat_energy(ewald,
     lattice_energy = model_pot_defect_site * charge / 2
     return model_pot, model_pot_defect_site, lattice_energy
 
+
 def get_distance_two_planes(lattice_vectors):
     # (a_i \times a_j) \ddot a_k / |a_i \times  a_j| 
     distance = np.zeros(3, dtype=float)
@@ -188,9 +193,11 @@ def get_distance_two_planes(lattice_vectors):
                          / np.linalg.norm(a_i_times_a_j)
     return distance
 
+
 def get_max_sphere_radius(lattice_vectors):
     # Maximum radius of a sphere fitting inside the unit cell.
     return max(get_distance_two_planes(lattice_vectors)) / 2.0
+
 
 def calc_average_potential_difference(distance,
                                       abinitio_pot,
@@ -203,12 +210,14 @@ def calc_average_potential_difference(distance,
             pot_diff.append(a - m)
     return np.mean(pot_diff)
 
+
 class _DefType(Enum):
     VACANCY = 1
     SUBSTITUTIONAL = 2
     INTERSTITIAL = 3
 
-def correct_energy(dirname, defect_dict, correct_dict):
+
+def correct_energy(defect_dict, correct_dict):
 
     axis = defect_dict["axis"]
     elements = [ Element(e_name) for e_name in defect_dict["elements"] ]
@@ -251,85 +260,87 @@ def correct_energy(dirname, defect_dict, correct_dict):
 
     dielectric_tensor = np.array(correct_dict["dielectric_tensor"])\
                       + np.array(correct_dict["dielectric_ionic_tensor"])
-    root_det_dielectric = np.sqrt(np.linalg.det(dielectric_tensor))
 
     charge = defect_dict["charge"]
 
     ewald = correct_json["ewald"]
     set_R_vectors = np.array(correct_json["set_R_vector"])
     set_G_vectors = np.array(correct_json["set_G_vector"])
-#potential.sh 3
+    # potential.sh 3
     model_pot, model_pot_site, lattice_energy \
-        =  calc_model_pot_and_lat_energy(ewald,
-                                         charge,
-                                         atomic_pos_wo_defect,
-                                         defect_pos,
-                                         dielectric_tensor,
-                                         volume,
-                                         set_R_vectors,
-                                         set_G_vectors,
-                                         axis)
+        = calc_model_pot_and_lat_energy(ewald,
+                                        charge,
+                                        atomic_pos_wo_defect,
+                                        defect_pos,
+                                        dielectric_tensor,
+                                        volume,
+                                        set_R_vectors,
+                                        set_G_vectors,
+                                        axis)
     print("model pot on site = {0}".format(model_pot_site))
     print("lattice energy = {0}".format(lattice_energy))
     ave_pot_diff\
-        =calc_average_potential_difference(distances_from_defect,
-                                           diff_pot,
-                                           model_pot,
-                                           axis)
+        = calc_average_potential_difference(distances_from_defect,
+                                            diff_pot,
+                                            model_pot,
+                                            axis)
     print("potential difference = {0}".format(ave_pot_diff))
     alignment = -1.0 * ave_pot_diff * charge
     print("alignment-like term = {0}".format(alignment))
 
-def plot_fermi_vs_formation():
 
-
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument("-d", "--defect_dir", dest="defect_dir", type=str,
-                        help="Directry name of calculation of structure with defect.\
-                              If you want to correct energy of one of defect calculations, specify with this option.\
-                              Otherwise, correction will done with all results of defect calculations.\
-                              ")
-    opts = parser.parse_args()
-
-    #read files
+def _main():
+    global correct_json
+    # read files
     with open("./correction.json", 'r') as f:
-        correct_json=json.load(f)
-
-    #determine ewald parameter (old potential.sh 0)
-    #axis = defect_json["axis"]
-    #elements = [ Element(e_name) for e_name in defect_json["elements"] ]
-    #def_coord_frac = defect_json["frac_coords"]
-    #def_structure = Structure(axis, elements, def_coord_frac)
-    structure_for_ewald = Poscar.from_file("defect/Va_O1_2/POSCAR-final").structure
-    print("warning: structure for ewald must be extracted from correction_file (only axis is needed)" )   
+        correct_json = json.load(f)
+    # determine ewald parameter (old potential.sh 0)
+    # axis = defect_json["axis"]
+    # elements = [ Element(e_name) for e_name in defect_json["elements"] ]
+    # def_coord_frac = defect_json["frac_coords"]
+    # def_structure = Structure(axis, elements, def_coord_frac)
+    structure_for_ewald = Poscar.from_file(
+        "defect/Va_O1_2/POSCAR-final").structure
+    print(
+        "warning: structure for ewald must be extracted "
+        "from correction_file (only axis is needed)")
     dielectric_tensor = np.array(correct_json["dielectric_tensor"]) \
-                      + np.array(correct_json["dielectric_ionic_tensor"])
+                        + np.array(correct_json["dielectric_ionic_tensor"])
     root_det_dielectric = np.sqrt(np.linalg.det(dielectric_tensor))
-    if not "ewald" in correct_json:
-        ewald, set_r, set_g = determine_ewald_param(structure_for_ewald, root_det_dielectric)
+    if "ewald" not in correct_json:
+        ewald, set_r, set_g = determine_ewald_param(structure_for_ewald,
+                                                    root_det_dielectric)
         append_to_json("correction.json", "ewald", ewald)
         append_to_json("correction.json", "set_R_vector", set_r.tolist())
         append_to_json("correction.json", "set_G_vector", set_g.tolist())
         correct_json["ewald"] = ewald
         correct_json["set_R_vector"] = set_r
         correct_json["set_G_vector"] = set_g
-
-    #main
+    # main
     if opts.defect_dir:
         with open(opts.defect_dir, 'r') as f:
-            defect_json=json.load(f)
-        correct_energy(opts.defect_dir,
-                       defect_json,
-                       correct_json)
+            defect_json = json.load(f)
+        correct_energy(defect_json, correct_json)
     else:
         dirs = glob.glob("./defect/*_*_*/")
         if not dirs:
             print("Warning: No directory matched name defect_*_*_*.")
         for dirname in dirs:
             with open(dirname + "/defect.json", 'r') as f:
-                defect_json=json.load(f)
-            correct_energy(dirname,
-                           defect_json,
-                           correct_json)
+                defect_json = json.load(f)
+            correct_energy(defect_json, correct_json)
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-d", "--defect_dir", dest="defect_dir", type=str,
+                        help="Directory name of calculation of "
+                             "structure with defect. "
+                             "If you want to correct energy of "
+                             "one of defect calculations, "
+                             "specify with this option. "
+                             "Otherwise, correction will done with "
+                             "all results of defect calculations.")
+    opts = parser.parse_args()
+    _main()
 
