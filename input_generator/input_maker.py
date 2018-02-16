@@ -1,14 +1,11 @@
 #!/usr/bin/env python
-import json
-import os
 import re
+from abc import ABCMeta, abstractmethod
 from copy import deepcopy
 
 import numpy as np
+from pydefect.input_generator.defect import Defect
 from pymatgen.core.periodic_table import Element
-
-
-# from pydefect.input_generator.defect_in import DefectSetting
 
 __author__ = "Yu Kumagai"
 __copyright__ = "Copyright 2017, Oba group"
@@ -19,9 +16,9 @@ __status__ = "Development"
 __date__ = "December 4, 2017"
 
 
-def normed_random_3D_vector():
+def normed_random_3d_vector():
     """
-    Generates a random 3D unit vector with a uniform spherical distribution.
+    Generates a random 3d unit vector with a uniform spherical distribution.
     stackoverflow.com/questions/5408276/python-uniform-spherical-distribution
     """
     phi = np.random.uniform(0, np.pi * 2)
@@ -35,10 +32,10 @@ def normed_random_3D_vector():
 
 def random_vector(normed_vector, distance):
     """
-    Return a vector scaled by distance * x, where 0<x<1.
+    Returns a vector scaled by distance * x, where 0<x<1.
 
     Args:
-        normed_vector (3x1 array): Normed 3D vector.
+        normed_vector (3x1 array): Normed 3d vector.
         distance (float): distance
     """
     return normed_vector * distance * np.random.random()
@@ -46,11 +43,12 @@ def random_vector(normed_vector, distance):
 
 def perturb_around_a_point(structure, center, cutoff, distance):
     """
-    Randomly perturb atoms around an input point in a structure.
+    Randomly perturbs atoms around an input point in a structure.
 
     Args:
+        structure (Structure): pmg Structure/IStructure class object
         center (3x1 array): Fractional coordinates of a central position.
-        cutoff (float): Radius of a sphere in which atoms are perturbed [A]. 
+        cutoff (float): Radius of a sphere in which atoms are perturbed [A].
         distance (float): Max distance for the perturbation [A].
     """
     if type(center) == list and len(center) == 3:
@@ -62,7 +60,7 @@ def perturb_around_a_point(structure, center, cutoff, distance):
     sites = []
     # Since translate_sites accepts only one vector, we need to iterate this.
     for i in neighbors:
-        vector = random_vector(normed_random_3D_vector(), distance)
+        vector = random_vector(normed_random_3d_vector(), distance)
         site = i[2]
         sites.append(site)
         structure.translate_sites(site, vector, frac_coords=False)
@@ -70,148 +68,186 @@ def perturb_around_a_point(structure, center, cutoff, distance):
     return structure, sites
 
 
-#    return {"structure": structure, "sites": sites}
-
 def _get_int_from_string(x):
     """ 
-    Return integer number from a string.
+    Returns integer numbers from a string.
+
+    Args:
+        x (str): a string
     """
     return int(''.join(i for i in x if i.isdigit() or i == '.'))
 
 
-def _parse_defect_name(defect_name):
+def parse_defect_name(defect_name):
     """ 
-    Divide defect name by "_" to three part.
+    Divides defect name by "_" to three part.
     E.g., "Va_Mg1_0" --> in_name="Va", out_name="Mg1", charge=0
+
+    Args:
+        defect_name (str): defect name defined in PyDefect, e.g., "Va_Mg1_2"
     """
     try:
         d = defect_name.split("_")
         in_name = d[0]
         out_name = d[1]
         charge = int(d[2])
-    except:
-        raise ValueError("Defect {} is improper.".format(defect_name))
+    except ValueError:
+        print("Defect {} is improper.".format(defect_name))
 
     if not re.match(r'^[a-xA-Z]+[1-9]+$', out_name):
         raise ValueError("Defect {} is improper.".format(defect_name))
-    return (in_name, out_name, charge)
+    return in_name, out_name, charge
 
 
-def extended_range(i):
+def print_already_exist(name):
     """
-    Extension of range method especially for negative input value.
-    E.g., extended_range(3) = [0, 1, 2, 3]
-          extended_range(-3) = [-3, -2, -1, 0]
+    Show the following message.
+    Args:
+        name (str): a string
     """
-    if not type(i) == int:
-        raise AttributeError
-    if i >= 0:
-        return range(i + 1)
-    else:
-        return range(i, 1)
+    print("{:>10} already exists, so nothing is done.".format(name))
 
 
-def _print_already_exist(dirname):
-    print("{:>10} alreadly exists, so nothing is done.".format(dirname))
-
-
-def _print_is_constructed(dirname):
-    print("{:>10} is constructed.".format(dirname))
-
-
-class InputMaker():
+def print_is_being_constructed(name):
     """
-    Construct information for a particular defect.
-    Defect_setting class object is required.
+    Show the following message.
+    Args:
+        name (str): a string
+    """
+    print("{:>10} is being constructed.".format(name))
+
+
+class DefectMaker:
+    """
+    Construct a defect from a defect_name
 
     Args:
-        defect_name (str): defect name in PyDefect manner, e.g., "Va_Mg2_2".
-        defect_setting (DefectSetting) : DefectSetting class object.
+        defect_name (str): defect name in PyDefect manner, e.g., "Va_Mg2_-2".
+        structure (Structure): pmg Structure/IStructure class object.
+        irreducible_sites (array): IrreducibleSite class objects.
+        interstitial_coords (Nx3 array): coordinates of interstitial sites,
+                                         e.g., [[0, 0, 0], [0.1, 0.1, 0.1], ..]
+
+    Parameters in use:
+        in_name" (str): Inserted element name. "Va" is inserted for vacancies.
+        out_name" (str): Removed site name. "in", where n is an integer,
+                         is inserted for interstitials. E.g., "i1".
+        charge (int): Charge state of the defect
+    """
+    def __init__(self, defect_name, structure, irreducible_sites,
+                 interstitial_coords):
+
+        # deepcopy is required for modifying the original structure.
+        defect_structure = deepcopy(structure)
+        in_name, out_name, charge = parse_defect_name(defect_name)
+        # -------------------- analyze out_name --------------------------------
+        # interstitial
+        if re.match(r'^i[0-9]+$', out_name):
+            interstitial_index = _get_int_from_string(out_name)
+            try:
+                defect_coords = interstitial_coords[interstitial_index - 1]
+                removed_atom_index = None
+            except ValueError:
+                print("{} interstitial not defined".format(interstitial_index))
+        else:
+            for i in irreducible_sites:
+                if out_name == i.irreducible_name:
+                    removed_atom_index = i.first_index - 1
+                    defect_coords = i.repr_coords
+                    break
+            try:
+                defect_structure.remove_sites([removed_atom_index])
+            except ValueError:
+                print("{} in {} is improper.".format(out_name, defect_name))
+        # -------------------- analyze in_name ---------------------------------
+        # This method needs to be run after finishing analyze_out_name because
+        # removed_atom_index and defect_coords are required for determining
+        # defect_index and interstitial coordinates.
+        if in_name == "Va":
+            inserted_atom_index = None
+        elif Element.is_valid_symbol(in_name):
+            # There may be multiple irreducible sites for inserted element,
+            # e.g., Mg1 and Mg2, element of in_name is inserted to just before
+            # the same elements, otherwise to the 1st index.
+            if in_name in defect_structure.symbol_set:
+                inserted_atom_index = \
+                    min(defect_structure.indices_from_symbol(in_name))
+            else:
+                inserted_atom_index = 0
+            defect_structure.insert(inserted_atom_index, in_name, defect_coords)
+        else:
+            raise ValueError("{} in {} is improper.".format(out_name,
+                                                            defect_name))
+        self.defect = \
+            Defect(defect_structure, removed_atom_index, inserted_atom_index,
+                   defect_coords, in_name, out_name, charge)
+
+
+class DefectInputSetMaker(metaclass=ABCMeta):
+    """
+    Abstract class that must be subclassed by a particular first-principles
+    code implementation.
+    Constructs a set of Defect class object
+
+    Args:
+        defect_setting (DefectSetting): DefectSetting class object.
+        particular_defects (str/list): It specifies a particular defect(s).
+            Specify a type of defects.
+
+            * When one or two variables are given, construct a set of defects.
+                "Va" --> A set of all the vacancies.
+                "i" --> A set of all the interstitials.
+                "as" --> A set of all the antisites.
+                "Va_O" --> A set of all the oxygen vacancies
+                "Va_O1" --> A set of oxygen vacancies at O1 site
+                "Mg_O" --> A set of all the Mg-on-O antisite pairs.
+                "Mg_O1" --> A set of Mg-on-O1 antisite pairs.
+
+            * When three variables are given, construct a particular defect.
+                e.g., "Va_O1_2",  "Mg_O1_0"
+
+    Parameters in use:
     """
 
-    def __init__(self, defect_name, defect_setting):
+    def __init__(self, defect_setting, particular_defects=""):
 
-        if os.path.exists(defect_name):
-            self.is_directory = True
-        else:
-            self.is_directory = False
-        self.defect_name = defect_name
         self.defect_setting = defect_setting
-        self.in_name, self.out_name, self.charge = \
-                                                 _parse_defect_name(defect_name)
-        # In order not to change the original structure, deepcopy is needed.
-        self.defect_structure = deepcopy(defect_setting.structure)
-        # Names of irreducible sites; e.g., irreducible_names = ["Mg1", "O1"]
-        self.irreducible_names = [i.irreducible_name
-                                 for i in self.defect_setting.irreducible_sites]
+        defect_all_set = defect_setting.make_defect_name_set()
 
-    def analyze_defect_name(self):
-        # analyze out_name
-        # if interstitial or not
-        if re.match(r'^i[0-9]+$', self.out_name):
-            interstitial_index = _get_int_from_string(self.out_name)
-            try:
-                self.defect_coords = \
-                 self.defect_setting.interstitial_coords[interstitial_index - 1]
-            except:
-                raise ValueError(
-                  "Interstitial # {} is not defined".format(interstitial_index))
-        # if out_name exists in irreducible_names
-        elif self.out_name in self.irreducible_names:
-            # There may be multiple candidates for inserted element.
-            for i in self.defect_setting.irreducible_sites:
-                if self.out_name == i.irreducible_name:
-                    removed_atomic_index = i.first_index
-                    self.defect_coords = i.repr_coords
-            self.defect_structure.remove_sites([removed_atomic_index - 1])
-        # otherwise return ValueError.
-        else:
-            raise ValueError("{} in {} is improper.". \
-                                        format(self.out_name, self.defect_name))
+        if len(particular_defects.split("_")) == 3:
+            # CHECK if particular_defects is proper.
+            defect_set = [particular_defects]
 
-        if self.in_name == "Va":
-            self.defect_index = removed_atomic_index
-        elif Element.is_valid_symbol(self.in_name):
-            # There may be multiple candidates for inserted element.
-            # E.g., Mg exists in Mg1 and Mg2.
-            # *in_name* element is inserted just before the same elements, 
-            # othewise to the 1st index.
-            candidate_atomic_indices = []
-            # check all the irreducible_sites.
-            if self.in_name in self.defect_structure.symbol_set:
-                atomic_index = \
-                    min(self.defect_structure.indices_from_symbol(self.in_name))
-            else:
-                atomic_index = 0
-            self.defect_structure.insert(atomic_index, self.in_name,
-                                         self.defect_coords)
-            self.defect_index = atomic_index + 1
-            self.defect_coords = self.defect_structure.frac_coords[atomic_index].tolist()
-        else:
-            raise ValueError("{} in {} is improper.". \
-                                         format(self.in_name, self.defect_name))
+        elif len(particular_defects.split("_")) == 1:
+            defect_set = []
+            if particular_defects == "Va":
+                in_pattern = "Va"
+                out_pattern = ""
+            elif particular_defects == "i":
+                in_pattern = ""
+                out_pattern = "i[1-9]+$"
+#            elif particular_defects == "as":
+#                in_pattern = ""
+#                in_pattern = ""
 
-    def make_directory_json(self):
-        """
-        Needs to be modified by subclasses depending on the code.
-        """
-        #        if self.is_directory == False:
-        os.makedirs(self.defect_name)
-        # write a defect position to defect.json file.
-        with open(self.defect_name + "/defect.json", 'w') as fw:
-            json.dump({"defect_index": self.defect_index,
-                       "defect_coords": self.defect_coords,
-                       "in_name": self.in_name,
-                       "out_name": self.out_name,
-                       "charge": self.charge}, fw, indent=2)
+        elif len(particular_defects.split("_")) == 2:
+            defect_set = []
+            i, o = [x for x in particular_defects.split("_")]
+            in_pattern = i
+            out_pattern = o + "[1-9]*$"
 
-    #        else:
-    #            print("{} exists. is not defined".format(interstitial_index))
+        if not defect_set:
+            for d in defect_all_set:
+                in_name, out_name = parse_defect_name(d)[0:2]
 
-    def make_perturbed_defect_structure(self):
-        # perturb neighboring atoms randomly.
-        self.perturbed_defect_structure, self.perturbed_sites = \
-                            perturb_around_a_point(self.defect_structure,
-                                                   self.defect_coords,
-                                                   self.defect_setting.cutoff,
-                                                   self.defect_setting.distance)
+                if re.match(r + re.escape(in_pattern), in_name) and \
+                        re.match(r + re.escape(out_pattern), out_name):
+                    defect_set.append(d)
+
+    @abstractmethod
+    def _make_perfect_input(self):
+        pass
+
+    @abstractmethod
+    def _make_defect_input(self, defect_name):
+        pass

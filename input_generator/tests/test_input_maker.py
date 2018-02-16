@@ -73,7 +73,7 @@ class InputMakerTest(unittest.TestCase):
     def test_vacancy(self):
         va = InputMaker(self.vacancy, self.defect_setting)
         va.analyze_name()
-        print(va.defect_structure)
+        print(vdefect_structure)
         print(va.defect_index)
         print(va.defect_coords)
 
