@@ -187,21 +187,25 @@ class DefectInputSetMaker(metaclass=ABCMeta):
     """
     Abstract class that must be subclassed by a particular first-principles
     code implementation.
-    Construct a set of defect class object
+    Constructs a set of Defect class object
 
     Args:
         defect_setting (DefectSetting): DefectSetting class object.
         particular_defects (str/list): It specifies a particular defect(s).
             Specify a type of defects.
+
+            * When one or two variables are given, construct a set of defects.
                 "Va" --> A set of all the vacancies.
                 "i" --> A set of all the interstitials.
                 "as" --> A set of all the antisites.
                 "Va_O" --> A set of all the oxygen vacancies
                 "Va_O1" --> A set of oxygen vacancies at O1 site
-                "Va_O1_2" --> Only Va_O1_2 (
                 "Mg_O" --> A set of all the Mg-on-O antisite pairs.
                 "Mg_O1" --> A set of Mg-on-O1 antisite pairs.
-                "Mg_O1_0" --> A set of Mg-on-O1 antisite pairs.
+
+            * When three variables are given, construct a particular defect.
+                e.g., "Va_O1_2",  "Mg_O1_0"
+
     Parameters in use:
     """
 
