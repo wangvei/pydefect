@@ -14,7 +14,7 @@ __status__ = "Development"
 __date__ = "December 4, 2017"
 
 DEFAULT_POTCAR_DIR="/home/common/default_POTCAR"
-FILENAME_PerturbAroundAPointTest_POSCAR = "examples/POSCAR-MgO64atoms"
+FILENAME_POSCAR = "examples/POSCAR-MgO64atoms"
 FILENAME_POSCAR_VA1 = "examples/POSCAR-MgO64atoms-Va_Mg1"
 FILENAME_POSCAR_IN1 = "examples/POSCAR-MgO64atoms-O_i1"
 FILENAME_POSCAR_IN3 = "examples/POSCAR-MgO64atoms-Al_i1"
@@ -26,7 +26,7 @@ FILENAME_POSCAR_SS1 = "examples/POSCAR-MgO64atoms-N_O1"
 class VaspDefectInputSetMakerTest(unittest.TestCase):
 
     def setUp(self):
-        structure = Structure.from_file(FILENAME_PerturbAroundAPointTest_POSCAR)
+        structure = Structure.from_file(FILENAME_POSCAR)
         Mg1 = IrreducibleSite(irreducible_name="Mg1", element="Mg",
                               first_index=1, last_index=32,
                               repr_coords=[0, 0, 0])
@@ -60,6 +60,9 @@ class VaspDefectInputSetMakerTest(unittest.TestCase):
              'O_i1_-2', 'O_i1_-1', 'O_i1_0',
              'O_Mg1_-4', 'O_Mg1_-3', 'O_Mg1_-2', 'O_Mg1_-1', 'O_Mg1_0',
              'Al_Mg1_0', 'Al_Mg1_1']
+        particular_defects = "Va_O"
+        incar = INCAR
+        kpoints = KPOINTS
         self.assertTrue(mgo.defect_set, check_defect_set)
 
 

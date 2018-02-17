@@ -119,11 +119,12 @@ def print_is_being_constructed(name):
 
 class DefectMaker:
     """
-    Construct a defect from a defect_name
+    Constructs a Defect class object from a given defect_name.
 
     Args:
         defect_name (str): defect name in PyDefect manner, e.g., "Va_Mg2_-2".
-        structure (Structure): pmg Structure/IStructure class object.
+        structure (Structure): pmg Structure/IStructure class object
+                               corresponding to the perfect supercell.
         irreducible_sites (array): IrreducibleSite class objects.
         interstitial_coords (Nx3 array): coordinates of interstitial sites,
                                          e.g., [[0, 0, 0], [0.1, 0.1, 0.1], ..]
@@ -187,14 +188,14 @@ class DefectInputSetMaker(metaclass=ABCMeta):
     """
     Abstract class that must be subclassed by a particular first-principles
     code implementation.
-    Constructs a set of Defect class object
+    Constructs a set of Defect class object based on given oxidation states.
 
     Args:
         defect_setting (DefectSetting): DefectSetting class object.
         particular_defects (str/list): It specifies a particular defect(s).
             Specify a type of defects.
 
-            * When one or two variables are given, construct a set of defects.
+            * When one or two variables are given, constructs a set of defects.
                 "Va" --> A set of all the vacancies.
                 "i" --> A set of all the interstitials.
                 "as" --> A set of all the antisites.
@@ -203,46 +204,55 @@ class DefectInputSetMaker(metaclass=ABCMeta):
                 "Mg_O" --> A set of all the Mg-on-O antisite pairs.
                 "Mg_O1" --> A set of Mg-on-O1 antisite pairs.
 
-            * When three variables are given, construct a particular defect.
+            * When full defect_name is given, constructs a particular defect.
                 e.g., "Va_O1_2",  "Mg_O1_0"
 
     Parameters in use:
+        in_pattern (str): pattern for screening in_name
+        out_pattern (str): pattern for screening out_name
     """
 
     def __init__(self, defect_setting, particular_defects=""):
 
-        self.defect_setting = defect_setting
+        self._defect_setting = defect_setting
         defect_all_set = defect_setting.make_defect_name_set()
 
-        if len(particular_defects.split("_")) == 3:
-            # CHECK if particular_defects is proper.
-            defect_set = [particular_defects]
+        if not particular_defects:
+            self._defect_set = defect_all_set
 
-        elif len(particular_defects.split("_")) == 1:
-            defect_set = []
-            if particular_defects == "Va":
-                in_pattern = "Va"
-                out_pattern = ""
-            elif particular_defects == "i":
-                in_pattern = ""
-                out_pattern = "i[1-9]+$"
-#            elif particular_defects == "as":
-#                in_pattern = ""
-#                in_pattern = ""
+        else:
+            self._defect_set = []
 
-        elif len(particular_defects.split("_")) == 2:
-            defect_set = []
-            i, o = [x for x in particular_defects.split("_")]
-            in_pattern = i
-            out_pattern = o + "[1-9]*$"
+            if len(particular_defects.split("_")) == 3:
+                # Here, check if particular_defects is proper.
+                self._defect_set = [particular_defects]
 
-        if not defect_set:
-            for d in defect_all_set:
-                in_name, out_name = parse_defect_name(d)[0:2]
+            elif len(particular_defects.split("_")) == 1:
+                if particular_defects == "Va":
+                    in_pattern = r"Va"
+                    out_pattern = r""
+                elif particular_defects == "i":
+                    in_pattern = r""
+                    out_pattern = r"i[1-9]+$"
+                # TODO: antisites pattern should be implemented.
+#                elif particular_defects == "as":
 
-                if re.match(r + re.escape(in_pattern), in_name) and \
-                        re.match(r + re.escape(out_pattern), out_name):
-                    defect_set.append(d)
+            elif len(particular_defects.split("_")) == 2:
+                # particular_defects = "Va_O" -->  i = "Va", o = "O"
+                i, o = [x for x in particular_defects.split("_")]
+                in_pattern = r"" + re.escape(i)
+                if re.search('[0-9]$', o):
+                    out_pattern = r"" + re.escape(o)
+                else:
+                    out_pattern = r"" + re.escape(o) + "[1-9]*$"
+
+            if len(particular_defects.split("_")) == 1 or 2:
+                for d in defect_all_set:
+                    in_name, out_name = parse_defect_name(d)[0:2]
+
+                if re.match(in_pattern, in_name) and \
+                        re.match(out_pattern, out_name):
+                    self._defect_set.append(d)
 
     @abstractmethod
     def _make_perfect_input(self):

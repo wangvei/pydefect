@@ -28,8 +28,8 @@ def potcar_dir():
     try:
         with open(SETTINGS_FILE, "rt") as f:
             d = yaml.safe_load(f)
-    except:
-        raise IOError('.pydefect.yaml cannot be opened.')
+    except IOError:
+        print('.pydefect.yaml cannot be opened.')
 
     for k, v in d.items():
         if k == "DEFAULT_POTCAR":
@@ -69,21 +69,22 @@ class VaspDefectInputSetMaker(DefectInputSetMaker):
     def __init__(self, defect_setting, particular_defects="",
                  incar="INCAR", kpoints="KPOINTS"):
 
+        # construct self._defect_setting and self._defect_set
         super().__init__(defect_setting, particular_defects)
 
         self._incar = incar
         self._kpoints = kpoints
         # from defect_setting
-        self._structure = defect_setting.structure
+        self._perfect_structure = defect_setting.structure
         self._irreducible_sites = defect_setting.irreducible_sites
         self._interstitial_coords = defect_setting.interstitial_coords
         self._distance = defect_setting.distance
         self._cutoff = defect_setting.cutoff
         self._symprec = defect_setting.cutoff
 
-        # Construct a set of defect names.
+        # Construct defect input files.
         self._make_perfect_input()
-        for d in defect_set:
+        for d in self._defect_set:
             self._make_defect_input(d)
 
     def _make_perfect_input(self):
@@ -93,10 +94,12 @@ class VaspDefectInputSetMaker(DefectInputSetMaker):
         else:
             print_is_being_constructed(dir_name)
             os.makedirs(dir_name)
-            self.defect_setting.structure.to(filename=dir_name + "POSCAR")
-            shutil.copyfile(self.incar, dir_name + "INCAR")
-            shutil.copyfile(self.kpoints, dir_name + "KPOINTS")
-            make_potcar(dir_name, self.elements, potcar_dir())
+            self._defect_setting.structure.to(filename=dir_name + "POSCAR")
+            shutil.copyfile(self._incar, dir_name + "INCAR")
+            shutil.copyfile(self._kpoints, dir_name + "KPOINTS")
+            elements = self._defect_setting.structure.symbol_set
+            make_potcar(dir_name, elements, potcar_dir())
+
 
     def _make_defect_input(self, defect_name):
         # Construct: defect_structure, defect_coords, defect_index
@@ -112,16 +115,16 @@ class VaspDefectInputSetMaker(DefectInputSetMaker):
             # POSCAR-Initial: POSCAR with a defect
             # POSCAR-DispInitial: perturbed defect POSCAR near the defect
             # POSCAR: = POSCAR-DispInitial if exists, otherwise POSCAR-Initial
-            d = DefectMaker(defect_name, self.structure, self.irreducible_sites,
-                            self.interstitial_coords).defect
-            self.d.to_json_file(dir_name + "defect.json")
-            d.structure.to(filename=dir_name + "POSCAR-Initial")
+            a = DefectMaker(defect_name, self._perfect_structure,
+                            self._irreducible_sites, self._interstitial_coords)
+            d = a.defect
+            d.to_json_file(dir_name + "defect.json")
+            d.initial_structure.to(filename=dir_name + "POSCAR-Initial")
 
-            if not self.distance == 0.0:
+            if not self._distance == 0.0:
                 perturbed_defect_structure, perturbed_sites = \
-                    perturb_around_a_point(self.d.structure,
-                                           self.d.defect_coords,
-                                           self.cutoff, self.distance)
+                    perturb_around_a_point(d.initial_structure, d.defect_coords,
+                                           self._cutoff, self._distance)
                 perturbed_defect_structure.to(
                     filename=dir_name + "POSCAR-DispInitial")
                 shutil.copyfile(
@@ -131,16 +134,16 @@ class VaspDefectInputSetMaker(DefectInputSetMaker):
                     dir_name + "POSCAR-Initial", dir_name + "POSCAR")
 
             # Construct POTCAR file
-            elements = self.defect_structure.symbol_set
+            elements = d.initial_structure.symbol_set
             make_potcar(dir_name, elements, potcar_dir())
             # Construct INCAR file
-            shutil.copyfile(self.incar, dir_name + "INCAR")
-            nions = get_nions(self.defect_structure)
-            nelect = get_charge(dir_name + "POTCAR", nions, self.charge)
+            shutil.copyfile(self._incar, dir_name + "INCAR")
+            nions = get_nions(d.initial_structure)
+            nelect = get_charge(dir_name + "POTCAR", nions, d.charge)
             with open(dir_name + 'INCAR', 'a') as fa:
                 fa.write('NELECT = ' + str(nelect))
             # Construct KPOINTS file
-            shutil.copyfile(self.kpoints, dir_name + "KPOINTS")
+            shutil.copyfile(self._kpoints, dir_name + "KPOINTS")
 
 
 def main():
@@ -155,7 +158,7 @@ def main():
                         type=str, help="INCAR name.")
     parser.add_argument("--kpoints", dest="kpoints", default="KPOINTS", 
                         type=str, help="KPOINTS name.")
-    parser.add_argument("--add", dest="add", type=str,
+    parser.add_argument("--add", dest="add", type=str, default=None,
                         help="Particular defect name added.")
 
     opts = parser.parse_args()
@@ -170,7 +173,9 @@ def main():
                 print_is_being_constructed(d)
                 a.constructor()
     else:
-        VaspDefectInputSetMaker(defect_setting, incar=opts.incar,
-                          kpoints=opts.kpoints)
+        VaspDefectInputSetMaker(defect_setting, particular_defects=opts.add,
+                                incar=opts.incar, kpoints=opts.kpoints)
 
-if __name__ == "__main__": main()
+
+if __name__ == "__main__":
+    main()
