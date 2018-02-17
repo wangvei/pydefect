@@ -29,14 +29,15 @@ __email__ = "takahashi.akira.36m@gmail.com"
 __status__ = "Development"
 __date__ = "December 8, 2017"
 
+
 def make_lattice_set(lattice_vectors, max_length, include_self): 
     """
     Return a set of lattice vectors within the max length.
     Note that angles between any two axes are assumed to be between 60 and 
     120 deg.
     """
-    max_int = \
-    [int(max_length / np.linalg.norm(lattice_vectors[i])) + 1 for i in range(3)]
+    max_int = [int(max_length / np.linalg.norm(lattice_vectors[i])) + 1
+               for i in range(3)]
     vectors = []
     for index in product(range(-max_int[0], max_int[0]+1),
                          range(-max_int[1], max_int[1]+1),
@@ -52,7 +53,7 @@ def make_lattice_set(lattice_vectors, max_length, include_self):
 
 def determine_ewald_param(def_structure,
                           root_det_dielectric):
-    PROD_CUTOFF_FWHM = 25.0
+    prod_cutoff_fwhm = 25.0
     #product of cutoff radius of G-vector and gaussian FWHM.
     real_lattice = def_structure.lattice.matrix
     cube_root_vol = math.pow(def_structure.lattice.volume, 1.0/3)
@@ -61,7 +62,7 @@ def determine_ewald_param(def_structure,
     # max_int(Real) = max_int(Reciprocal) in make_lattice_set function.
     # Left term:
     # max_int(Real) = 2 * x * Y  / l_r where x, Y, and l_r are ewald,
-    # PROD_CUTOFF_FWHM, and axis length of real lattice, respectively.
+    # prod_cutoff_fwhm, and axis length of real lattice, respectively.
     # Right term:
     # max_int(reciprocal) = Y  / (x * l_g)
     # where l_g is axis length of reciprocal lattice, respectively.
@@ -69,38 +70,39 @@ def determine_ewald_param(def_structure,
     # To calculate ewald_param (not ewald),
     # need to consider cube_root_vol and root_det_dielectric
     l_r = mstats.gmean([np.linalg.norm(v) for v in real_lattice])
+    # gmean : geometric mean, like (a1 * a2 * a3)^(1/3)
     l_g = mstats.gmean([np.linalg.norm(v) for v in reciprocal_lattice])
-    ewald_param = np.sqrt( l_g / l_r / 2 ) * cube_root_vol / root_det_dielectric
+    ewald_param = np.sqrt(l_g / l_r / 2) * cube_root_vol / root_det_dielectric
 
     while True:
         ewald = ewald_param / cube_root_vol * root_det_dielectric
-        max_G_vector_norm = 2 * ewald * PROD_CUTOFF_FWHM
-        set_G_vectors = make_lattice_set(reciprocal_lattice, 
-                                         max_G_vector_norm, 
-                                         include_self=False)
-        max_R_vector_norm = PROD_CUTOFF_FWHM / ewald
-        set_R_vectors = make_lattice_set(real_lattice, 
-                                         max_R_vector_norm,
-                                         include_self=True)
-        print("Number of R, G vectors = {0}, {1}".format(len(set_R_vectors), len(set_G_vectors)))
-        diff_real_recipro = (float(len(set_R_vectors)) / len(set_G_vectors)) 
-        if (diff_real_recipro > 1/1.05) and (diff_real_recipro < 1.05):
-            ewald_param = ewald * cube_root_vol / root_det_dielectric
-            return ewald, set_R_vectors, set_G_vectors
+        max_g_vector_norm = 2 * ewald * prod_cutoff_fwhm
+        g_vector_set = make_lattice_set(reciprocal_lattice,
+                                        max_g_vector_norm,
+                                        include_self = False)
+        max_r_vector_norm = prod_cutoff_fwhm / ewald
+        r_vector_set = make_lattice_set(real_lattice,
+                                        max_r_vector_norm,
+                                        include_self = True)
+        print("Number of R, G vectors = {0}, {1}"
+              .format(len(r_vector_set), len(g_vector_set)))
+        diff_real_reciprocal = (float(len(r_vector_set)) / len(g_vector_set))
+        if (diff_real_reciprocal > 1 / 1.05) and (diff_real_reciprocal < 1.05):
+            return ewald, r_vector_set, g_vector_set
         else:
-            ewald_param *= diff_real_recipro  ** 0.17
+            ewald_param *= diff_real_reciprocal ** 0.17
 
 
 def calc_ewald_real_pot(ewald, dielectric_tensor,
-                        set_R_vectors):
+                        set_r_vectors):
     """
     \sum erfc(ewald*\sqrt(R*\epsilon_inv*R)) 
                  / \sqrt(det(\epsilon)) / \sqrt(R*\epsilon_inv*R) [1/A]
     """
     root_det_epsilon = np.sqrt(np.linalg.det(dielectric_tensor))
     epsilon_inv = np.linalg.inv(dielectric_tensor)
-    each = np.zeros(len(set_R_vectors))
-    for i, R in enumerate(set_R_vectors):
+    each = np.zeros(len(set_r_vectors))
+    for i, R in enumerate(set_r_vectors):
         # Skip the potential caused by the defect itself
         # r = R - atomic_pos_wrt_defect
         if np.linalg.norm(R) < 1e-8: 
@@ -112,19 +114,19 @@ def calc_ewald_real_pot(ewald, dielectric_tensor,
     return np.sum(each) / (4 * np.pi * root_det_epsilon)
 
 
-def calc_ewald_recipro_pot(ewald,
-                           dielectric_tensor,
-                           set_G_vectors,
-                           volume,
-                           atomic_pos_wrt_defect=np.zeros(3)):
+def calc_ewald_reciprocal_potential(ewald,
+                                    dielectric_tensor,
+                                    set_g_vectors,
+                                    volume,
+                                    atomic_pos_wrt_defect=np.zeros(3)):
     """
-    \sum exp(-G*\epsilon*G/(4*ewald**2)) / G*\epsilon*G [1/A]
+    \sum exp(-g*\epsilon*g/(4*ewald**2)) / g*\epsilon*g [1/A]
     """
-    each = np.zeros(len(set_G_vectors))
-    for i, G in enumerate(set_G_vectors):
-        G_epsilon_G = reduce(np.dot, [G.T, dielectric_tensor, G]) # [1/A^2]
-        each[i] = np.exp(- G_epsilon_G / 4.0 / ewald ** 2) \
-                   / G_epsilon_G * np.cos(np.dot(G, atomic_pos_wrt_defect)) # [A^2]
+    each = np.zeros(len(set_g_vectors))
+    for i, g in enumerate(set_g_vectors):
+        g_epsilon_g = reduce(np.dot, [g.T, dielectric_tensor, g]) # [1/A^2]
+        each[i] = np.exp(- g_epsilon_g / 4.0 / ewald ** 2) / \
+                  g_epsilon_g * np.cos(np.dot(g, atomic_pos_wrt_defect)) #[A^2]
     return np.sum(each) / volume
 
 
@@ -147,7 +149,7 @@ def calc_model_pot_and_lat_energy(ewald,
                                   set_G_vectors,
                                   axis):
     atomic_pos_wrt_defect \
-        = [np.dot(axis, v - defect_pos) for v in atomic_pos_wo_defect] #try
+        = [np.dot(axis, v - defect_pos) for v in atomic_pos_wo_defect]
     coeff = charge * sconst.elementary_charge * \
             1.0e10 / sconst.epsilon_0 #[V]
     model_pot = [None for i in atomic_pos_wo_defect]
@@ -157,28 +159,28 @@ def calc_model_pot_and_lat_energy(ewald,
             = calc_ewald_real_pot(ewald,
                                   dielectric_tensor,
                                   set_r_vectors)
-        recipro_part \
-            = calc_ewald_recipro_pot(ewald,
-                                     dielectric_tensor, 
-                                     set_G_vectors, 
-                                     volume,
-                                     atomic_pos_wrt_defect = r)
+        reciprocal_part \
+            = calc_ewald_reciprocal_potential(ewald,
+                                              dielectric_tensor,
+                                              set_G_vectors,
+                                              volume,
+                                              atomic_pos_wrt_defect = r)
         diff_pot = calc_ewald_diff_potential(ewald, volume)
         model_pot[i] \
-            = (real_part + recipro_part + diff_pot) * coeff
+            = (real_part + reciprocal_part + diff_pot) * coeff
     real_part = calc_ewald_real_pot(ewald, 
                                     dielectric_tensor, 
                                     set_R_vectors)
                                     #np.zeros(3))
-    recipro_part = calc_ewald_recipro_pot(ewald,
-                                          dielectric_tensor,
-                                          set_G_vectors,
-                                          volume,
-                                          np.zeros(3))
+    reciprocal_part = calc_ewald_reciprocal_potential(ewald,
+                                                      dielectric_tensor,
+                                                      set_G_vectors,
+                                                      volume,
+                                                      np.zeros(3))
     diff_pot = calc_ewald_diff_potential(ewald, volume)
     self_pot = calc_ewald_self_potential(ewald, dielectric_tensor)
     model_pot_defect_site \
-        = (real_part + recipro_part + diff_pot + self_pot) * coeff
+        = (real_part + reciprocal_part + diff_pot + self_pot) * coeff
     lattice_energy = model_pot_defect_site * charge / 2
     return model_pot, model_pot_defect_site, lattice_energy
 
@@ -227,9 +229,9 @@ def correct_energy(defect_dict, correct_dict):
 
     #read defect_pos (fractional coordination)
     read_dpos = defect_dict["defect_position"]
-    if (isinstance(read_dpos, int)):
+    if isinstance(read_dpos, int):
         defect_pos = np.array(def_coord_frac[read_dpos - 1])
-    elif (isinstance(read_dpos, list)):
+    elif isinstance(read_dpos, list):
         defect_pos = np.array(read_dpos)
     else:
         raise TypeError("Could not read defect_pos.")
@@ -304,8 +306,8 @@ def _main():
     print(
         "warning: structure for ewald must be extracted "
         "from correction_file (only axis is needed)")
-    dielectric_tensor = np.array(correct_json["dielectric_tensor"]) \
-                        + np.array(correct_json["dielectric_ionic_tensor"])
+    dielectric_tensor = np.array(correct_json["dielectric_tensor"]) + \
+                        np.array(correct_json["dielectric_ionic_tensor"])
     root_det_dielectric = np.sqrt(np.linalg.det(dielectric_tensor))
     if "ewald" not in correct_json:
         ewald, set_r, set_g = determine_ewald_param(structure_for_ewald,
@@ -325,8 +327,8 @@ def _main():
         dirs = glob.glob("./defect/*_*_*/")
         if not dirs:
             print("Warning: No directory matched name defect_*_*_*.")
-        for dirname in dirs:
-            with open(dirname + "/defect.json", 'r') as f:
+        for directory in dirs:
+            with open(directory + "/defect.json", 'r') as f:
                 defect_json = json.load(f)
             correct_energy(defect_json, correct_json)
 
