@@ -1,7 +1,6 @@
 import unittest
 import numpy as np
 from pymatgen.electronic_structure.core import Spin
-from pymatgen.core.structure import Structure
 from pymatgen.core.periodic_table import Element
 from pydefect.taka_my_classes.perfect import Perfect
 
@@ -49,9 +48,9 @@ class PerfectTest(unittest.TestCase):
                                [-0.000000, 9.042893, 0.000000],
                                [0.000000, 0.000000, 9.042893]]
 
-        dielectric_ionic = [[7.561335,    -0.000000,     0.000000],
-                            [-0.000000,     7.561323,     0.000000],
-                            [0.000000,     0.000000,     7.561328]]
+        dielectric_ionic = [[7.561335, -0.000000, 0.000000],
+                            [-0.000000, 7.561323, 0.000000],
+                            [0.000000, 0.000000, 7.561328]]
         expected = np.array(dielectric_electron) + np.array(dielectric_ionic)
         d = self._perfect.dielectric_tensor
         np.testing.assert_allclose(d, expected)
