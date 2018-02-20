@@ -9,9 +9,8 @@ __email__ = "takahashi.akira.36m@gmail.com"
 __status__ = "Development"
 __date__ = "February 19, 2018"
 
-# TODO: make test directory(including poscar, outcar, vasprun.xml)
-# currently only print type and values.
-TEST_DIRECTORY = "TODO!"
+# TODO: Currently only print type and values. Use assert functions.
+TEST_DIRECTORY = "./test_files/SbLi2Na_dft_result/"
 
 
 class PerfectTest(unittest.TestCase):
