@@ -19,9 +19,9 @@ __date__ = "February 19, 2018"
 class Perfect:
 
     def __init__(self, directory_name,
-                 poscar_name = "POSCAR",
-                 outcar_name = "OUTCAR",
-                 vasprun_name = "vasprun.xml"):
+                 poscar_name = "/POSCAR",
+                 outcar_name = "/OUTCAR",
+                 vasprun_name = "/vasprun.xml"):
         path_poscar = directory_name + poscar_name
         path_outcar = directory_name + outcar_name
         path_vasprun = directory_name + vasprun_name
