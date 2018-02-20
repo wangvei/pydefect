@@ -31,7 +31,8 @@ class Perfect:
         self._structure = poscar.structure
         self._energy = outcar.final_energy
         self._dielectric_tensor \
-            = outcar.dielectric_tensor + outcar.dielectric_ionic_tensor
+            = np.array(outcar.dielectric_tensor) + \
+            np.array(outcar.dielectric_ionic_tensor)
         # TODO: eigenvalue is right?
         # (Correct: EIGENVAL file. check if implemented and EIGENVAL is same )
         self._eigen_value = vasprun.eigenvalues
