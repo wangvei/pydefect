@@ -12,7 +12,6 @@ __email__ = "takahashi.akira.36m@gmail.com"
 __status__ = "Development"
 __date__ = "February 19, 2018"
 
-# TODO: Currently only print type and values. Use assert functions.
 TEST_DIRECTORY = "./test_files/SbLi2Na_dft_result/"
 
 
