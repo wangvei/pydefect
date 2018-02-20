@@ -115,7 +115,7 @@ class Perfect:
         real_lattice = self._structure.lattice.matrix
         reciprocal_lattice = self._structure.lattice.reciprocal_lattice.matrix
         cube_root_vol = math.pow(self._structure.lattice.volume, 1 / 3)
-        if initial_value is None:
+        if initial_value is not None:
             ewald_param = initial_value
         else:
             # determine initial ewald parameter to satisfy following:
