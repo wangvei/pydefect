@@ -97,7 +97,8 @@ class Perfect:
     def get_ewald_param(self,
                         computes_again = False,
                         initial_value = None,
-                        convergence = 1.05):
+                        convergence = 1.05,
+                        prod_cutoff_fwhm = 25.0):
         """
         Get optimized ewald parameter.
         Once optimized parameter is calculated (usually slow),
@@ -113,13 +114,13 @@ class Perfect:
                 where n_(real) and n_(reciprocal) is number of real lattices
                 and reciprocal lattices, finishes optimization and
                 returns ewald_param.
+            prod_cutoff_fwhm (float):
+                product of cutoff radius of G-vector and gaussian FWHM.
         Returns (float):
             Optimized ewald_param.
         """
         if self._ewald_param and not computes_again:
             return self._ewald_param
-        prod_cutoff_fwhm = 25.0
-        # product of cutoff radius of G-vector and gaussian FWHM.
         real_lattice = self._structure.lattice.matrix
         reciprocal_lattice = self._structure.lattice.reciprocal_lattice.matrix
         cube_root_vol = math.pow(self._structure.lattice.volume, 1 / 3)
