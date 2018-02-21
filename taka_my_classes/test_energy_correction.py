@@ -54,7 +54,8 @@ class DefectCorrectionTest(unittest.TestCase):
                                         VACANCY_ELECTROSTATIC_POTENTIAL,
                                         VACANCY_FINAL_STRUCTURE,
                                         method = "ExtendedFNV")
-        self.assertAlmostEqual(actual_vacancy, VACANCY_ENERGY)
+        self.assertAlmostEqual(actual_vacancy,
+                               VACANCY_EXPECTED_ENERGY)
 
         # substitutional
         actual_substitutional \
@@ -65,7 +66,8 @@ class DefectCorrectionTest(unittest.TestCase):
                              SUBSTITUTIONAL_ELECTROSTATIC_POTENTIAL,
                              SUBSTITUTIONAL_FINAL_STRUCTURE,
                              method = "ExtendedFNV")
-        self.assertAlmostEqual(actual_substitutional, SUBSTITUTIONAL_ENERGY)
+        self.assertAlmostEqual(actual_substitutional,
+                               SUBSTITUTIONAL_EXPECTED_ENERGY)
 
         # interstitial
         actual_interstitial \
@@ -76,7 +78,8 @@ class DefectCorrectionTest(unittest.TestCase):
                              INTERSTITIAL_ELECTROSTATIC_POTENTIAL,
                              INTERSTITIAL_FINAL_STRUCTURE,
                              method = "ExtendedFNV")
-        self.assertAlmostEqual(actual_interstitial, INTERSTITIAL_ENERGY)
+        self.assertAlmostEqual(actual_interstitial,
+                               INTERSTITIAL_EXPECTED_ENERGY)
 
 
 if __name__ == "__main__":
