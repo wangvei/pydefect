@@ -1,5 +1,5 @@
 {
-  "structure": {
+  "initial_structure": {
     "@module": "pymatgen.core.structure",
     "@class": "Structure",
     "charge": null,

@@ -15,6 +15,7 @@ FILENAME_DPOSCAR = "examples/POSCAR-MgO64atoms"
 FILENAME_FROM_DEFECT_IN = "examples/defect.in.example"
 FILENAME_TO_DEFECT_IN = "examples/defect.in.to_example"
 
+
 class DefectSettingTest(unittest.TestCase):
 
     def setUp(self):
@@ -91,3 +92,5 @@ class DefectSettingTest(unittest.TestCase):
 #                    filecmp.cmp(FILENAME_TO_DEFECT_IN, FILENAME_FROM_DEFECT_IN))
 
 
+if __name__ == "__main__":
+    unittest.main()

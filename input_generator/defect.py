@@ -5,6 +5,7 @@ import json
 import numpy as np
 from monty.json import MontyEncoder
 from monty.serialization import loadfn
+from copy import deepcopy
 
 __author__ = "Yu Kumagai"
 __copyright__ = "Copyright 2017, Oba group"
@@ -24,11 +25,12 @@ def get_nions(defect_structure):
     return nions
 
 
-class Defect:
+class DefectInput:
     """
     This class object holds some properties related to a defect.
     Args:
-        initial_structure (Structure): pmg Structure/IStructure class object
+        initial_structure (Structure): pmg Structure/IStructure class object.
+            Defect structure before structure optimization
         removed_atom_index (array of int):
             Atom index removed in the perfect supercell, starting from 0.
             For interstitial, set to None.
@@ -114,6 +116,30 @@ class Defect:
 
         return mapping
 
+    def anchor_atom_index(self):
+        """
+        Returns an index of atom that is the farthest from the defect.
+        This atom is assumed not to displace during the structure
+        optimization, and so used for analyzing defect structure.
+        """
+
+        radius = max(self.initial_structure.lattice.abc) * 2
+        num_sites = len(self.initial_structure.sites)
+        shortest_distances = np.full(num_sites, radius, dtype=float)
+
+        distance_set = self.initial_structure.get_sites_in_sphere(
+            self.defect_coords, radius, include_index=True)
+
+        for d in distance_set:
+            atom_index = d[2]
+            if d[1] < shortest_distances[atom_index]:
+                shortest_distances[atom_index] = d[1]
+
+        farthest_atom_index = np.argmax(shortest_distances)
+        farthest_dist = shortest_distances[farthest_atom_index]
+
+        return farthest_atom_index, farthest_dist
+
 
 class IrreducibleSite:
     """
@@ -164,3 +190,4 @@ class IrreducibleSite:
         Returns number of atoms in a given (super)cell.
         """
         return self.last_index - self.first_index + 1
+
