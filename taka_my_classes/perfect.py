@@ -94,7 +94,10 @@ class Perfect:
             if np.linalg.norm(cart_vector) < max_length:
                 yield cart_vector
 
-    def get_ewald_param(self, computes_again = False, initial_value = None):
+    def get_ewald_param(self,
+                        computes_again = False,
+                        initial_value = None,
+                        convergence = 1.05):
         """
         Get optimized ewald parameter.
         Once optimized parameter is calculated (usually slow),
@@ -105,6 +108,11 @@ class Perfect:
             initial_value (float): Initial guess of parameter.
             computes_again (bool): If you want to re-calculate parameter
              (e.g. change initial value), make this flat true.
+            convergence (float):
+                If 1/convergence < n_(real)/n_(reciprocal) < convergence,
+                where n_(real) and n_(reciprocal) is number of real lattices
+                and reciprocal lattices, finishes optimization and
+                returns ewald_param.
         Returns (float):
             Optimized ewald_param.
         """
@@ -151,7 +159,7 @@ class Perfect:
                                                      is_reciprocal = True):
                 num_reciprocal_lattice += 1
             diff_real_reciprocal = num_real_lattice / num_reciprocal_lattice
-            if 1/1.05 < diff_real_reciprocal < 1.05:
+            if 1/convergence < diff_real_reciprocal < convergence:
                 return ewald
             else:
                 ewald_param *= diff_real_reciprocal ** 0.17
