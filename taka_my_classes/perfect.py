@@ -117,6 +117,7 @@ class Unitcell:
         Returns (float):
             Optimized ewald_param.
         """
+        root_det_dielectric = math.sqrt(np.linalg.det(self.dielectric_tensor))
         if self._ewald_param and not computes_again:
             return self._ewald_param
         real_lattice = self._structure.lattice.matrix
@@ -140,9 +141,9 @@ class Unitcell:
             l_g = mstats.gmean([np.linalg.norm(v) for v in reciprocal_lattice])
             ewald_param \
                 = np.sqrt(l_g / l_r / 2) *\
-                cube_root_vol / self.root_det_dielectric
+                cube_root_vol / root_det_dielectric
         while True:
-            ewald = ewald_param / cube_root_vol * self.root_det_dielectric
+            ewald = ewald_param / cube_root_vol * root_det_dielectric
             # count number of real lattice
             num_real_lattice = 0
             max_r_vector_norm = prod_cutoff_fwhm / ewald
