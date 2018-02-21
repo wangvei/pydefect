@@ -69,7 +69,7 @@ class Perfect:
                                    include_self,
                                    is_reciprocal = False):
         """
-        Return a set of lattice vectors within the max length.
+        Generator of a set of lattice vectors within the max length.
         Note that angles between any two axes are assumed to be between 60 and
         120 deg.
         Args:
