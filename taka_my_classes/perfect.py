@@ -6,7 +6,6 @@ import scipy.constants as sconst
 import scipy.stats.mstats as mstats
 from pymatgen.io.vasp.inputs import Poscar
 from pymatgen.io.vasp.outputs import Outcar, Vasprun
-
 __author__ = "Akira Takahashi"
 __copyright__ = "Copyright 2017, Oba group"
 __version__ = "0.1"
@@ -16,15 +15,26 @@ __status__ = "Development"
 __date__ = "February 19, 2018"
 
 
-class Perfect:
+class Unitcell:
+    """
+    DFT result of unitcell without any defect.
+    """
 
-    def __init__(self, directory_name,
+    def __init__(self, directory_path,
                  poscar_name = "/POSCAR",
                  outcar_name = "/OUTCAR",
                  vasprun_name = "/vasprun.xml"):
-        path_poscar = directory_name + poscar_name
-        path_outcar = directory_name + outcar_name
-        path_vasprun = directory_name + vasprun_name
+        """
+        Args:
+            directory_path (str): path of directory. 
+            poscar_name (str): Name of POSCAR file. Defaults to POSCAR.
+            outcar_name (str): Name of OUTCAR file. Defaults to OUTCAR.
+            vasprun_name (str): Name of vasprun.xml file.
+                                Defaults to vasprun.xml.
+        """
+        path_poscar = directory_path + poscar_name
+        path_outcar = directory_path + outcar_name
+        path_vasprun = directory_path + vasprun_name
         poscar = Poscar.from_file(path_poscar)
         outcar = Outcar(path_outcar)
         vasprun = Vasprun(path_vasprun)
@@ -36,7 +46,6 @@ class Perfect:
         # TODO: eigenvalue is right?
         # (Correct: EIGENVAL file. check if implemented and EIGENVAL is same )
         self._eigen_value = vasprun.eigenvalues
-        self._electrostatic_potential = outcar.electrostatic_potential
         self._ewald_param = None
 
     @property
@@ -54,15 +63,6 @@ class Perfect:
     @property
     def eigen_value(self):
         return self._eigen_value
-
-    @property
-    def electrostatic_potential(self):
-        return self._electrostatic_potential
-
-    @property
-    def root_det_dielectric(self):
-        root_det_dielectric = np.sqrt(np.linalg.det(self._dielectric_tensor))
-        return root_det_dielectric
 
     def generate_neighbor_lattices(self,
                                    max_length,
@@ -160,8 +160,53 @@ class Perfect:
                                                      is_reciprocal = True):
                 num_reciprocal_lattice += 1
             diff_real_reciprocal = num_real_lattice / num_reciprocal_lattice
-            if 1/convergence < diff_real_reciprocal < convergence:
+            if 1 / convergence < diff_real_reciprocal < convergence:
                 return ewald
             else:
                 ewald_param *= diff_real_reciprocal ** 0.17
+
+
+class Supercell:
+    """
+    DFT result of supercell without any defect.
+    """
+    def __init__(self, directory_path,
+                 poscar_name = "/POSCAR",
+                 outcar_name = "/OUTCAR",
+                 vasprun_name = "/vasprun.xml"):
+        """
+        Args:
+            directory_path (str): path of directory.
+            poscar_name (str): Name of POSCAR file. Defaults to POSCAR.
+            outcar_name (str): Name of OUTCAR file. Defaults to OUTCAR.
+            vasprun_name (str): Name of vasprun.xml file.
+                                Defaults to vasprun.xml.
+        """
+        path_poscar = directory_path + poscar_name
+        path_outcar = directory_path + outcar_name
+        path_vasprun = directory_path + vasprun_name
+        poscar = Poscar.from_file(path_poscar)
+        outcar = Outcar(path_outcar)
+        vasprun = Vasprun(path_vasprun)
+        self._structure = poscar.structure
+        self._energy = outcar.final_energy
+        self._eigen_value = vasprun.eigenvalues
+        self._electrostatic_potential = outcar.electrostatic_potential
+        self._ewald_param = None
+
+    @property
+    def structure(self):
+        return self._structure
+
+    @property
+    def energy(self):
+        return self._energy
+
+    @property
+    def eigen_value(self):
+        return self._eigen_value
+
+    @property
+    def electrostatic_potential(self):
+        return self._electrostatic_potential
 
