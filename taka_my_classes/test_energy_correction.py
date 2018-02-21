@@ -1,5 +1,5 @@
 import unittest
-from pydefect.taka_my_classes.perfect import Perfect
+from pydefect.taka_my_classes.perfect import Unitcell
 from pydefect.input_generator.defect import Defect
 from pydefect.taka_my_classes.energy_correction import correct_energy
 
@@ -12,29 +12,72 @@ __status__ = "Development"
 __date__ = "February 20, 2018"
 
 # TODO: write test directory.
-PERFECT_DIR = "NEED_TO_SPECIFY!"
-DEFECT_JSON = "NEED_TO_SPECIFY!"
-DEFECT_ENERGY = "NEED_TO_SPECIFY!"
-DEFECT_ELECTROSTATIC_POTENTIAL = "NEED_TO_SPECIFY!"
-DEFECT_FINAL_STRUCTURE = "NEED_TO_SPECIFY!"
+UNITCELL_DIRECTORY = "NEED_TO_SPECIFY!"
+SUPERCELL_DIRECTORY = "NEED_TO_SPECIFY!"
+# interstitial directory
+
+VACANCY_JSON = "NEED_TO_SPECIFY!"
+VACANCY_ENERGY = "NEED_TO_SPECIFY!"
+VACANCY_ELECTROSTATIC_POTENTIAL = "NEED_TO_SPECIFY!"
+VACANCY_FINAL_STRUCTURE = "NEED_TO_SPECIFY!"
+VACANCY_EXPECTED_ENERGY = "NEED_TO_SPECIFY!"
+
+SUBSTITUTIONAL_JSON = "NEED_TO_SPECIFY!"
+SUBSTITUTIONAL_ENERGY = "NEED_TO_SPECIFY!"
+SUBSTITUTIONAL_ELECTROSTATIC_POTENTIAL = "NEED_TO_SPECIFY!"
+SUBSTITUTIONAL_FINAL_STRUCTURE = "NEED_TO_SPECIFY!"
+SUBSTITUTIONAL_EXPECTED_ENERGY = "NEED_TO_SPECIFY!"
+
+INTERSTITIAL_JSON = "NEED_TO_SPECIFY!"
+INTERSTITIAL_ENERGY = "NEED_TO_SPECIFY!"
+INTERSTITIAL_ELECTROSTATIC_POTENTIAL = "NEED_TO_SPECIFY!"
+INTERSTITIAL_FINAL_STRUCTURE = "NEED_TO_SPECIFY!"
+INTERSTITIAL_EXPECTED_ENERGY = "NEED_TO_SPECIFY!"
 
 
 class DefectCorrectionTest(unittest.TestCase):
 
     def setUp(self):
-        self._perfect = Perfect(PERFECT_DIR)
-        self._defect_input = Defect.json_load(DEFECT_JSON)
-        pass
+        self._unitcell = Unitcell(UNITCELL_DIRECTORY)
+        self._supercell = Unitcell(SUPERCELL_DIRECTORY)
+        self._vacancy_input = Defect.json_load(VACANCY_JSON)
+        self._substitutional_input = Defect.json_load(SUBSTITUTIONAL_JSON)
+        self._interstitial_input = Defect.json_load(INTERSTITIAL_JSON)
 
-    def test_correct_energy(self):
+    def test_correct_energy_extended_fnv(self):
         # TODO: write expected value.
-        expected = "NEED_TO_SPECIFY!"
-        actual = correct_energy(self._perfect, self._defect_input,
-                                DEFECT_ENERGY,
-                                DEFECT_ELECTROSTATIC_POTENTIAL,
-                                DEFECT_FINAL_STRUCTURE,
-                                method = "ExtendedFNV")
-        self.assertAlmostEqual(actual, expected)
+        # vacancy
+        actual_vacancy = correct_energy(self._unitcell,
+                                        self._supercell,
+                                        self._vacancy_input,
+                                        VACANCY_ENERGY,
+                                        VACANCY_ELECTROSTATIC_POTENTIAL,
+                                        VACANCY_FINAL_STRUCTURE,
+                                        method = "ExtendedFNV")
+        self.assertAlmostEqual(actual_vacancy, VACANCY_ENERGY)
+
+        # substitutional
+        actual_substitutional \
+            = correct_energy(self._unitcell,
+                             self._supercell,
+                             self._substitutional_input,
+                             SUBSTITUTIONAL_ENERGY,
+                             SUBSTITUTIONAL_ELECTROSTATIC_POTENTIAL,
+                             SUBSTITUTIONAL_FINAL_STRUCTURE,
+                             method = "ExtendedFNV")
+        self.assertAlmostEqual(actual_substitutional, SUBSTITUTIONAL_ENERGY)
+
+        # interstitial
+        actual_interstitial \
+            = correct_energy(self._unitcell,
+                             self._supercell,
+                             self._interstitial_input,
+                             INTERSTITIAL_ENERGY,
+                             INTERSTITIAL_ELECTROSTATIC_POTENTIAL,
+                             INTERSTITIAL_FINAL_STRUCTURE,
+                             method = "ExtendedFNV")
+        self.assertAlmostEqual(actual_interstitial, INTERSTITIAL_ENERGY)
+
 
 if __name__ == "__main__":
     unittest.main()
