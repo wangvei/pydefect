@@ -43,8 +43,6 @@ class Unitcell:
         self._dielectric_tensor \
             = np.array(outcar.dielectric_tensor) + \
             np.array(outcar.dielectric_ionic_tensor)
-        # TODO: eigenvalue is right?
-        # (Correct: EIGENVAL file. check if implemented and EIGENVAL is same )
         self._eigen_value = vasprun.eigenvalues
         self._ewald_param = None
 
