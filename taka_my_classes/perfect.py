@@ -141,7 +141,7 @@ class Perfect:
             l_g = mstats.gmean([np.linalg.norm(v) for v in reciprocal_lattice])
             ewald_param \
                 = np.sqrt(l_g / l_r / 2) *\
-                  cube_root_vol / self.root_det_dielectric
+                cube_root_vol / self.root_det_dielectric
         while True:
             ewald = ewald_param / cube_root_vol * self.root_det_dielectric
             # count number of real lattice
