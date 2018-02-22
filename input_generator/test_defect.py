@@ -24,27 +24,27 @@ class DefectTest(unittest.TestCase):
         _int_structure = Structure.from_file(FILENAME_INT_POSCAR)
 
         self._vac = \
-            Defect(structure=_vac_structure, removed_atom_index=0,
-                   inserted_atom_index=None, defect_coords=[0, 0, 0],
-                   in_name="Va", out_name="Mg1", charge=-2)
+            DefectInput(initial_structure=_vac_structure, removed_atom_index=0,
+                        inserted_atom_index=None, defect_coords=[0, 0, 0],
+                        in_name="Va", out_name="Mg1", charge=-2)
         self._int = \
-            Defect(structure=_int_structure, removed_atom_index=None,
-                   inserted_atom_index=32, defect_coords=[0.1, 0.1, 0.1],
-                   in_name="O", out_name="i1", charge=-2)
+            DefectInput(initial_structure=_int_structure, removed_atom_index=None,
+                        inserted_atom_index=32, defect_coords=[0.1, 0.1, 0.1],
+                        in_name="O", out_name="i1", charge=-2)
 
     def test_dict(self):
-        d_vac = Defect.from_dict(self._vac.as_dict())
-        d_int = Defect.from_dict(self._int.as_dict())
+        d_vac = DefectInput.from_dict(self._vac.as_dict())
+        d_int = DefectInput.from_dict(self._int.as_dict())
         self.assertTrue(vars(self._vac) == vars(d_vac))
         self.assertTrue(vars(self._int) == vars(d_int))
 
     def test_to_json_file(self):
         self._vac.to_json_file(FILENAME_TO_JSON_FILE_VAC)
-        jf_vac = Defect.json_load(FILENAME_TO_JSON_FILE_VAC)
+        jf_vac = DefectInput.json_load(FILENAME_TO_JSON_FILE_VAC)
         self.assertTrue(vars(self._vac) == vars(jf_vac))
 
         self._int.to_json_file(FILENAME_TO_JSON_FILE_INT)
-        jf_int = Defect.json_load(FILENAME_TO_JSON_FILE_INT)
+        jf_int = DefectInput.json_load(FILENAME_TO_JSON_FILE_INT)
         self.assertTrue(vars(self._int) == vars(jf_int))
 
     def test_atom_mapping_to_perfect(self):
@@ -60,10 +60,15 @@ class DefectTest(unittest.TestCase):
              34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50,
              51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63]
 
-        print(atom_mapping_int_test)
-        print(self._int.atom_mapping_to_perfect())
+#        print(atom_mapping_int_test)
+#        print(self._int.atom_mapping_to_perfect())
         self.assertEqual(
             self._int.atom_mapping_to_perfect(), atom_mapping_int_test)
+
+    def test_anchor_atom_index(self):
+        correct_farthest_atom_site = 6
+        self.assertEqual(self._vac.anchor_atom_index()[0],
+                         correct_farthest_atom_site)
 
 
 class IrreducibleSiteTest(unittest.TestCase):

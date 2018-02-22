@@ -4,7 +4,7 @@ from abc import ABCMeta, abstractmethod
 from copy import deepcopy
 
 import numpy as np
-from pydefect.input_generator.defect import Defect
+from pydefect.input_generator.defect import DefectInput
 from pymatgen.core.periodic_table import Element
 
 __author__ = "Yu Kumagai"
@@ -180,7 +180,7 @@ class DefectMaker:
             raise ValueError("{} in {} is improper.".format(out_name,
                                                             defect_name))
         self.defect = \
-            Defect(defect_structure, removed_atom_index, inserted_atom_index,
+            DefectInput(defect_structure, removed_atom_index, inserted_atom_index,
                    defect_coords, in_name, out_name, charge)
 
 
