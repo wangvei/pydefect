@@ -83,12 +83,12 @@ class Supercell:
         self._ewald_param = ewald_param
 
 
-#class Perfect(Supercell):
-#    def __init__(self):
-        
+class Perfect(Supercell):
+    def __init__(self):
+        super().__init__()
 
 
-class Defect:
+class Defect(Supercell):
     """
     This class object holds some properties related to a defect.
     Args:
@@ -108,6 +108,7 @@ class Defect:
     """
     def __init__(self, initial_structure, removed_atom_index,
                  inserted_atom_index, defect_coords, in_name, out_name, charge):
+        super().__init__()
         self.initial_structure = initial_structure
         self.removed_atom_index = removed_atom_index
         self.inserted_atom_index = inserted_atom_index
