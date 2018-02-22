@@ -36,12 +36,15 @@ class Supercell:
         self._electrostatic_potential = None
         self._ewald_param = None
 
-    def set_calc_results(self, directory_path, poscar_name = "/CONTCAR",
-            outcar_name = "/OUTCAR", vasprun_name = "/vasprun.xml"):
+    def set_calc_results(self, directory_path,
+                         contcar_name="/CONTCAR",
+                         outcar_name="/OUTCAR",
+                         vasprun_name="/vasprun.xml"):
         """
         Args:
             directory_path (str): path of directory.
-            poscar_name (str): Name of POSCAR file. Defaults to CONTCAR.
+            contcar_name (str): Name of converged CONTCAR file.
+                                Defaults to CONTCAR.
             outcar_name (str): Name of OUTCAR file. Defaults to OUTCAR.
             vasprun_name (str): Name of vasprun.xml file.
                                 Defaults to vasprun.xml.
@@ -57,7 +60,6 @@ class Supercell:
         self._energy = outcar.final_energy
         self._eigenvalue = vasprun.eigenvalues
         self._electrostatic_potential = outcar.electrostatic_potential
-        self._ewald_param = None
 
     @property
     def structure(self):
