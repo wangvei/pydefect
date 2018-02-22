@@ -82,7 +82,7 @@ class Supercell:
         return self._ewald_param
 
     @ewald_param.setter
-    def ewald_param_setter(self, ewald_param):
+    def ewald_param(self, ewald_param):
         self._ewald_param = ewald_param
 
 
