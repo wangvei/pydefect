@@ -55,7 +55,7 @@ class UnitcellTest(unittest.TestCase):
         np.testing.assert_allclose(d, expected)
 
     def test_eigen_value(self):
-        ev = self._unitcell.eigen_value
+        ev = self._unitcell.eigenvalue
         # from EIGENVAL file
         expected_first_line =\
             [[-5.461771, 1.000000],
@@ -148,7 +148,7 @@ class SupercellTest(unittest.TestCase):
         np.testing.assert_allclose(np.array(ep), np.array(expected))
 
     def test_eigen_value(self):
-        ev = self._supercell.eigen_value
+        ev = self._supercell.eigenvalue
         # from EIGENVAL file
         expected_first_line = \
             [[-5.461771, 1.000000],
