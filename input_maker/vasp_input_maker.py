@@ -3,8 +3,8 @@ import shutil
 import ruamel.yaml as yaml
 from pymatgen.io.vasp.inputs import Potcar
 from defect_in import DefectSetting
-from pydefect.input_generator.defect import get_nions
-from pydefect.input_generator.input_maker import \
+from pydefect.input_maker.defect import get_nions
+from pydefect.input_maker.input_maker import \
     DefectMaker, DefectInputSetMaker,  print_already_exist, \
     print_is_being_constructed,  perturb_around_a_point
 

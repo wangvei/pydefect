@@ -1,6 +1,6 @@
 import unittest
 from pydefect.taka_my_classes.perfect import Unitcell
-from pydefect.input_generator.defect import Defect
+from pydefect.input_maker.defect import Defect
 from pydefect.taka_my_classes.energy_correction import correct_energy
 
 __author__ = "Akira Takahashi"

@@ -10,7 +10,7 @@ from functools import reduce
 from pymatgen.io.vasp.inputs import Poscar
 from pymatgen.core.structure import Structure
 from pydefect.taka_my_classes.perfect import Unitcell, Supercell
-from pydefect.input_generator.input_maker import Defect
+from pydefect.input_maker.input_maker import Defect
 
 __author__ = "Akira Takahashi"
 __copyright__ = "Copyright 2017, Oba group"

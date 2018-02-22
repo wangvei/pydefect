@@ -1,6 +1,6 @@
 import unittest
 from input_maker import *
-from pydefect.input_generator.defect import Defect, IrreducibleSite
+from pydefect.input_maker.defect import Defect, IrreducibleSite
 from defect_in import DefectSetting
 import numpy as np
 from pymatgen.core.structure import Structure

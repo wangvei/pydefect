@@ -1,6 +1,6 @@
 import unittest
-from pydefect.input_generator.make_vasp_input import *
-from pydefect.input_generator.defect_input import IrrepElement, DefectSetting
+from pydefect.input_maker.make_vasp_input import *
+from pydefect.input_maker.defect_input import IrrepElement, DefectSetting
 import numpy as np
 
 __author__ = "Yu Kumagai"

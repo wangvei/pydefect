@@ -5,8 +5,8 @@ import json
 
 from pymatgen.core.structure import Structure
 from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
-import pydefect.input_generator.atom as atom
-from pydefect.input_generator.defect import IrreducibleSite
+import pydefect.input_maker.atom as atom
+from pydefect.input_maker.defect import IrreducibleSite
 from monty.json import MontyEncoder
 from monty.serialization import loadfn
 

@@ -4,7 +4,7 @@ from abc import ABCMeta, abstractmethod
 from copy import deepcopy
 
 import numpy as np
-from pydefect.input_generator.defect import DefectInput
+from pydefect.input_maker.defect import DefectInput
 from pymatgen.core.periodic_table import Element
 
 __author__ = "Yu Kumagai"

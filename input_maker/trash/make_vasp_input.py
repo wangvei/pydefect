@@ -13,7 +13,7 @@ from copy import deepcopy
 from pymatgen.core.structure import Structure
 from pymatgen.io.vasp.inputs import Potcar
 from pymatgen.core.periodic_table import Element
-from pydefect.input_generator.defect_input import DefectSetting 
+from pydefect.input_maker.defect_input import DefectSetting 
 
 __author__ = "Yu Kumagai"
 __copyright__ = "Copyright 2017, Oba group"
