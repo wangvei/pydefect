@@ -1,7 +1,7 @@
 import unittest
-from pydefect.taka_my_classes.perfect import Unitcell
-from pydefect.input_maker.defect import Defect
-from pydefect.taka_my_classes.energy_correction import correct_energy
+from pydefect.core.energy_correction import compute_alignment_by_extended_fnv
+from pydefect.core.unitcell import Unitcell
+from pydefect.core.supercell import Perfect, Defect
 
 __author__ = "Akira Takahashi"
 __copyright__ = "Copyright 2017, Oba group"
@@ -17,69 +17,73 @@ SUPERCELL_DIRECTORY = "NEED_TO_SPECIFY!"
 # interstitial directory
 
 VACANCY_JSON = "NEED_TO_SPECIFY!"
-VACANCY_ENERGY = "NEED_TO_SPECIFY!"
-VACANCY_ELECTROSTATIC_POTENTIAL = "NEED_TO_SPECIFY!"
-VACANCY_FINAL_STRUCTURE = "NEED_TO_SPECIFY!"
-VACANCY_EXPECTED_ENERGY = "NEED_TO_SPECIFY!"
+VACANCY_EXPECTED_ALIGNMENT = "NEED_TO_SPECIFY!"
 
 SUBSTITUTIONAL_JSON = "NEED_TO_SPECIFY!"
-SUBSTITUTIONAL_ENERGY = "NEED_TO_SPECIFY!"
-SUBSTITUTIONAL_ELECTROSTATIC_POTENTIAL = "NEED_TO_SPECIFY!"
-SUBSTITUTIONAL_FINAL_STRUCTURE = "NEED_TO_SPECIFY!"
-SUBSTITUTIONAL_EXPECTED_ENERGY = "NEED_TO_SPECIFY!"
+SUBSTITUTIONAL_EXPECTED_ALIGNMENT = "NEED_TO_SPECIFY!"
 
 INTERSTITIAL_JSON = "NEED_TO_SPECIFY!"
-INTERSTITIAL_ENERGY = "NEED_TO_SPECIFY!"
-INTERSTITIAL_ELECTROSTATIC_POTENTIAL = "NEED_TO_SPECIFY!"
-INTERSTITIAL_FINAL_STRUCTURE = "NEED_TO_SPECIFY!"
-INTERSTITIAL_EXPECTED_ENERGY = "NEED_TO_SPECIFY!"
+INTERSTITIAL_EXPECTED_ALIGNMENT = "NEED_TO_SPECIFY!"
+
+EWALD_PARAM = "NEED_TO_SPECIFY!"
 
 
 class DefectCorrectionTest(unittest.TestCase):
 
     def setUp(self):
         self._unitcell = Unitcell(UNITCELL_DIRECTORY)
-        self._supercell = Unitcell(SUPERCELL_DIRECTORY)
-        self._vacancy_input = Defect.json_load(VACANCY_JSON)
-        self._substitutional_input = Defect.json_load(SUBSTITUTIONAL_JSON)
-        self._interstitial_input = Defect.json_load(INTERSTITIAL_JSON)
+        self._supercell = Perfect(SUPERCELL_DIRECTORY)
+        self._vacancy = Defect.json_load(VACANCY_JSON)
+        self._substitutional = Defect.json_load(SUBSTITUTIONAL_JSON)
+        self._interstitial = Defect.json_load(INTERSTITIAL_JSON)
+        self._ewald_param = "NEED_TO_SPECIFY!"
 
     def test_correct_energy_extended_fnv(self):
         # TODO: write expected value.
         # vacancy
-        actual_vacancy = correct_energy(self._unitcell,
-                                        self._supercell,
-                                        self._vacancy_input,
-                                        VACANCY_ENERGY,
-                                        VACANCY_ELECTROSTATIC_POTENTIAL,
-                                        VACANCY_FINAL_STRUCTURE,
-                                        method = "ExtendedFNV")
+        actual_vacancy = compute_alignment_by_extended_fnv(
+            self._unitcell.dielectric_tensor,
+            self._ewald_param,
+            self._supercell.structure,
+            self._supercell.electrostatic_potential,
+            self._vacancy.structure,
+            self._vacancy.electrostatic_potential,
+            self._vacancy.defect_coords,
+            self._vacancy.atomic_position_without_defect,
+            self._vacancy.distance_from_defect,
+            self._vacancy.charge)
         self.assertAlmostEqual(actual_vacancy,
-                               VACANCY_EXPECTED_ENERGY)
+                               VACANCY_EXPECTED_ALIGNMENT)
 
         # substitutional
-        actual_substitutional \
-            = correct_energy(self._unitcell,
-                             self._supercell,
-                             self._substitutional_input,
-                             SUBSTITUTIONAL_ENERGY,
-                             SUBSTITUTIONAL_ELECTROSTATIC_POTENTIAL,
-                             SUBSTITUTIONAL_FINAL_STRUCTURE,
-                             method = "ExtendedFNV")
+        actual_substitutional = compute_alignment_by_extended_fnv(
+            self._unitcell.dielectric_tensor,
+            self._ewald_param,
+            self._supercell.structure,
+            self._supercell.electrostatic_potential,
+            self._substitutional.structure,
+            self._substitutional.electrostatic_potential,
+            self._substitutional.defect_coords,
+            self._substitutional.atomic_position_without_defect,
+            self._substitutional.distance_from_defect,
+            self._substitutional.charge)
         self.assertAlmostEqual(actual_substitutional,
-                               SUBSTITUTIONAL_EXPECTED_ENERGY)
+                               SUBSTITUTIONAL_EXPECTED_ALIGNMENT)
 
         # interstitial
-        actual_interstitial \
-            = correct_energy(self._unitcell,
-                             self._supercell,
-                             self._interstitial_input,
-                             INTERSTITIAL_ENERGY,
-                             INTERSTITIAL_ELECTROSTATIC_POTENTIAL,
-                             INTERSTITIAL_FINAL_STRUCTURE,
-                             method = "ExtendedFNV")
+        actual_interstitial = compute_alignment_by_extended_fnv(
+            self._unitcell.dielectric_tensor,
+            self._ewald_param,
+            self._supercell.structure,
+            self._supercell.electrostatic_potential,
+            self._interstitial.structure,
+            self._interstitial.electrostatic_potential,
+            self._interstitial.defect_coords,
+            self._interstitial.atomic_position_without_defect,
+            self._interstitial.distance_from_defect,
+            self._interstitial.charge)
         self.assertAlmostEqual(actual_interstitial,
-                               INTERSTITIAL_EXPECTED_ENERGY)
+                               INTERSTITIAL_EXPECTED_ALIGNMENT)
 
 
 if __name__ == "__main__":
