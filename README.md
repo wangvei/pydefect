@@ -6,7 +6,7 @@ This README would normally document whatever steps are necessary to get your app
 
 * Automatic constructor of point-defect enveironment, and analyzer of vasp 
   calculation results.
-* 0.1.0
+* 0.2.0
 * [Learn Markdown](https://bitbucket.org/tutorials/markdowndemo)
 
 ### How do I get set up? ###
