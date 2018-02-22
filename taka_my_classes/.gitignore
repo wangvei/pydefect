@@ -17,3 +17,6 @@
 ./test_defect_property.py
 ./to_make_defect.json
 ./to_read_defect.json
+./.DS_Store
+./._.DS_Store
+./*.swp
