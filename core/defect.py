@@ -36,24 +36,24 @@ class Supercell:
         self._electrostatic_potential = None
         self._ewald_param = None
 
-    def set_calc_results(self, directory_path, poscar_name = "/POSCAR", 
+    def set_calc_results(self, directory_path, poscar_name = "/CONTCAR",
             outcar_name = "/OUTCAR", vasprun_name = "/vasprun.xml"):
         """
         Args:
             directory_path (str): path of directory.
-            poscar_name (str): Name of POSCAR file. Defaults to POSCAR.
+            poscar_name (str): Name of POSCAR file. Defaults to CONTCAR.
             outcar_name (str): Name of OUTCAR file. Defaults to OUTCAR.
             vasprun_name (str): Name of vasprun.xml file.
                                 Defaults to vasprun.xml.
         """
-        self._structure = poscar.structure
-        path_poscar = directory_path + poscar_name
+        self._structure = contcar.structure
+        path_contcar = directory_path + contcar_name
         path_outcar = directory_path + outcar_name
         path_vasprun = directory_path + vasprun_name
-        poscar = Poscar.from_file(path_poscar)
+        contcar = Poscar.from_file(path_contcar)
         outcar = Outcar(path_outcar)
         vasprun = Vasprun(path_vasprun)
-        self._structure = poscar.structure
+        self._structure = contcar.structure
         self._energy = outcar.final_energy
         self._eigenvalue = vasprun.eigenvalues
         self._electrostatic_potential = outcar.electrostatic_potential
@@ -79,7 +79,8 @@ class Supercell:
     def ewald_param(self):
         return self._ewald_param
 
-    @ewald_param.setter(self, ewald_param):
+    @ewald_param.setter
+    def ewald_param_setter(self, ewald_param):
         self._ewald_param = ewald_param
 
 
