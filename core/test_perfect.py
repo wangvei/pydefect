@@ -78,38 +78,6 @@ class UnitcellTest(unittest.TestCase):
         np.testing.assert_allclose(np.array(actual_first_line),
                                    np.array(expected_first_line), rtol = 1e-4)
 
-    def test_optimize_ewald(self):
-        ewald = self._unitcell.get_ewald_param()
-        # Following expected value is printed by written code.
-        # Numbers of real lattices and reciprocal lattices
-        # are 11051 and 10692, respectively.
-        expected_ewald = 0.4140771427121976
-        self.assertAlmostEqual(ewald, expected_ewald)
-
-    def test_generate_neighbor_lattices(self):
-        expected = [[0.0, -3.39899999999999, -3.39899999999999],
-                    [3.39899999999999, 0.0, -3.39899999999999],
-                    [3.39899999999999, -3.39899999999999, 0.0],
-                    [-3.39899999999999, 0.0, -3.39899999999999],
-                    [0.0, 3.39899999999999, -3.39899999999999],
-                    [-3.39899999999999, -3.39899999999999, 0.0],
-                    [0.0, 0.0, 0.0],
-                    [3.39899999999999, 3.39899999999999, 0.0],
-                    [0.0, -3.39899999999999, 3.39899999999999],
-                    [3.39899999999999, 0.0, 3.39899999999999],
-                    [-3.39899999999999, 3.39899999999999, 0.0],
-                    [-3.39899999999999, 0.0, 3.39899999999999],
-                    [0.0, 3.39899999999999, 3.39899999999999]]
-        count = 0
-        for v in self._unitcell.generate_neighbor_lattices(
-                3.4 * np.sqrt(2), include_self = True):
-            count += 1
-            is_v_included = any([abs(np.linalg.norm(e - v)) < 1e-3
-                                 for e in expected])
-            self.assertTrue(is_v_included)
-            # TODO: Better to implement test of reciprocal lattice version
-        self.assertEqual(count, len(expected))
-
 
 class SupercellTest(unittest.TestCase):
 
