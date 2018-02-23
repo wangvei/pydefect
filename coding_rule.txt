@@ -36,6 +36,10 @@ Function:
 					  egg,
 					  42,
 					  longlongname)
+
+Method:
+	Order: __init__, Classmethod, property, setter, other methods
+
 Index:
 	-In programing code, index of data begins from 0.
 	-In json file, index of data begins from 0.
