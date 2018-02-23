@@ -65,7 +65,7 @@ class DefectCorrectionTest(unittest.TestCase):
                     [0.0, 3.39899999999999, 3.39899999999999]]
         count = 0
         for v in self._unitcell.generate_neighbor_lattices(
-                3.4 * np.sqrt(2), include_self = True):
+                3.4 * np.sqrt(2), include_self=True):
             count += 1
             is_v_included = any([abs(np.linalg.norm(e - v)) < 1e-3
                                  for e in expected])
