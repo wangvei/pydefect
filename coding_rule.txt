@@ -22,7 +22,20 @@ Spacing:
 		NG : function(1+2)
 			 a=(-b+c)*2
 			 a = ( -b + c) * 2
+	
+	-However, when keyward argument, no need to use space. (PEP8)
+	e.g.
+		OK : function(kw=42)
+		NG : function(kw = 42)
 
+Function:
+	Argument line: Don't use unnecessary new line until using 80 characters
+		OK : function(spam, egg, 42, 
+					  veryverylonglongname=beyond_eighty_characters)
+		NG : function(spam,
+					  egg,
+					  42,
+					  longlongname)
 Index:
 	-In programing code, index of data begins from 0.
 	-In json file, index of data begins from 0.
