@@ -38,7 +38,8 @@ Function:
 					  longlongname)
 
 Method:
-	Order: __init__, Classmethod, property, setter, other methods
+	Order: __init__, special_method(like __add__), Classmethod, 
+	property, setter, other method
 
 Index:
 	-In programing code, index of data begins from 0.
