@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+from abc import ABCMeta
 import json
 
 import numpy as np
@@ -25,21 +26,20 @@ def get_nions(defect_structure):
     return nions
 
 
-class Supercell:
+class Supercell(metaclass=ABCMeta):
     """
     DFT result of supercell without any defect.
     """
-    def __init__(self):
-        self._structure = None
-        self._energy = None
-        self._eigenvalue = None
-        self._electrostatic_potential = None
-        self._ewald_param = None
+    def __init__(self, structure=None, energy=None, eigenvalue=None,
+                 electrostatic_potential=None, ewald_param=None):
+        self._structure = structure
+        self._energy = energy
+        self._eigenvalue = eigenvalue
+        self._electrostatic_potential = electrostatic_potential
+        self._ewald_param = ewald_param
 
-    def set_calc_results(self, directory_path,
-                         contcar_name="/CONTCAR",
-                         outcar_name="/OUTCAR",
-                         vasprun_name="/vasprun.xml"):
+    def set_vasp_results(self, directory_path, contcar_name="/CONTCAR",
+                         outcar_name="/OUTCAR", vasprun_name="/vasprun.xml"):
         """
         Args:
             directory_path (str): path of directory.
@@ -49,7 +49,7 @@ class Supercell:
             vasprun_name (str): Name of vasprun.xml file.
                                 Defaults to vasprun.xml.
         """
-        self._structure = contcar.structure
+#        self._structure = contcar.structure
         path_contcar = directory_path + contcar_name
         path_outcar = directory_path + outcar_name
         path_vasprun = directory_path + vasprun_name
@@ -112,13 +112,13 @@ class Defect(Supercell):
     def __init__(self, initial_structure, removed_atom_index,
                  inserted_atom_index, defect_coords, in_name, out_name, charge):
         super().__init__()
-        self.initial_structure = initial_structure
-        self.removed_atom_index = removed_atom_index
-        self.inserted_atom_index = inserted_atom_index
-        self.defect_coords = defect_coords
-        self.in_name = in_name
-        self.out_name = out_name
-        self.charge = charge
+        self._initial_structure = initial_structure
+        self._removed_atom_index = removed_atom_index
+        self._inserted_atom_index = inserted_atom_index
+        self._defect_coords = defect_coords
+        self._in_name = in_name
+        self._out_name = out_name
+        self._charge = charge
 
     @classmethod
     def from_dict(cls, d):
@@ -136,17 +136,45 @@ class Defect(Supercell):
         """
         return cls.from_dict(loadfn(filename))
 
+    @property
+    def initial_structure(self):
+        return self._initial_structure
+
+    @property
+    def removed_atom_index(self):
+        return self._removed_atom_index
+
+    @property
+    def inserted_atom_index(self):
+        return self._inserted_atom_index
+
+    @property
+    def defect_coords(self):
+        return self._defect_coords
+
+    @property
+    def in_name(self):
+        return self._in_name
+
+    @property
+    def out_name(self):
+        return self._out_name
+
+    @property
+    def charge(self):
+        return self._charge
+
     def as_dict(self):
         """
         Dict representation of DefectSetting class object.
         """
-        d = {"initial_structure": self.initial_structure,
-             "removed_atom_index": self.removed_atom_index,
-             "inserted_atom_index": self.inserted_atom_index,
-             "defect_coords": self.defect_coords,
-             "in_name": self.in_name,
-             "out_name": self.out_name,
-             "charge": self.charge}
+        d = {"initial_structure": self._initial_structure,
+             "removed_atom_index": self._removed_atom_index,
+             "inserted_atom_index": self._inserted_atom_index,
+             "defect_coords": self._defect_coords,
+             "in_name": self._in_name,
+             "out_name": self._out_name,
+             "charge": self._charge}
         return d
 
     def to_json_file(self, filename):
@@ -161,16 +189,20 @@ class Defect(Supercell):
         Returns coords of defect center by calculating the average coords.
         If len(defect_coords) == 1, same as defect_coords[0].
         """
-        return [np.mean(i) for i in np.array(self.defect_coords).transpose()]
+        return [np.mean(i) for i in np.array(self._defect_coords).transpose()]
 
     def atom_mapping_to_perfect(self):
         """
         Returns a list of atom mapping in defect structure to atoms in perfect.
+        Example Mg32O32 supercell:
+            Assuming that 33th atom (first O) is removed,
+            mapping = [0, 1, 2, .., 31, 33, 34, .., 62]
+            len(mapping) = 63
         """
-        total_nions = sum(get_nions(self.initial_structure))
+        total_nions = sum(get_nions(self._initial_structure))
         mapping = [i for i in range(total_nions)]
-        in_index = self.inserted_atom_index
-        out_index = self.removed_atom_index
+        in_index = self._inserted_atom_index
+        out_index = self._removed_atom_index
 
         if in_index:
             mapping[in_index] = None
@@ -190,12 +222,12 @@ class Defect(Supercell):
         optimization, and so used for analyzing defect structure.
         """
 
-        radius = max(self.initial_structure.lattice.abc) * 2
-        num_sites = len(self.initial_structure.sites)
+        radius = max(self._initial_structure.lattice.abc) * 2
+        num_sites = len(self._initial_structure.sites)
         shortest_distances = np.full(num_sites, radius, dtype=float)
 
-        distance_set = self.initial_structure.get_sites_in_sphere(
-            self.defect_coords, radius, include_index=True)
+        distance_set = self._initial_structure.get_sites_in_sphere(
+            self._defect_coords, radius, include_index=True)
 
         for d in distance_set:
             atom_index = d[2]
@@ -227,24 +259,16 @@ class IrreducibleSite:
     """
     def __init__(self, irreducible_name, element, first_index, last_index,
                  repr_coords):
-        self.irreducible_name = irreducible_name
-        self.element = element
-        self.first_index = first_index
-        self.last_index = last_index
-        self.repr_coords = repr_coords
+        self._irreducible_name = irreducible_name
+        self._element = element
+        self._first_index = first_index
+        self._last_index = last_index
+        self._repr_coords = repr_coords
 
     def __eq__(self, other):
         if other is None or type(self) != type(other):
             raise TypeError
         return self.__dict__ == other.__dict__
-
-    def as_dict(self):
-        d = {"irreducible_name": self.irreducible_name,
-             "element" : self.element,
-             "first_index" : self.first_index,
-             "last_index" : self.last_index,
-             "repr_coords" : self.repr_coords}
-        return d
 
     @classmethod
     def from_dict(cls, d):
@@ -256,5 +280,12 @@ class IrreducibleSite:
         """
         Returns number of atoms in a given (super)cell.
         """
-        return self.last_index - self.first_index + 1
+        return self._last_index - self._first_index + 1
 
+    def as_dict(self):
+        d = {"irreducible_name": self._irreducible_name,
+             "element": self._element,
+             "first_index": self._first_index,
+             "last_index": self._last_index,
+             "repr_coords": self._repr_coords}
+        return d
