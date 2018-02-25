@@ -6,3 +6,4 @@ PyDefect.egg-info/
 *.pyc
 *.pyd
 *.swp
+POTCAR*
