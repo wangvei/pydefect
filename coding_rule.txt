@@ -9,24 +9,34 @@ Naming:
 			read_setting(filename)
 
 Spacing:
-	-Immediately inside parentheses, brackets or braces (PEP8)
+	- Immediately inside parentheses, brackets or braces (PEP8)
 	e.g.
-		OK : function(array[1], {key: 2})
-		NG : function( array[1], { key: 2 } )
+		OK: function(array[1], {key: 2})
+		NG: function( array[1], { key: 2 } )
 
-	-Excepting above brackets rule,
+	- Excepting above brackets rule,
 	 place one whitespace before/after operator.
 	 e.g.
-		OK : function(1 + 2)
+		OK: function(1 + 2)
 			 a = (-b + c) * 2
-		NG : function(1+2)
+		NG: function(1+2)
 			 a=(-b+c)*2
 			 a = ( -b + c) * 2
+Line break:
+	Function & class Variables:
+    - Not begin a new line unless it the number of character becomes more than 80. 
+        OK:  def __init__(self, directory_path, poscar_name="/POSCAR",
+                 outcar_name="/OUTCAR", vasprun_name="/vasprun.xml"):
+        NG:  def __init__(self, 
+                          directory_path, 
+                          poscar_name="/POSCAR",
+                          outcar_name="/OUTCAR", 
+                          vasprun_name="/vasprun.xml"):
 
 Index:
-	-In programing code, index of data begins from 0.
-	-In json file, index of data begins from 0.
-	-In other files which may be read by human, index of data begins from 1.
+	- In programing code, index of data begins from 0.
+	- In json file, index of data begins from 0.
+	- In other files which may be read by human, index of data begins from 1.
 
 Abbreviation:
 (If you catch up good abbreviation, please consult and add it to this file.)
