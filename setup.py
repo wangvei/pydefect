@@ -11,5 +11,5 @@ setup(
     long_description=open('README.md').read(),
     classifiers=[
         'Programming Language :: Python :: 3.6',
-    ], install_requires=['numpy', 'pymatgen', 'monty']
+    ], install_requires=['numpy', 'pymatgen', 'monty', 'cython']
 )
