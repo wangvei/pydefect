@@ -17,6 +17,70 @@ FILENAME_INT_POSCAR = "examples/POSCAR-MgO64atoms-O_i1"
 FILENAME_TO_JSON_FILE_VAC = "examples/Va_Mg1_-2.json"
 FILENAME_TO_JSON_FILE_INT = "examples/Mg_i1_1.json"
 
+TEST_DIRECTORY = "../analysis/test_files/SbLi2Na_dft_result/"
+
+
+class PerfectTest(unittest.TestCase):
+
+    def setUp(self):
+        self._supercell = Supercell(TEST_DIRECTORY)
+
+    def test_structure(self):
+        # expected values are from POSCAR file
+        s = self._supercell.structure
+        lattice_val = 3.3989999999999898
+        expected_lattice = [[0, lattice_val, lattice_val],
+                            [lattice_val, 0, lattice_val],
+                            [lattice_val, lattice_val, 0]]
+        np.testing.assert_allclose(np.array(s.lattice.matrix), expected_lattice)
+        self.assertEqual(s.sites[0].specie, Element("Sb"))
+        self.assertEqual(s.sites[1].specie, Element("Li"))
+        self.assertEqual(s.sites[2].specie, Element("Li"))
+        self.assertEqual(s.sites[3].specie, Element("Na"))
+        np.allclose(s.sites[0].coords, np.array([0.00, 0.00, 0.00]))
+        np.allclose(s.sites[1].coords, np.array([0.00, 0.75, 0.75]))
+        np.allclose(s.sites[2].coords, np.array([0.00, 0.25, 0.25]))
+        np.allclose(s.sites[3].coords, np.array([0.50, 0.50, 0.50]))
+
+    def test_energy(self):
+        e = self._supercell.energy
+        expected = -12.23262413
+        self.assertAlmostEqual(e, expected)
+
+    def test_electrostatic_potential(self):
+        ep = self._supercell.electrostatic_potential
+        # from OUTCAR file
+        expected = [-87.6376,
+                    -26.7608,
+                    -26.7608,
+                    -39.9980]
+        np.testing.assert_allclose(np.array(ep), np.array(expected))
+
+    def test_eigen_value(self):
+        ev = self._supercell.eigenvalue
+        # from EIGENVAL file
+        expected_first_line = \
+            [[-5.461771, 1.000000],
+             [3.574613, 1.000000],
+             [3.574613, 1.000000],
+             [3.574614, 1.000000],
+             [5.252315, 0.000000],
+             [6.222399, 0.000000],
+             [6.222399, 0.000000],
+             [6.222402, 0.000000],
+             [9.639593, 0.000000],
+             [9.639593, 0.000000],
+             [9.639599, 0.000000],
+             [10.042995, 0.000000],
+             [10.042995, 0.000000],
+             [11.587756, 0.000000],
+             [16.725048, 0.000000],
+             [19.028426, 0.000000]]
+        actual_first_line = ev[Spin.up][0]
+        np.testing.assert_allclose(np.array(actual_first_line),
+                                   np.array(expected_first_line), rtol = 1e-4)
+
+
 class DefectTest(unittest.TestCase):
 
     def setUp(self):
