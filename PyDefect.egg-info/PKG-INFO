@@ -6,14 +6,16 @@ Home-page: https://scholar.google.co.jp/citations?user=xST4MSEAAAAJ&hl=ja
 Author: Yu Kumagai
 Author-email: yuuukuma@gmail.com
 License: Creative Commons Attribution-Noncommercial-Share Alike license
+Description-Content-Type: UNKNOWN
 Description: # README #
         
         This README would normally document whatever steps are necessary to get your application up and running.
         
         ### What is this repository for? ###
         
-        * Point-defect enveironment.
-        * 0.1.0
+        * Automatic constructor of point-defect enveironment, and analyzer of vasp 
+          calculation results.
+        * 0.2.0
         * [Learn Markdown](https://bitbucket.org/tutorials/markdowndemo)
         
         ### How do I get set up? ###
@@ -35,5 +37,6 @@ Description: # README #
         
         * Repo owner or admin
         * Other community or team contact
+        
 Platform: UNKNOWN
 Classifier: Programming Language :: Python :: 3.6

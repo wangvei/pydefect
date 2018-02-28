@@ -1,4 +1,26 @@
 from setuptools import setup, find_packages
+from distutils.core import setup
+from distutils.extension import Extension
+
+try:
+    from Cython.Distutils import build_ext
+except ImportError:
+    use_cython = False
+else:
+    use_cython = True
+
+cmdclass = { }
+ext_modules = [ ]
+
+if use_cython:
+    ext_modules += [
+    Extension("pydefect.", [ "pydefect/analysis/recommend_supercell_ase_cythonized/ase_cython.pyx"]),
+    ]
+    cmdclass.update({ 'build_ext': build_ext })
+else:
+    ext_modules += [
+    Extension("pydefect.", [ "pydefect/analysis/recommend_supercell_ase_cythonized/ase_cython.c"]),
+    ]
 
 setup(
     name='PyDefect',
@@ -11,5 +33,8 @@ setup(
     long_description=open('README.md').read(),
     classifiers=[
         'Programming Language :: Python :: 3.6',
-    ], install_requires=['numpy', 'pymatgen', 'monty', 'cython']
+    ],
+    install_requires=['numpy', 'pymatgen', 'monty'],
+    cmdclass = cmdclass,
+    ext_modules=ext_modules,
 )
