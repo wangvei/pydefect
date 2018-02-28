@@ -6,7 +6,7 @@ import json
 import numpy as np
 from monty.json import MontyEncoder
 from monty.serialization import loadfn
-from copy import deepcopy
+from pydefect.core.DFT_results import SupercellDftResults
 
 __author__ = "Yu Kumagai"
 __copyright__ = "Copyright 2017, Oba group"
@@ -20,6 +20,9 @@ __date__ = "December 4, 2017"
 def get_nions(defect_structure):
     """
     Return numbers of ions for elements in defect_structure.
+    Example: Al1Mg63O64
+        return: [1, 63, 64]
+
     """
     nions = [int(i)
              for i in defect_structure.to(fmt="poscar").split("\n")[6].split()]
@@ -28,62 +31,36 @@ def get_nions(defect_structure):
 
 class Supercell(metaclass=ABCMeta):
     """
-    DFT result of supercell without any defect.
     """
-    def __init__(self, structure=None, energy=None, eigenvalue=None,
-                 electrostatic_potential=None, ewald_param=None):
-        self._structure = structure
-        self._energy = energy
-        self._eigenvalue = eigenvalue
-        self._electrostatic_potential = electrostatic_potential
-        self._ewald_param = ewald_param
-
-    def set_vasp_results(self, directory_path, contcar_name="/CONTCAR",
-                         outcar_name="/OUTCAR", vasprun_name="/vasprun.xml"):
-        """
-        Args:
-            directory_path (str): path of directory.
-            contcar_name (str): Name of converged CONTCAR file.
-                                Defaults to CONTCAR.
-            outcar_name (str): Name of OUTCAR file. Defaults to OUTCAR.
-            vasprun_name (str): Name of vasprun.xml file.
-                                Defaults to vasprun.xml.
-        """
-#        self._structure = contcar.structure
-        path_contcar = directory_path + contcar_name
-        path_outcar = directory_path + outcar_name
-        path_vasprun = directory_path + vasprun_name
-        contcar = Poscar.from_file(path_contcar)
-        outcar = Outcar(path_outcar)
-        vasprun = Vasprun(path_vasprun)
-        self._structure = contcar.structure
-        self._energy = outcar.final_energy
-        self._eigenvalue = vasprun.eigenvalues
-        self._electrostatic_potential = outcar.electrostatic_potential
+    def __init__(self):
+        self._dft_results = None
 
     @property
-    def structure(self):
-        return self._structure
+    def final_structure(self):
+        return self._dft_results.final_structure
 
     @property
-    def energy(self):
-        return self._energy
+    def total_energy(self):
+        return self._dft_results.total_energy
 
     @property
-    def eigenvalue(self):
-        return self._eigenvalue
+    def eigenvalues(self):
+        return self._dft_results.eigenvalues
 
     @property
     def electrostatic_potential(self):
-        return self._electrostatic_potential
+        return self._dft_results.electrostatic_potential
 
     @property
     def ewald_param(self):
-        return self._ewald_param
+        return self._dft_results.ewald_param
 
-    @ewald_param.setter
-    def ewald_param(self, ewald_param):
-        self._ewald_param = ewald_param
+    def set_dft_results(self, directory_path, contcar_name="/CONTCAR",
+                        outcar_name="/OUTCAR", vasprun_name="/vasprun.xml"):
+        print("aaa")
+        self._dft_results = \
+            SupercellDftResults.from_vasp_files(
+                directory_path, contcar_name, outcar_name, vasprun_name)
 
 
 class Perfect(Supercell):
@@ -108,6 +85,7 @@ class Defect(Supercell):
         out_name" (str): Removed site name. "in", where n is an integer,
                          is inserted for interstitials. E.g., "i1".
         charge (int): Charge state of the defect
+
     """
     def __init__(self, initial_structure, removed_atom_index,
                  inserted_atom_index, defect_coords, in_name, out_name, charge):
@@ -123,8 +101,13 @@ class Defect(Supercell):
     @classmethod
     def from_dict(cls, d):
         """
-        Constructs a dictionary.
+        Constructs a class object from a dictionary.
         """
+        # Expansion of _dft_results is necessary,
+        _dft_results = []
+        for i in d["irreducible_sites"]:
+            irreducible_sites.append(IrreducibleSite.from_dict(i))
+
         return cls(d["initial_structure"], d["removed_atom_index"],
                    d["inserted_atom_index"], d["defect_coords"], d["in_name"],
                    d["out_name"], d["charge"])
@@ -132,7 +115,7 @@ class Defect(Supercell):
     @classmethod
     def json_load(cls, filename):
         """
-        Constructs a DefectSetting class object from a json file.
+        Constructs a Defect class object from a json file.
         """
         return cls.from_dict(loadfn(filename))
 
@@ -238,54 +221,3 @@ class Defect(Supercell):
         farthest_dist = shortest_distances[farthest_atom_index]
 
         return farthest_atom_index, farthest_dist
-
-
-class IrreducibleSite:
-    """
-    This class object holds properties related to irreducible atom set.
-    Note1: atomic indices need to be sorted. Thus, they can be written in one
-           sequence. E.g., 17..32
-    Note2: first_index atom is assumed to represent the irreducible atoms.
-
-    Args:
-        irreducible_name (str): element name with irreducible index (e.g., Mg1)
-        element (str): element name (e.g., Mg)
-        first_index (int): first index of irreducible_name.
-        last_index (int): last index of irreducible_name.
-        repr_coords (array): representative coordinates, namely the position
-                            of first_index
-
-    TODO1: Add the site symmetry information.
-    """
-    def __init__(self, irreducible_name, element, first_index, last_index,
-                 repr_coords):
-        self._irreducible_name = irreducible_name
-        self._element = element
-        self._first_index = first_index
-        self._last_index = last_index
-        self._repr_coords = repr_coords
-
-    def __eq__(self, other):
-        if other is None or type(self) != type(other):
-            raise TypeError
-        return self.__dict__ == other.__dict__
-
-    @classmethod
-    def from_dict(cls, d):
-        return cls(d["irreducible_name"], d["element"], d["first_index"],
-                   d["last_index"], d["repr_coords"])
-
-    @property
-    def natoms(self):
-        """
-        Returns number of atoms in a given (super)cell.
-        """
-        return self._last_index - self._first_index + 1
-
-    def as_dict(self):
-        d = {"irreducible_name": self._irreducible_name,
-             "element": self._element,
-             "first_index": self._first_index,
-             "last_index": self._last_index,
-             "repr_coords": self._repr_coords}
-        return d

@@ -20,7 +20,8 @@ TEST_DIRECTORY = "../examples/MgO"
 DIRNAME_VAC = TEST_DIRECTORY + "/defects/Va_O1_2"
 DIRNAME_UNITCELL = TEST_DIRECTORY + "/unitcell"
 
-class SupercellDFTResultsTest(unittest.TestCase):
+
+class SupercellDftResultsTest(unittest.TestCase):
 
     def setUp(self):
         """ """
@@ -30,7 +31,7 @@ class SupercellDFTResultsTest(unittest.TestCase):
         #          velocities are not stored.
         #          Therefore, equality becomes False.
         contcar = Poscar.from_file(DIRNAME_VAC + "/CONTCAR")
-        structure = contcar.structure
+        final_structure = contcar.structure
         total_energy = -93.76904720
         eigenvalues = {Spin.up: np.array(
             [[[-14.2806, 1.], [-13.4696, 1.], [-13.1066, 1.], [-12.9398, 1.],
@@ -57,17 +58,17 @@ class SupercellDFTResultsTest(unittest.TestCase):
              -34.59, -70.0739, -70.0739, -70.0739, -70.0739, -70.0739, -70.0739,
              -70.4981]
 
-        self._MgO_Va_O1_2 = SupercellDFTResults(
-            structure, total_energy, eigenvalues, electrostatic_potential)
+        self._MgO_Va_O1_2 = SupercellDftResults(
+            final_structure, total_energy, eigenvalues, electrostatic_potential)
         self._MgO_Va_O1_2_fvf = \
-            SupercellDFTResults.from_vasp_files(DIRNAME_VAC)
+            SupercellDftResults.from_vasp_files(DIRNAME_VAC)
 
         self.d = self._MgO_Va_O1_2.as_dict()
         self.d_fvf = self._MgO_Va_O1_2_fvf.as_dict()
 
     def test_from_vasp_files(self):
 
-        self.assertTrue(self.d["structure"] == self.d_fvf["structure"])
+        self.assertTrue(self.d["final_structure"] == self.d_fvf["final_structure"])
         self.assertEqual(self.d["total_energy"], self.d_fvf["total_energy"])
         self.assertTrue(
             (self.d["eigenvalues"][Spin.up] == self.d_fvf["eigenvalues"][Spin.up]).all())
@@ -75,19 +76,18 @@ class SupercellDFTResultsTest(unittest.TestCase):
             self.d["electrostatic_potential"] == self.d_fvf["electrostatic_potential"])
 
     def test_dict(self):
-        MgO_Va_O1_2_fd = SupercellDFTResults.from_dict(self.d_fvf)
+        MgO_Va_O1_2_fd = SupercellDftResults.from_dict(self.d_fvf)
         self.assertTrue(
-            self._MgO_Va_O1_2.structure == MgO_Va_O1_2_fd.structure)
+            self._MgO_Va_O1_2.final_structure == MgO_Va_O1_2_fd.final_structure)
+
+    def test_json(self):
+        self._MgO_Va_O1_2.to_json_file("test_DFT_results.json")
 
 
-class UnitcellDFTResultsTest(unittest.TestCase):
-
-    def setUp(self):
-        """ """
-
-
-DIRNAME_UNITCELL
-
+#class UnitcellDftResultsTest(unittest.TestCase):
+#
+#    def setUp(self):
+#        """ """
 
 
 if __name__ == "__main__":

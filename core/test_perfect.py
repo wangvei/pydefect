@@ -38,7 +38,7 @@ class UnitcellTest(unittest.TestCase):
         np.allclose(s.sites[3].coords, np.array([0.50, 0.50, 0.50]))
 
     def test_energy(self):
-        e = self._unitcell.energy
+        e = self._unitcell.total_energy
         expected = -12.23262413
         self.assertAlmostEqual(e, expected)
 
@@ -102,7 +102,7 @@ class SupercellTest(unittest.TestCase):
         np.allclose(s.sites[3].coords, np.array([0.50, 0.50, 0.50]))
 
     def test_energy(self):
-        e = self._supercell.energy
+        e = self._supercell.total_energy
         expected = -12.23262413
         self.assertAlmostEqual(e, expected)
 
