@@ -20,7 +20,7 @@ __date__ = "December 4, 2017"
 def get_nions(defect_structure):
     """
     Return numbers of ions for elements in defect_structure.
-    Example: Al1Mg63O64
+    Example: Al1Mg63O6
         return: [1, 63, 64]
 
     """

@@ -71,7 +71,7 @@ class SupercellDftResultsTest(unittest.TestCase):
         self.assertTrue(self.d["final_structure"] == self.d_fvf["final_structure"])
         self.assertEqual(self.d["total_energy"], self.d_fvf["total_energy"])
         self.assertTrue(
-            (self.d["eigenvalues"][Spin.up] == self.d_fvf["eigenvalues"][Spin.up]).all())
+            (self.d["eigenvalues"]["1"] == self.d_fvf["eigenvalues"]["1"]))
         self.assertTrue(
             self.d["electrostatic_potential"] == self.d_fvf["electrostatic_potential"])
 
@@ -83,6 +83,8 @@ class SupercellDftResultsTest(unittest.TestCase):
     def test_json(self):
         self._MgO_Va_O1_2.to_json_file("test_DFT_results.json")
 
+#    def test_json_load(self):
+#        self._MgO_Va_O1_2.json_load("test_DFT_results.json")
 
 #class UnitcellDftResultsTest(unittest.TestCase):
 #

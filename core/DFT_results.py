@@ -12,6 +12,7 @@ from copy import deepcopy
 import numpy as np
 from pymatgen.io.vasp.inputs import Poscar
 from pymatgen.io.vasp.outputs import Outcar, Vasprun
+from pymatgen.electronic_structure.core import Spin
 
 __author__ = "Yu Kumagai"
 __copyright__ = "Copyright 2017, Oba group"
@@ -22,12 +23,12 @@ __status__ = "Development"
 __date__ = "December 4, 2017"
 
 
-#def eigenvalues_to_list(eigenvalues):
+# def eigenvalues_to_list(eigenvalues):
 
 
 class SupercellDftResults:
     """
-    DFT results for supercell systems w/ and w/o a defect.
+    DFT results for supercell systems both w/ and w/o a defect.
     """
 
     def __init__(self, final_structure, total_energy, eigenvalues,
@@ -53,16 +54,17 @@ class SupercellDftResults:
         path_contcar = directory_path + contcar_name
         path_outcar = directory_path + outcar_name
         path_vasprun = directory_path + vasprun_name
+
         contcar = Poscar.from_file(path_contcar)
         outcar = Outcar(path_outcar)
         vasprun = Vasprun(path_vasprun)
 
         final_structure = contcar.structure
         total_energy = outcar.final_energy
-        eigenvalue = vasprun.eigenvalues
+        eigenvalues = vasprun.eigenvalues
         electrostatic_potential = outcar.electrostatic_potential
 
-        return cls(final_structure, total_energy, eigenvalue,
+        return cls(final_structure, total_energy, eigenvalues,
                    electrostatic_potential, ewald_param=None)
 
     @classmethod
@@ -70,7 +72,16 @@ class SupercellDftResults:
         """
         Constructs a class object from a dictionary.
         """
-        return cls(d["final_structure"], d["total_energy"], d["eigenvalues"],
+        eigenvalues = {}
+        print(d["eigenvalues"])
+
+        for spin, v in d["eigenvalues"].items():
+            if spin == "1":
+                eigenvalues[Spin.up] = np.array(v)
+            elif spin == "2":
+                eigenvalues[Spin.down] = np.array(v)
+
+        return cls(d["final_structure"], d["total_energy"], eigenvalues,
                    d["electrostatic_potential"], d["ewald_param"])
 
     @classmethod
@@ -107,13 +118,23 @@ class SupercellDftResults:
     def as_dict(self):
         """
         Dict representation of DefectSetting class object.
+        Json-serializable dict representation.
+        To make a dictionary for eigenvalus, we use the same way with pymatgen.
+        See. e.g.,
+        pymatgen/io/vasp/outputs.html#BSVasprun
+        if self.projected_eigenvalues:
+            vout['projected_eigenvalues'] = {
+                str(spin): v.tolist()
+                for spin, v in self.projected_eigenvalues.items()}
         """
+        eigenvalues = {str(spin): v.tolist()
+                       for spin, v in self._eigenvalues.items()}
+
         d = {"final_structure":         self._final_structure,
              "total_energy":            self._total_energy,
-             "eigenvalues":             self._eigenvalues,
+             "eigenvalues":             eigenvalues,
              "electrostatic_potential": self._electrostatic_potential,
              "ewald_param":             self._ewald_param}
-
         return d
 
     def to_json_file(self, filename):
@@ -121,22 +142,11 @@ class SupercellDftResults:
         Returns a json file.
         """
         with open(filename, 'w') as fw:
-            for d in self.as_dict():
-                print(d)
-                if d.key == "eigenvalues":
-                    eigen = {str(spin): v.tolist()
-                             for spin, v in self.eigenvalues.items()}
-                    json.dump(eigen, fw, indent=2, cls=MontyEncoder)
-                else:
-                    json.dump(d, fw, indent=2, cls=MontyEncoder)
+            for k, v in self.as_dict().items():
+                json.dump({k: v}, fw, indent=2, cls=MontyEncoder)
 
 
-#        if self.eigenvalues:
-#            eigen = {str(spin): v.tolist()
-#                     for spin, v in self.eigenvalues.items()}
-
-
-#class UnitcellDFTResults:
+# class UnitcellDFTResults:
 #    """
 #    DFT result of unitcell without any defect.
 #    """
@@ -217,4 +227,3 @@ class SupercellDftResults:
 #             "eigenvalues":                self._eigenvalues}
 #
 #        return d
-
