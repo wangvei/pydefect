@@ -95,7 +95,7 @@ cdef void _find_optimal_cell_shape_cdef(int lower_limit, int upper_limit,
                                                         optimal_P[i][j] = P[i][j]
 
 def find_optimal_cell_shape(cell, target_size,
-                            lower_limit=-2, upper_limit=2, verbose=False):
+                            lower_limit=-2, upper_limit=2):
     target_metric = np.eye(3)
     norm = (target_size * np.linalg.det(cell) /
                         np.linalg.det(target_metric))**(-1.0 / 3)
