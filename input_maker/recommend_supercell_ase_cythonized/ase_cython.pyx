@@ -36,31 +36,8 @@ cdef void _find_optimal_cell_shape_cdef(int lower_limit, int upper_limit,
                                         double target_metric[3][3],
                                         int target_size,
                                         double starting_P[3][3]):
-    """Returns the transformation matrix that produces a supercell
-    corresponding to *target_size* unit cells with metric *cell* that
-    most closely approximates the shape defined by *target_shape*.
-
-    Note: This pure python implementation of the is much slower than
-    the inline-C version provided in
-    :func:`~ase.build.find_optimal_cell_shape`.
-
-    Parameters:
-
-    cell: 2D array of floats
-        Metric given as a (3x3 matrix) of the input structure.
-    target_size: integer
-        Size of desired super cell in number of unit cells.
-    target_shape: str
-        Desired supercell shape. Can be 'sc' for simple cubic or
-        'fcc' for face-centered cubic.
-    lower_limit: int
-        Lower limit of search range.
-    upper_limit: int
-        Upper limit of search range.
-    verbose: bool
-        Set to True to obtain additional information regarding
-        construction of transformation matrix.
-
+    """
+    Mimic ase code by Cython.
     """
 
     # Set up target metric
@@ -117,8 +94,8 @@ cdef void _find_optimal_cell_shape_cdef(int lower_limit, int upper_limit,
                                                     for j in range(3):
                                                         optimal_P[i][j] = P[i][j]
 
-def find_optimal_cell_shape(cell, target_size, target_shape,
-                            lower_limit=-2, upper_limit=2, verbose=False):
+def find_optimal_cell_shape(cell, target_size,
+                            lower_limit=-2, upper_limit=2):
     target_metric = np.eye(3)
     norm = (target_size * np.linalg.det(cell) /
                         np.linalg.det(target_metric))**(-1.0 / 3)
@@ -134,10 +111,6 @@ def find_optimal_cell_shape(cell, target_size, target_shape,
     c_matrix_from_python_list(optimal_P.tolist(), c_optimal_P)
     c_matrix_from_python_list(starting_P.tolist(), c_starting_P)
 
-    #norm_cell = np.array(norm_cell)
-    #target_metric = np.array(target_metric)
-    #optimal_P = np.array(optimal_P)
-    #starting_P = np.array(starting_P)
     lower_limit = int(lower_limit)
     upper_limit = int(upper_limit)
     target_size = int(target_size)
@@ -148,5 +121,4 @@ def find_optimal_cell_shape(cell, target_size, target_shape,
                                   target_size, c_starting_P)
     optimal_P = python_list_from_c_matrix(c_optimal_P)
     return optimal_P
-    #return np.array(optimal_P).reshape(3,3)
 
