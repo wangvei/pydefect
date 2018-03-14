@@ -27,7 +27,7 @@ min_dev = float("inf")
 for natom in range(MAX_ATOM+1, MIN_ATOM_MODIFIED, -unitcell_natoms):
     num_target_cell = math.floor(float(natom) / int(unitcell_natoms))
     print("num_target_cell = " + str(int(num_target_cell)))
-    P = find_optimal_cell_shape(poscar.cell, num_target_cell, 'sc')
+    P = find_optimal_cell_shape(poscar.cell, num_target_cell)
     supercell = make_supercell(poscar, P)
 
     natom_super = str(supercell.get_number_of_atoms())
