@@ -2,9 +2,9 @@ git add -p : 部分的にステージングする
 git reset [File]: ステージングエリアにあるファイルをアンステージする
 git co -- [File]: ファイルを１つ前のコミットに戻す。
 git co [コミット番号] [ファイルパス]: gitで特定ファイルを特定のcommitに戻す
-git log --oneline [File]: ファイルに関連したコミット全部のリストを出す
+git log --oneline [File] (-n Num): ファイルに関連したコミット全部(or Num個)のリストを出す
 git citools: GUIでステージングとコミットを管理するプログラム
 git commit --amend: １つ前のコミットメッセージを修正する
 git rev-parse [xxx]: SHA1 IDを返す。
-
+git tag xxxx -m "xxxxx": 注釈つきのタグをつける。バージョンなど。
 
