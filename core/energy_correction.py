@@ -27,7 +27,7 @@ __date__ = "December 8, 2017"
 def _generate_neighbor_lattices(lattice_vectors,
                                 max_length,
                                 include_self,
-                                shift = np.zeros(3)):
+                                shift=np.zeros(3)):
     """
     Generator of a set of lattice vectors within the max length.
     Note that angles between any two axes are assumed to be between 60 and
@@ -55,9 +55,9 @@ def _generate_neighbor_lattices(lattice_vectors,
 
 def compute_ewald_param(dielectric_tensor,
                         structure,
-                        initial_value = None,
-                        convergence = 1.05,
-                        prod_cutoff_fwhm = 25.0):
+                        initial_value=None,
+                        convergence=1.05,
+                        prod_cutoff_fwhm=25.0):
     """
     Get optimized ewald parameter.
     Once optimized parameter is calculated (usually slow),
@@ -110,14 +110,14 @@ def compute_ewald_param(dielectric_tensor,
         max_r_vector_norm = prod_cutoff_fwhm / ewald
         for _ in _generate_neighbor_lattices(real_lattice,
                                              max_r_vector_norm,
-                                             include_self = True):
+                                             include_self=True):
             num_real_lattice += 1
         # count number of reciprocal lattice
         num_reciprocal_lattice = 0
         max_g_vector_norm = 2 * ewald * prod_cutoff_fwhm
         for _ in _generate_neighbor_lattices(reciprocal_lattice,
                                              max_g_vector_norm,
-                                             include_self = False):
+                                             include_self=False):
             num_reciprocal_lattice += 1
         diff_real_reciprocal = num_real_lattice / num_reciprocal_lattice
         if 1 / convergence < diff_real_reciprocal < convergence:
@@ -136,7 +136,7 @@ def calc_ewald_real_pot(ewald, dielectric_tensor,
     epsilon_inv = np.linalg.inv(dielectric_tensor)
     summation = 0
     for r in _generate_neighbor_lattices(real_lattice_vector, max_length,
-                                         True, shift = shift):
+                                         True, shift=shift):
         # Skip the potential caused by the defect itself
         # r = R - atomic_pos_wrt_defect
         if np.linalg.norm(r) < 1e-8:
@@ -199,14 +199,14 @@ def calc_model_pot_and_lat_energy(ewald,
                                   dielectric_tensor,
                                   real_lattice_vector,
                                   real_max_length,
-                                  shift = -atomic_pos_wrt_defect[i])
+                                  shift=-atomic_pos_wrt_defect[i])
         reciprocal_part \
             = _calc_ewald_reciprocal_potential(ewald,
                                                dielectric_tensor,
                                                reciprocal_lattice_vector,
                                                reciprocal_max_length,
                                                volume,
-                                               atomic_pos_wrt_defect = r)
+                                               atomic_pos_wrt_defect=r)
         diff_pot = _calc_ewald_diff_potential(ewald, volume)
         model_pot[i] \
             = (real_part + reciprocal_part + diff_pot) * coeff
@@ -229,7 +229,7 @@ def calc_model_pot_and_lat_energy(ewald,
 
 def get_distance_two_planes(lattice_vectors):
     # (a_i \times a_j) \ddot a_k / |a_i \times  a_j| 
-    distance = np.zeros(3, dtype = float)
+    distance = np.zeros(3, dtype=float)
     for i in range(3):
         a_i_times_a_j = np.cross(lattice_vectors[i - 2], lattice_vectors[i - 1])
         a_k = lattice_vectors[i]
