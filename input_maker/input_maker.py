@@ -16,7 +16,7 @@ __status__ = "Development"
 __date__ = "December 4, 2017"
 
 
-def normed_random_3d_vector():
+def normalized_random_3d_vector():
     """
     Generates a random 3d unit vector with a uniform spherical distribution.
     stackoverflow.com/questions/5408276/python-uniform-spherical-distribution
@@ -60,7 +60,7 @@ def perturb_around_a_point(structure, center, cutoff, distance):
     sites = []
     # Since translate_sites accepts only one vector, we need to iterate this.
     for i in neighbors:
-        vector = random_vector(normed_random_3d_vector(), distance)
+        vector = random_vector(normalized_random_3d_vector(), distance)
         site = i[2]
         sites.append(site)
         structure.translate_sites(site, vector, frac_coords=False)

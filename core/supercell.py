@@ -34,6 +34,7 @@ class Supercell(metaclass=ABCMeta):
     """
     def __init__(self):
         self._dft_results = None
+        self._ewald_param = None
 
     @property
     def final_structure(self):
@@ -53,10 +54,14 @@ class Supercell(metaclass=ABCMeta):
 
     @property
     def ewald_param(self):
-        return self._dft_results.ewald_param
+        return self._ewald_param
 
-    def set_dft_results(self, directory_path, contcar_name="/CONTCAR",
-                        outcar_name="/OUTCAR", vasprun_name="/vasprun.xml"):
+    @ewald_param.setter
+    def ewald_param(self, ewald_param):
+        self._ewald_param = ewald_param
+
+    def set_vasp_results(self, directory_path, contcar_name="/CONTCAR",
+                         outcar_name="/OUTCAR", vasprun_name="/vasprun.xml"):
         print("aaa")
         self._dft_results = \
             SupercellDftResults.from_vasp_files(
