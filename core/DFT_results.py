@@ -123,12 +123,19 @@ class SupercellDftResults:
 class UnitcellDftResults:
     """
     DFT result of unitcell systems w/o any defect.
+    Args:
+        final_structure (Structure): pmg Structure/IStructure class object.
+        total_energy (float):
+        static_dielectric_tensor (3x3 numpy array):
+        ionic_dielectric_tensor (3x3 numpy array):
+        eigenvalues (Nx3 numpy array):
     """
-    # TODO: The calculation results would be obtained from different
-    # directories.
 
     def __init__(self, final_structure, total_energy, static_dielectric_tensor,
                  ionic_dielectric_tensor, eigenvalues):
+        """
+
+        """
 
         self._final_structure = final_structure
         self._total_energy = total_energy
@@ -225,6 +232,6 @@ class UnitcellDftResults:
              "total_energy":              self._total_energy,
              "static_dielectric_tensor ": self._static_dielectric_tensor,
              "ionic_dielectric_tensor":   self._ionic_dielectric_tensor,
-             "eigenvalues":               self._eigenvalues}
+             "eigenvalues":               eigenvalues}
 
         return d
