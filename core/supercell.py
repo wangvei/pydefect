@@ -33,9 +33,17 @@ def get_nions(defect_structure):
 class Supercell(metaclass=ABCMeta):
     """
     """
-    def __init__(self):
-        self._dft_results = None
-        self._ewald_param = None
+    def __init__(self, dft_results=None, ewald_param=None):
+        self._dft_results = dft_results
+        self._ewald_param = ewald_param
+
+    @classmethod
+    def from_vasp_results(cls, directory_path, contcar_name="/CONTCAR",
+                          outcar_name="/OUTCAR", vasprun_name="/vasprun.xml"):
+        dft_results = \
+            SupercellDftResults.from_vasp_files(
+                directory_path, contcar_name, outcar_name, vasprun_name)
+        return cls(dft_results)
 
     @property
     def final_structure(self):
@@ -63,15 +71,18 @@ class Supercell(metaclass=ABCMeta):
 
     def set_vasp_results(self, directory_path, contcar_name="/CONTCAR",
                          outcar_name="/OUTCAR", vasprun_name="/vasprun.xml"):
-        print("aaa")
+        """
+        Used to set some vasp results a posteriori.
+        """
         self._dft_results = \
             SupercellDftResults.from_vasp_files(
                 directory_path, contcar_name, outcar_name, vasprun_name)
 
 
 class Perfect(Supercell):
-    def __init__(self):
-        super().__init__()
+    pass
+#    def __init__(self):
+#        super().__init__()
 
 
 class Defect(Supercell):
