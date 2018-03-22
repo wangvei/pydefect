@@ -179,7 +179,16 @@ class UnitcellDftResults:
         for spin, v in d["eigenvalues"].items():
             eigenvalues[Spin(int(spin))] = np.array(v)
 
-        return cls(d)
+        return cls(d["final_structure"], d["total_energy"],
+                   d["static_dielectric_tensor"], d["ionic_dielectric_tensor"],
+                   d["eigenvalues"])
+
+    @classmethod
+    def json_load(cls, filename):
+        """
+        Constructs a Defect class object from a json file.
+        """
+        return cls.from_dict(loadfn(filename))
 
     def set_dielectric_constants_from_outcar(
             self, directory_path, outcar_name="/OUTCAR"):
@@ -228,10 +237,17 @@ class UnitcellDftResults:
         eigenvalues = {str(spin): v.tolist()
                        for spin, v in self._eigenvalues.items()}
 
-        d = {"final_structure":                 self._final_structure,
+        d = {"final_structure":           self._final_structure,
              "total_energy":              self._total_energy,
-             "static_dielectric_tensor ": self._static_dielectric_tensor,
+             "static_dielectric_tensor": self._static_dielectric_tensor,
              "ionic_dielectric_tensor":   self._ionic_dielectric_tensor,
              "eigenvalues":               eigenvalues}
 
         return d
+
+    def to_json_file(self, filename):
+        """
+        Returns a json file.
+        """
+        with open(filename, 'w') as fw:
+            json.dump(self.as_dict(), fw, indent=2, cls=MontyEncoder)

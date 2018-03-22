@@ -196,6 +196,12 @@ class UnitcellDftResultsTest(unittest.TestCase):
         self._MgO_unitcell.ionic_dielectric_tensor = b
         np.testing.assert_equal(self._MgO_unitcell.ionic_dielectric_tensor, b)
 
+    def test_json(self):
+        self._MgO_unitcell.to_json_file("test_DFT_results_unitcell.json")
+
+    def test_json_load(self):
+        self._MgO_unitcell.json_load("test_DFT_results_unitcell.json")
+
 
 if __name__ == "__main__":
     unittest.main()
