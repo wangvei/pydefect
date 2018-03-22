@@ -24,12 +24,11 @@ class SupercellDftResults:
     """
 
     def __init__(self, final_structure, total_energy, eigenvalues,
-                 electrostatic_potential, ewald_param=None):
+                 electrostatic_potential):
         self._final_structure = final_structure
         self._total_energy = total_energy
         self._eigenvalues = eigenvalues
         self._electrostatic_potential = electrostatic_potential
-        self._ewald_param = ewald_param
 
     @classmethod
     def from_vasp_files(cls, directory_path, contcar_name="/CONTCAR",
@@ -53,7 +52,7 @@ class SupercellDftResults:
         electrostatic_potential = outcar.electrostatic_potential
 
         return cls(final_structure, total_energy, eigenvalues,
-                   electrostatic_potential, ewald_param=None)
+                   electrostatic_potential)
 
     @classmethod
     def from_dict(cls, d):
@@ -66,7 +65,7 @@ class SupercellDftResults:
             eigenvalues[Spin(int(spin))] = np.array(v)
 
         return cls(d["final_structure"], d["total_energy"], eigenvalues,
-                   d["electrostatic_potential"], d["ewald_param"])
+                   d["electrostatic_potential"])
 
     @classmethod
     def json_load(cls, filename):
@@ -103,8 +102,7 @@ class SupercellDftResults:
         d = {"final_structure":         self._final_structure,
              "total_energy":            self._total_energy,
              "eigenvalues":             eigenvalues,
-             "electrostatic_potential": self._electrostatic_potential,
-             "ewald_param":             self._ewald_param}
+             "electrostatic_potential": self._electrostatic_potential}
         return d
 
     def to_json_file(self, filename):
