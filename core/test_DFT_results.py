@@ -33,7 +33,9 @@ class SupercellDftResultsTest(unittest.TestCase):
         #          structure = Structure.from_file(DIRNAME_VAC + “/CONTCAR”)
         #          velocities are not stored.
         #          Therefore, equality becomes False.
+        poscar = Poscar.from_file(DIRNAME_VAC + "/POSCAR")
         contcar = Poscar.from_file(DIRNAME_VAC + "/CONTCAR")
+        initial_structure = poscar.structure
         final_structure = contcar.structure
         total_energy = -93.76904720
         eigenvalues = {Spin.up: np.array(
@@ -62,7 +64,8 @@ class SupercellDftResultsTest(unittest.TestCase):
              -70.4981]
 
         self._MgO_Va_O1_2 = SupercellDftResults(
-            final_structure, total_energy, eigenvalues, electrostatic_potential)
+            initial_structure, final_structure, total_energy, eigenvalues,
+            electrostatic_potential)
         self._MgO_Va_O1_2_from_vasp_files = \
             SupercellDftResults.from_vasp_files(DIRNAME_VAC)
 
@@ -70,13 +73,16 @@ class SupercellDftResultsTest(unittest.TestCase):
         self.d_from_vasp_files = self._MgO_Va_O1_2_from_vasp_files.as_dict()
 
     def test_from_vasp_files(self):
-
-        self.assertTrue(self.d["final_structure"] == self.d_from_vasp_files["final_structure"])
-        self.assertEqual(self.d["total_energy"], self.d_from_vasp_files["total_energy"])
-        self.assertTrue(
-            (self.d["eigenvalues"]["1"] == self.d_from_vasp_files["eigenvalues"]["1"]))
-        self.assertTrue(
-            self.d["electrostatic_potential"] == self.d_from_vasp_files["electrostatic_potential"])
+        self.assertTrue(self.d["initial_structure"] ==
+                        self.d_from_vasp_files["initial_structure"])
+        self.assertTrue(self.d["final_structure"] ==
+                        self.d_from_vasp_files["final_structure"])
+        self.assertEqual(self.d["total_energy"],
+                         self.d_from_vasp_files["total_energy"])
+        self.assertTrue((self.d["eigenvalues"]["1"] ==
+                         self.d_from_vasp_files["eigenvalues"]["1"]))
+        self.assertTrue(self.d["electrostatic_potential"] ==
+                        self.d_from_vasp_files["electrostatic_potential"])
 
     def test_dict(self):
         MgO_Va_O1_2_fd = SupercellDftResults.from_dict(self.d_from_vasp_files)
@@ -94,7 +100,9 @@ class UnitcellDftResultsTest(unittest.TestCase):
 
     def setUp(self):
         """ """
+        poscar = Poscar.from_file(DIRNAME_UNITCELL + "/POSCAR")
         contcar = Poscar.from_file(DIRNAME_UNITCELL + "/CONTCAR")
+        initial_structure = poscar.structure
         final_structure = contcar.structure
         total_energy = -11.91129199
         self.static_dielectric_tensor = np.array(
@@ -164,8 +172,9 @@ class UnitcellDftResultsTest(unittest.TestCase):
               [14.4722, 0], [14.4722, 0], [14.8549, 0], [18.1715, 0]]])}
 
         self._MgO_unitcell = UnitcellDftResults(
-            final_structure, total_energy, static_dielectric_tensor=None,
-            ionic_dielectric_tensor=None, eigenvalues=eigenvalues)
+            initial_structure, final_structure, total_energy,
+            static_dielectric_tensor=None, ionic_dielectric_tensor=None,
+            eigenvalues=eigenvalues)
 
         self._MgO_unitcell_from_vasp_files = \
             UnitcellDftResults.from_vasp_files(DIRNAME_UNITCELL)

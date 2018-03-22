@@ -23,16 +23,20 @@ class SupercellDftResults:
     DFT results for supercell systems both w/ and w/o a defect.
     """
 
-    def __init__(self, final_structure, total_energy, eigenvalues,
-                 electrostatic_potential):
+    def __init__(self, initial_structure, final_structure, total_energy,
+                 eigenvalues, electrostatic_potential):
+        self._initial_structure = initial_structure
         self._final_structure = final_structure
         self._total_energy = total_energy
         self._eigenvalues = eigenvalues
         self._electrostatic_potential = electrostatic_potential
 
     @classmethod
-    def from_vasp_files(cls, directory_path, contcar_name="/CONTCAR",
-                        outcar_name="/OUTCAR", vasprun_name="/vasprun.xml"):
+    def from_vasp_files(cls, directory_path, poscar_name="/POSCAR",
+                        contcar_name="/CONTCAR", outcar_name="/OUTCAR",
+                        vasprun_name="/vasprun.xml"):
+        # TODO: change "/POSCAR" to "POSCAR"
+        # Then, bot format w/ and w/o "/" for directory_path must be allowed.
         """
         Args:
             directory_path (str): path of directory.
@@ -42,17 +46,19 @@ class SupercellDftResults:
             vasprun_name (str): Name of vasprun.xml file.
                                 Defaults to vasprun.xml.
         """
+        poscar = Poscar.from_file(directory_path + poscar_name)
         contcar = Poscar.from_file(directory_path + contcar_name)
         outcar = Outcar(directory_path + outcar_name)
         vasprun = Vasprun(directory_path + vasprun_name)
 
+        initial_structure = poscar.structure
         final_structure = contcar.structure
         total_energy = outcar.final_energy
         eigenvalues = vasprun.eigenvalues
         electrostatic_potential = outcar.electrostatic_potential
 
-        return cls(final_structure, total_energy, eigenvalues,
-                   electrostatic_potential)
+        return cls(initial_structure, final_structure, total_energy,
+                   eigenvalues, electrostatic_potential)
 
     @classmethod
     def from_dict(cls, d):
@@ -64,8 +70,8 @@ class SupercellDftResults:
         for spin, v in d["eigenvalues"].items():
             eigenvalues[Spin(int(spin))] = np.array(v)
 
-        return cls(d["final_structure"], d["total_energy"], eigenvalues,
-                   d["electrostatic_potential"])
+        return cls(d["initial_structure"], d["final_structure"],
+                   d["total_energy"], eigenvalues, d["electrostatic_potential"])
 
     @classmethod
     def json_load(cls, filename):
@@ -73,6 +79,10 @@ class SupercellDftResults:
         Constructs a Defect class object from a json file.
         """
         return cls.from_dict(loadfn(filename))
+
+    @property
+    def initial_structure(self):
+        return self._initial_structure
 
     @property
     def final_structure(self):
@@ -99,7 +109,8 @@ class SupercellDftResults:
         eigenvalues = {str(spin): v.tolist()
                        for spin, v in self._eigenvalues.items()}
 
-        d = {"final_structure":         self._final_structure,
+        d = {"initial_structure":       self._initial_structure,
+             "final_structure":         self._final_structure,
              "total_energy":            self._total_energy,
              "eigenvalues":             eigenvalues,
              "electrostatic_potential": self._electrostatic_potential}
@@ -124,12 +135,12 @@ class UnitcellDftResults:
         eigenvalues (Nx3 numpy array):
     """
 
-    def __init__(self, final_structure, total_energy, static_dielectric_tensor,
-                 ionic_dielectric_tensor, eigenvalues):
-        """
+    def __init__(self, initial_structure, final_structure, total_energy,
+                 static_dielectric_tensor, ionic_dielectric_tensor,
+                 eigenvalues):
+        """ """
 
-        """
-
+        self._initial_structure = initial_structure
         self._final_structure = final_structure
         self._total_energy = total_energy
         self._static_dielectric_tensor = static_dielectric_tensor
@@ -137,8 +148,9 @@ class UnitcellDftResults:
         self._eigenvalues = eigenvalues
 
     @classmethod
-    def from_vasp_files(cls, directory_path, contcar_name="/CONTCAR",
-                        outcar_name="/OUTCAR", vasprun_name="/vasprun.xml"):
+    def from_vasp_files(cls, directory_path, poscar_name="/POSCAR",
+                        contcar_name="/CONTCAR", outcar_name="/OUTCAR",
+                        vasprun_name="/vasprun.xml"):
         """
         Args:
             directory_path (str): path of directory.
@@ -147,20 +159,21 @@ class UnitcellDftResults:
             vasprun_name (str): Name of vasprun.xml file.
                                 Defaults to vasprun.xml.
         """
+        poscar = Poscar.from_file(directory_path + poscar_name)
         contcar = Poscar.from_file(directory_path + contcar_name)
         outcar = Outcar(directory_path + outcar_name)
         vasprun = Vasprun(directory_path + vasprun_name)
 
+        initial_structure = poscar.structure
         final_structure = contcar.structure
         total_energy = outcar.final_energy
-#        static_dielectric_tensor = np.array(outcar.dielectric_tensor)
-#        ionic_dielectric_tensor = np.array(outcar.dielectric_ionic_tensor)
         static_dielectric_tensor = None
         ionic_dielectric_tensor = None
         eigenvalues = vasprun.eigenvalues
 
-        return cls(final_structure, total_energy, static_dielectric_tensor,
-                   ionic_dielectric_tensor, eigenvalues)
+        return cls(initial_structure, final_structure, total_energy,
+                   static_dielectric_tensor, ionic_dielectric_tensor,
+                   eigenvalues)
 
     @classmethod
     def from_dict(cls, d):
@@ -172,9 +185,9 @@ class UnitcellDftResults:
         for spin, v in d["eigenvalues"].items():
             eigenvalues[Spin(int(spin))] = np.array(v)
 
-        return cls(d["final_structure"], d["total_energy"],
-                   d["static_dielectric_tensor"], d["ionic_dielectric_tensor"],
-                   d["eigenvalues"])
+        return cls(d["initial_structure"], d["final_structure"],
+                   d["total_energy"], d["static_dielectric_tensor"],
+                   d["ionic_dielectric_tensor"], eigenvalues)
 
     @classmethod
     def json_load(cls, filename):
@@ -190,8 +203,12 @@ class UnitcellDftResults:
         self._ionic_dielectric_tensor = np.array(outcar.dielectric_ionic_tensor)
 
     @property
-    def structure(self):
-        return self._structure
+    def initial_structure(self):
+        return self._initial_structure
+
+    @property
+    def final_structure(self):
+        return self._final_structure
 
     @property
     def total_energy(self):
@@ -230,11 +247,12 @@ class UnitcellDftResults:
         eigenvalues = {str(spin): v.tolist()
                        for spin, v in self._eigenvalues.items()}
 
-        d = {"final_structure":           self._final_structure,
-             "total_energy":              self._total_energy,
+        d = {"initial_structure":        self._initial_structure,
+             "final_structure":          self._final_structure,
+             "total_energy":             self._total_energy,
              "static_dielectric_tensor": self._static_dielectric_tensor,
-             "ionic_dielectric_tensor":   self._ionic_dielectric_tensor,
-             "eigenvalues":               eigenvalues}
+             "ionic_dielectric_tensor":  self._ionic_dielectric_tensor,
+             "eigenvalues":              eigenvalues}
 
         return d
 
