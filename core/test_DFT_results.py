@@ -57,7 +57,6 @@ class SupercellDftResultsTest(unittest.TestCase):
               [2.0783, 1.], [2.2655, 1.], [2.3217, 1.], [2.4294, 1.],
               [5.3997, 0.], [8.5505, 0.], [9.4856, 0.], [9.9455, 0.],
               [11.049, 0.], [11.9159, 0.], [12.5617, 0.], [12.8315, 0.]]])}
-
         electrostatic_potential = \
             [-34.59, -35.5244, -35.5244, -35.5244, -35.5244, -35.5244, -35.5244,
              -34.59, -70.0739, -70.0739, -70.0739, -70.0739, -70.0739, -70.0739,
@@ -170,16 +169,17 @@ class UnitcellDftResultsTest(unittest.TestCase):
               [12.9233, 0], [13.563, 0], [15.5076, 0], [19.9636, 0]],
              [[-12.6177, 1], [0.1231, 1], [0.1231, 1], [1.2747, 1],
               [14.4722, 0], [14.4722, 0], [14.8549, 0], [18.1715, 0]]])}
+        electrostatic_potential = [-35.2999, -69.7508]
 
         self._MgO_unitcell = UnitcellDftResults(
             initial_structure, final_structure, total_energy,
-            static_dielectric_tensor=None, ionic_dielectric_tensor=None,
-            eigenvalues=eigenvalues)
+            eigenvalues=eigenvalues,
+            electrostatic_potential=electrostatic_potential,
+            static_dielectric_tensor=None, ionic_dielectric_tensor=None)
 
         self._MgO_unitcell_from_vasp_files = \
             UnitcellDftResults.from_vasp_files(DIRNAME_UNITCELL)
 
-        # go through a dict
         self.d = self._MgO_unitcell.as_dict()
         self.d_from_vasp_files = self._MgO_unitcell_from_vasp_files.as_dict()
 
