@@ -1,10 +1,12 @@
 #!/usr/bin/env python
 
-import unittest
 import numpy as np
-from DFT_results import *
+import unittest
+
 from pymatgen.io.vasp.inputs import Poscar
 from pymatgen.electronic_structure.core import Spin
+
+from DFT_results import *
 
 __author__ = "Yu Kumagai"
 __copyright__ = "Copyright 2017, Oba group"

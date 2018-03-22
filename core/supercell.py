@@ -2,10 +2,11 @@
 
 from abc import ABCMeta
 import json
-
 import numpy as np
+
 from monty.json import MontyEncoder
 from monty.serialization import loadfn
+
 from pydefect.core.DFT_results import SupercellDftResults
 
 __author__ = "Yu Kumagai"

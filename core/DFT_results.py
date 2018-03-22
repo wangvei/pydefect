@@ -1,15 +1,10 @@
 #!/usr/bin/env python
 
-from abc import ABCMeta
 import json
-from monty.json import MSONable
-
 import numpy as np
+
 from monty.json import MontyEncoder
 from monty.serialization import loadfn
-from copy import deepcopy
-
-import numpy as np
 from pymatgen.io.vasp.inputs import Poscar
 from pymatgen.io.vasp.outputs import Outcar, Vasprun
 from pymatgen.electronic_structure.core import Spin
