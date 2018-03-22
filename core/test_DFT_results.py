@@ -33,7 +33,6 @@ class SupercellDftResultsTest(unittest.TestCase):
         #          structure = Structure.from_file(DIRNAME_VAC + “/CONTCAR”)
         #          velocities are not stored.
         #          Therefore, equality becomes False.
-        poscar = Poscar.from_file(DIRNAME_VAC + "/POSCAR")
         contcar = Poscar.from_file(DIRNAME_VAC + "/CONTCAR")
         final_structure = contcar.structure
         total_energy = -93.76904720
@@ -98,7 +97,6 @@ class UnitcellDftResultsTest(unittest.TestCase):
 
     def setUp(self):
         """ """
-        poscar = Poscar.from_file(DIRNAME_UNITCELL + "/POSCAR")
         contcar = Poscar.from_file(DIRNAME_UNITCELL + "/CONTCAR")
         final_structure = contcar.structure
         total_energy = -11.91129199
