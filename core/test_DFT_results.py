@@ -35,7 +35,6 @@ class SupercellDftResultsTest(unittest.TestCase):
         #          Therefore, equality becomes False.
         poscar = Poscar.from_file(DIRNAME_VAC + "/POSCAR")
         contcar = Poscar.from_file(DIRNAME_VAC + "/CONTCAR")
-        initial_structure = poscar.structure
         final_structure = contcar.structure
         total_energy = -93.76904720
         eigenvalues = {Spin.up: np.array(
@@ -63,7 +62,7 @@ class SupercellDftResultsTest(unittest.TestCase):
              -70.4981]
 
         self._MgO_Va_O1_2 = SupercellDftResults(
-            initial_structure, final_structure, total_energy, eigenvalues,
+            final_structure, total_energy, eigenvalues,
             electrostatic_potential)
         self._MgO_Va_O1_2_from_vasp_files = \
             SupercellDftResults.from_vasp_files(DIRNAME_VAC)
@@ -72,8 +71,8 @@ class SupercellDftResultsTest(unittest.TestCase):
         self.d_from_vasp_files = self._MgO_Va_O1_2_from_vasp_files.as_dict()
 
     def test_from_vasp_files(self):
-        self.assertTrue(self.d["initial_structure"] ==
-                        self.d_from_vasp_files["initial_structure"])
+#        self.assertTrue(self.d["initial_structure"] ==
+#                        self.d_from_vasp_files["initial_structure"])
         self.assertTrue(self.d["final_structure"] ==
                         self.d_from_vasp_files["final_structure"])
         self.assertEqual(self.d["total_energy"],
@@ -101,7 +100,6 @@ class UnitcellDftResultsTest(unittest.TestCase):
         """ """
         poscar = Poscar.from_file(DIRNAME_UNITCELL + "/POSCAR")
         contcar = Poscar.from_file(DIRNAME_UNITCELL + "/CONTCAR")
-        initial_structure = poscar.structure
         final_structure = contcar.structure
         total_energy = -11.91129199
         self.static_dielectric_tensor = np.array(
@@ -172,8 +170,7 @@ class UnitcellDftResultsTest(unittest.TestCase):
         electrostatic_potential = [-35.2999, -69.7508]
 
         self._MgO_unitcell = UnitcellDftResults(
-            initial_structure, final_structure, total_energy,
-            eigenvalues=eigenvalues,
+            final_structure, total_energy, eigenvalues=eigenvalues,
             electrostatic_potential=electrostatic_potential,
             static_dielectric_tensor=None, ionic_dielectric_tensor=None)
 

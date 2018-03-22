@@ -22,9 +22,8 @@ __date__ = "December 4, 2017"
 
 
 class DftResults(metaclass=ABCMeta):
-    def __init__(self, initial_structure, final_structure, total_energy,
-                 eigenvalues, electrostatic_potential):
-        self._initial_structure = initial_structure
+    def __init__(self, final_structure, total_energy, eigenvalues,
+                 electrostatic_potential):
         self._final_structure = final_structure
         self._total_energy = total_energy
         self._eigenvalues = eigenvalues
@@ -50,14 +49,13 @@ class DftResults(metaclass=ABCMeta):
         outcar = Outcar(directory_path + outcar_name)
         vasprun = Vasprun(directory_path + vasprun_name)
 
-        initial_structure = poscar.structure
         final_structure = contcar.structure
         total_energy = outcar.final_energy
         eigenvalues = vasprun.eigenvalues
         electrostatic_potential = outcar.electrostatic_potential
 
-        return cls(initial_structure, final_structure, total_energy,
-                   eigenvalues, electrostatic_potential)
+        return cls(final_structure, total_energy, eigenvalues,
+                   electrostatic_potential)
 
     @classmethod
     def from_dict(cls, d):
@@ -69,8 +67,8 @@ class DftResults(metaclass=ABCMeta):
         for spin, v in d["eigenvalues"].items():
             eigenvalues[Spin(int(spin))] = np.array(v)
 
-        return cls(d["initial_structure"], d["final_structure"],
-                   d["total_energy"], eigenvalues, d["electrostatic_potential"])
+        return cls(d["final_structure"], d["total_energy"], eigenvalues,
+                   d["electrostatic_potential"])
 
     @classmethod
     def json_load(cls, filename):
@@ -88,8 +86,7 @@ class DftResults(metaclass=ABCMeta):
         eigenvalues = {str(spin): v.tolist()
                        for spin, v in self._eigenvalues.items()}
 
-        d = {"initial_structure":       self._initial_structure,
-             "final_structure":         self._final_structure,
+        d = {"final_structure":         self._final_structure,
              "total_energy":            self._total_energy,
              "eigenvalues":             eigenvalues,
              "electrostatic_potential": self._electrostatic_potential}
@@ -101,10 +98,6 @@ class DftResults(metaclass=ABCMeta):
         """
         with open(filename, 'w') as fw:
             json.dump(self.as_dict(), fw, indent=2, cls=MontyEncoder)
-
-    @property
-    def initial_structure(self):
-        return self._initial_structure
 
     @property
     def final_structure(self):
@@ -141,12 +134,12 @@ class UnitcellDftResults(DftResults):
         ionic_dielectric_tensor (3x3 numpy array):
     """
 
-    def __init__(self, initial_structure, final_structure, total_energy,
-                 eigenvalues, electrostatic_potential,
-                 static_dielectric_tensor=None, ionic_dielectric_tensor=None ):
+    def __init__(self, final_structure, total_energy, eigenvalues,
+                 electrostatic_potential, static_dielectric_tensor=None,
+                 ionic_dielectric_tensor=None):
         """ """
-        super().__init__(initial_structure, final_structure, total_energy,
-                         eigenvalues, electrostatic_potential)
+        super().__init__(final_structure, total_energy, eigenvalues,
+                         electrostatic_potential)
 
         self._static_dielectric_tensor = static_dielectric_tensor
         self._ionic_dielectric_tensor = ionic_dielectric_tensor
@@ -161,10 +154,8 @@ class UnitcellDftResults(DftResults):
         for spin, v in d["eigenvalues"].items():
             eigenvalues[Spin(int(spin))] = np.array(v)
 
-        return cls(d["initial_structure"], d["final_structure"],
-                   d["total_energy"], eigenvalues,
-                   d["electrostatic_potential"],
-                   d["static_dielectric_tensor"],
+        return cls(d["final_structure"], d["total_energy"], eigenvalues,
+                   d["electrostatic_potential"], d["static_dielectric_tensor"],
                    d["ionic_dielectric_tensor"])
 
     def set_dielectric_constants_from_outcar(self, directory_path,
@@ -202,8 +193,7 @@ class UnitcellDftResults(DftResults):
         eigenvalues = {str(spin): v.tolist()
                        for spin, v in self._eigenvalues.items()}
 
-        d = {"initial_structure":        self._initial_structure,
-             "final_structure":          self._final_structure,
+        d = {"final_structure":          self._final_structure,
              "total_energy":             self._total_energy,
              "eigenvalues":              eigenvalues,
              "electrostatic_potential": self._electrostatic_potential,
