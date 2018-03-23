@@ -30,9 +30,8 @@ class DftResults(metaclass=ABCMeta):
         self._electrostatic_potential = electrostatic_potential
 
     @classmethod
-    def from_vasp_files(cls, directory_path, poscar_name="/POSCAR",
-                        contcar_name="/CONTCAR", outcar_name="/OUTCAR",
-                        vasprun_name="/vasprun.xml"):
+    def from_vasp_files(cls, directory_path, contcar_name="/CONTCAR",
+                        outcar_name="/OUTCAR", vasprun_name="/vasprun.xml"):
         # TODO: change "/POSCAR" to "POSCAR"
         # Then, bot format w/ and w/o "/" for directory_path must be allowed.
         """
@@ -44,7 +43,6 @@ class DftResults(metaclass=ABCMeta):
             vasprun_name (str): Name of vasprun.xml file.
                                 Defaults to vasprun.xml.
         """
-        poscar = Poscar.from_file(directory_path + poscar_name)
         contcar = Poscar.from_file(directory_path + contcar_name)
         outcar = Outcar(directory_path + outcar_name)
         vasprun = Vasprun(directory_path + vasprun_name)
