@@ -7,3 +7,4 @@ PyDefect.egg-info/
 *.pyd
 *.swp
 POTCAR*
+core/test_*.json
