@@ -6,7 +6,7 @@ import json
 from monty.json import MontyEncoder
 from monty.serialization import loadfn
 
-from pydefect.core.DFT_results import SupercellDftResults
+from pydefect.core.dft_results import SupercellDftResults
 from pydefect.input_maker.defect_entry import DefectEntry
 
 __author__ = "Yu Kumagai"
