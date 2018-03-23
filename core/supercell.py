@@ -1,8 +1,7 @@
 #!/usr/bin/env python
 
-from abc import ABCMeta
+from abc import ABCMeta, abstractmethod
 import json
-import numpy as np
 
 from monty.json import MontyEncoder
 from monty.serialization import loadfn
@@ -45,6 +44,13 @@ class Supercell(metaclass=ABCMeta):
                 directory_path, contcar_name, outcar_name, vasprun_name)
         return cls(dft_results)
 
+    @classmethod
+    def json_load(cls, filename):
+        """
+        Constructs a Defect class object from a json file.
+        """
+        return cls.from_dict(loadfn(filename))
+
     @property
     def final_structure(self):
         return self._dft_results.final_structure
@@ -61,13 +67,12 @@ class Supercell(metaclass=ABCMeta):
     def electrostatic_potential(self):
         return self._dft_results.electrostatic_potential
 
-    @property
-    def ewald_param(self):
-        return self._ewald_param
-
-    @ewald_param.setter
-    def ewald_param(self, ewald_param):
-        self._ewald_param = ewald_param
+    def to_json_file(self, filename):
+        """
+        Returns a json file.
+        """
+        with open(filename, 'w') as fw:
+            json.dump(self.as_dict(), fw, indent=2, cls=MontyEncoder)
 
     def set_vasp_results(self, directory_path, contcar_name="/CONTCAR",
                          outcar_name="/OUTCAR", vasprun_name="/vasprun.xml"):
@@ -78,9 +83,31 @@ class Supercell(metaclass=ABCMeta):
             SupercellDftResults.from_vasp_files(
                 directory_path, contcar_name, outcar_name, vasprun_name)
 
+    @abstractmethod
+    def as_dict(self):
+        pass
+
+    @classmethod
+    @abstractmethod
+    def from_dict(cls, d):
+        pass
+
 
 class Perfect(Supercell):
-    pass
+    def as_dict(self):
+        """
+        """
+        d = {"dft_results": self._dft_results.as_dict()}
+        return d
+
+    @classmethod
+    def from_dict(cls, d):
+        """
+        Constructs a  class object from a dictionary.
+        """
+        dft_results = SupercellDftResults.from_dict(d["dft_results"])
+
+        return cls(dft_results)
 
 
 class Defect(Supercell):
@@ -89,30 +116,28 @@ class Defect(Supercell):
     Args:
 
     """
-    def __init__(self, dft_results=None, defect_entry=None):
-        super().__init__(dft_results)
+    def __init__(self, defect_entry, dft_results=None):
         self._defect_entry = defect_entry
+        super().__init__(dft_results)
+
+    def as_dict(self):
+        """
+        Constructs a class object from a dictionary.
+        """
+        d = {"defect_entry": self._defect_entry.as_dict(),
+             "dft_results": self._dft_results.as_dict()}
+
+        return d
 
     @classmethod
     def from_dict(cls, d):
         """
-        Constructs a class object from a dictionary.
+        Constructs a  class object from a dictionary.
         """
-        # Expansion of _dft_results is necessary,
-        _dft_results = []
-        for i in d["irreducible_sites"]:
-            irreducible_sites.append(IrreducibleSite.from_dict(i))
+        defect_entry = DefectEntry.from_dict(d["defect_entry"])
+        dft_results = SupercellDftResults.from_dict(d["dft_results"])
 
-        return cls(d["initial_structure"], d["removed_atom_index"],
-                   d["inserted_atom_index"], d["defect_coords"], d["in_name"],
-                   d["out_name"], d["charge"])
-
-    @classmethod
-    def json_load(cls, filename):
-        """
-        Constructs a Defect class object from a json file.
-        """
-        return cls.from_dict(loadfn(filename))
+        return cls(defect_entry, dft_results)
 
     @property
     def initial_structure(self):
