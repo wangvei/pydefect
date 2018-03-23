@@ -1,6 +1,6 @@
 .DS_Store
 PyDefect.egg-info/
-.idea # PyCharm Setting Directory
+.idea/ # PyCharm Setting Directory
 *.o
 *.so
 *.pyc
