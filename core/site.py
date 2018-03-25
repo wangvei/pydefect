@@ -21,18 +21,18 @@ class IrreducibleSite:
         element (str): element name (e.g., Mg)
         first_index (int): first index of irreducible_name.
         last_index (int): last index of irreducible_name.
-        repr_coords (array): representative coordinates, namely the position
+        representative_coords (array): representative coordinates, namely the position
                             of first_index
 
     TODO1: Add the site symmetry information.
     """
     def __init__(self, irreducible_name, element, first_index, last_index,
-                 repr_coords):
+                 representative_coords):
         self._irreducible_name = irreducible_name
         self._element = element
         self._first_index = first_index
         self._last_index = last_index
-        self._repr_coords = repr_coords
+        self._repr_coords = representative_coords
 
     def __eq__(self, other):
         if other is None or type(self) != type(other):
