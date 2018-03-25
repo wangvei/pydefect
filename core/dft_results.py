@@ -77,7 +77,7 @@ class DftResults(metaclass=ABCMeta):
 
     def as_dict(self):
         """
-        Dict representation of DefectSetting class object.
+        Dict representation of DefectInitialSetting class object.
         Json-serializable dict representation.
         """
         # Spin object must be converted to string for to_json_file.
@@ -185,7 +185,7 @@ class UnitcellDftResults(DftResults):
 
     def as_dict(self):
         """
-        Dict representation of DefectSetting class object.
+        Dict representation of DefectInitialSetting class object.
         """
         # Spin object must be converted to string for to_json_file.
         eigenvalues = {str(spin): v.tolist()

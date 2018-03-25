@@ -1,7 +1,5 @@
 import unittest
 
-import numpy as np
-
 from pymatgen.core.structure import Structure
 
 from pydefect.input_maker.input_maker import *
@@ -23,7 +21,6 @@ FILENAME_POSCAR_IN1 = "examples/POSCAR-MgO64atoms-O_i1"
 FILENAME_POSCAR_IN3 = "examples/POSCAR-MgO64atoms-Al_i1"
 FILENAME_POSCAR_AS1 = "examples/POSCAR-MgO64atoms-O_Mg"
 FILENAME_POSCAR_SS1 = "examples/POSCAR-MgO64atoms-N_O1"
-#FILENAME_JSON_VA1 = "examples/MgO64atoms-Va_Mg1.json"
 
 
 class NormalizedRandom3dVectorTest(unittest.TestCase):

@@ -4,7 +4,7 @@ import shutil
 
 from pymatgen.io.vasp.inputs import Potcar
 
-from pydefect.input_maker.defect_in import DefectSetting
+from pydefect.input_maker.defect_in import DefectInitialSetting
 from pydefect.core.supercell import get_nions
 from pydefect.input_maker.input_maker import \
     DefectMaker, DefectInputSetMaker,  print_already_exist, \
@@ -150,7 +150,7 @@ def main():
     import argparse
     parser = argparse.ArgumentParser(
                         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument("-d","--defectin", dest="defectin",
+    parser.add_argument("-d", "--defectin", dest="defectin",
                         default="defect.in", type=str, help="defect.in name.")
     parser.add_argument("-p", "--dposcar", dest="dposcar", default="DPOSCAR",
                         type=str, help="DPOSCAR name.")
@@ -162,8 +162,8 @@ def main():
                         help="Particular defect name added.")
 
     opts = parser.parse_args()
-    defect_setting = DefectSetting.from_defect_in(poscar=opts.dposcar, 
-                                                  defect_in_file=opts.defectin)
+    defect_setting = DefectInitialSetting.from_defect_in(poscar=opts.dposcar,
+                                                         defect_in_file=opts.defectin)
     if opts.add:
         for d in opts.add:
             a = VaspDefectInputMaker(d, defect_setting, opts.incar, opts.kpoints)

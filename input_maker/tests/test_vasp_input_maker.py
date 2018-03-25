@@ -99,7 +99,7 @@ class VaspInputMakerTest(unittest.TestCase):
 #        electronegativity = {"Al": 1.3, "Mg": 1.31, "O": 3.44}                                
 #                                                                                   
 #        self.defect_setting = \
-#            DefectSetting(structure, irrep_elements, dopant_configs,         
+#            DefectInitialSetting(structure, irrep_elements, dopant_configs,
 #                          antisite_configs, interstitial_coords, include, 
 #                          exclude, symbreak, displace, cutoff, symprec, 
 #                          oxidation_states, electronegativity)  

@@ -25,9 +25,8 @@ def get_nions(defect_structure):
         return: [1, 63, 64]
 
     """
-    nions = [int(i)
-             for i in defect_structure.to(fmt="poscar").split("\n")[6].split()]
-    return nions
+    return [int(i) for i in
+            defect_structure.to(fmt="poscar").split("\n")[6].split()]
 
 
 class Supercell(metaclass=ABCMeta):

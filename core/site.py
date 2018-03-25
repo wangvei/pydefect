@@ -1,13 +1,5 @@
 #!/usr/bin/env python
 
-from abc import ABCMeta
-import json
-
-import numpy as np
-from monty.json import MontyEncoder
-from monty.serialization import loadfn
-from pydefect.core.DFT_results import SupercellDftResults
-
 __author__ = "Yu Kumagai"
 __copyright__ = "Copyright 2017, Oba group"
 __version__ = "0.1"
@@ -66,3 +58,23 @@ class IrreducibleSite:
              "last_index": self._last_index,
              "repr_coords": self._repr_coords}
         return d
+
+    @property
+    def irreducible_name(self):
+        return self._irreducible_name
+
+    @property
+    def element(self):
+        return self._element
+
+    @property
+    def first_index(self):
+        return self._first_index
+
+    @property
+    def last_index(self):
+        return self._last_index
+
+    @property
+    def repr_coords(self):
+        return self._repr_coords

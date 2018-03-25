@@ -123,6 +123,18 @@ def filter_defect_name_set(defect_all_name_set, particular_defects):
      Args:
         defect_all_name_set (list): A set of defect names.
         particular_defects (list):
+
+    When the following type names are given, constructs a set of defects.
+        "Va"    --> A set of all the vacancies.
+        "i"     --> A set of all the interstitials.
+        "as"    --> A set of all the antisites.
+        "Va_O"  --> A set of all the oxygen vacancies
+        "Va_O1" --> A set of oxygen vacancies at O1 site
+        "Mg_O"  --> A set of all the Mg-on-O antisite pairs.
+        "Mg_O1" --> A set of Mg-on-O1 antisite pairs.
+
+    When complete defect_name is given, constructs a particular defect.
+        e.g., "Va_O1_2",  "Mg_O1_0"
     """
     defect_name_set = []
 
@@ -237,21 +249,9 @@ class DefectInputSetMaker(metaclass=ABCMeta):
     oxidation states.
 
     Args:
-        defect_setting (DefectSetting): DefectSetting class object.
+        defect_setting (DefectInitialSetting): DefectInitialSetting class object.
         particular_defects (str/list): It specifies (a) particular defect(s).
             Specify a type of defects.
-
-        * When the following type names are given, constructs a set of defects.
-                "Va" --> A set of all the vacancies.
-                "i" --> A set of all the interstitials.
-                "as" --> A set of all the antisites.
-                "Va_O" --> A set of all the oxygen vacancies
-                "Va_O1" --> A set of oxygen vacancies at O1 site
-                "Mg_O" --> A set of all the Mg-on-O antisite pairs.
-                "Mg_O1" --> A set of Mg-on-O1 antisite pairs.
-
-        * When full defect_name is given, constructs a particular defect.
-               e.g., "Va_O1_2",  "Mg_O1_0"
 
     Parameters in use:
         in_pattern (str): pattern for screening in_name

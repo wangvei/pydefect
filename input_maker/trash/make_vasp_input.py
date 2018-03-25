@@ -173,7 +173,7 @@ class InputMaker():
 
     Args:
         defect_name (str): defect name defined in PyDefect, e.g., "Va_Mg1_2"
-        defect_setting: DefectSetting class object
+        defect_setting: DefectInitialSetting class object
     """
     def __init__(self, defect_name, defect_setting):
 
@@ -257,7 +257,7 @@ class VaspInputMaker(InputMaker):
     
     Args:
         defect_name (str): defect name defined in PyDefect, e.g., "Va_Mg1_2"
-        defect_setting: DefectSetting class object
+        defect_setting: DefectInitialSetting class object
         incar (str): INCAR name
         kpoints (str): KPOINTS name
     """

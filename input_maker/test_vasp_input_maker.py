@@ -1,7 +1,7 @@
 import unittest
 from input_maker import *
 from pydefect.input_maker.defect import Defect, IrreducibleSite
-from pydefect.input_maker.defect_in import DefectSetting
+from pydefect.input_maker.defect_in import DefectInitialSetting
 import numpy as np
 from pymatgen.core.structure import Structure
 
@@ -46,7 +46,7 @@ class VaspDefectInputSetMakerTest(unittest.TestCase):
         oxidation_states = {"Mg": 2, "O": -2, "Al": 3, "N": -3}
         electronegativity = {"Mg": 1.31, "O": 3.44, "Al": 1.61, "N": 3.04}
 
-        self._mgo = DefectSetting(
+        self._mgo = DefectInitialSetting(
             structure, irreducible_elements, dopant_configs, antisite_configs,
             interstitial_coords, included, excluded, distance, cutoff,
             symprec, oxidation_states, electronegativity)

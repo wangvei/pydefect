@@ -32,7 +32,6 @@ class DefectEntry:
         out_name" (str): Removed site name. "in", where n is an integer,
                          is inserted for interstitials. E.g., "i1".
         charge (int): Charge state of the defect
-
     """
     def __init__(self, initial_structure, removed_atom_index,
                  inserted_atom_index, defect_coords, in_name, out_name, charge):
