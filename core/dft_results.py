@@ -33,7 +33,7 @@ class DftResults(metaclass=ABCMeta):
     def from_vasp_files(cls, directory_path, contcar_name="/CONTCAR",
                         outcar_name="/OUTCAR", vasprun_name="/vasprun.xml"):
         # TODO: change "/POSCAR" to "POSCAR"
-        # Then, bot format w/ and w/o "/" for directory_path must be allowed.
+        # Then, both format w/ and w/o "/" for directory_path must be allowed.
         """
         Args:
             directory_path (str): path of directory.
@@ -197,4 +197,5 @@ class UnitcellDftResults(DftResults):
              "electrostatic_potential": self._electrostatic_potential,
              "static_dielectric_tensor": self._static_dielectric_tensor,
              "ionic_dielectric_tensor":  self._ionic_dielectric_tensor}
+
         return d

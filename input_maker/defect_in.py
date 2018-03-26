@@ -176,20 +176,15 @@ class DefectInitialSetting:
                     oxidation_states[element] = int(di.readline().split()[2])
 
                 elif line[0] == "Interstitial":
-                    # "Interstitial coordinates: 0 0 0 0.25 0.25 0.25"
-                    #  --> [0, 0, 0, 0.25, 0.25, 0.25]
-                    b = [float(''.join(i for i in line[i] if i.isdigit()
-                                       or i == '.')) for i in
-                         range(2, len(line))]
-                    # If the number for interstitial coordinates cannot be
-                    # divided by 3, return Error.
-                    #  [0, 0, 0, 0.25, 0.25, 0.25]
-                    #            --> [[0, 0, 0], [0.25, 0.25, 0.25]]
-                    try:
-                        interstitial_coords = [b[i:i + 3]
-                                               for i in range(int(len(b) / 3))]
-                    except ValueError:
-                        print("Interstitial coordinates isn't a multiple of 3.")
+                    # "Interstitial coordinates: 0 0 0
+                    # "Interstitial coordinates: 0.25 0.25 0.25"
+                    if len(line) == 5:
+                        interstitial_coords.append(
+                            [float(line[i]) for i in range(2, len(line))])
+                    else:
+                        print("The number of interstitial coordinates is not a "
+                              "multiple of 3.")
+                        interstitial_coords =[]
 
                 elif line[0] == "Antisite":
                     antisite_configs = [i.split("_") for i in line[2:]]
@@ -225,7 +220,8 @@ class DefectInitialSetting:
                    electronegativity)
 
     @classmethod
-    def from_basic_settings(cls, poscar, dopants=[], interstitial_coords=[],
+    def from_basic_settings(cls, poscar, dopants=[],
+                            flattened_interstitial_coords=[],
                             is_antisite=True, en_diff=_EN_DIFF, included="",
                             excluded="", distance=_DISTANCE, cutoff=_CUTOFF,
                             symprec=_SYMPREC):
@@ -236,10 +232,11 @@ class DefectInitialSetting:
             poscar (str): POSCAR type file name used for supercell defect
                           calculations
             dopants (list): dopant element names, e.g., ["Al", "N"]
-            interstitial_coords (list): Coordinates for interstitial sites.
-                                        The number of elements needs to be
-                                        divided by 3.
-                                        e.g., [0, 0, 0, 0.1, 0.1, 0.1]
+            flattened_interstitial_coords (list):
+                Coordinates for interstitial sites.
+                The number of elements needs to be
+                divided by 3.
+                e.g., [0, 0, 0, 0.1, 0.1, 0.1]
             is_antisite (bool): Whether to consider antisite defects.
             en_diff (float): Electronegativity (EN) difference for determining
                              sets of antisites and dopant sites.
@@ -328,6 +325,17 @@ class DefectInitialSetting:
                         dopant_configs.append([d, s1])
                 else:
                     cls.electronegativity_not_defined(d, s1)
+
+        if flattened_interstitial_coords:
+            if int(len(flattened_interstitial_coords)) % 3 == 0:
+                interstitial_coords = \
+                    [flattened_interstitial_coords[i:i + 3]
+                     for i in range(int(len(flattened_interstitial_coords) / 3))]
+            else:
+                raise ValueError("The number of interstitial coordinates is not"
+                                 " a multiple of 3.")
+        else:
+            interstitial_coords = []
 
         return cls(symmetrized_structure, irreducible_sites, dopant_configs,
                    antisite_configs, interstitial_coords, included, excluded,
@@ -427,18 +435,19 @@ class DefectInitialSetting:
                     e.irreducible_name))
                 di.write("      Equivalent atoms: {}\n".format(
                     str(e.first_index) + ".." + str(e.last_index)))
-                di.write("Fractional coordinates: %9.7f %9.7f %9.7f\n" %
+                di.write("Fractional coordinates: %9.7f  %9.7f  %9.7f\n" %
                          tuple(e.repr_coords))
                 di.write("     Electronegativity: {}\n".format(
                     self._electronegativity[e.element]))
                 di.write("       Oxidation state: {}\n\n".format(
                     self._oxidation_states[e.element]))
 
-            di.write("Interstitial coordinates: ")
             if self._interstitial_coords:
-                di.write(str(self._interstitial_coords) + "\n")
+                for i in self._interstitial_coords:
+                    di.write("Interstitial coordinates: %6.4f  %6.4f  %6.4f\n" %
+                             tuple(i))
             else:
-                di.write("\n")
+                di.write("Interstitial coordinates: \n")
 
             if self._antisite_configs is not []:
                 di.write("Antisite defects: ")
@@ -469,6 +478,58 @@ class DefectInitialSetting:
     @staticmethod
     def electronegativity_not_defined(e1, e2):
         print("Electronegativity of {} and/or {} is not defined".format(e1, e2))
+
+    @property
+    def structure(self):
+        return self._structure
+
+    @property
+    def irreducible_sites(self):
+        return self._irreducible_sites
+
+    @property
+    def dopant_configs(self):
+        return self._dopant_configs
+
+    @property
+    def dopants(self):
+        return self._dopants
+
+    @property
+    def antisite_configs(self):
+        return self._antisite_configs
+
+    @property
+    def interstitial_coords(self):
+        return self._interstitial_coords
+
+    @property
+    def included(self):
+        return self._included
+
+    @property
+    def excluded(self):
+        return self._excluded
+
+    @property
+    def distance(self):
+        return self._distance
+
+    @property
+    def cutoff(self):
+        return self._cutoff
+
+    @property
+    def symprec(self):
+        return self._symprec
+
+    @property
+    def oxidation_states(self):
+        return self._oxidation_states
+
+    @property
+    def electronegativity(self):
+        return self._electronegativity
 
 
 class NotSupportedFlagError(Exception):

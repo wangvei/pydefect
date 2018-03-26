@@ -12,7 +12,7 @@ path = sys.argv[1]
 poscar = read_vasp(path)
 unitcell_natoms = int(str(poscar.get_number_of_atoms()))
 MIN_ATOM = 50
-MAX_ATOM = 400
+MAX_ATOM = 200
 MIN_ATOM_MODIFIED = MIN_ATOM + unitcell_natoms - (MIN_ATOM % unitcell_natoms)
 print("natom of unitcell = " + str(unitcell_natoms))
 

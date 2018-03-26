@@ -84,12 +84,12 @@ class Supercell(metaclass=ABCMeta):
 
     @abstractmethod
     def as_dict(self):
-        pass
+        return NotImplementedError
 
     @classmethod
     @abstractmethod
     def from_dict(cls, d):
-        pass
+        return NotImplementedError
 
 
 class Perfect(Supercell):

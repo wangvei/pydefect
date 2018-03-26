@@ -26,21 +26,23 @@ def potcar_dir():
     """    
     Return the name of POTCAR file directory.
     SETTINGS_FILE needs to be defined in the same module.
-    """    
+    """
+    pydefect_yaml = None
+    potcar_director_path = None
     try:
         with open(SETTINGS_FILE, "rt") as f:
-            d = yaml.safe_load(f)
+            pydefect_yaml = yaml.safe_load(f)
     except IOError:
         print('.pydefect.yaml cannot be opened.')
 
-    for k, v in d.items():
+    for k, v in pydefect_yaml.items():
         if k == "DEFAULT_POTCAR":
-            potcar_dir = v
+            potcar_director_path = v
 
-    if not potcar_dir:
-        raise ValueError('DEFAULT_POTCAR is not set in .pydefect.yaml')
-
-    return potcar_dir
+    try:
+        return potcar_director_path
+    except ValueError:
+        print('DEFAULT_POTCAR is not set in .pydefect.yaml')
 
 
 def make_potcar(dirname, elements, default_potcar_dir):
@@ -68,11 +70,11 @@ def get_num_electrons_from_potcar(potcar, nions, charge):
 
 class VaspDefectInputSetMaker(DefectInputSetMaker):
 
-    def __init__(self, defect_setting, particular_defects="", incar="INCAR",
+    def __init__(self, defect_initial_setting, particular_defects="", incar="INCAR",
                  kpoints="KPOINTS"):
 
-        # make self._defect_setting and self._defect_name_set
-        super().__init__(defect_setting, particular_defects)
+        # make self._defect_initial_setting and self._defect_name_set
+        super().__init__(defect_initial_setting, particular_defects)
 
         self._incar = incar
         self._kpoints = kpoints
@@ -89,10 +91,10 @@ class VaspDefectInputSetMaker(DefectInputSetMaker):
         else:
             print_is_being_constructed("perfect")
             os.makedirs(dir_name)
-            self._defect_setting.structure.to(filename=dir_name + "POSCAR")
+            self._defect_initial_setting.structure.to(filename=dir_name + "POSCAR")
             shutil.copyfile(self._incar, dir_name + "INCAR")
             shutil.copyfile(self._kpoints, dir_name + "KPOINTS")
-            elements = self._defect_setting.structure.symbol_set
+            elements = self._defect_initial_setting.structure.symbol_set
             make_potcar(dir_name, elements, potcar_dir())
 
     def _make_defect_input(self, defect_name):
@@ -109,19 +111,20 @@ class VaspDefectInputSetMaker(DefectInputSetMaker):
             # POSCAR-Initial: POSCAR with a defect
             # POSCAR-DisplacedInitial: POSCAR with perturbation near the defect
             # POSCAR: POSCAR-DisplacedInitial if exist, otherwise POSCAR-Initial
-            d = DefectMaker(defect_name,
-                            self._defect_setting.structure,
-                            self._defect_setting.irreducible_sites,
-                            self._defect_setting.interstitial_coords).defect
+            d = DefectMaker(
+                defect_name,
+                self._defect_initial_setting.structure,
+                self._defect_initial_setting.irreducible_sites,
+                self._defect_initial_setting.interstitial_coords).defect
             d.to_json_file(dir_name + "defect.json")
             d.initial_structure.to(filename=dir_name + "POSCAR-Initial")
 
-            if not self._defect_setting.distance == 0.0:
+            if not self._defect_initial_setting.distance == 0.0:
                 perturbed_defect_structure, perturbed_sites = \
                     perturb_around_a_point(d.initial_structure,
                                            d.defect_coords,
-                                           self._defect_setting.cutoff,
-                                           self._defect_setting.distance)
+                                           self._defect_initial_setting.cutoff,
+                                           self._defect_initial_setting.distance)
                 perturbed_defect_structure.to(
                     filename=dir_name + "POSCAR-DisplacedInitial")
                 shutil.copyfile(
@@ -150,7 +153,7 @@ def main():
     import argparse
     parser = argparse.ArgumentParser(
                         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument("-d", "--defectin", dest="defectin",
+    parser.add_argument("-d", "--defect_in", dest="defect_in",
                         default="defect.in", type=str, help="defect.in name.")
     parser.add_argument("-p", "--dposcar", dest="dposcar", default="DPOSCAR",
                         type=str, help="DPOSCAR name.")
@@ -162,19 +165,23 @@ def main():
                         help="Particular defect name added.")
 
     opts = parser.parse_args()
-    defect_setting = DefectInitialSetting.from_defect_in(poscar=opts.dposcar,
-                                                         defect_in_file=opts.defectin)
+    defect_initial_setting = DefectInitialSetting.\
+        from_defect_in(poscar=opts.dposcar, defect_in_file=opts.defect_in)
+
     if opts.add:
         for d in opts.add:
-            a = VaspDefectInputMaker(d, defect_setting, opts.incar, opts.kpoints)
+            a = VaspDefectInputSetMaker(d, defect_initial_setting, opts.incar,
+                                        opts.kpoints)
             if a.is_directory:
                 print_already_exist(d)
             else:
                 print_is_being_constructed(d)
                 a.constructor()
     else:
-        VaspDefectInputSetMaker(defect_setting, particular_defects=opts.add,
-                                incar=opts.incar, kpoints=opts.kpoints)
+        VaspDefectInputSetMaker(defect_initial_setting,
+                                particular_defects=opts.add,
+                                incar=opts.incar,
+                                kpoints=opts.kpoints)
 
 
 if __name__ == "__main__":

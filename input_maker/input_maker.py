@@ -118,10 +118,10 @@ def print_is_being_constructed(name):
     print("{:>10} is being constructed.".format(name))
 
 
-def filter_defect_name_set(defect_all_name_set, particular_defects):
+def filter_defect_name_set(all_defect_name_set, particular_defects):
     """
      Args:
-        defect_all_name_set (list): A set of defect names.
+        all_defect_name_set (list): A set of defect names.
         particular_defects (list):
 
     When the following type names are given, constructs a set of defects.
@@ -140,7 +140,7 @@ def filter_defect_name_set(defect_all_name_set, particular_defects):
 
     for p in particular_defects.split():
         if len(p.split("_")) == 3:
-            if p in defect_all_name_set:
+            if p in all_defect_name_set:
                 defect_name_set = [particular_defects]
         elif len(p.split("_")) == 1:
             if particular_defects == "Va":
@@ -163,7 +163,7 @@ def filter_defect_name_set(defect_all_name_set, particular_defects):
                 out_pattern = r"" + re.escape(o) + "[1-9]*$"
 
         if len(particular_defects.split("_")) == 1 or 2:
-            for d in defect_all_name_set:
+            for d in all_defect_name_set:
                 in_name, out_name = parse_defect_name(d)[0:2]
 
             if re.match(in_pattern, in_name) and re.match(out_pattern, out_name):
@@ -219,7 +219,8 @@ class DefectMaker:
 
         # -------------------- analyze in_name ---------------------------------
         inserted_atom_index = None
-        # This method needs to be run after finishing analyze_out_name because
+
+        # This block needs to be run after finishing analyze_out_name because
         # defect coordinates is needed when inserting an in_name atom.
         if in_name == "Va":
             pass
@@ -249,7 +250,7 @@ class DefectInputSetMaker(metaclass=ABCMeta):
     oxidation states.
 
     Args:
-        defect_setting (DefectInitialSetting): DefectInitialSetting class object.
+        defect_initial_setting (DefectInitialSetting): DefectInitialSetting class object.
         particular_defects (str/list): It specifies (a) particular defect(s).
             Specify a type of defects.
 
@@ -258,10 +259,10 @@ class DefectInputSetMaker(metaclass=ABCMeta):
         out_pattern (str): pattern for screening out_name
     """
 
-    def __init__(self, defect_setting, particular_defects=""):
+    def __init__(self, defect_initial_setting, particular_defects=""):
 
-        self._defect_setting = defect_setting
-        defect_all_name_set = defect_setting.make_defect_name_set()
+        self._defect_initial_setting = defect_initial_setting
+        defect_all_name_set = defect_initial_setting.make_defect_name_set()
 
         if not particular_defects:
             self._defect_name_set = defect_all_name_set

@@ -12,8 +12,8 @@ __date__ = "December 4, 2017"
 class IrreducibleSiteTest(unittest.TestCase):
     
     def setUp(self):
-        self._mg = IrreducibleSite(irreducible_name="Mg1", element="Mg", first_index=1, 
-                              last_index=32, repr_coords=[0, 0, 0])
+        self._mg = IrreducibleSite(irreducible_name="Mg1", element="Mg", first_index=1,
+                                   last_index=32, representative_coords=[0, 0, 0])
 
     def test_dict(self):
         d = IrreducibleSite.from_dict(self._mg.as_dict())
@@ -26,8 +26,8 @@ class DefectSettingTest(unittest.TestCase):
 
     def setUp(self):
         structure = Structure.from_file("POSCAR-MgO64atoms")
-        Mg1 = IrreducibleSite(irreducible_name="Mg1", element="Mg", first_index=1, last_index=32, repr_coords=[0, 0, 0])
-        O1 = IrreducibleSite(irreducible_name="O1", element="O", first_index=33, last_index=64, repr_coords=[0.25, 0.25, 0.25])
+        Mg1 = IrreducibleSite(irreducible_name="Mg1", element="Mg", first_index=1, last_index=32, representative_coords=[0, 0, 0])
+        O1 = IrreducibleSite(irreducible_name="O1", element="O", first_index=33, last_index=64, representative_coords=[0.25, 0.25, 0.25])
         irrep_elements = [Mg1, O1] 
         dopant_configs = "Al_Mg1"
         antisite_configs = ["Mg_O1", "O_Mg1"]

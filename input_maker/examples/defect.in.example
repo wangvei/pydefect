@@ -10,7 +10,7 @@ Fractional coordinates: 0.2500000 0.2500000 0.2500000
      Electronegativity: 3.44
        Oxidation state: -2
 
-Interstitial coordinates: [[0.1, 0.1, 0.1]]
+Interstitial coordinates: [0.1, 0.1, 0.1]
 Antisite defects: Mg_O O_Mg
 
    Dopant element: N
@@ -25,7 +25,7 @@ Substituted defects: Al_Mg Al_O N_Mg N_O
 
 Maximum Displacement: 0.15
 
-Exceptionally included: ['Va_O1_-1', 'Va_O1_-2']
-Exceptionally excluded: ['Va_O1_1', 'Va_O1_2']
+Exceptionally included: Va_O1_-1 Va_O1_-2
+Exceptionally excluded: Va_O1_1 Va_O1_2
 Cutoff region of atoms perturbed: 2.0
 Symprec: 0.001
