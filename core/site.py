@@ -21,8 +21,8 @@ class IrreducibleSite:
         element (str): element name (e.g., Mg)
         first_index (int): first index of irreducible_name.
         last_index (int): last index of irreducible_name.
-        representative_coords (array): representative coordinates, namely the position
-                            of first_index
+        representative_coords (list): representative coordinates, namely the
+                                      position of first_index
 
     TODO1: Add the site symmetry information.
     """
@@ -58,6 +58,7 @@ class IrreducibleSite:
              "last_index": self._last_index,
              "repr_coords": self._repr_coords}
         return d
+        return self._irreducible_name
 
     @property
     def irreducible_name(self):
