@@ -69,14 +69,14 @@ def perturb_around_a_point(structure, center, cutoff, distance):
     return structure, sites
 
 
-def _get_int_from_string(x):
+def get_int_from_string(x):
     """ 
     Returns joined integer number from a string.
 
     Args:
         x (str): a string
     """
-    return int(''.join(i for i in x if i.isdigit() or i == '.'))
+    return int(''.join(i for i in x if i.isdigit()))
 
 
 def parse_defect_name(defect_name):
@@ -118,16 +118,15 @@ def print_is_being_constructed(name):
     print("{:>10} is being constructed.".format(name))
 
 
-def filter_defect_name_set(all_defect_name_set, particular_defects):
+def filter_name_set(name_set, filtering_words):
     """
      Args:
-        all_defect_name_set (list): A set of defect names.
-        particular_defects (list):
+        name_set (list): A set of defect names.
+        filtering_words (list):
 
     When the following type names are given, constructs a set of defects.
         "Va"    --> A set of all the vacancies.
-        "i"     --> A set of all the interstitials.
-        "as"    --> A set of all the antisites.
+        "_i"     --> A set of all the interstitials.
         "Va_O"  --> A set of all the oxygen vacancies
         "Va_O1" --> A set of oxygen vacancies at O1 site
         "Mg_O"  --> A set of all the Mg-on-O antisite pairs.
@@ -136,40 +135,15 @@ def filter_defect_name_set(all_defect_name_set, particular_defects):
     When complete defect_name is given, constructs a particular defect.
         e.g., "Va_O1_2",  "Mg_O1_0"
     """
-    defect_name_set = []
+    filtered_name_set = []
 
-    for p in particular_defects.split():
-        if len(p.split("_")) == 3:
-            if p in all_defect_name_set:
-                defect_name_set = [particular_defects]
-        elif len(p.split("_")) == 1:
-            if particular_defects == "Va":
-                in_pattern = r"Va"
-                out_pattern = r""
-            elif particular_defects == "i":
-                in_pattern = r""
-                out_pattern = r"i[1-9]+$"
-            # TODO: antisites pattern should be implemented.
+    for p in filtering_words:
+        pattern = r"" + re.escape(p)
+        for d in name_set:
+            if re.search(pattern, d):
+                filtered_name_set.append(d)
 
-        elif len(particular_defects.split("_")) == 2:
-            # particular_defects = "Va_O" -->  i = "Va", o = "O"
-            i, o = [x for x in particular_defects.split("_")]
-            in_pattern = r"" + re.escape(i)
-            if re.search('[0-9]$', o):
-                "Va_O1"
-                out_pattern = r"" + re.escape(o)
-            else:
-                "Va_O"
-                out_pattern = r"" + re.escape(o) + "[1-9]*$"
-
-        if len(particular_defects.split("_")) == 1 or 2:
-            for d in all_defect_name_set:
-                in_name, out_name = parse_defect_name(d)[0:2]
-
-            if re.match(in_pattern, in_name) and re.match(out_pattern, out_name):
-                defect_name_set.append(d)
-
-    return defect_name_set
+    return list(set(filtered_name_set))
 
 
 class DefectMaker:
@@ -201,7 +175,7 @@ class DefectMaker:
         removed_atom_index = None
         # interstitial
         if re.match(r'^i[0-9]+$', out_name):
-            interstitial_index = _get_int_from_string(out_name)
+            interstitial_index = get_int_from_string(out_name)
             try:
                 defect_coords = interstitial_coords[interstitial_index - 1]
             except ValueError:
@@ -252,7 +226,7 @@ class DefectInputSetMaker(metaclass=ABCMeta):
     Args:
         defect_initial_setting (DefectInitialSetting):
             DefectInitialSetting class object.
-        particular_defects (str/list):
+        filtering_words (list):
             It specifies (a) particular defect(s). Specify a type of defects.
 
     Parameters in use:
@@ -260,16 +234,16 @@ class DefectInputSetMaker(metaclass=ABCMeta):
         out_pattern (str): pattern for screening out_name
     """
 
-    def __init__(self, defect_initial_setting, particular_defects=""):
+    def __init__(self, defect_initial_setting, filtering_words=None):
 
         self._defect_initial_setting = defect_initial_setting
         defect_all_name_set = defect_initial_setting.make_defect_name_set()
 
-        if not particular_defects:
-            self._defect_name_set = defect_all_name_set
-        else:
+        if filtering_words:
             self._defect_name_set = \
-                filter_defect_name_set(defect_all_name_set, particular_defects)
+                filter_name_set(defect_all_name_set, filtering_words)
+        else:
+            self._defect_name_set = defect_all_name_set
 
     @abstractmethod
     def _make_perfect_input(self):

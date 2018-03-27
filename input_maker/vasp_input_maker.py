@@ -5,7 +5,7 @@ import shutil
 from pymatgen.io.vasp.inputs import Potcar
 
 from pydefect.input_maker.defect_in import DefectInitialSetting
-from input_maker.defect_entry import get_nions
+from pydefect.input_maker.defect_entry import get_nions
 from pydefect.input_maker.input_maker import \
     DefectMaker, DefectInputSetMaker,  print_already_exist, \
     print_is_being_constructed,  perturb_around_a_point
@@ -70,17 +70,19 @@ def get_num_electrons_from_potcar(potcar, nions, charge):
 
 class VaspDefectInputSetMaker(DefectInputSetMaker):
 
-    def __init__(self, defect_initial_setting, particular_defects="", incar="INCAR",
+    def __init__(self, defect_initial_setting, filtering_words="", incar="INCAR",
                  kpoints="KPOINTS"):
 
         # make self._defect_initial_setting and self._defect_name_set
-        super().__init__(defect_initial_setting, particular_defects)
+        super().__init__(defect_initial_setting, filtering_words)
 
         self._incar = incar
         self._kpoints = kpoints
 
         # Construct defect input files.
-        self._make_perfect_input()
+        if not filtering_words:
+            self._make_perfect_input()
+
         for d in self._defect_name_set:
             self._make_defect_input(d)
 
@@ -161,27 +163,28 @@ def main():
                         type=str, help="INCAR name.")
     parser.add_argument("--kpoints", dest="kpoints", default="KPOINTS", 
                         type=str, help="KPOINTS name.")
-    parser.add_argument("--add", dest="add", type=str, default=None,
+    parser.add_argument("--add", dest="add", type=str, default=None, nargs=+
                         help="Particular defect name added.")
 
     opts = parser.parse_args()
     defect_initial_setting = DefectInitialSetting.\
         from_defect_in(poscar=opts.dposcar, defect_in_file=opts.defect_in)
 
-    if opts.add:
-        for d in opts.add:
-            a = VaspDefectInputSetMaker(d, defect_initial_setting, opts.incar,
-                                        opts.kpoints)
-            if a.is_directory:
-                print_already_exist(d)
-            else:
-                print_is_being_constructed(d)
-                a.constructor()
-    else:
-        VaspDefectInputSetMaker(defect_initial_setting,
-                                particular_defects=opts.add,
-                                incar=opts.incar,
-                                kpoints=opts.kpoints)
+    # if opts.add:
+    #     for d in opts.add:
+    #         a = VaspDefectInputSetMaker(defect_initial_setting,
+    #                                     opts.incar,
+    #                                     opts.kpoints)
+    #         if a.is_directory:
+    #             print_already_exist(d)
+    #         else:
+    #             print_is_being_constructed(d)
+    #             a.constructor()
+    # else:
+    VaspDefectInputSetMaker(defect_initial_setting=defect_initial_setting,
+                            filtering_words=opts.add,
+                            incar=opts.incar,
+                            kpoints=opts.kpoints)
 
 
 if __name__ == "__main__":

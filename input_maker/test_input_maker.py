@@ -66,6 +66,57 @@ class PerturbAroundAPointTest(unittest.TestCase):
         self.assertEqual(perturbed_sites, true_perturbed_sites)
 
 
+class GetIntFromStringTest(unittest.TestCase):
+
+    def test(self):
+        actual_1 = get_int_from_string("Mg1")
+        actual_2 = get_int_from_string("Mg1.Al2")
+        expected_1 = 1
+        expected_2 = 12
+        self.assertEqual(expected_1, actual_1)
+        self.assertEqual(expected_2, actual_2)
+
+
+class ParseDefectNameTest(unittest.TestCase):
+
+    def test(self):
+        actual_1 = parse_defect_name("Va_Mg1_0")
+        expected_1 = ("Va", "Mg1", 0)
+        self.assertEqual(actual_1, expected_1)
+
+
+class FilterDefectNameSetTest(unittest.TestCase):
+
+    def setUp(self):
+        self._name_set = \
+            ['Va_Mg1_-2', 'Va_Mg1_-1', 'Va_Mg1_0', 'Va_O1_0', 'Va_O1_-1',
+             'Va_O1_-2', 'Va_O2_0', 'Mg_i1_0', 'Mg_i1_1', 'Mg_i1_2', 'O_i1_-2',
+             'O_i1_-1', 'O_i1_0', 'O_Mg1_-4', 'O_Mg1_-3', 'O_Mg1_-2',
+             'O_Mg1_-1', 'O_Mg1_0', 'Al_Mg1_0', 'Al_Mg1_1']
+
+    def test(self):
+
+        expected_Va = ['Va_Mg1_-2', 'Va_Mg1_-1', 'Va_Mg1_0', 'Va_O1_0',
+                       'Va_O1_-1', 'Va_O1_-2', 'Va_O2_0']
+        expected__i = ['Mg_i1_0', 'Mg_i1_1', 'Mg_i1_2', 'O_i1_-2', 'O_i1_-1',
+                      'O_i1_0']
+        expected_Va_and__i = expected_Va + expected__i
+        expected_Va_O = ['Va_O1_0', 'Va_O1_-1', 'Va_O1_-2', 'Va_O2_0']
+        expected_Va_O1 = ['Va_O1_0', 'Va_O1_-1', 'Va_O1_-2']
+
+        actual_Va = filter_name_set(self._name_set, ["Va"])
+        actual__i = filter_name_set(self._name_set, ["_i"])
+        actual_Va_and__i = filter_name_set(self._name_set, ["Va", "_i"])
+        actual_Va_O = filter_name_set(self._name_set, ["Va_O"])
+        actual_Va_O1 = filter_name_set(self._name_set, ["Va_O1"])
+
+        self.assertEqual(sorted(actual_Va), sorted(expected_Va))
+        self.assertEqual(sorted(actual__i), sorted(expected__i))
+        self.assertEqual(sorted(actual_Va_and__i), sorted(expected_Va_and__i))
+        self.assertEqual(sorted(actual_Va_O), sorted(expected_Va_O))
+        self.assertEqual(sorted(actual_Va_O1), sorted(expected_Va_O1))
+
+
 class DefectMakerTest(unittest.TestCase):
 
     def setUp(self):
