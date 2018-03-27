@@ -22,6 +22,14 @@ __date__ = "December 4, 2017"
 
 
 class DftResults(metaclass=ABCMeta):
+    """
+    DFT results
+    Args:
+        final_structure (Structure): pmg Structure/IStructure class object.
+        total_energy (float): total energy
+        eigenvalues (N_k x N_band numpy array): eigenvalues
+        electrostatic_potential (list): electrostatic potential at atomic sites
+    """
     def __init__(self, final_structure, total_energy, eigenvalues,
                  electrostatic_potential):
         self._final_structure = final_structure

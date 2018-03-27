@@ -17,7 +17,7 @@ __date__ = "December 4, 2017"
 
 class DefectEntry:
     """
-    This class object holds some properties related to a defect.
+    This class object has information related to construction of a defect.
     Args:
         initial_structure (Structure): pmg Structure/IStructure class object.
             Defect structure before structure optimization
@@ -42,6 +42,11 @@ class DefectEntry:
         self._in_name = in_name
         self._out_name = out_name
         self._charge = charge
+
+    def __eq__(self, other):
+        if other is None or type(self) != type(other):
+            raise TypeError
+        return self.as_dict() == other.as_dict()
 
     @classmethod
     def from_dict(cls, d):
@@ -138,26 +143,36 @@ class DefectEntry:
 
         return mapping
 
-    def anchor_atom_index(self):
-        """
-        Returns an index of atom that is the farthest from the defect.
-        This atom is assumed not to displace during the structure
-        optimization, and so used for analyzing defect structure.
-        """
+    # TODO: remove bugs below
+    # def anchor_atom_index(self):
+    #     """
+    #     Returns an index of atom that is the farthest from the defect.
+    #     This atom is assumed not to displace during the structure
+    #     optimization, and so used for analyzing local defect structure.
+    #     """
+        # radius = max(self._initial_structure.lattice.abc) * 2
+        # num_sites = len(self._initial_structure.sites)
+        # shortest_distances = np.full(num_sites, radius, dtype=float)
 
-        radius = max(self._initial_structure.lattice.abc) * 2
-        num_sites = len(self._initial_structure.sites)
-        shortest_distances = np.full(num_sites, radius, dtype=float)
+        # distance_set = self._initial_structure.get_sites_in_sphere(
+        #     self._defect_coords, radius, include_index=True)
 
-        distance_set = self._initial_structure.get_sites_in_sphere(
-            self._defect_coords, radius, include_index=True)
+        # for d in distance_set:
+        #     atom_index = d[2]
+        #     if d[1] < shortest_distances[atom_index]:
+        #         shortest_distances[atom_index] = d[1]
 
-        for d in distance_set:
-            atom_index = d[2]
-            if d[1] < shortest_distances[atom_index]:
-                shortest_distances[atom_index] = d[1]
+        # farthest_atom_index = np.argmax(shortest_distances)
+        # farthest_dist = shortest_distances[farthest_atom_index]
 
-        farthest_atom_index = np.argmax(shortest_distances)
-        farthest_dist = shortest_distances[farthest_atom_index]
+        # return farthest_atom_index, farthest_dist
 
-        return farthest_atom_index, farthest_dist
+
+def get_nions(structure):
+    """
+    Return numbers of ions for elements in a structure.
+    Example: Al1Mg63O6
+        return: [1, 63, 64]
+
+    """
+    return [int(i) for i in structure.to(fmt="poscar").split("\n")[6].split()]

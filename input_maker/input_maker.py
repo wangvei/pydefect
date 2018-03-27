@@ -250,9 +250,10 @@ class DefectInputSetMaker(metaclass=ABCMeta):
     oxidation states.
 
     Args:
-        defect_initial_setting (DefectInitialSetting): DefectInitialSetting class object.
-        particular_defects (str/list): It specifies (a) particular defect(s).
-            Specify a type of defects.
+        defect_initial_setting (DefectInitialSetting):
+            DefectInitialSetting class object.
+        particular_defects (str/list):
+            It specifies (a) particular defect(s). Specify a type of defects.
 
     Parameters in use:
         in_pattern (str): pattern for screening in_name

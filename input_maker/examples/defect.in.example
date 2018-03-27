@@ -10,7 +10,8 @@ Fractional coordinates: 0.2500000 0.2500000 0.2500000
      Electronegativity: 3.44
        Oxidation state: -2
 
-Interstitial coordinates: [0.1, 0.1, 0.1]
+Interstitial coordinates: 0.1  0.1  0.1 
+Interstitial coordinates: 0.2  0.2  0.2 
 Antisite defects: Mg_O O_Mg
 
    Dopant element: N

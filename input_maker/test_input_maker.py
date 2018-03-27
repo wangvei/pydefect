@@ -71,6 +71,7 @@ class DefectMakerTest(unittest.TestCase):
     def setUp(self):
         self.structure = \
             Structure.from_file(FILENAME_PerturbAroundAPointTest_POSCAR)
+
         Mg1 = IrreducibleSite(irreducible_name="Mg1", element="Mg",
                               first_index=1, last_index=32,
                               representative_coords=[0, 0, 0])
@@ -78,6 +79,7 @@ class DefectMakerTest(unittest.TestCase):
                              first_index=33, last_index=64,
                              representative_coords=[0.25, 0.25, 0.25])
         self.irreducible_sites = [Mg1, O1]
+
         self.interstitial_coords = [[0.1, 0.1, 0.1], [0.2, 0.2, 0.2]]
 
         _test_structure = Structure.from_file(FILENAME_POSCAR_VA1)

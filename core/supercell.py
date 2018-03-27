@@ -18,19 +18,16 @@ __status__ = "Development"
 __date__ = "December 4, 2017"
 
 
-def get_nions(defect_structure):
-    """
-    Return numbers of ions for elements in defect_structure.
-    Example: Al1Mg63O6
-        return: [1, 63, 64]
-
-    """
-    return [int(i) for i in
-            defect_structure.to(fmt="poscar").split("\n")[6].split()]
-
-
 class Supercell(metaclass=ABCMeta):
     """
+    Abstract class that is subclassed by a calculation done with a supercell.
+
+    Args:
+        dft_results (SupercellDftResults): SupercellDftResults class object
+            |- final_structure (Structure)
+            |- total_energy (float)
+            |- eigenvalues (N_k x N_band numpy array)
+             - electrostatic_potential (list)
     """
     def __init__(self, dft_results=None):
         self._dft_results = dft_results
@@ -84,17 +81,18 @@ class Supercell(metaclass=ABCMeta):
 
     @abstractmethod
     def as_dict(self):
-        return NotImplementedError
+        pass
 
     @classmethod
     @abstractmethod
     def from_dict(cls, d):
-        return NotImplementedError
+        pass
 
 
 class Perfect(Supercell):
     def as_dict(self):
         """
+        Dictionary representation of Perfect.
         """
         d = {"dft_results": self._dft_results.as_dict()}
         return d
@@ -113,7 +111,15 @@ class Defect(Supercell):
     """
     This class object holds some properties related to a defect.
     Args:
-
+        dft_results (SupercellDftResults): SupercellDftResults class object
+        defect_entry (DefectEntry): DefectEntry class object
+            |- initial_structure
+            |- removed_atom_index
+            |- inserted_atom_index
+            |- defect_coords
+            |- in_name
+            |- out_name
+             - charge
     """
     def __init__(self, defect_entry, dft_results=None):
         self._defect_entry = defect_entry
@@ -121,7 +127,7 @@ class Defect(Supercell):
 
     def as_dict(self):
         """
-        Constructs a class object from a dictionary.
+        Dictionary representation of Defect.
         """
         d = {"defect_entry": self._defect_entry.as_dict(),
              "dft_results": self._dft_results.as_dict()}
@@ -131,7 +137,7 @@ class Defect(Supercell):
     @classmethod
     def from_dict(cls, d):
         """
-        Constructs a  class object from a dictionary.
+        Constructs a class object from a dictionary.
         """
         defect_entry = DefectEntry.from_dict(d["defect_entry"])
         dft_results = SupercellDftResults.from_dict(d["dft_results"])

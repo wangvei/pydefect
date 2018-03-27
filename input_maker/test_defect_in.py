@@ -1,5 +1,4 @@
 import unittest
-#import filecmp
 
 from pydefect.input_maker.defect_in import *
 
@@ -14,7 +13,7 @@ __date__ = "December 4, 2017"
 FILENAME_TO_JSON_FILE = "examples/defect_setting_test.json"
 FILENAME_MgO64atoms_DPOSCAR = "examples/POSCAR-MgO64atoms"
 FILENAME_FROM_DEFECT_IN = "examples/defect.in.example"
-FILENAME_TO_DEFECT_IN = "examples/defect.in.to_example"
+#FILENAME_TO_DEFECT_IN = "examples/defect.in.to_example"
 
 
 class ExtendedRangeTest(unittest.TestCase):
@@ -54,7 +53,7 @@ class DefectSettingTest(unittest.TestCase):
 
         dopant_configs = [["Al", "Mg"], ["Al", "O"], ["N", "Mg"], ["N", "O"]]
         antisite_configs = [["Mg", "O"], ["O", "Mg"]]
-        interstitial_coords = [[0.1, 0.1, 0.1]]
+        interstitial_coords = [[0.1, 0.1, 0.1], [0.2, 0.2, 0.2]]
         included = ["Va_O1_-1", "Va_O1_-2"]
         excluded = ["Va_O1_1", "Va_O1_2"]
         distance = 0.15
@@ -95,7 +94,7 @@ class DefectSettingTest(unittest.TestCase):
             DefectInitialSetting.from_basic_settings(
                 poscar=FILENAME_MgO64atoms_DPOSCAR,
                 dopants=["Al", "N"],
-                interstitial_coords=[0.1, 0.1, 0.1],
+                flattened_interstitial_coords=[0.1, 0.1, 0.1],
                 is_antisite=True,
                 en_diff=4.0,
                 included=["Va_O1_-1", "Va_O1_-2"],
@@ -103,6 +102,7 @@ class DefectSettingTest(unittest.TestCase):
                 distance=0.15,
                 cutoff=2.0,
                 symprec=0.001)
+
         self.assertTrue(vars(self._mgo_from_basic_settings)) == vars(self._mgo)
 
     def test_make_defect_name_set(self):
@@ -112,26 +112,43 @@ class DefectSettingTest(unittest.TestCase):
         """
 
         expected = \
-            ['Va_Mg1_-2', 'Va_Mg1_-1', 'Va_Mg1_0', 'Va_O1_-1', 'Va_O1_-2',
-             'Va_O1_0', 'Mg_i1_0', 'Mg_i1_1', 'Mg_i1_2', 'O_i1_-2', 'O_i1_-1',
-             'O_i1_0', 'Al_i1_0', 'Al_i1_1', 'Al_i1_2', 'Al_i1_3', 'N_i1_-3',
-             'N_i1_-2', 'N_i1_-1', 'N_i1_0', 'Mg_O1_0', 'Mg_O1_1', 'Mg_O1_2',
+            ['Va_Mg1_-2', 'Va_Mg1_-1', 'Va_Mg1_0', 'Va_O1_0', 'Mg_i1_0',
+             'Mg_i1_1', 'Mg_i1_2', 'Mg_i2_0', 'Mg_i2_1', 'Mg_i2_2', 'O_i1_-2',
+             'O_i1_-1', 'O_i1_0', 'O_i2_-2', 'O_i2_-1', 'O_i2_0', 'N_i1_-3',
+             'N_i1_-2', 'N_i1_-1', 'N_i1_0', 'N_i2_-3', 'N_i2_-2', 'N_i2_-1',
+             'N_i2_0', 'Al_i1_0', 'Al_i1_1', 'Al_i1_2', 'Al_i1_3', 'Al_i2_0',
+             'Al_i2_1', 'Al_i2_2', 'Al_i2_3', 'Mg_O1_0', 'Mg_O1_1', 'Mg_O1_2',
              'Mg_O1_3', 'Mg_O1_4', 'O_Mg1_-4', 'O_Mg1_-3', 'O_Mg1_-2',
              'O_Mg1_-1', 'O_Mg1_0', 'Al_Mg1_0', 'Al_Mg1_1', 'Al_O1_0',
              'Al_O1_1', 'Al_O1_2', 'Al_O1_3', 'Al_O1_4', 'Al_O1_5', 'N_Mg1_-5',
              'N_Mg1_-4', 'N_Mg1_-3', 'N_Mg1_-2', 'N_Mg1_-1', 'N_Mg1_0',
-             'N_O1_-1', 'N_O1_0']
-
+             'N_O1_-1', 'N_O1_0', 'Va_O1_-1', 'Va_O1_-2']
         actual = self._mgo.make_defect_name_set()
-
         self.assertEqual(sorted(actual), sorted(expected))
 
-# Look the same files but return Failure.
-#    def test_to(self):
-#        self._mgo.to(defect_in_file=FILENAME_TO_DEFECT_IN,
-#                     poscar_file=FILENAME_MgO64atoms_DPOSCAR)
-#        self.assertTrue(
-#                    filecmp.cmp(FILENAME_TO_DEFECT_IN, FILENAME_FROM_DEFECT_IN))
+
+class GetElectronegativityTest(unittest.TestCase):
+    def test_success(self):
+        true_element = "Mg"
+        expected = 1.31
+        self.assertEqual(get_electronegativity(true_element), expected)
+
+    def test_fail(self):
+        fake_element = "Yk"
+        expected = None
+        self.assertEqual(get_electronegativity(fake_element), expected)
+
+
+class GetOxidationStateTest(unittest.TestCase):
+    def test_success(self):
+        true_element = "Mg"
+        expected = 2
+        self.assertEqual(get_oxidation_state(true_element), expected)
+
+    def test_fail(self):
+        fake_element = "Yk"
+        expected = None
+        self.assertEqual(get_oxidation_state(fake_element), expected)
 
 
 if __name__ == "__main__":
