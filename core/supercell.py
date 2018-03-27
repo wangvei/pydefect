@@ -26,7 +26,7 @@ class Supercell(metaclass=ABCMeta):
         dft_results (SupercellDftResults): SupercellDftResults class object
             |- final_structure (Structure)
             |- total_energy (float)
-            |- eigenvalues (N_k x N_band numpy array)
+            |- eigenvalues (N_k-point x N_band numpy array)
              - electrostatic_potential (list)
     """
     def __init__(self, dft_results=None):
