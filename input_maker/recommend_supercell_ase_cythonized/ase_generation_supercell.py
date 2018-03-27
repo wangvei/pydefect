@@ -2,8 +2,6 @@ import sys
 import math
 import numpy as np
 from ase.io.vasp import read_vasp, write_vasp
-from ase.build import bulk
-#from ase.build import find_optimal_cell_shape
 from ase_cython import find_optimal_cell_shape
 from ase.build import get_deviation_from_optimal_cell_shape
 from ase.build import make_supercell
