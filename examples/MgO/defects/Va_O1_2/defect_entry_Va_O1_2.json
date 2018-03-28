@@ -325,7 +325,10 @@
     ]
   },
   "inserted_atoms": {},
+  "changes_of_num_elements": {
+    "O": -1
+  },
+  "charge": 2,
   "in_name": null,
-  "out_name": "O1",
-  "charge": 2
+  "out_name": "O1"
 }

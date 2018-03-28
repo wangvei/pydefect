@@ -1,6 +1,8 @@
 import unittest
-from defect_entry import *
+
 from pymatgen.io.vasp.inputs import Poscar
+
+from input_maker.defect_entry import *
 
 __author__ = "Yu Kumagai"
 __copyright__ = "Copyright 2017, Oba group"
@@ -21,19 +23,30 @@ class DefectEntryTest(unittest.TestCase):
     def setUp(self):
         """ """
         initial_structure = Poscar.from_file(DIRNAME_VAC + "/POSCAR").structure
-        removed_atom_index = {8: [0.25, 0.25, 0.25]}
-        inserted_atom_index = {}
+        removed_atoms = {8: [0.25, 0.25, 0.25]}
+        inserted_atoms = {}
+        changes_of_num_elements = {"O": -1}
+        charge = 2
         in_name = None
         out_name = "O1"
-        charge = 2
 
         self._MgO_Va_O1_2 = \
-            DefectEntry(initial_structure,
-                        removed_atom_index,
-                        inserted_atom_index,
-                        in_name,
-                        out_name,
-                        charge)
+            DefectEntry(initial_structure, removed_atoms, inserted_atoms,
+                        changes_of_num_elements, charge, in_name, out_name)
+
+        initial_structure_complex = \
+            Poscar.from_file(DIRNAME_VAC + "/POSCAR").structure
+        removed_atoms_complex = {8: [0.25, 0.25, 0.25], 9: [0.25, 0.25, 0.75]}
+        inserted_atoms_complex = {8: [0.25, 0.25, 0.25]}
+        changes_of_num_elements_complex = {"Mg": 1, "O": -2}
+        charge_complex = 2
+        in_name_complex = False
+        out_name_complex = False
+
+        self._MgO_complex = \
+            DefectEntry(initial_structure_complex, removed_atoms_complex,
+                        inserted_atoms_complex, changes_of_num_elements_complex,
+                        charge_complex, in_name_complex, out_name_complex)
 
     def test_Dict(self):
         d = self._MgO_Va_O1_2.as_dict()
@@ -45,11 +58,22 @@ class DefectEntryTest(unittest.TestCase):
         from_json = DefectEntry.json_load(FILENAME_JSON_VAC)
         self.assertTrue(from_json == self._MgO_Va_O1_2)
 
+    def test_defect_center(self):
+        expected = [0.25, 0.25, 0.4166666666666667]
+        actual = self._MgO_complex.defect_center
+        self.assertAlmostEqual(actual, expected)
+
     def test_atom_mapping_to_perfect(self):
         expected = [0, 1, 2, 3, 4, 5, 6, 7, 9, 10, 11, 12, 13, 14, 15]
         actual = self._MgO_Va_O1_2.atom_mapping_to_perfect
         print(actual)
         self.assertTrue(actual == expected)
+
+        expected = [0, 1, 2, 3, 4, 5, 6, 7, None, 10, 11, 12, 13, 14, 15]
+        actual = self._MgO_complex.atom_mapping_to_perfect
+        print(actual)
+        self.assertTrue(actual == expected)
+
 
 #    def test_anchor_atom_index(self):
 #        print(self._MgO_Va_O1_2.anchor_atom_index())

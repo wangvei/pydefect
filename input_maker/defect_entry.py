@@ -25,26 +25,36 @@ class DefectEntry:
         removed_atoms (dict):
             Keys: Atom indices removed from the perfect supercell.
                   The index begins from 0.
-                  For interstitial, set to {}.
+                  For interstitial, set {}.
             Values: Defect coordinates
         inserted_atoms (dict):
-            Keys: Atom indices inserted in the supercell after removing atoms.
+            Keys: Atom indices inserted in the supercell *after removing atoms*.
                   The index begins from 0.
-                  For vacancy, set to {}.
+                  For vacancy, set {}.
             Values: Defect coordinates
-        in_name" (str): Inserted element name. "Va" is inserted for vacancies.
-        out_name" (str): Removed site name. "in", where n is an integer,
-                         is inserted for interstitials. E.g., "i1".
+        changes_of_num_elements (dict):
+            Keys: Element names
+            Values: Changes of number of elements compared to perfect supercell
+        in_name (str):
+            Inserted element name.
+            "Va" is inserted for vacancies.
+            When in_name is not well defined, set False.
+        out_name (str):
+            Removed site name.
+            "in", (n: integer), is inserted for interstitials. E.g., "i1".
+            When out_name is not well defined, set False.
         charge (int): Charge state of the defect
     """
-    def __init__(self, initial_structure, removed_atoms,
-                 inserted_atoms, in_name, out_name, charge):
+    def __init__(self, initial_structure, removed_atoms, inserted_atoms,
+                 changes_of_num_elements, charge, in_name=False,
+                 out_name=False):
         self._initial_structure = initial_structure
         self._removed_atoms = removed_atoms
         self._inserted_atoms = inserted_atoms
+        self._changes_of_num_elements = changes_of_num_elements
+        self._charge = charge
         self._in_name = in_name
         self._out_name = out_name
-        self._charge = charge
 
     def __eq__(self, other):
         if other is None or type(self) != type(other):
@@ -54,19 +64,22 @@ class DefectEntry:
     @classmethod
     def from_dict(cls, d):
         """
-        Constructs a class object from a dictionary.
+        Constructs a DefectEntry class object from a dictionary.
         """
         # The keys need to be converted to integers.
         removed_atoms = {int(k): v for k, v in d["removed_atoms"].items()}
         inserted_atoms = {int(k): v for k, v in d["inserted_atoms"].items()}
+        changes_of_num_elements = \
+            {k: int(v) for k, v in d["changes_of_num_elements"].items()}
 
         return cls(d["initial_structure"], removed_atoms, inserted_atoms,
-                   d["in_name"], d["out_name"], d["charge"])
+                   changes_of_num_elements, d["charge"], d["in_name"],
+                   d["out_name"])
 
     @classmethod
     def json_load(cls, filename):
         """
-        Constructs a Defect class object from a json file.
+        Constructs a DefectEntry class object from a json file.
         """
         return cls.from_dict(loadfn(filename))
 
@@ -83,6 +96,14 @@ class DefectEntry:
         return self._inserted_atoms
 
     @property
+    def changes_of_num_elements(self):
+        return self._changes_of_num_elements
+
+    @property
+    def charge(self):
+        return self._charge
+
+    @property
     def in_name(self):
         return self._in_name
 
@@ -91,17 +112,13 @@ class DefectEntry:
         return self._out_name
 
     @property
-    def charge(self):
-        return self._charge
-
-    @property
     def defect_center(self):
         """
         Returns coords of defect center by calculating the average coords.
         If len(defect_coords) == 1, same as defect_coords[0].
         """
-        defect_coords = list(self._removed_atoms.values()) + \
-                        list(self._inserted_atoms.values())
+        defect_coords = (list(self._removed_atoms.values()) +
+                         list(self._inserted_atoms.values()))
         return [np.mean(i) for i in np.array(defect_coords).transpose()]
 
     @property
@@ -114,16 +131,17 @@ class DefectEntry:
             mapping = [0, 1, 2, .., 31, 33, 34, .., 62]
             len(mapping) = 63
         """
-        total_nions = sum(get_nions(self._initial_structure)) + \
-                      len(self._inserted_atoms) + len(self._removed_atoms)
+        total_nions = (sum(get_nions(self._initial_structure))
+                       - len(self._inserted_atoms) + len(self._removed_atoms))
 
         mapping = [i for i in range(total_nions)]
 
-        for i in sorted(self._inserted_atoms.keys(), reverse=True):
-            mapping = mapping[:i] + [None] + mapping[i:]
-
-        for o in self._removed_atoms.keys():
+        for o in sorted(self._removed_atoms.keys(), reverse=True):
             mapping.pop(o)
+
+        for i in sorted(self._inserted_atoms.keys(), reverse=True):
+            print("-----")
+            mapping = mapping[:i] + [None] + mapping[i:]
 
         return mapping
 
@@ -134,9 +152,10 @@ class DefectEntry:
         d = {"initial_structure": self._initial_structure,
              "removed_atoms": self._removed_atoms,
              "inserted_atoms": self._inserted_atoms,
+             "changes_of_num_elements": self._changes_of_num_elements,
+             "charge": self._charge,
              "in_name": self._in_name,
-             "out_name": self._out_name,
-             "charge": self._charge}
+             "out_name": self._out_name}
         return d
 
     def to_json_file(self, filename):
@@ -179,3 +198,4 @@ def get_nions(structure):
 
     """
     return [int(i) for i in structure.to(fmt="poscar").split("\n")[6].split()]
+
