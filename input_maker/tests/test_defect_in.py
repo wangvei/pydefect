@@ -1,5 +1,5 @@
 import unittest
-from pydefect.input_maker.defect_in import *
+from pydefect.input_maker.defect_initial_setting import *
 
 __author__ = "Yu Kumagai"
 __copyright__ = "Copyright 2017, Oba group"

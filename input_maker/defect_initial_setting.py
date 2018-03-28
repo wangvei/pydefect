@@ -10,7 +10,7 @@ from monty.json import MontyEncoder
 from monty.serialization import loadfn
 
 import pydefect.core.atom as atom
-from pydefect.core.site import IrreducibleSite
+from pydefect.core.irreducible_site import IrreducibleSite
 
 __author__ = "Yu Kumagai"
 __copyright__ = "Copyright 2017, Oba group"

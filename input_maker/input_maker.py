@@ -227,23 +227,40 @@ class DefectInputSetMaker(metaclass=ABCMeta):
         defect_initial_setting (DefectInitialSetting):
             DefectInitialSetting class object.
         filtering_words (list):
-            It specifies (a) particular defect(s). Specify a type of defects.
+            Specify a type of defects.
+        particular_defects (list):
+            It specifies (a) particular defect(s).
 
     Parameters in use:
         in_pattern (str): pattern for screening in_name
         out_pattern (str): pattern for screening out_name
     """
 
-    def __init__(self, defect_initial_setting, filtering_words=None):
+    def __init__(self, defect_initial_setting, filtering_words=None,
+                 particular_defects=None):
 
         self._defect_initial_setting = defect_initial_setting
-        defect_all_name_set = defect_initial_setting.make_defect_name_set()
+        self._filtering_words = filtering_words
+        self._particular_defects = particular_defects
 
-        if filtering_words:
-            self._defect_name_set = \
-                filter_name_set(defect_all_name_set, filtering_words)
+        if particular_defects:
+            self._defect_name_set = particular_defects
         else:
-            self._defect_name_set = defect_all_name_set
+            defect_all_name_set = defect_initial_setting.make_defect_name_set()
+            if filtering_words:
+                self._defect_name_set = \
+                    filter_name_set(defect_all_name_set, filtering_words)
+            else:
+                defect_all_name_set.append("perfect")
+                self._defect_name_set = defect_all_name_set
+
+    def make_input(self):
+        # Construct defect input files.
+        for d in self._defect_name_set:
+            if d == "perfect":
+                self._make_perfect_input()
+            else:
+                self._make_defect_input(d)
 
     @abstractmethod
     def _make_perfect_input(self):

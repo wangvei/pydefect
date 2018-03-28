@@ -4,7 +4,7 @@ import shutil
 
 from pymatgen.io.vasp.inputs import Potcar
 
-from pydefect.input_maker.defect_in import DefectInitialSetting
+from pydefect.input_maker.defect_initial_setting import DefectInitialSetting
 from pydefect.input_maker.defect_entry import get_nions
 from pydefect.input_maker.input_maker import \
     DefectMaker, DefectInputSetMaker,  print_already_exist, \
@@ -70,21 +70,17 @@ def get_num_electrons_from_potcar(potcar, nions, charge):
 
 class VaspDefectInputSetMaker(DefectInputSetMaker):
 
-    def __init__(self, defect_initial_setting, filtering_words="", incar="INCAR",
-                 kpoints="KPOINTS"):
+    def __init__(self, defect_initial_setting, filtering_words=None,
+                 particular_defects=None, incar="INCAR", kpoints="KPOINTS"):
 
         # make self._defect_initial_setting and self._defect_name_set
-        super().__init__(defect_initial_setting, filtering_words)
+        super().__init__(defect_initial_setting, filtering_words,
+                         particular_defects)
 
         self._incar = incar
         self._kpoints = kpoints
 
-        # Construct defect input files.
-        if not filtering_words:
-            self._make_perfect_input()
-
-        for d in self._defect_name_set:
-            self._make_defect_input(d)
+        self.make_input()
 
     def _make_perfect_input(self):
         dir_name = "perfect/"
@@ -100,6 +96,9 @@ class VaspDefectInputSetMaker(DefectInputSetMaker):
             make_potcar(dir_name, elements, potcar_dir())
 
     def _make_defect_input(self, defect_name):
+
+        #TODO: check if the defect_name is proper or not.
+
         # Construct: defect_structure, defect_coords, defect_index
         dir_name = defect_name + "/"
 
@@ -163,7 +162,7 @@ def main():
                         type=str, help="INCAR name.")
     parser.add_argument("--kpoints", dest="kpoints", default="KPOINTS", 
                         type=str, help="KPOINTS name.")
-    parser.add_argument("--add", dest="add", type=str, default=None, nargs=+
+    parser.add_argument("--add", dest="add", type=str, default=None, nargs="+",
                         help="Particular defect name added.")
 
     opts = parser.parse_args()

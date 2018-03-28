@@ -4,7 +4,7 @@ from pymatgen.core.structure import Structure
 
 from pydefect.input_maker.input_maker import *
 from pydefect.input_maker.defect_entry import DefectEntry
-from pydefect.core.site import IrreducibleSite
+from pydefect.core.irreducible_site import IrreducibleSite
 
 __author__ = "Yu Kumagai"
 __copyright__ = "Copyright 2017, Oba group"

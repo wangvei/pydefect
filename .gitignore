@@ -8,3 +8,4 @@ PyDefect.egg-info/
 *.swp
 POTCAR*
 core/test_*.json
+input_maker/examples/
