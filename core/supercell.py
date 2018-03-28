@@ -2,6 +2,8 @@
 
 from abc import ABCMeta, abstractmethod
 import json
+import operator
+import warnings
 
 from monty.json import MontyEncoder
 from monty.serialization import loadfn
@@ -49,19 +51,31 @@ class Supercell(metaclass=ABCMeta):
 
     @property
     def final_structure(self):
-        return self._dft_results.final_structure
+        if self._dft_results:
+            return self._dft_results.final_structure
+        else:
+            return None
 
     @property
     def total_energy(self):
-        return self._dft_results.total_energy
+        if self._dft_results:
+            return self._dft_results.total_energy
+        else:
+            return None
 
     @property
     def eigenvalues(self):
-        return self._dft_results.eigenvalues
+        if self._dft_results:
+            return self._dft_results.eigenvalues
+        else:
+            return None
 
     @property
     def electrostatic_potential(self):
-        return self._dft_results.electrostatic_potential
+        if self._dft_results:
+            return self._dft_results.electrostatic_potential
+        else:
+            return None
 
     def to_json_file(self, filename):
         """
@@ -121,16 +135,20 @@ class Defect(Supercell):
             |- out_name
              - charge
     """
+
     def __init__(self, defect_entry, dft_results=None):
         self._defect_entry = defect_entry
         super().__init__(dft_results)
+        self._relative_total_energy = None
+        self._relative_potential = None
+        self._relative_atomic_displacements = None
 
     def as_dict(self):
         """
         Dictionary representation of Defect.
         """
         d = {"defect_entry": self._defect_entry.as_dict(),
-             "dft_results": self._dft_results.as_dict()}
+             "dft_results":  self._dft_results.as_dict()}
 
         return d
 
@@ -171,3 +189,40 @@ class Defect(Supercell):
     @property
     def charge(self):
         return self._defect_entry.charge
+
+    @property
+    def relative_total_energy(self):
+        if self._relative_total_energy:
+            return self._relative_total_energy
+        else:
+            warnings.warn("relative_total_energy is not set.")
+            return None
+
+    @property
+    def relative_potential(self):
+        if self._relative_potential:
+            return self._relative_potential
+        else:
+            warnings.warn("relative_potential is not set.")
+            return None
+
+#    @property
+#    def relative_atomic_displacements(self):
+#        if self._relative_atomic_displacements:
+#            return self._relative_atomic_displacements
+#        else:
+#            warnings.warn("relative_atomic_displacements is not set.")
+#            return None
+
+    def set_relative_values(self, perfect):
+        """
+        Set relative values with respect to those of perfect calc.
+        Args:
+            perfect (Perfect):
+        """
+        self._relative_total_energy = self.total_energy - perfect.total_energy
+        self._relative_potential = list(map(operator.sub,
+                                            self.electrostatic_potential,
+                                            perfect.electrostatic_potential))
+        # TODO: write below
+#        self._relative_atomic_displacements = \
