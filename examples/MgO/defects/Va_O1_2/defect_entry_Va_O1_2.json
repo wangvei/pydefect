@@ -317,13 +317,14 @@
       }
     ]
   },
-  "removed_atom_index": 8,
-  "inserted_atom_index": null,
-  "defect_coords": [
-    0.25,
-    0.25,
-    0.25
-  ],
+  "removed_atoms": {
+    "8": [
+      0.25,
+      0.25,
+      0.25
+    ]
+  },
+  "inserted_atoms": {},
   "in_name": null,
   "out_name": "O1",
   "charge": 2

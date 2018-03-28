@@ -172,7 +172,7 @@ class DefectMaker:
         defect_structure = deepcopy(structure)
         in_name, out_name, charge = parse_defect_name(defect_name)
         # -------------------- analyze out_name --------------------------------
-        removed_atom_index = None
+        removed_atoms = {}
         # interstitial
         if re.match(r'^i[0-9]+$', out_name):
             interstitial_index = get_int_from_string(out_name)
@@ -183,16 +183,16 @@ class DefectMaker:
         else:
             for i in irreducible_sites:
                 if out_name == i.irreducible_name:
-                    removed_atom_index = i.first_index - 1
-                    defect_coords = i.repr_coords
+                    removed_index = i.first_index - 1
+                    removed_atoms[removed_index] = i.repr_coords
                     break
             try:
-                defect_structure.remove_sites([removed_atom_index])
+                defect_structure.remove_sites([removed_index])
             except ValueError:
                 print("{} in {} is improper.".format(out_name, defect_name))
 
         # -------------------- analyze in_name ---------------------------------
-        inserted_atom_index = None
+        inserted_atoms = {}
 
         # This block needs to be run after finishing analyze_out_name because
         # defect coordinates is needed when inserting an in_name atom.
@@ -203,18 +203,17 @@ class DefectMaker:
             # e.g., Mg1 and Mg2, element of in_name is inserted to just before
             # the same elements, otherwise to the 1st index.
             if in_name in defect_structure.symbol_set:
-                inserted_atom_index = \
+                inserted_index = \
                     min(defect_structure.indices_from_symbol(in_name))
+                inserted_atoms[inserted_index] = defect_coords
             else:
-                inserted_atom_index = 0
-            defect_structure.insert(inserted_atom_index, in_name, defect_coords)
+                inserted_atoms[0] = defect_coords
+            defect_structure.insert(inserted_index, in_name, defect_coords)
         else:
             raise ValueError("{} in {} is improper.".format(out_name,
                                                             defect_name))
-        self.defect = \
-            DefectEntry(defect_structure, removed_atom_index,
-                        inserted_atom_index, defect_coords, in_name, out_name,
-                        charge)
+        self.defect = DefectEntry(defect_structure, removed_atoms,
+                                  inserted_atoms, in_name, out_name, charge)
 
 
 class DefectInputSetMaker(metaclass=ABCMeta):

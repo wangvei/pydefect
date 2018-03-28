@@ -17,28 +17,31 @@ __date__ = "December 4, 2017"
 
 class DefectEntry:
     """
-    This class object has information related to construction of a defect.
+    This class object has all the information related to initial setting of a
+    defect.
     Args:
-        initial_structure (Structure): pmg Structure/IStructure class object.
-            Defect structure before structure optimization
-        removed_atom_index (array of int):
-            Atom index removed in the perfect supercell, starting from 0.
-            For interstitial, set to None.
-        inserted_atom_index (array of int):
-            Atom index inserted in the supercell after removing an atom.
-            For vacancy, set to None.
-        defect_coords (Nx3 array): coordinates of defect position
+        initial_structure (Structure):
+            Defect structure before the structure optimization.
+        removed_atoms (dict):
+            Keys: Atom indices removed from the perfect supercell.
+                  The index begins from 0.
+                  For interstitial, set to {}.
+            Values: Defect coordinates
+        inserted_atoms (dict):
+            Keys: Atom indices inserted in the supercell after removing atoms.
+                  The index begins from 0.
+                  For vacancy, set to {}.
+            Values: Defect coordinates
         in_name" (str): Inserted element name. "Va" is inserted for vacancies.
         out_name" (str): Removed site name. "in", where n is an integer,
                          is inserted for interstitials. E.g., "i1".
         charge (int): Charge state of the defect
     """
-    def __init__(self, initial_structure, removed_atom_index,
-                 inserted_atom_index, defect_coords, in_name, out_name, charge):
+    def __init__(self, initial_structure, removed_atoms,
+                 inserted_atoms, in_name, out_name, charge):
         self._initial_structure = initial_structure
-        self._removed_atom_index = removed_atom_index
-        self._inserted_atom_index = inserted_atom_index
-        self._defect_coords = defect_coords
+        self._removed_atoms = removed_atoms
+        self._inserted_atoms = inserted_atoms
         self._in_name = in_name
         self._out_name = out_name
         self._charge = charge
@@ -53,9 +56,12 @@ class DefectEntry:
         """
         Constructs a class object from a dictionary.
         """
-        return cls(d["initial_structure"], d["removed_atom_index"],
-                   d["inserted_atom_index"], d["defect_coords"], d["in_name"],
-                   d["out_name"], d["charge"])
+        # The keys need to be converted to integers.
+        removed_atoms = {int(k): v for k, v in d["removed_atoms"].items()}
+        inserted_atoms = {int(k): v for k, v in d["inserted_atoms"].items()}
+
+        return cls(d["initial_structure"], removed_atoms, inserted_atoms,
+                   d["in_name"], d["out_name"], d["charge"])
 
     @classmethod
     def json_load(cls, filename):
@@ -69,16 +75,12 @@ class DefectEntry:
         return self._initial_structure
 
     @property
-    def removed_atom_index(self):
-        return self._removed_atom_index
+    def removed_atoms(self):
+        return self._removed_atoms
 
     @property
-    def inserted_atom_index(self):
-        return self._inserted_atom_index
-
-    @property
-    def defect_coords(self):
-        return self._defect_coords
+    def inserted_atoms(self):
+        return self._inserted_atoms
 
     @property
     def in_name(self):
@@ -92,14 +94,46 @@ class DefectEntry:
     def charge(self):
         return self._charge
 
+    @property
+    def defect_center(self):
+        """
+        Returns coords of defect center by calculating the average coords.
+        If len(defect_coords) == 1, same as defect_coords[0].
+        """
+        defect_coords = list(self._removed_atoms.values()) + \
+                        list(self._inserted_atoms.values())
+        return [np.mean(i) for i in np.array(defect_coords).transpose()]
+
+    @property
+    def atom_mapping_to_perfect(self):
+        """
+        Returns a list of mapping of atoms in defect structure to atoms in
+        perfect.
+        Example Mg32O32 supercell:
+            Assuming that 33th atom (first O) is removed,
+            mapping = [0, 1, 2, .., 31, 33, 34, .., 62]
+            len(mapping) = 63
+        """
+        total_nions = sum(get_nions(self._initial_structure)) + \
+                      len(self._inserted_atoms) + len(self._removed_atoms)
+
+        mapping = [i for i in range(total_nions)]
+
+        for i in sorted(self._inserted_atoms.keys(), reverse=True):
+            mapping = mapping[:i] + [None] + mapping[i:]
+
+        for o in self._removed_atoms.keys():
+            mapping.pop(o)
+
+        return mapping
+
     def as_dict(self):
         """
         Dict representation of DefectInput class object.
         """
         d = {"initial_structure": self._initial_structure,
-             "removed_atom_index": self._removed_atom_index,
-             "inserted_atom_index": self._inserted_atom_index,
-             "defect_coords": self._defect_coords,
+             "removed_atoms": self._removed_atoms,
+             "inserted_atoms": self._inserted_atoms,
              "in_name": self._in_name,
              "out_name": self._out_name,
              "charge": self._charge}
@@ -111,37 +145,6 @@ class DefectEntry:
         """
         with open(filename, 'w') as fw:
             json.dump(self.as_dict(), fw, indent=2, cls=MontyEncoder)
-
-    def defect_center(self):
-        """
-        Returns coords of defect center by calculating the average coords.
-        If len(defect_coords) == 1, same as defect_coords[0].
-        """
-        return [np.mean(i) for i in np.array(self._defect_coords).transpose()]
-
-    def atom_mapping_to_perfect(self):
-        """
-        Returns a list of atom mapping in defect structure to atoms in perfect.
-        Example Mg32O32 supercell:
-            Assuming that 33th atom (first O) is removed,
-            mapping = [0, 1, 2, .., 31, 33, 34, .., 62]
-            len(mapping) = 63
-        """
-        total_nions = sum(get_nions(self._initial_structure))
-        mapping = [i for i in range(total_nions)]
-        in_index = self._inserted_atom_index
-        out_index = self._removed_atom_index
-
-        if in_index:
-            mapping[in_index] = None
-            for i in range(in_index + 1, total_nions):
-                mapping[i] += -1
-
-        if out_index is not None:
-            for i in range(out_index, total_nions):
-                mapping[i] += 1
-
-        return mapping
 
     # TODO: remove bugs below
     # def anchor_atom_index(self):

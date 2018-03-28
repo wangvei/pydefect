@@ -21,9 +21,8 @@ class DefectEntryTest(unittest.TestCase):
     def setUp(self):
         """ """
         initial_structure = Poscar.from_file(DIRNAME_VAC + "/POSCAR").structure
-        removed_atom_index = 8
-        inserted_atom_index = None
-        defect_coords = [0.25, 0.25, 0.25]
+        removed_atom_index = {8: [0.25, 0.25, 0.25]}
+        inserted_atom_index = {}
         in_name = None
         out_name = "O1"
         charge = 2
@@ -32,7 +31,6 @@ class DefectEntryTest(unittest.TestCase):
             DefectEntry(initial_structure,
                         removed_atom_index,
                         inserted_atom_index,
-                        defect_coords,
                         in_name,
                         out_name,
                         charge)
@@ -47,8 +45,10 @@ class DefectEntryTest(unittest.TestCase):
         from_json = DefectEntry.json_load(FILENAME_JSON_VAC)
         self.assertTrue(from_json == self._MgO_Va_O1_2)
 
+    def test_atom_mapping_to_perfect(self):
         expected = [0, 1, 2, 3, 4, 5, 6, 7, 9, 10, 11, 12, 13, 14, 15]
-        actual = self._MgO_Va_O1_2.atom_mapping_to_perfect()
+        actual = self._MgO_Va_O1_2.atom_mapping_to_perfect
+        print(actual)
         self.assertTrue(actual == expected)
 
 #    def test_anchor_atom_index(self):

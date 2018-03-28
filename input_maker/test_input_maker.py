@@ -134,16 +134,14 @@ class DefectMakerTest(unittest.TestCase):
         self.interstitial_coords = [[0.1, 0.1, 0.1], [0.2, 0.2, 0.2]]
 
         _test_structure = Structure.from_file(FILENAME_POSCAR_VA1)
-        _removed_atom_index = 0
-        _inserted_atom_index = None
-        _defect_coords = [0, 0, 0]
+        _removed_atoms = {0:[0, 0, 0]}
+        _inserted_atoms = {}
         _in_name = "Va"
         _out_name = "Mg1"
         _charge = -2
 
-        self.test_d = DefectEntry(_test_structure, _removed_atom_index,
-                                  _inserted_atom_index, _defect_coords,
-                                  _in_name, _out_name, _charge)
+        self.test_d = DefectEntry(_test_structure, _removed_atoms,
+                                  _inserted_atoms, _in_name, _out_name, _charge)
 
     def test_vacancies(self):
         vac1_d = \
