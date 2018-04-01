@@ -51,8 +51,9 @@ class DefectInitialSetting:
     defect calculations for a particular material.
 
     Args:
-        structure (Structure): pmg Structure/IStructure class object
-        irreducible_sites (list): list of  IrreducibleSite class objects
+        structure (Structure): pmg Structure/IStructure class object for
+                               perfect supercell
+        irreducible_sites (list): list of IrreducibleSite class objects
         dopant_configs (Nx2 list): dopant configurations,
                                     e.g., [["Al", Mg"], ["N", "O"]
         antisite_configs (Nx2 list): antisite configurations,
@@ -64,14 +65,15 @@ class DefectInitialSetting:
         excluded (list): exceptionally removed defects with charges.
                           If they don't exist, this flag does nothing.
                           e.g., ["Va_O1_1", "Va_O1_2"]
-        distance (float): Maximum displacement distance in angstrom. 0 means
-                          random displacement is not considered.
+        distance (float): Maximum displacement in angstrom.
+                          0 means random displacement is switched off.
         cutoff (float): Cutoff radius in which atoms are displaced.
         symprec (float): Precision used for symmetry analysis.
         oxidation_states (dict): Oxidation states for relevant elements.
+                                 Used to determine the default defect charges.
         electronegativity (dict): Electronegativity for relevant elements.
+                                 Used to determine the substitutional defects.
     """
-
     def __init__(self, structure, irreducible_sites, dopant_configs,
                  antisite_configs, interstitial_coords, included, excluded,
                  distance, cutoff, symprec, oxidation_states,
@@ -129,7 +131,7 @@ class DefectInitialSetting:
         Currently, the file format of defect.in is not flexible, so be careful
         when modifying it by hand. The first word is mostly parsed. The number
         of words for each tag and the sequence of information is assumed to be
-        fixed.
+        fixed. See manual with care.
         E.g.,
             Irreducible element: Mg1
                Equivalent atoms: 1..32
@@ -226,7 +228,7 @@ class DefectInitialSetting:
                             excluded="", distance=_DISTANCE, cutoff=_CUTOFF,
                             symprec=_SYMPREC):
         """
-        Generates DefectInitialSetting object with some default settings.
+        Generates DefectInitialSetting object with default settings.
 
         Args:
             poscar (str): POSCAR type file name used for supercell defect

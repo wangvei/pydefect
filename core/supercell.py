@@ -128,12 +128,11 @@ class Defect(Supercell):
         dft_results (SupercellDftResults): SupercellDftResults class object
         defect_entry (DefectEntry): DefectEntry class object
             |- initial_structure
-            |- removed_atom_index
-            |- inserted_atom_index
-            |- defect_coords
+            |- removed_atoms
+            |- inserted_atoms
+            |- changes_of_num_elements
             |- in_name
             |- out_name
-             - charge
     """
 
     def __init__(self, defect_entry, dft_results=None):
@@ -145,7 +144,7 @@ class Defect(Supercell):
 
     def as_dict(self):
         """
-        Dictionary representation of Defect.
+        Dictionary representation of Defect class object.
         """
         d = {"defect_entry": self._defect_entry.as_dict(),
              "dft_results":  self._dft_results.as_dict()}
@@ -167,16 +166,20 @@ class Defect(Supercell):
         return self._defect_entry.initial_structure
 
     @property
-    def removed_atom_index(self):
-        return self._defect_entry.removed_atom_index
+    def removed_atoms(self):
+        return self._defect_entry.removed_atoms
 
     @property
-    def inserted_atom_index(self):
-        return self._defect_entry.inserted_atom_index
+    def inserted_atoms(self):
+        return self._defect_entry.inserted_atoms
 
     @property
-    def defect_coords(self):
-        return self._defect_entry.defect_coords
+    def changes_of_num_elements(self):
+        return self._defect_entry.changes_of_num_elements
+
+    @property
+    def charge(self):
+        return self._defect_entry.charge
 
     @property
     def in_name(self):
@@ -185,10 +188,6 @@ class Defect(Supercell):
     @property
     def out_name(self):
         return self._defect_entry.out_name
-
-    @property
-    def charge(self):
-        return self._defect_entry.charge
 
     @property
     def relative_total_energy(self):

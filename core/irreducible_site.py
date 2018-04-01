@@ -17,7 +17,8 @@ class IrreducibleSite:
     Note2: first_index atom is assumed to represent the irreducible atoms.
 
     Args:
-        irreducible_name (str): element name with irreducible index (e.g., Mg1)
+        irreducible_name (str): element name with the irreducible index
+                                (e.g., Mg1)
         element (str): element name (e.g., Mg)
         first_index (int): first index of irreducible_name.
         last_index (int): last index of irreducible_name.
@@ -45,7 +46,7 @@ class IrreducibleSite:
                    d["last_index"], d["repr_coords"])
 
     @property
-    def natoms(self):
+    def num_atoms(self):
         """
         Returns the number of atoms.
         """
@@ -58,7 +59,6 @@ class IrreducibleSite:
              "last_index": self._last_index,
              "repr_coords": self._repr_coords}
         return d
-        return self._irreducible_name
 
     @property
     def irreducible_name(self):

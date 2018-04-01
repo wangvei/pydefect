@@ -15,32 +15,42 @@ __status__ = "Development"
 __date__ = "December 4, 2017"
 
 
+def get_nions(structure):
+    """
+    Return numbers of ions for elements in a structure.
+    Example: Al1Mg63O6
+        return: [1, 63, 64]
+
+    """
+    return [int(i) for i in structure.to(fmt="poscar").split("\n")[6].split()]
+
+
 class DefectEntry:
     """
     This class object has all the information related to initial setting of a
-    defect.
+    single defect.
     Args:
         initial_structure (Structure):
-            Defect structure before the structure optimization.
+            Structure with a defect before the structure optimization.
         removed_atoms (dict):
             Keys: Atom indices removed from the perfect supercell.
                   The index begins from 0.
-                  For interstitial, set {}.
+                  For interstitials, set {}.
             Values: Defect coordinates
         inserted_atoms (dict):
-            Keys: Atom indices inserted in the supercell *after removing atoms*.
+            Keys: Atom indices inserted in the supercell after removing atoms.
                   The index begins from 0.
-                  For vacancy, set {}.
+                  For vacancies, set {}.
             Values: Defect coordinates
         changes_of_num_elements (dict):
             Keys: Element names
-            Values: Changes of number of elements compared to perfect supercell
+            Values: Change of the numbers of elements wrt perfect supercell.
         in_name (str):
             Inserted element name.
             "Va" is inserted for vacancies.
-            When in_name is not well defined, set False.
+            When in_name is not well defined, e.g, complex defects, set False.
         out_name (str):
-            Removed site name.
+            Removed atomic site name.
             "in", (n: integer), is inserted for interstitials. E.g., "i1".
             When out_name is not well defined, set False.
         charge (int): Charge state of the defect
@@ -114,8 +124,8 @@ class DefectEntry:
     @property
     def defect_center(self):
         """
-        Returns coords of defect center by calculating the average coords.
-        If len(defect_coords) == 1, same as defect_coords[0].
+        Returns coordinates of defect center by calculating the averaged
+        coordinates. If len(defect_coords) == 1, returns defect_coords[0].
         """
         defect_coords = (list(self._removed_atoms.values()) +
                          list(self._inserted_atoms.values()))
@@ -124,23 +134,24 @@ class DefectEntry:
     @property
     def atom_mapping_to_perfect(self):
         """
-        Returns a list of mapping of atoms in defect structure to atoms in
-        perfect.
-        Example Mg32O32 supercell:
-            Assuming that 33th atom (first O) is removed,
-            mapping = [0, 1, 2, .., 31, 33, 34, .., 62]
-            len(mapping) = 63
+        Returns a list of atom mapping from defect structure to perfect.
+        Example of Mg32O32 supercell:
+            When 33th atom, namely first O, is removed,
+                mapping = [0, 1, 2, .., 31, 33, 34, .., 62]
+                len(mapping) = 63
+
         """
         total_nions = (sum(get_nions(self._initial_structure))
-                       - len(self._inserted_atoms) + len(self._removed_atoms))
+                       - len(self._inserted_atoms)
+                       + len(self._removed_atoms))
 
+        # initial atom mapping.
         mapping = [i for i in range(total_nions)]
 
         for o in sorted(self._removed_atoms.keys(), reverse=True):
             mapping.pop(o)
 
         for i in sorted(self._inserted_atoms.keys(), reverse=True):
-            print("-----")
             mapping = mapping[:i] + [None] + mapping[i:]
 
         return mapping
@@ -188,14 +199,3 @@ class DefectEntry:
         # farthest_dist = shortest_distances[farthest_atom_index]
 
         # return farthest_atom_index, farthest_dist
-
-
-def get_nions(structure):
-    """
-    Return numbers of ions for elements in a structure.
-    Example: Al1Mg63O6
-        return: [1, 63, 64]
-
-    """
-    return [int(i) for i in structure.to(fmt="poscar").split("\n")[6].split()]
-

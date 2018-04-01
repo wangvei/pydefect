@@ -6,7 +6,7 @@ import unittest
 from pymatgen.io.vasp.inputs import Poscar
 from pymatgen.electronic_structure.core import Spin
 
-from DFT_results import *
+from pydefect.core.dft_results import *
 
 __author__ = "Yu Kumagai"
 __copyright__ = "Copyright 2017, Oba group"
@@ -87,10 +87,10 @@ class SupercellDftResultsTest(unittest.TestCase):
             self._MgO_Va_O1_2.final_structure == MgO_Va_O1_2_fd.final_structure)
 
     def test_json(self):
-        self._MgO_Va_O1_2.to_json_file("test_DFT_results.json")
+        self._MgO_Va_O1_2.to_json_file("test_dft_results.json")
 
     def test_json_load(self):
-        self._MgO_Va_O1_2.json_load("test_DFT_results.json")
+        self._MgO_Va_O1_2.json_load("test_dft_results.json")
 
 
 class UnitcellDftResultsTest(unittest.TestCase):
@@ -203,10 +203,10 @@ class UnitcellDftResultsTest(unittest.TestCase):
         np.testing.assert_equal(self._MgO_unitcell.ionic_dielectric_tensor, b)
 
     def test_json(self):
-        self._MgO_unitcell.to_json_file("test_DFT_results_unitcell.json")
+        self._MgO_unitcell.to_json_file("test_dft_results_unitcell.json")
 
     def test_json_load(self):
-        self._MgO_unitcell.json_load("test_DFT_results_unitcell.json")
+        self._MgO_unitcell.json_load("test_dft_results_unitcell.json")
 
 
 if __name__ == "__main__":

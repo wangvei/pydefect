@@ -7,8 +7,8 @@ import numpy as np
 from monty.json import MontyEncoder
 from monty.serialization import loadfn
 
-from pydefect.core.DFT_results import SupercellDftResults
-from pydefect.input_maker.defect_entry import DefectEntry
+from pydefect.core.supercell import Perfect, Defect
+from pydefect.core.unitcell import Unitcell
 
 __author__ = "Yu Kumagai"
 __copyright__ = "Copyright 2017, Oba group"
@@ -22,6 +22,18 @@ __date__ = "December 4, 2017"
 class DefectSet:
     """
     """
+    def __init__(self, unitcell=None, perfect=None, defect=[],
+                 ewald_param=None):
+        self._unitcell = unitcell
+        self._perfect = perfect
+        self._defect = defect
+        self._ewald_param = ewald_param
+
+    @classmethod
+    def from_json(cls, unitcell_json, perfect_json, defect_json):
+        return cls(Unitcell.json_load(unitcell_json),
+                   Perfect.json_load(perfect_json),
+                   Defect.json_load(defect_json))
 
     @property
     def ewald_param(self):
@@ -31,13 +43,6 @@ class DefectSet:
     def ewald_param(self, ewald_param):
         self._ewald_param = ewald_param
 
+    def data_check(self):
+        pass
 
-class Perfect(Supercell):
-    pass
-
-
-
-    def test_ewald_param(self):
-        ewald_param = 0.1
-        self._MgO_perfect.ewald_param = ewald_param
-        self.assertEqual(self._MgO_perfect.ewald_param, ewald_param)

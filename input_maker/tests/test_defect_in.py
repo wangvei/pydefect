@@ -20,7 +20,7 @@ class IrreducibleSiteTest(unittest.TestCase):
         self.assertTrue(self._mg == d)
 
     def test_natoms(self):
-        self.assertEqual(self._mg.natoms, 32)
+        self.assertEqual(self._mg.num_atoms, 32)
 
 class DefectSettingTest(unittest.TestCase):
 

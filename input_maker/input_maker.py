@@ -171,6 +171,7 @@ class DefectMaker:
         # deepcopy is required for modifying the original structure.
         defect_structure = deepcopy(structure)
         in_name, out_name, charge = parse_defect_name(defect_name)
+        changes_of_num_elements = {}
         # -------------------- analyze out_name --------------------------------
         removed_atoms = {}
         # interstitial
@@ -183,6 +184,7 @@ class DefectMaker:
         else:
             for i in irreducible_sites:
                 if out_name == i.irreducible_name:
+                    changes_of_num_elements[i.element] = -1
                     removed_index = i.first_index - 1
                     removed_atoms[removed_index] = i.repr_coords
                     break
@@ -202,6 +204,7 @@ class DefectMaker:
             # There may be multiple irreducible sites for inserted element,
             # e.g., Mg1 and Mg2, element of in_name is inserted to just before
             # the same elements, otherwise to the 1st index.
+            changes_of_num_elements[in_name] = 1
             if in_name in defect_structure.symbol_set:
                 inserted_index = \
                     min(defect_structure.indices_from_symbol(in_name))
@@ -213,7 +216,8 @@ class DefectMaker:
             raise ValueError("{} in {} is improper.".format(out_name,
                                                             defect_name))
         self.defect = DefectEntry(defect_structure, removed_atoms,
-                                  inserted_atoms, in_name, out_name, charge)
+                                  inserted_atoms, changes_of_num_elements,
+                                  charge, in_name, out_name)
 
 
 class DefectInputSetMaker(metaclass=ABCMeta):

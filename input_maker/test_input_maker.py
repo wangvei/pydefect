@@ -99,7 +99,7 @@ class FilterDefectNameSetTest(unittest.TestCase):
         expected_Va = ['Va_Mg1_-2', 'Va_Mg1_-1', 'Va_Mg1_0', 'Va_O1_0',
                        'Va_O1_-1', 'Va_O1_-2', 'Va_O2_0']
         expected__i = ['Mg_i1_0', 'Mg_i1_1', 'Mg_i1_2', 'O_i1_-2', 'O_i1_-1',
-                      'O_i1_0']
+                       'O_i1_0']
         expected_Va_and__i = expected_Va + expected__i
         expected_Va_O = ['Va_O1_0', 'Va_O1_-1', 'Va_O1_-2', 'Va_O2_0']
         expected_Va_O1 = ['Va_O1_0', 'Va_O1_-1', 'Va_O1_-2']
@@ -134,16 +134,19 @@ class DefectMakerTest(unittest.TestCase):
         self.interstitial_coords = [[0.1, 0.1, 0.1], [0.2, 0.2, 0.2]]
 
         _test_structure = Structure.from_file(FILENAME_POSCAR_VA1)
-        _removed_atoms = {0:[0, 0, 0]}
+        _removed_atoms = {0: [0, 0, 0]}
         _inserted_atoms = {}
+        _changes_of_num_elements = {"Mg": -1}
+        _charge = -2
         _in_name = "Va"
         _out_name = "Mg1"
-        _charge = -2
 
         self.test_d = DefectEntry(_test_structure, _removed_atoms,
-                                  _inserted_atoms, _in_name, _out_name, _charge)
+                                  _inserted_atoms, _changes_of_num_elements,
+                                  _charge, _in_name, _out_name)
 
     def test_vacancies(self):
+        self.maxDiff = None
         vac1_d = \
             DefectMaker("Va_Mg1_-2", self.structure, self.irreducible_sites,
                         self.interstitial_coords)
