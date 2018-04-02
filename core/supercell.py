@@ -72,8 +72,7 @@ class Supercell(metaclass=ABCMeta):
 
     @property
     def electrostatic_potential(self):
-        else:
-            return None
+        return self._dft_results.electrostatic_potential
 
     def to_json_file(self, filename):
         """

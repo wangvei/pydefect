@@ -16,8 +16,8 @@ __email__ = "yuuukuma@gmail.com"
 __status__ = "Development"
 __date__ = "December 4, 2017"
 
-TEST_DIRECTORY = "../examples/MgO/unitcell"
-DEFECT_JSON = DIRNAME_VAC + "/unitcell.json"
+TEST_DIRECTORY = "../examples/MgO/unitcell/structure_optimization"
+DEFECT_JSON = TEST_DIRECTORY + "/unitcell.json"
 
 
 class UnitcellTest(unittest.TestCase):

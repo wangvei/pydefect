@@ -91,6 +91,11 @@ class Unitcell:
                 self._dft_results.ionic_dielectric_tensor:
             return self.static_dielectric_tensor + self.ionic_dielectric_tensor
 
+    def set_vasp_results(self, directory_path, contcar_name="CONTCAR",
+                         outcar_name="OUTCAR", vasprun_name="vasprun.xml"):
+        self._dft_results = UnitcellDftResults(directory_path, contcar_name,
+                                               outcar_name, vasprun_name)
+
     def set_dielectric_constants_from_outcar(self, directory_path,
                                              outcar_name="OUTCAR"):
         self._dft_results.set_dielectric_constants_from_outcar(directory_path,
@@ -110,4 +115,3 @@ class Unitcell:
         """
         with open(filename, 'w') as fw:
             json.dump(self.as_dict(), fw, indent=2, cls=MontyEncoder)
-
