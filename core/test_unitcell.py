@@ -17,6 +17,7 @@ __status__ = "Development"
 __date__ = "December 4, 2017"
 
 TEST_DIRECTORY = "../examples/MgO/unitcell/structure_optimization"
+TEST_DIELECTRICS_DIRECTORY = "../examples/MgO/unitcell/dielectric_constants"
 DEFECT_JSON = TEST_DIRECTORY + "/unitcell.json"
 
 
@@ -35,38 +36,27 @@ class UnitcellTest(unittest.TestCase):
                                 self._u_set.eigenvalues[Spin.up])
 
     def test_json(self):
-        self._p.to_json_file("test_unitcell.json")
-        self._p_json = Perfect.json_load("test_unitcell.json")
+        self._u.to_json_file("test_unitcell.json")
+        self._u_json = Unitcell.json_load("test_unitcell.json")
+        self.assertEqual(self._u.final_structure, self._u_json.final_structure)
+        self.assertEqual(self._u.total_energy, self._u_json.total_energy)
+        np.testing.assert_equal(self._u.eigenvalues[Spin.up],
+                                self._u_json.eigenvalues[Spin.up])
 
+    def test_set_dielectric_constants(self):
+        expected_static = np.array([[3.166727, 0, 0],
+                                    [0, 3.166727, 0],
+                                    [0, 0, 3.166727]])
+        expected_ionic = np.array([[9.102401, 0, 0],
+                                   [0, 9.102448, 0],
+                                   [0, 0, 9.102542]])
+        expected_total = np.array([[12.269128, 0, 0],
+                                   [0, 12.269175, 0],
+                                   [0, 0, 12.269269]])
+        self._u.set_dielectric_constants_from_outcar(TEST_DIELECTRICS_DIRECTORY)
 
-class DefectTest(unittest.TestCase):
-
-    def setUp(self):
-
-        self._p = Perfect.from_vasp_results(DIRNAME_PERFECT)
-        self._d = Defect.from_vasp_results(DIRNAME_VAC)
-        defect_entry = DefectEntry.json_load(DEFECT_JSON)
-        self._d_set = Defect(defect_entry)
-
-    def test_set_vasp_results(self):
-        self._d_set.set_vasp_results(DIRNAME_VAC)
-        print(self._d_set.charge)
-        print(self._d_set.total_energy)
-        self._d_set.set_relative_values(self._p)
-        print(self._d_set.relative_total_energy)
-
-    
-
-#        self.assertEqual(self._d.final_structure, self._d_set.final_structure)
-#        self.assertEqual(self._d.total_energy, self._d_set.total_energy)
-#        np.testing.assert_equal(self._d.eigenvalues[Spin.up],
-#                                self._d_set.eigenvalues[Spin.up])
-#        self.assertEqual(self._d.electrostatic_potential,
-#                         self._d_set.electrostatic_potential)
-
-#    def test_set_relative_values(self):
-
-
-if __name__ == "__main__":
-    unittest.main()
+        np.testing.assert_equal(self._u.static_dielectric_tensor,
+                                expected_static)
+        np.testing.assert_equal(self._u.ionic_dielectric_tensor, expected_ionic)
+        np.testing.assert_equal(self._u.total_dielectric_tensor, expected_total)
 

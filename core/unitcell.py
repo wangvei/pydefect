@@ -73,28 +73,20 @@ class Unitcell:
 
     @property
     def static_dielectric_tensor(self):
-        if self._dft_results.static_dielectric_tensor:
-            return self._dft_results.static_dielectric_tensor
-        else:
-            return None
+        return self._dft_results.static_dielectric_tensor
 
     @property
     def ionic_dielectric_tensor(self):
-        if self._dft_results.ionic_dielectric_tensor:
-            return self._dft_results.ionic_dielectric_tensor
-        else:
-            return None
+        return self._dft_results.ionic_dielectric_tensor
 
     @property
     def total_dielectric_tensor(self):
-        if self._dft_results.static_dielectric_tensor and \
-                self._dft_results.ionic_dielectric_tensor:
-            return self.static_dielectric_tensor + self.ionic_dielectric_tensor
+        return self.static_dielectric_tensor + self.ionic_dielectric_tensor
 
     def set_vasp_results(self, directory_path, contcar_name="CONTCAR",
                          outcar_name="OUTCAR", vasprun_name="vasprun.xml"):
-        self._dft_results = UnitcellDftResults(directory_path, contcar_name,
-                                               outcar_name, vasprun_name)
+        self._dft_results = UnitcellDftResults.from_vasp_files(
+            directory_path, contcar_name, outcar_name, vasprun_name)
 
     def set_dielectric_constants_from_outcar(self, directory_path,
                                              outcar_name="OUTCAR"):

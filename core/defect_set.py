@@ -22,12 +22,30 @@ __date__ = "December 4, 2017"
 class DefectSet:
     """
     """
-    def __init__(self, unitcell=None, perfect=None, defect=[],
+    def __init__(self, unitcell=None, perfect=None, defects=[],
                  ewald_param=None):
         self._unitcell = unitcell
         self._perfect = perfect
-        self._defect = defect
+        self._defects = defects
         self._ewald_param = ewald_param
+
+    def set_unitcell_from_json(self):
+        pass
+
+    def set_unitcell_from_vasp(self):
+        pass
+
+    def set_perfect_from_json(self):
+        pass
+
+    def set_perfect_from_vasp(self):
+        pass
+
+    def set_defect_set_from_vasp(self):
+        pass
+
+    def set_defect_set_from_json(self):
+        pass
 
     @classmethod
     def from_json(cls, unitcell_json, perfect_json, defect_json):
