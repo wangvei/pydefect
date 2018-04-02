@@ -25,7 +25,7 @@ class DftResults(metaclass=ABCMeta):
     """
     DFT results
     Args:
-        final_structure (Structure): pmg Structure/IStructure class object.
+        final_structure (Structure): Optimized Structure
         total_energy (float): total energy
         eigenvalues (N_k x N_band numpy array): eigenvalues
         electrostatic_potential (list): electrostatic potential at atomic sites
@@ -38,11 +38,13 @@ class DftResults(metaclass=ABCMeta):
         self._electrostatic_potential = electrostatic_potential
 
     @classmethod
-    def from_vasp_files(cls, directory_path, contcar_name="/CONTCAR",
-                        outcar_name="/OUTCAR", vasprun_name="/vasprun.xml"):
-        # TODO: change "/POSCAR" to "POSCAR"
-        # Then, both format w/ and w/o "/" for directory_path must be allowed.
+    def from_vasp_files(cls, directory_path, contcar_name="CONTCAR",
+                        outcar_name="OUTCAR", vasprun_name="vasprun.xml"):
         """
+        Although electrostatic_potential is useless for UnitcellDftResults,
+        this method is implemented in DftResults class because constructor is
+        easily written.
+
         Args:
             directory_path (str): path of directory.
             contcar_name (str): Name of converged CONTCAR file.
@@ -51,9 +53,9 @@ class DftResults(metaclass=ABCMeta):
             vasprun_name (str): Name of vasprun.xml file.
                                 Defaults to vasprun.xml.
         """
-        contcar = Poscar.from_file(directory_path + contcar_name)
-        outcar = Outcar(directory_path + outcar_name)
-        vasprun = Vasprun(directory_path + vasprun_name)
+        contcar = Poscar.from_file(directory_path + "/" + contcar_name)
+        outcar = Outcar(directory_path + "/" + outcar_name)
+        vasprun = Vasprun(directory_path + "/" + vasprun_name)
 
         final_structure = contcar.structure
         total_energy = outcar.final_energy
@@ -131,11 +133,8 @@ class SupercellDftResults(DftResults):
 
 class UnitcellDftResults(DftResults):
     """
-    DFT result of unitcell systems w/o any defect.
+    DFT results for a unitcell
     Args:
-        final_structure (Structure): pmg Structure/IStructure class object.
-        total_energy (float):
-        eigenvalues (Nx3 numpy array):
         static_dielectric_tensor (3x3 numpy array):
         ionic_dielectric_tensor (3x3 numpy array):
     """
@@ -153,7 +152,7 @@ class UnitcellDftResults(DftResults):
     @classmethod
     def from_dict(cls, d):
         """
-        Constructs a  class object from a dictionary.
+        Constructs a class object from a dictionary.
         """
         eigenvalues = {}
         # Programmatic access to enumeration members in Enum class.
@@ -165,8 +164,8 @@ class UnitcellDftResults(DftResults):
                    d["ionic_dielectric_tensor"])
 
     def set_dielectric_constants_from_outcar(self, directory_path,
-                                             outcar_name="/OUTCAR"):
-        outcar = Outcar(directory_path + outcar_name)
+                                             outcar_name="OUTCAR"):
+        outcar = Outcar(directory_path + "/" + outcar_name)
         self._static_dielectric_tensor = np.array(outcar.dielectric_tensor)
         self._ionic_dielectric_tensor = np.array(outcar.dielectric_ionic_tensor)
 
@@ -175,17 +174,27 @@ class UnitcellDftResults(DftResults):
         return self._static_dielectric_tensor
 
     @static_dielectric_tensor.setter
-    def static_dielectric_tensor(self, static_dielectric_tensor):
+    def set_static_dielectric_tensor(self, static_dielectric_tensor):
         """ The matrix format is a 3 x 3 list. """
         self._static_dielectric_tensor = static_dielectric_tensor
+
+    def set_static_dielectric_tensor_from_outcar(self, directory_path,
+                                                 outcar_name="OUTCAR"):
+        outcar = Outcar(directory_path + "/" + outcar_name)
+        self._static_dielectric_tensor = np.array(outcar.dielectric_tensor)
 
     @property
     def ionic_dielectric_tensor(self):
         return self._ionic_dielectric_tensor
 
     @ionic_dielectric_tensor.setter
-    def ionic_dielectric_tensor(self, ionic_dielectric_tensor):
+    def set_ionic_dielectric_tensor(self, ionic_dielectric_tensor):
         self._ionic_dielectric_tensor = ionic_dielectric_tensor
+
+    def set_ionic_dielectric_tensor_from_outcar(self, directory_path,
+                                                outcar_name="OUTCAR"):
+        outcar = Outcar(directory_path + "/" + outcar_name)
+        self._ionic_dielectric_tensor = np.array(outcar.dielectric_ionic_tensor)
 
     @property
     def total_dielectric_tensor(self):
@@ -202,7 +211,7 @@ class UnitcellDftResults(DftResults):
         d = {"final_structure":          self._final_structure,
              "total_energy":             self._total_energy,
              "eigenvalues":              eigenvalues,
-             "electrostatic_potential": self._electrostatic_potential,
+             "electrostatic_potential":  self._electrostatic_potential,
              "static_dielectric_tensor": self._static_dielectric_tensor,
              "ionic_dielectric_tensor":  self._ionic_dielectric_tensor}
 

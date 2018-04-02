@@ -191,16 +191,37 @@ class UnitcellDftResultsTest(unittest.TestCase):
             set_dielectric_constants_from_outcar(DIRNAME_DIELECTRIC)
         np.testing.assert_equal(self._MgO_unitcell.static_dielectric_tensor,
                                 self.static_dielectric_tensor)
+        np.testing.assert_equal(self._MgO_unitcell.ionic_dielectric_tensor,
+                                self.ionic_dielectric_tensor)
 
     def test_set_static_dielectric_tensor(self):
         a = np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]])
-        self._MgO_unitcell.static_dielectric_tensor = a
+        self._MgO_unitcell.set_static_dielectric_tensor = a
         np.testing.assert_equal(self._MgO_unitcell.static_dielectric_tensor, a)
 
     def test_set_ionic_dielectric_tensor(self):
         b = np.array([[2, 0, 0], [0, 2, 0], [0, 0, 2]])
-        self._MgO_unitcell.ionic_dielectric_tensor = b
+        self._MgO_unitcell.set_ionic_dielectric_tensor = b
         np.testing.assert_equal(self._MgO_unitcell.ionic_dielectric_tensor, b)
+
+    def test_set_static_dielectric_tensor_from_outcar(self):
+        self._MgO_unitcell.\
+            set_static_dielectric_tensor_from_outcar(DIRNAME_DIELECTRIC)
+        np.testing.assert_equal(self._MgO_unitcell.static_dielectric_tensor,
+                                self.static_dielectric_tensor)
+
+    def test_set_ionic_dielectric_tensor_from_outcar(self):
+        self._MgO_unitcell.set_ionic_dielectric_tensor_from_outcar(DIRNAME_DIELECTRIC)
+        np.testing.assert_equal(self._MgO_unitcell.ionic_dielectric_tensor,
+                                self.ionic_dielectric_tensor)
+
+    def test_total_dielectric_tensor(self):
+        self._MgO_unitcell. \
+            set_dielectric_constants_from_outcar(DIRNAME_DIELECTRIC)
+        self.total_dielectric_tensor = self.static_dielectric_tensor + \
+                                       self.ionic_dielectric_tensor
+        np.testing.assert_equal(self._MgO_unitcell.total_dielectric_tensor,
+                                self.total_dielectric_tensor)
 
     def test_json(self):
         self._MgO_unitcell.to_json_file("test_dft_results_unitcell.json")

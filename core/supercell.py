@@ -72,8 +72,6 @@ class Supercell(metaclass=ABCMeta):
 
     @property
     def electrostatic_potential(self):
-        if self._dft_results:
-            return self._dft_results.electrostatic_potential
         else:
             return None
 
