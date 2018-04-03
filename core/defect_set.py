@@ -21,8 +21,15 @@ __date__ = "December 4, 2017"
 class DefectSet:
     """
     """
-    def __init__(self, unitcell=None, perfect=None, defects=[],
-                 ewald_param=None):
+    def __init__(self,
+                 unitcell_directory_path,
+                 defect_directory_paths,
+                 perfect_directory_path="perfect",
+                 contcar_name="CONTCAR",
+                 outcar_name="OUTCAR",
+                 vasprun_name="vasprun.xml",
+                 does_update_json=True):
+
         self.unitcell = unitcell
         self.perfect = perfect
         self.defects = defects
@@ -52,6 +59,13 @@ class DefectSet:
                                                      contcar_name,
                                                      outcar_name,
                                                      vasprun_name)
+
+        defects = []
+        for path in defect_directory_paths:
+            d = DefectSupercell.from_vasp_results(path,
+                                                  contcar_name,
+                                                  outcar_name,
+                                                  vasprun_name)
 
         defects = [DefectSupercell.from_vasp_results(path,
                                                      contcar_name,
