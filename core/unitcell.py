@@ -26,8 +26,8 @@ class Unitcell:
         self._dft_results = dft_results
 
     @classmethod
-    def from_vasp_results(cls, directory_path, contcar_name="/CONTCAR",
-                          outcar_name="/OUTCAR", vasprun_name="/vasprun.xml"):
+    def from_vasp_results(cls, directory_path, contcar_name="CONTCAR",
+                          outcar_name="OUTCAR", vasprun_name="vasprun.xml"):
         dft_results = \
             UnitcellDftResults.from_vasp_files(
                 directory_path, contcar_name, outcar_name, vasprun_name)
@@ -46,7 +46,7 @@ class Unitcell:
     @classmethod
     def json_load(cls, filename):
         """
-        Constructs a Defect class object from a json file.
+        Constructs a DefectSupercell class object from a json file.
         """
         return cls.from_dict(loadfn(filename))
 
@@ -95,7 +95,7 @@ class Unitcell:
 
     def as_dict(self):
         """
-        Dictionary representation of Defect class object.
+        Dictionary representation of DefectSupercell class object.
         """
         d = {"dft_results":  self._dft_results.as_dict()}
 

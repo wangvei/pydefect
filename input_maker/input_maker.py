@@ -93,10 +93,10 @@ def parse_defect_name(defect_name):
         out_name = d[1]
         charge = int(d[2])
     except ValueError:
-        print("Defect {} is improper.".format(defect_name))
+        print("DefectSupercell {} is improper.".format(defect_name))
 
     if not re.match(r'^[a-xA-Z]+[1-9]+$', out_name):
-        raise ValueError("Defect {} is improper.".format(defect_name))
+        raise ValueError("DefectSupercell {} is improper.".format(defect_name))
     return in_name, out_name, charge
 
 
@@ -162,7 +162,7 @@ class DefectMaker:
         in_name" (str): Inserted element name. "Va" is used for vacancies.
         out_name" (str): Removed site name. "in", where n is an integer,
                          is used for interstitials. E.g., "i1".
-        charge (int): Defect charge state
+        charge (int): DefectSupercell charge state
         removed_atom_index (int): removed atom index from perfect structure.
     """
     def __init__(self, defect_name, structure, irreducible_sites,
@@ -223,7 +223,7 @@ class DefectMaker:
 class DefectInputSetMaker(metaclass=ABCMeta):
     """
     Abstract class that is subclassed by a particular first-principles code
-    implementation. Constructs a set of Defect class objects based on given
+    implementation. Constructs a set of DefectSupercell class objects based on given
     oxidation states.
 
     Args:

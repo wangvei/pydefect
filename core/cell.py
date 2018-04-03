@@ -8,7 +8,7 @@ import warnings
 from monty.json import MontyEncoder
 from monty.serialization import loadfn
 
-from pydefect.core.dft_results import SupercellDftResults
+from pydefect.core.dft_results import SupercellDftResults, UnitcellDftResults
 from pydefect.input_maker.defect_entry import DefectEntry
 
 __author__ = "Yu Kumagai"
@@ -20,75 +20,17 @@ __status__ = "Development"
 __date__ = "December 4, 2017"
 
 
-class Supercell(metaclass=ABCMeta):
+class Cell:
     """
     Abstract class that is subclassed by a calculation done with a supercell.
 
     Args:
-        dft_results (SupercellDftResults): SupercellDftResults class object
-            |- final_structure (Structure)
-            |- total_energy (float)
-            |- eigenvalues (N_k-point x N_band numpy array)
-             - electrostatic_potential (list)
+        dft_results (SupercellDftResults or UnitcellDftResults):
+            The object type is determined in the subclass.
     """
+
     def __init__(self, dft_results=None):
         self._dft_results = dft_results
-
-    @classmethod
-    def from_vasp_results(cls, directory_path, contcar_name="/CONTCAR",
-                          outcar_name="/OUTCAR", vasprun_name="/vasprun.xml"):
-        dft_results = \
-            SupercellDftResults.from_vasp_files(
-                directory_path, contcar_name, outcar_name, vasprun_name)
-        return cls(dft_results)
-
-    @classmethod
-    def json_load(cls, filename):
-        """
-        Constructs a Defect class object from a json file.
-        """
-        return cls.from_dict(loadfn(filename))
-
-    @property
-    def final_structure(self):
-        if self._dft_results:
-            return self._dft_results.final_structure
-        else:
-            return None
-
-    @property
-    def total_energy(self):
-        if self._dft_results:
-            return self._dft_results.total_energy
-        else:
-            return None
-
-    @property
-    def eigenvalues(self):
-        if self._dft_results:
-            return self._dft_results.eigenvalues
-        else:
-            return None
-
-    @property
-    def electrostatic_potential(self):
-        return self._dft_results.electrostatic_potential
-
-    def to_json_file(self, filename):
-        """
-        Returns a json file.
-        """
-        with open(filename, 'w') as fw:
-            json.dump(self.as_dict(), fw, indent=2, cls=MontyEncoder)
-
-    def set_vasp_results(self, directory_path, contcar_name="/CONTCAR",
-                         outcar_name="/OUTCAR", vasprun_name="/vasprun.xml"):
-        """
-        Used to set some vasp results a posteriori.
-        """
-        self._dft_results = \
-            SupercellDftResults.from_vasp_files(
-                directory_path, contcar_name, outcar_name, vasprun_name)
 
     @abstractmethod
     def as_dict(self):
@@ -99,13 +41,146 @@ class Supercell(metaclass=ABCMeta):
     def from_dict(cls, d):
         pass
 
+    @classmethod
+    def json_load(cls, filename):
+        """
+        Constructs a DefectSupercell class object from a json file.
+        """
+        return cls.from_dict(loadfn(filename))
 
-class Perfect(Supercell):
+    def to_json_file(self, filename):
+        """
+        Returns a json file.
+        """
+        with open(filename, 'w') as fw:
+            json.dump(self.as_dict(), fw, indent=2, cls=MontyEncoder)
+
+    @property
+    def total_energy(self):
+        if self._dft_results.total_energy:
+            return self._dft_results.total_energy
+        else:
+            return None
+
+    @property
+    def final_structure(self):
+        if self._dft_results.final_structure:
+            return self._dft_results.final_structure
+        else:
+            return None
+
+    @property
+    def eigenvalues(self):
+        if self._dft_results.eigenvalues:
+            return self._dft_results.eigenvalues
+        else:
+            return None
+
+
+class Unitcell(Cell):
+    """
+    This class object holds some properties related to a unit cell calculation.
+    Args:
+        dft_results (UnitcellDftResults): UnitcellDftResults class object
+    """
     def as_dict(self):
         """
-        Dictionary representation of Perfect.
+        Dictionary representation of DefectSupercell class object.
+        """
+        d = {"dft_results":  self._dft_results.as_dict()}
+
+        return d
+
+    @classmethod
+    def from_dict(cls, d):
+        """
+        Constructs a class object from a dictionary.
+        """
+        dft_results = UnitcellDftResults.from_dict(d["dft_results"])
+
+        return cls(dft_results)
+
+    @classmethod
+    def from_vasp_results(cls, directory_path, contcar_name="CONTCAR",
+                          outcar_name="OUTCAR", vasprun_name="vasprun.xml"):
+        dft_results = \
+            UnitcellDftResults.from_vasp_files(
+                directory_path, contcar_name, outcar_name, vasprun_name)
+
+        return cls(dft_results)
+
+    def set_vasp_results(self, directory_path, contcar_name="CONTCAR",
+                         outcar_name="OUTCAR", vasprun_name="vasprun.xml"):
+        self._dft_results = \
+            UnitcellDftResults.from_vasp_files(
+                directory_path, contcar_name, outcar_name, vasprun_name)
+
+    def set_dielectric_constants_from_outcar(self, directory_path,
+                                             outcar_name="OUTCAR"):
+        self._dft_results.set_dielectric_constants_from_outcar(directory_path,
+                                                               outcar_name)
+
+    @property
+    def static_dielectric_tensor(self):
+        return self._dft_results.static_dielectric_tensor
+
+    @property
+    def ionic_dielectric_tensor(self):
+        return self._dft_results.ionic_dielectric_tensor
+
+    @property
+    def total_dielectric_tensor(self):
+        return self.static_dielectric_tensor + self.ionic_dielectric_tensor
+
+
+class Supercell(Cell, metaclass=ABCMeta):
+    """
+    Abstract class that is subclassed by a calculation done with a supercell.
+
+    Args:
+        dft_results (SupercellDftResults): SupercellDftResults class object
+            |- final_structure (Structure)
+            |- total_energy (float)
+            |- eigenvalues (N_k-point x N_band numpy array)
+             - electrostatic_potential (list)
+    """
+    @classmethod
+    def from_vasp_results(cls, directory_path, contcar_name="/CONTCAR",
+                          outcar_name="/OUTCAR", vasprun_name="/vasprun.xml"):
+        dft_results = \
+            SupercellDftResults.from_vasp_files(
+                directory_path, contcar_name, outcar_name, vasprun_name)
+
+        return cls(dft_results)
+
+    @classmethod
+    def json_load(cls, filename):
+        """
+        Constructs a DefectSupercell class object from a json file.
+        """
+        return cls.from_dict(loadfn(filename))
+
+    @property
+    def electrostatic_potential(self):
+        return self._dft_results.electrostatic_potential
+
+    def set_vasp_results(self, directory_path, contcar_name="/CONTCAR",
+                         outcar_name="/OUTCAR", vasprun_name="/vasprun.xml"):
+        """
+        Used to set some vasp results a posteriori.
+        """
+        self._dft_results = \
+            SupercellDftResults.from_vasp_files(
+                directory_path, contcar_name, outcar_name, vasprun_name)
+
+
+class PerfectSupercell(Supercell):
+    def as_dict(self):
+        """
+        Dictionary representation of PerfectSupercell.
         """
         d = {"dft_results": self._dft_results.as_dict()}
+
         return d
 
     @classmethod
@@ -118,7 +193,7 @@ class Perfect(Supercell):
         return cls(dft_results)
 
 
-class Defect(Supercell):
+class DefectSupercell(Supercell):
     """
     This class object holds some properties related to a defect.
     Args:
@@ -131,7 +206,6 @@ class Defect(Supercell):
             |- in_name
             |- out_name
     """
-
     def __init__(self, defect_entry, dft_results=None):
         self._defect_entry = defect_entry
         super().__init__(dft_results)
@@ -141,7 +215,7 @@ class Defect(Supercell):
 
     def as_dict(self):
         """
-        Dictionary representation of Defect class object.
+        Dictionary representation of DefectSupercell class object.
         """
         d = {"defect_entry": self._defect_entry.as_dict(),
              "dft_results":  self._dft_results.as_dict()}
@@ -191,7 +265,7 @@ class Defect(Supercell):
         if self._relative_total_energy:
             return self._relative_total_energy
         else:
-            warnings.warn("relative_total_energy is not set.")
+            warnings.warn("relative_total_energy is not set yet.")
             return None
 
     @property
@@ -199,7 +273,7 @@ class Defect(Supercell):
         if self._relative_potential:
             return self._relative_potential
         else:
-            warnings.warn("relative_potential is not set.")
+            warnings.warn("relative_potential is not set yet.")
             return None
 
 #    @property
@@ -214,7 +288,7 @@ class Defect(Supercell):
         """
         Set relative values with respect to those of perfect calc.
         Args:
-            perfect (Perfect):
+            perfect (PerfectSupercell):
         """
         self._relative_total_energy = self.total_energy - perfect.total_energy
         self._relative_potential = list(map(operator.sub,

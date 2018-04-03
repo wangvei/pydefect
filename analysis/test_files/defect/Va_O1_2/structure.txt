@@ -1,4 +1,4 @@
-#Defect position (frac)
+#DefectSupercell position (frac)
 # 0.250000  0.250000  0.250000
 #        -----coordinations (frac)-----   dist.(init)[A]   dist.(final)[A]  disp.[A]  angle[deg.]
 Mg    1  -0.00020   -0.00020   -0.00020       3.678            3.681         0.003         -

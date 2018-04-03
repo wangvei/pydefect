@@ -209,10 +209,10 @@ def make_point_defects(poscar_name, removed_atom, added_coord, added_atom_symbol
         # "interstitial" or "substitutional"
     if (not removed_atom and added_coord and added_atom_symbol) \
             or (removed_atom and not added_coord and added_atom_symbol):
-        header += " Defect index " + str(add_index + 1)
+        header += " DefectSupercell index " + str(add_index + 1)
     # the others
     else:
-        header += " Defect position " + " ".join(map(str, defect_coord))
+        header += " DefectSupercell position " + " ".join(map(str, defect_coord))
 
     writePOSCAR(lattice_vectors, num_atoms, atom_pos, output_poscar_name,
                 header, symbols=symbols, note=displaced_atom_index)

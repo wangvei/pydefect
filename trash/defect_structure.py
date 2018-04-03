@@ -89,7 +89,7 @@ def print_distances_from_defect(poscar, defect):
                      distances_from_point(lattice_vectors, atom_pos, defect_pos)
 
     # Print the list of neighboring atomic distances.
-    print "-- Defect position: %12.7f %12.7f %12.7f" % tuple(defect_pos)
+    print "-- DefectSupercell position: %12.7f %12.7f %12.7f" % tuple(defect_pos)
     print "----------------------------------------------------------"
     print "symbol number  ------- coordinations -------  distances[A]"
     

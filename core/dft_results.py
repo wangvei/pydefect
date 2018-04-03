@@ -81,7 +81,7 @@ class DftResults(metaclass=ABCMeta):
     @classmethod
     def json_load(cls, filename):
         """
-        Constructs a Defect class object from a json file.
+        Constructs a DefectSupercell class object from a json file.
         """
         return cls.from_dict(loadfn(filename))
 

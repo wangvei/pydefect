@@ -36,12 +36,12 @@ class DefectEntry:
             Keys: Atom indices removed from the perfect supercell.
                   The index begins from 0.
                   For interstitials, set {}.
-            Values: Defect coordinates
+            Values: DefectSupercell coordinates
         inserted_atoms (dict):
             Keys: Atom indices inserted in the supercell after removing atoms.
                   The index begins from 0.
                   For vacancies, set {}.
-            Values: Defect coordinates
+            Values: DefectSupercell coordinates
         changes_of_num_elements (dict):
             Keys: Element names
             Values: Change of the numbers of elements wrt perfect supercell.

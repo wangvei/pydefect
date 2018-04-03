@@ -124,10 +124,10 @@ def _defect_name(defect_name):
         out_name = d[1]
         charge = int(d[2])
     except:
-        raise ValueError("Defect {} is improper.".format(defect_name))
+        raise ValueError("DefectSupercell {} is improper.".format(defect_name))
 
     if not re.match(r'^[a-xA-Z]+[1-9]+$',out_name):
-        raise ValueError("Defect {} is improper.".format(defect_name))
+        raise ValueError("DefectSupercell {} is improper.".format(defect_name))
     return (in_name, out_name, charge)
 
 def get_nions(defect_structure):
