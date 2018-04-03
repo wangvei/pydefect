@@ -32,10 +32,6 @@ class Cell:
     def __init__(self, dft_results=None):
         self._dft_results = dft_results
 
-    @abstractmethod
-    def as_dict(self):
-        pass
-
     @classmethod
     @abstractmethod
     def from_dict(cls, d):
@@ -47,13 +43,6 @@ class Cell:
         Constructs a DefectSupercell class object from a json file.
         """
         return cls.from_dict(loadfn(filename))
-
-    def to_json_file(self, filename):
-        """
-        Returns a json file.
-        """
-        with open(filename, 'w') as fw:
-            json.dump(self.as_dict(), fw, indent=2, cls=MontyEncoder)
 
     @property
     def total_energy(self):
@@ -83,14 +72,6 @@ class Unitcell(Cell):
     Args:
         dft_results (UnitcellDftResults): UnitcellDftResults class object
     """
-    def as_dict(self):
-        """
-        Dictionary representation of DefectSupercell class object.
-        """
-        d = {"dft_results":  self._dft_results.as_dict()}
-
-        return d
-
     @classmethod
     def from_dict(cls, d):
         """
@@ -153,13 +134,6 @@ class Supercell(Cell, metaclass=ABCMeta):
 
         return cls(dft_results)
 
-    @classmethod
-    def json_load(cls, filename):
-        """
-        Constructs a DefectSupercell class object from a json file.
-        """
-        return cls.from_dict(loadfn(filename))
-
     @property
     def electrostatic_potential(self):
         return self._dft_results.electrostatic_potential
@@ -175,14 +149,6 @@ class Supercell(Cell, metaclass=ABCMeta):
 
 
 class PerfectSupercell(Supercell):
-    def as_dict(self):
-        """
-        Dictionary representation of PerfectSupercell.
-        """
-        d = {"dft_results": self._dft_results.as_dict()}
-
-        return d
-
     @classmethod
     def from_dict(cls, d):
         """
@@ -206,21 +172,23 @@ class DefectSupercell(Supercell):
             |- in_name
             |- out_name
     """
-    def __init__(self, defect_entry, dft_results=None):
+    def __init__(self, defect_entry, dft_results=None, correction=None):
         self._defect_entry = defect_entry
         super().__init__(dft_results)
+        self._correction = correction
         self._relative_total_energy = None
         self._relative_potential = None
         self._relative_atomic_displacements = None
 
-    def as_dict(self):
+    def set_defect_entry_from_json(self, filename):
         """
-        Dictionary representation of DefectSupercell class object.
         """
-        d = {"defect_entry": self._defect_entry.as_dict(),
-             "dft_results":  self._dft_results.as_dict()}
+        self._defect_entry = DefectEntry.json_load(filename)
 
-        return d
+    def set_correction_from_json(self, filename):
+        """
+        """
+        pass
 
     @classmethod
     def from_dict(cls, d):
@@ -229,8 +197,9 @@ class DefectSupercell(Supercell):
         """
         defect_entry = DefectEntry.from_dict(d["defect_entry"])
         dft_results = SupercellDftResults.from_dict(d["dft_results"])
+        correction = Correction.from_dict(d["correction"])
 
-        return cls(defect_entry, dft_results)
+        return cls(defect_entry, dft_results, correction)
 
     @property
     def initial_structure(self):
