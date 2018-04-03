@@ -29,45 +29,48 @@ class DefectSet:
         self._defects = defects
         self._ewald_param = ewald_param
 
-    @classmethod
-    def from_json_files(cls, unitcell_directory_path, perfect_directory_path,
-
 #    @classmethod
-#    def from_vasp_results(cls, unitcell_directory_path, perfect_directory_path,
-#                          defect_directory_paths, contcar_name="CONTCAR",
-#                          outcar_name="OUTCAR", vasprun_name="vasprun.xml"):
-#        """
-#        Constructs a class object from a set of directories.
-#        """
-#        unitcell = Unitcell.from_vasp_results(unitcell_directory_path,
-#                                              contcar_name,
-#                                              outcar_name,
-#                                              vasprun_name)
-#        perfect = PerfectSupercell.from_vasp_results(perfect_directory_path,
-#                                            contcar_name,
-#                                            outcar_name,
-#                                            vasprun_name)
-#        defects = []
-#        for defect_directory_path in defect_directory_paths:
-#            defects.append(DefectSupercell.from_vasp_results(defect_directory_path,
-#                                                    contcar_name,
-#                                                    outcar_name,
-#                                                    vasprun_name))
-#
-#        cls(unitcell, perfect, defects)
+#    def from_json_files(cls, unitcell_directory_path, perfect_directory_path):
 
-#    def set_unitcell_from_vasp(self, unitcell_directory_path,
-#                               contcar_name="CONTCAR",
-#                               outcar_name="OUTCAR",
-#                               vasprun_name="vasprun.xml"):
-#        self._unitcell = Unitcell.from_vasp_results(unitcell_directory_path,
-#                                                    contcar_name,
-#                                                    outcar_name,
-#                                                    vasprun_name)
-#
-#    def set_perfect_from_vasp(self):
-#
-    def set_defect_set_from_vasp(self):
+
+    @classmethod
+    def from_vasp_results(cls, unitcell_directory_path, perfect_directory_path,
+                          defect_directory_paths, contcar_name="CONTCAR",
+                          outcar_name="OUTCAR", vasprun_name="vasprun.xml"):
+        """
+        Constructs a class object from a set of directories.
+        """
+        unitcell = Unitcell.from_vasp_results(unitcell_directory_path,
+                                              contcar_name,
+                                              outcar_name,
+                                              vasprun_name)
+        perfect = PerfectSupercell.from_vasp_results(perfect_directory_path,
+                                                     contcar_name,
+                                                     outcar_name,
+                                                     vasprun_name)
+
+        defects = []
+
+        for defect_directory_path in defect_directory_paths:
+            defects.append(
+                DefectSupercell.from_vasp_results(defect_directory_path,
+                                                  contcar_name,
+                                                  outcar_name,
+                                                  vasprun_name)
+                           )
+
+        cls(unitcell, perfect, defects)
+
+    def set_unitcell_from_vasp(self, unitcell_directory_path,
+                               contcar_name="CONTCAR",
+                               outcar_name="OUTCAR",
+                               vasprun_name="vasprun.xml"):
+        self._unitcell = Unitcell.from_vasp_results(unitcell_directory_path,
+                                                    contcar_name,
+                                                    outcar_name,
+                                                    vasprun_name)
+
+    def set_perfect_from_vasp(self):
         pass
 
     @classmethod
