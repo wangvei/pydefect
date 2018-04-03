@@ -2,7 +2,7 @@ import unittest
 
 from pymatgen.io.vasp.inputs import Poscar
 
-from input_maker.defect_entry import *
+from core.defect_entry import *
 
 __author__ = "Yu Kumagai"
 __copyright__ = "Copyright 2017, Oba group"

@@ -21,105 +21,38 @@ __date__ = "December 4, 2017"
 class DefectSet:
     """
     """
-    def __init__(self,
-                 unitcell_directory_path,
-                 defect_directory_paths,
-                 perfect_directory_path="perfect",
-                 contcar_name="CONTCAR",
-                 outcar_name="OUTCAR",
-                 vasprun_name="vasprun.xml",
-                 does_update_json=True):
 
-        self.unitcell = unitcell
-        self.perfect = perfect
-        self.defects = defects
-        self.ewald_param = ewald_param
-
-#    @classmethod
-#    def from_json_files(cls, unitcell_directory_path, perfect_directory_path):
-
+    def __init__(self, unitcell=None, perfect=None, defects=[]):
+        self._unitcell = unitcell
+        self._perfect = perfect
+        self._defects = defects
 
     @classmethod
-    def from_vasp_results(cls,
-                          unitcell_directory_path,
-                          defect_directory_paths,
-                          perfect_directory_path="perfect",
-                          contcar_name="CONTCAR",
-                          outcar_name="OUTCAR",
-                          vasprun_name="vasprun.xml",
-                          does_update_json=True):
+    def from_json_files(cls, unitcell_json_file, perfect_dft_results_json_file,
+                        defect_json_files):
         """
         Constructs a class object from a set of directories.
         """
-        unitcell = Unitcell.from_vasp_results(unitcell_directory_path,
-                                              contcar_name,
-                                              outcar_name,
-                                              vasprun_name)
-        perfect = PerfectSupercell.from_vasp_results(perfect_directory_path,
-                                                     contcar_name,
-                                                     outcar_name,
-                                                     vasprun_name)
-
-        defects = []
-        for path in defect_directory_paths:
-            d = DefectSupercell.from_vasp_results(path,
-                                                  contcar_name,
-                                                  outcar_name,
-                                                  vasprun_name)
-
-        defects = [DefectSupercell.from_vasp_results(path,
-                                                     contcar_name,
-                                                     outcar_name,
-                                                     vasprun_name)
-                   for path in defect_directory_paths]
-
-        if does_update_json:
-            unitcell.to_json_file(unitcell_directory_path + "/unitcell.json")
-            perfect.to_json_file(unitcell_directory_path + "/perfect.json")
-            for defect, path in zip(defects, defect_directory_paths):
-                defect.to_json_file(path + "/defect.json")
+        unitcell = Unitcell.json_load(unitcell_json_file)
+        perfect = PerfectSupercell.json_load(perfect_dft_results_json_file)
+        defects = [DefectSupercell(f[0], f[1], f[2]) for f in defect_json_files]
 
         cls(unitcell, perfect, defects)
 
-    def set_directory_paths(self):
+    @classmethod
+    def from_directory_paths(cls, unitcell_directory_path,
+                             perfect_directory_path,
+                             defect_directory_paths):
+        unitcell_json_file = unitcell_directory_path + "unitcell.json"
+        perfect_dft_results_json_file = \
+            perfect_directory_path + "perfect.json"
+        defect_json_files = [[d + "defect_entry.json",
+                              d + "dft_results.json",
+                              d + "correction.json"]
+                             for d in defect_directory_paths]
 
-    # def set_unitcell_from_vasp(self,
-    #                            unitcell_directory_path,
-    #                            contcar_name="CONTCAR",
-    #                            outcar_name="OUTCAR",
-    #                            vasprun_name="vasprun.xml"):
-    #     self.unitcell = Unitcell.from_vasp_results(unitcell_directory_path,
-    #                                                contcar_name,
-    #                                                outcar_name,
-    #                                                vasprun_name)
-
-    # def set_perfect_from_vasp(self,
-    #                           perfect_directory_path,
-    #                           contcar_name="CONTCAR",
-    #                           outcar_name="OUTCAR",
-    #                           vasprun_name="vasprun.xml"):
-    #     self.perfect = PerfectSupercell.\
-    #         from_vasp_results(perfect_directory_path,
-    #                           contcar_name,
-    #                           outcar_name,
-    #                           vasprun_name)
-
-    # @classmethod
-    # def from_json(cls, unitcell_json, perfect_json, defect_json):
-    #     return cls(Unitcell.json_load(unitcell_json),
-    #                PerfectSupercell.json_load(perfect_json),
-    #                DefectSupercell.json_load(defect_json))
-
-    # def to_json(self):
-
-
-    @property
-    def ewald_param(self):
-        return self.ewald_param
-
-    @ewald_param.setter
-    def ewald_param(self, ewald_param):
-        self.ewald_param = ewald_param
+        cls.from_json_files(unitcell_json_file, perfect_dft_results_json_file,
+                            defect_json_files)
 
     def data_check(self):
         pass

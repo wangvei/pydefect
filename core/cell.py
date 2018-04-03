@@ -1,15 +1,13 @@
 #!/usr/bin/env python
 
 from abc import ABCMeta, abstractmethod
-import json
 import operator
 import warnings
 
-from monty.json import MontyEncoder
 from monty.serialization import loadfn
 
 from pydefect.core.dft_results import SupercellDftResults, UnitcellDftResults
-from pydefect.input_maker.defect_entry import DefectEntry
+from core.defect_entry import DefectEntry
 
 __author__ = "Yu Kumagai"
 __copyright__ = "Copyright 2017, Oba group"

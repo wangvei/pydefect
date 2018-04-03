@@ -5,7 +5,7 @@ import shutil
 from pymatgen.io.vasp.inputs import Potcar
 
 from pydefect.input_maker.defect_initial_setting import DefectInitialSetting
-from pydefect.input_maker.defect_entry import get_nions
+from core.defect_entry import get_nions
 from pydefect.input_maker.input_maker import \
     DefectMaker, DefectInputSetMaker,  print_already_exist, \
     print_is_being_constructed,  perturb_around_a_point

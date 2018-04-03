@@ -6,7 +6,7 @@ import re
 
 from pymatgen.core.periodic_table import Element
 
-from pydefect.input_maker.defect_entry import DefectEntry
+from core.defect_entry import DefectEntry
 
 __author__ = "Yu Kumagai"
 __copyright__ = "Copyright 2017, Oba group"
