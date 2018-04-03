@@ -6,7 +6,7 @@ import numpy as np
 from pymatgen.electronic_structure.core import Spin
 
 from pydefect.core.cell import *
-from pydefect.input_maker.defect_entry import DefectEntry
+from core.defect_entry import DefectEntry
 
 __author__ = "Yu Kumagai"
 __copyright__ = "Copyright 2017, Oba group"
@@ -43,7 +43,6 @@ class UnitcellTest(unittest.TestCase):
                                 self._u_set.eigenvalues[Spin.up])
 
     def test_json(self):
-        self._u.to_json_file("test_unitcell.json")
         self._u_json = Unitcell.json_load("test_unitcell.json")
         self.assertEqual(self._u.final_structure, self._u_json.final_structure)
         self.assertEqual(self._u.total_energy, self._u_json.total_energy)
@@ -85,7 +84,6 @@ class PerfectSupercellTest(unittest.TestCase):
                          self._p_set.electrostatic_potential)
 
     def test_json(self):
-        self._p.to_json_file("test_supercell.json")
         self._p_json = PerfectSupercell.json_load("test_supercell.json")
 
 
