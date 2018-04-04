@@ -28,14 +28,16 @@ class DefectSetTest(unittest.TestCase):
 
     def setUp(self):
         """ """
-        _d = [DefectSupercell.from_vasp_results(TEST_VAC_DIRECTORY)]
-        _u = Unitcell.from_vasp_results(TEST_UNITCELL_DIRECTORY)
-        _p = PerfectSupercell.from_vasp_results(TEST_PERFECT_DIRECTORY)
+        _d = [DefectSupercell.from_vasp_files(TEST_VAC_DIRECTORY)]
+        _u = Unitcell.from_vasp_files(TEST_UNITCELL_DIRECTORY)
+        _p = PerfectSupercell.from_vasp_files(TEST_PERFECT_DIRECTORY)
         self._defect_set = DefectSet(unitcell=_u, perfect=_p, defects=_d)
 
-    def test_set_from_vasp(self):
-        self._defect_set.set_unitcell_from_vasp(TEST_PERFECT_DIRECTORY)
-        print(self._defect_set.unitcell.eigenvalues)
+    def test_make_dft_results_json_files(self):
+        DefectSet.make_dft_results_json_files(TEST_UNITCELL_DIRECTORY,
+                                              TEST_DIELECTRICS_DIRECTORY,
+                                              TEST_PERFECT_DIRECTORY,
+                                              [TEST_VAC_DIRECTORY])
 
     #     self._u_set.set_vasp_results(TEST_UNITCELL_DIRECTORY)
     #     self.assertEqual(self._u.final_structure, self._u_set.final_structure)

@@ -8,6 +8,8 @@ from monty.json import MontyEncoder
 from monty.serialization import loadfn
 
 from pydefect.core.cell import Unitcell, PerfectSupercell, DefectSupercell
+from pydefect.core.defect_entry import DefectEntry
+from pydefect.core.dft_results import UnitcellDftResults, SupercellDftResults
 
 __author__ = "Yu Kumagai"
 __copyright__ = "Copyright 2017, Oba group"
@@ -28,10 +30,12 @@ class DefectSet:
         self._defects = defects
 
     @classmethod
-    def from_json_files(cls, unitcell_json_file, perfect_dft_results_json_file,
+    def from_json_files(cls,
+                        unitcell_json_file,
+                        perfect_dft_results_json_file,
                         defect_json_files):
         """
-        Constructs a class object from a set of directories.
+        Constructs a class object from a set of json files
         """
         unitcell = Unitcell.json_load(unitcell_json_file)
         perfect = PerfectSupercell.json_load(perfect_dft_results_json_file)
@@ -39,21 +43,51 @@ class DefectSet:
 
         cls(unitcell, perfect, defects)
 
-    @classmethod
-    def from_directory_paths(cls, unitcell_directory_path,
-                             perfect_directory_path,
-                             defect_directory_paths):
-        unitcell_json_file = unitcell_directory_path + "unitcell.json"
-        perfect_dft_results_json_file = \
-            perfect_directory_path + "perfect.json"
-        defect_json_files = [[d + "defect_entry.json",
-                              d + "dft_results.json",
-                              d + "correction.json"]
-                             for d in defect_directory_paths]
+    @staticmethod
+    def make_dft_results_json_files(unitcell_directory_path,
+                                    dielectric_const_directory_path,
+                                    perfect_directory_path,
+                                    defect_directory_paths,
+                                    unitcell_json_name="unitcell.json",
+                                    perfect_json_name="perfect.json",
+                                    dft_results_json_name="dft_results.json"
+                                    ):
+        """
+        """
+        unitcell_dft_results = \
+            UnitcellDftResults.from_vasp_files(unitcell_directory_path)
 
-        cls.from_json_files(unitcell_json_file, perfect_dft_results_json_file,
-                            defect_json_files)
+        unitcell_dft_results.set_dielectric_constants_from_outcar(
+            dielectric_const_directory_path)
 
-    def data_check(self):
-        pass
+        unitcell_dft_results.to_json_file(
+            unitcell_directory_path + "/" + unitcell_json_name)
 
+        perfect_dft_results = \
+            SupercellDftResults.from_vasp_files(perfect_directory_path)
+
+        perfect_dft_results.to_json_file(
+            perfect_directory_path + "/" + perfect_json_name)
+
+        for d_path in defect_directory_paths:
+            defect_dft_results = SupercellDftResults.from_vasp_files(d_path)
+            defect_dft_results.to_json_file(d_path + "/" + dft_results_json_name)
+
+    # @classmethod
+    # def from_directory_paths(cls, unitcell_directory_path,
+    #                          perfect_directory_path,
+    #                          defect_directory_paths):
+
+        # unitcell_json_file = unitcell_directory_path + "unitcell.json"
+        # perfect_dft_results_json_file = \
+        #     perfect_directory_path + "perfect.json"
+        # defect_json_files = [[d + "defect_entry.json",
+        #                       d + "dft_results.json",
+        #                       d + "correction.json"]
+        #                      for d in defect_directory_paths]
+
+        # cls.from_json_files(unitcell_json_file, perfect_dft_results_json_file,
+        #                     defect_json_files)
+
+    # def data_check(self):
+    #     pass

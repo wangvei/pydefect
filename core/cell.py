@@ -80,8 +80,8 @@ class Unitcell(Cell):
         return cls(dft_results)
 
     @classmethod
-    def from_vasp_results(cls, directory_path, contcar_name="CONTCAR",
-                          outcar_name="OUTCAR", vasprun_name="vasprun.xml"):
+    def from_vasp_files(cls, directory_path, contcar_name="CONTCAR",
+                        outcar_name="OUTCAR", vasprun_name="vasprun.xml"):
         dft_results = \
             UnitcellDftResults.from_vasp_files(
                 directory_path, contcar_name, outcar_name, vasprun_name)
@@ -124,8 +124,8 @@ class Supercell(Cell, metaclass=ABCMeta):
              - electrostatic_potential (list)
     """
     @classmethod
-    def from_vasp_results(cls, directory_path, contcar_name="/CONTCAR",
-                          outcar_name="/OUTCAR", vasprun_name="/vasprun.xml"):
+    def from_vasp_files(cls, directory_path, contcar_name="/CONTCAR",
+                        outcar_name="/OUTCAR", vasprun_name="/vasprun.xml"):
         dft_results = \
             SupercellDftResults.from_vasp_files(
                 directory_path, contcar_name, outcar_name, vasprun_name)

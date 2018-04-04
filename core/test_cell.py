@@ -32,7 +32,7 @@ class UnitcellTest(unittest.TestCase):
 
     def setUp(self):
         """ """
-        self._u = Unitcell.from_vasp_results(TEST_UNITCELL_DIRECTORY)
+        self._u = Unitcell.from_vasp_files(TEST_UNITCELL_DIRECTORY)
         self._u_set = Unitcell()
 
     def test_set_vasp_results(self):
@@ -71,7 +71,7 @@ class PerfectSupercellTest(unittest.TestCase):
 
     def setUp(self):
         """ """
-        self._p = PerfectSupercell.from_vasp_results(TEST_PERFECT_DIRECTORY)
+        self._p = PerfectSupercell.from_vasp_files(TEST_PERFECT_DIRECTORY)
         self._p_set = PerfectSupercell()
 
     def test_set_vasp_results(self):
@@ -91,8 +91,8 @@ class DefectTest(unittest.TestCase):
 
     def setUp(self):
 
-        self._p = PerfectSupercell.from_vasp_results(TEST_PERFECT_DIRECTORY)
-        self._d = DefectSupercell.from_vasp_results(TEST_VAC_DIRECTORY)
+        self._p = PerfectSupercell.from_vasp_files(TEST_PERFECT_DIRECTORY)
+        self._d = DefectSupercell.from_vasp_files(TEST_VAC_DIRECTORY)
         defect_entry = DefectEntry.json_load(VAC_DEFECT_ENTRY_JSON)
         self._d_set = DefectSupercell(defect_entry)
 
