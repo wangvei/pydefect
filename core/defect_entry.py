@@ -147,13 +147,13 @@ class DefectEntry:
                        + len(self._removed_atoms))
 
         # initial atom mapping.
-        mapping = [i for i in range(total_nions)]
+        mapping = list(range(total_nions))
 
         for o in sorted(self._removed_atoms.keys(), reverse=True):
             mapping.pop(o)
 
         for i in sorted(self._inserted_atoms.keys(), reverse=True):
-            mapping = mapping[:i] + [None] + mapping[i:]
+            mapping.insert(i, None)
 
         return mapping
 
