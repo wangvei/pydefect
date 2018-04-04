@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
 
 __author__ = "Yu Kumagai"
 __copyright__ = "Copyright 2017, Oba group"

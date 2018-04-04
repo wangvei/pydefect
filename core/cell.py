@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
 
 from abc import ABCMeta, abstractmethod
 import operator
@@ -6,7 +7,7 @@ import warnings
 
 from monty.serialization import loadfn
 
-from pydefect.core.dft_results import SupercellDftResults, UnitcellDftResults
+from core.dft_results import SupercellDftResults, UnitcellDftResults
 from core.defect_entry import DefectEntry
 
 __author__ = "Yu Kumagai"

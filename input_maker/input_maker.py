@@ -1,4 +1,6 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
 from abc import ABCMeta, abstractmethod
 from copy import deepcopy
 import numpy as np

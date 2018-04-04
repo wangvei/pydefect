@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
 
 from abc import ABCMeta
 import json
@@ -6,8 +7,7 @@ import numpy as np
 
 from monty.json import MontyEncoder
 from monty.serialization import loadfn
-from pymatgen import Spin
-from pymatgen.io.vasp import Poscar, Outcar, Vasprun
+
 from pymatgen.io.vasp.inputs import Poscar
 from pymatgen.io.vasp.outputs import Outcar, Vasprun
 from pymatgen.electronic_structure.core import Spin
