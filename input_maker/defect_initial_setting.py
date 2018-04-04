@@ -9,8 +9,8 @@ from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
 from monty.json import MontyEncoder
 from monty.serialization import loadfn
 
-import pydefect.core.atom as atom
-from pydefect.core.irreducible_site import IrreducibleSite
+import core.atom as atom
+from core.irreducible_site import IrreducibleSite
 
 __author__ = "Yu Kumagai"
 __copyright__ = "Copyright 2017, Oba group"
@@ -37,7 +37,7 @@ def extended_range(i):
     Args:
         i (int): an integer
     """
-    if not type(i) == int:
+    if type(i) is not int:
         raise AttributeError
     if i >= 0:
         return range(i + 1)
@@ -47,8 +47,8 @@ def extended_range(i):
 
 class DefectInitialSetting:
     """
-    This class object holds full information on the setting of a series of point
-    defect calculations for a particular material.
+    This class object holds full information used for setting of a series of
+    point defect calculations for a particular material.
 
     Args:
         structure (Structure): pmg Structure/IStructure class object for
@@ -74,6 +74,7 @@ class DefectInitialSetting:
         electronegativity (dict): Electronegativity for relevant elements.
                                  Used to determine the substitutional defects.
     """
+
     def __init__(self, structure, irreducible_sites, dopant_configs,
                  antisite_configs, interstitial_coords, included, excluded,
                  distance, cutoff, symprec, oxidation_states,
@@ -162,7 +163,7 @@ class DefectInitialSetting:
                 elif line[0] == "Irreducible":
                     irreducible_name = line[2]
                     # remove index from irreducible_name, e.g., "Mg1" --> "Mg"
-                    element = ''.\
+                    element = ''. \
                         join([i for i in irreducible_name if not i.isdigit()])
                     first_index, last_index = \
                         [int(i) for i in di.readline().split()[2].split("..")]
@@ -186,7 +187,7 @@ class DefectInitialSetting:
                     else:
                         print("The number of interstitial coordinates is not a "
                               "multiple of 3.")
-                        interstitial_coords =[]
+                        interstitial_coords = []
 
                 elif line[0] == "Antisite":
                     antisite_configs = [i.split("_") for i in line[2:]]
@@ -222,8 +223,8 @@ class DefectInitialSetting:
                    electronegativity)
 
     @classmethod
-    def from_basic_settings(cls, poscar, dopants=[],
-                            flattened_interstitial_coords=[],
+    def from_basic_settings(cls, poscar, dopants=None,
+                            flattened_interstitial_coords=None,
                             is_antisite=True, en_diff=_EN_DIFF, included="",
                             excluded="", distance=_DISTANCE, cutoff=_CUTOFF,
                             symprec=_SYMPREC):
@@ -253,6 +254,8 @@ class DefectInitialSetting:
             symprec (float): Precision used for symmetry analysis.
         """
 
+        if dopants is None:
+            dopants = []
         s = Structure.from_file(poscar)
         symmetrized_structure = \
             SpacegroupAnalyzer(s, symprec=symprec).get_symmetrized_structure()
@@ -332,7 +335,8 @@ class DefectInitialSetting:
             if int(len(flattened_interstitial_coords)) % 3 == 0:
                 interstitial_coords = \
                     [flattened_interstitial_coords[i:i + 3]
-                     for i in range(int(len(flattened_interstitial_coords) / 3))]
+                     for i in
+                     range(int(len(flattened_interstitial_coords) / 3))]
             else:
                 raise ValueError("The number of interstitial coordinates is not"
                                  " a multiple of 3.")
@@ -376,9 +380,9 @@ class DefectInitialSetting:
         Prints readable defect.in file.
         """
         self._write_defect_in(defect_in_file)
-        # HACK: pmg has a bug, Symmetrized structure object cannot be converted
+        # NOTE: pmg has a bug, Symmetrized structure object cannot be converted
         # to poscar
-        Structure.from_str(self._structure.to(fmt="cif"), fmt="cif")\
+        Structure.from_str(self._structure.to(fmt="cif"), fmt="cif") \
             .to(fmt="poscar", filename=poscar_file)
 
     def make_defect_name_set(self):
@@ -610,9 +614,8 @@ def main():
     else:
         defect_setting = DefectInitialSetting.from_basic_settings(
             opts.poscar, opts.dopants, opts.interstitial_coords,
-            opts.is_antisite, opts.en_diff, opts.included,
-            opts.excluded, opts.distance, opts.cutoff,
-            opts.symprec)
+            opts.is_antisite, opts.en_diff, opts.included, opts.excluded,
+            opts.distance, opts.cutoff, opts.symprec)
         defect_setting.to()
 
 
