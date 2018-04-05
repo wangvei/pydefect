@@ -256,7 +256,13 @@ class DefectInitialSetting:
 
         if dopants is None:
             dopants = []
-        s = Structure.from_file(poscar)
+#        s = Structure.from_file(poscar)
+#        symmetrized_structure = \
+#            SpacegroupAnalyzer(s, symprec=symprec).get_symmetrized_structure()
+        # The format change of POSCAR -> cif -> structure can sort the elements.
+        # This is important to be consistent with to method.
+        s = Structure.from_str(Structure.from_file(poscar).to(fmt="cif"),
+                               fmt="cif")
         symmetrized_structure = \
             SpacegroupAnalyzer(s, symprec=symprec).get_symmetrized_structure()
 
@@ -382,12 +388,14 @@ class DefectInitialSetting:
         self._write_defect_in(defect_in_file)
         # NOTE: pmg has a bug, Symmetrized structure object cannot be converted
         # to poscar
-
-        Structure.from_str(self._structure.to(fmt="cssr"), fmt="cssr")\
-            .to(fmt="poscar", filename=poscar_file)
-        # Note: the following files change the sequence of elements.
-#        Structure.from_str(self._structure.to(fmt="cif"), fmt="cif") \
+#        Structure.from_str(self._structure.to(fmt="xsf"), fmt="xsf")\
 #            .to(fmt="poscar", filename=poscar_file)
+
+#        Structure.from_str(self._structure.to(fmt="cssr"), fmt="cssr")\
+#            .to(fmt="poscar", filename=poscar_file)
+        # Note: the following files change the sequence of elements.
+        Structure.from_str(self._structure.to(fmt="cif"), fmt="cif") \
+            .to(fmt="poscar", filename=poscar_file)
 
     def make_defect_name_set(self):
         """
