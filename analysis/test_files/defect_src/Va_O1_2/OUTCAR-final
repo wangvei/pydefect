@@ -157,7 +157,7 @@
  kinetic energy error for atom=    0.1156 (will be added to EATOM!!)
  
  
- POSCAR: Va_O1_2 Defect position 0.0 0.0 0.0     
+ POSCAR: Va_O1_2 DefectSupercell position 0.0 0.0 0.0
   positions in direct lattice
   velocities in cartesian coordinates
  exchange correlation table for  LEXCH =       14
@@ -406,7 +406,7 @@ Space group operators:
    NGXF,Y,Z  is equivalent  to a cutoff of  21.55, 21.55, 21.55 a.u.
 
  SYSTEM =  unknown system                          
- POSCAR =  Va_O1_2 Defect position 0.0 0.0 0.0     
+ POSCAR =  Va_O1_2 DefectSupercell position 0.0 0.0 0.0
 
  Startparameter for this run:
    NWRITE =      2    write-flag & timer

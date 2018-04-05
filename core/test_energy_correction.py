@@ -2,7 +2,7 @@ import unittest
 import numpy as np
 from pydefect.core.energy_correction import compute_alignment_by_extended_fnv
 from pydefect.core.unitcell import Unitcell
-from pydefect.core.supercell import Perfect, Defect
+from pydefect.core.cell import PerfectSupercell, DefectSupercell
 
 __author__ = "Akira Takahashi"
 __copyright__ = "Copyright 2017, Oba group"
@@ -33,10 +33,10 @@ class DefectCorrectionTest(unittest.TestCase):
 
     def setUp(self):
         self._unitcell = Unitcell(UNITCELL_DIRECTORY)
-        self._supercell = Perfect(SUPERCELL_DIRECTORY)
-        self._vacancy = Defect.json_load(VACANCY_JSON)
-        self._substitutional = Defect.json_load(SUBSTITUTIONAL_JSON)
-        self._interstitial = Defect.json_load(INTERSTITIAL_JSON)
+        self._supercell = PerfectSupercell(SUPERCELL_DIRECTORY)
+        self._vacancy = DefectSupercell.json_load(VACANCY_JSON)
+        self._substitutional = DefectSupercell.json_load(SUBSTITUTIONAL_JSON)
+        self._interstitial = DefectSupercell.json_load(INTERSTITIAL_JSON)
         self._ewald_param = "NEED_TO_SPECIFY!"
 
     @unittest.skip("Not implemented yet.")
