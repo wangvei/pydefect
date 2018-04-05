@@ -280,7 +280,6 @@ class DefectInitialSetting:
 
         # equivalent_sites: Equivalent site indices from SpacegroupAnalyzer.
         equiv_sites = symmetrized_structure.equivalent_sites
-        print(symmetrized_structure)
         last_index = 0
 
         for i, e in enumerate(equiv_sites):
@@ -335,7 +334,7 @@ class DefectInitialSetting:
         if flattened_interstitial_coords:
             if int(len(flattened_interstitial_coords)) % 3 == 0:
                 interstitial_coords = \
-                    [flattened_interstitial_coords[i:i + 3]
+                    [flattened_interstitial_coords[3*i: 3*i + 3]
                      for i in
                      range(int(len(flattened_interstitial_coords) / 3))]
             else:
