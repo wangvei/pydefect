@@ -7,9 +7,9 @@ import shutil
 
 from pymatgen.io.vasp.inputs import Potcar
 
-from input_maker.defect_initial_setting import DefectInitialSetting
-from core.defect_entry import get_nions
-from input_maker.input_maker import \
+from pydefect.input_maker.defect_initial_setting import DefectInitialSetting
+from pydefect.core.defect_entry import get_nions
+from pydefect.input_maker.input_maker import \
     DefectMaker, DefectInputSetMaker,  print_already_exist, \
     print_is_being_constructed,  perturb_around_a_point
 
@@ -126,7 +126,7 @@ class VaspDefectInputSetMaker(DefectInputSetMaker):
             if not self._defect_initial_setting.distance == 0.0:
                 perturbed_defect_structure, perturbed_sites = \
                     perturb_around_a_point(d.initial_structure,
-                                           d.defect_coords,
+                                           d.defect_center,
                                            self._defect_initial_setting.cutoff,
                                            self._defect_initial_setting.distance)
                 perturbed_defect_structure.to(

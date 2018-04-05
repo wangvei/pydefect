@@ -188,6 +188,7 @@ class DefectMaker:
                 if out_name == i.irreducible_name:
                     changes_of_num_elements[i.element] = -1
                     removed_index = i.first_index - 1
+                    defect_coords = i.repr_coords
                     removed_atoms[removed_index] = i.repr_coords
                     break
             try:
@@ -212,6 +213,7 @@ class DefectMaker:
                     min(defect_structure.indices_from_symbol(in_name))
                 inserted_atoms[inserted_index] = defect_coords
             else:
+                inserted_index = 0
                 inserted_atoms[0] = defect_coords
             defect_structure.insert(inserted_index, in_name, defect_coords)
         else:

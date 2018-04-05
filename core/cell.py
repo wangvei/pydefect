@@ -2,6 +2,8 @@
 # -*- coding: utf-8 -*-
 
 from abc import ABCMeta, abstractmethod
+from itertools import product
+import numpy as np
 import operator
 import warnings
 
@@ -17,6 +19,30 @@ __maintainer__ = "Yu Kumagai"
 __email__ = "yuuukuma@gmail.com"
 __status__ = "Development"
 __date__ = "December 4, 2017"
+
+
+def calc_min_distance_and_its_v2coord(v1, v2, axis):
+    candidate_list = []
+    v = np.dot(axis, v2 - v1)
+    for index in product((-1, 0, 1), repeat=3):
+        index = np.array(index)
+        delta_v = np.dot(axis, index)
+        distance = np.linalg.norm(delta_v + v)
+        candidate_list.append((distance, v2 + index))
+    return min(candidate_list, key=lambda t: t[0])
+
+
+def calc_distance_list(structure, defect_coords):
+    return [calc_min_distance_and_its_v2coord(v, defect_coords, structure.axis)
+            for v in structure.frac_coords]
+
+
+def warning_message_for_none(obj):
+    if obj is not None:
+        return obj
+    else:
+        warnings.warn(message=obj + "is not set yet.")
+        return None
 
 
 class Cell:
@@ -45,7 +71,7 @@ class Cell:
 
     @property
     def total_energy(self):
-        if self._dft_results.total_energy:
+        if self._dft_results.total_energy is not None:
             return self._dft_results.total_energy
         else:
             return None
@@ -196,9 +222,10 @@ class DefectSupercell(Supercell):
         """
         defect_entry = DefectEntry.from_dict(d["defect_entry"])
         dft_results = SupercellDftResults.from_dict(d["dft_results"])
-        correction = Correction.from_dict(d["correction"])
+#        correction = Correction.from_dict(d["correction"])
 
-        return cls(defect_entry, dft_results, correction)
+        return cls(defect_entry, dft_results)
+#        return cls(defect_entry, dft_results, correction)
 
     @property
     def initial_structure(self):

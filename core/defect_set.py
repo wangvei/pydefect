@@ -23,6 +23,11 @@ __date__ = "December 4, 2017"
 
 class DefectSet:
     """
+    Integrate a set of defect-related properties.
+    Args:
+        unitcell (UnitCell):
+        perfect (PerfectSupercell):
+        defects ([DefectSupercell, ..]):
     """
 
     def __init__(self, unitcell=None, perfect=None, defects=[]):
@@ -36,11 +41,16 @@ class DefectSet:
                         perfect_dft_results_json_file,
                         defect_json_files):
         """
-        Constructs a class object from a set of json files
+        Construct a class object from a set of json files
+        defect_json_files = [[*Va_O1_0*] ,[*Va_O1_1*], ...]
+                                  |
+        [defect_entry.json, dft_results.json, correction.json]
+
         """
         unitcell = Unitcell.json_load(unitcell_json_file)
         perfect = PerfectSupercell.json_load(perfect_dft_results_json_file)
-        defects = [DefectSupercell(f[0], f[1], f[2]) for f in defect_json_files]
+        defects = [DefectSupercell(f[0], f[1]) for f in defect_json_files]
+#        defects = [DefectSupercell(f[0], f[1], f[2]) for f in defect_json_files]
 
         cls(unitcell, perfect, defects)
 
@@ -54,6 +64,9 @@ class DefectSet:
                                     dft_results_json_name="dft_results.json"
                                     ):
         """
+        Construct dft_results json files from the vasp calculation results
+        The vasp file names are fixed to CONTCAR, OUTCAR, and vasprun.xml
+        in the directory_paths.
         """
         unitcell_dft_results = \
             UnitcellDftResults.from_vasp_files(unitcell_directory_path)
@@ -72,23 +85,5 @@ class DefectSet:
 
         for d_path in defect_directory_paths:
             defect_dft_results = SupercellDftResults.from_vasp_files(d_path)
-            defect_dft_results.to_json_file(d_path + "/" + dft_results_json_name)
-
-    # @classmethod
-    # def from_directory_paths(cls, unitcell_directory_path,
-    #                          perfect_directory_path,
-    #                          defect_directory_paths):
-
-        # unitcell_json_file = unitcell_directory_path + "unitcell.json"
-        # perfect_dft_results_json_file = \
-        #     perfect_directory_path + "perfect.json"
-        # defect_json_files = [[d + "defect_entry.json",
-        #                       d + "dft_results.json",
-        #                       d + "correction.json"]
-        #                      for d in defect_directory_paths]
-
-        # cls.from_json_files(unitcell_json_file, perfect_dft_results_json_file,
-        #                     defect_json_files)
-
-    # def data_check(self):
-    #     pass
+            defect_dft_results.to_json_file(
+                d_path + "/" + dft_results_json_name)
