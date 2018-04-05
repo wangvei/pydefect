@@ -280,6 +280,7 @@ class DefectInitialSetting:
 
         # equivalent_sites: Equivalent site indices from SpacegroupAnalyzer.
         equiv_sites = symmetrized_structure.equivalent_sites
+        print(symmetrized_structure)
         last_index = 0
 
         for i, e in enumerate(equiv_sites):
@@ -382,8 +383,12 @@ class DefectInitialSetting:
         self._write_defect_in(defect_in_file)
         # NOTE: pmg has a bug, Symmetrized structure object cannot be converted
         # to poscar
-        Structure.from_str(self._structure.to(fmt="cif"), fmt="cif") \
+
+        Structure.from_str(self._structure.to(fmt="cssr"), fmt="cssr")\
             .to(fmt="poscar", filename=poscar_file)
+        # Note: the following files change the sequence of elements.
+#        Structure.from_str(self._structure.to(fmt="cif"), fmt="cif") \
+#            .to(fmt="poscar", filename=poscar_file)
 
     def make_defect_name_set(self):
         """
