@@ -1,5 +1,5 @@
 import unittest
-from pydefect.input_maker.defect_in import *
+from pydefect.input_maker.defect_initial_setting import *
 
 __author__ = "Yu Kumagai"
 __copyright__ = "Copyright 2017, Oba group"
@@ -12,22 +12,22 @@ __date__ = "December 4, 2017"
 class IrreducibleSiteTest(unittest.TestCase):
     
     def setUp(self):
-        self._mg = IrreducibleSite(irreducible_name="Mg1", element="Mg", first_index=1, 
-                              last_index=32, repr_coords=[0, 0, 0])
+        self._mg = IrreducibleSite(irreducible_name="Mg1", element="Mg", first_index=1,
+                                   last_index=32, representative_coords=[0, 0, 0])
 
     def test_dict(self):
         d = IrreducibleSite.from_dict(self._mg.as_dict())
         self.assertTrue(self._mg == d)
 
     def test_natoms(self):
-        self.assertEqual(self._mg.natoms, 32)
+        self.assertEqual(self._mg.num_atoms, 32)
 
 class DefectSettingTest(unittest.TestCase):
 
     def setUp(self):
         structure = Structure.from_file("POSCAR-MgO64atoms")
-        Mg1 = IrreducibleSite(irreducible_name="Mg1", element="Mg", first_index=1, last_index=32, repr_coords=[0, 0, 0])
-        O1 = IrreducibleSite(irreducible_name="O1", element="O", first_index=33, last_index=64, repr_coords=[0.25, 0.25, 0.25])
+        Mg1 = IrreducibleSite(irreducible_name="Mg1", element="Mg", first_index=1, last_index=32, representative_coords=[0, 0, 0])
+        O1 = IrreducibleSite(irreducible_name="O1", element="O", first_index=33, last_index=64, representative_coords=[0.25, 0.25, 0.25])
         irrep_elements = [Mg1, O1] 
         dopant_configs = "Al_Mg1"
         antisite_configs = ["Mg_O1", "O_Mg1"]
@@ -40,9 +40,9 @@ class DefectSettingTest(unittest.TestCase):
         oxidation_states = {"Mg": 2, "O": -2}
         electronegativity = {"Mg": 1.31, "O": 3.44}
 
-        self._a = DefectSetting(structure, irrep_elements, dopant_configs, 
-                antisite_configs, interstitial_coords, included, excluded, 
-                displace, cutoff, symprec, oxidation_states, electronegativity)
+        self._a = DefectInitialSetting(structure, irrep_elements, dopant_configs,
+                                       antisite_configs, interstitial_coords, included, excluded,
+                                       displace, cutoff, symprec, oxidation_states, electronegativity)
 
     def test_as_dict(self):
         self._a.as_dict()
@@ -50,7 +50,7 @@ class DefectSettingTest(unittest.TestCase):
 
     def test_from_dict(self):
         self.dict = self._a.as_dict()
-        self.object_from_dict = DefectSetting.from_dict(self.dict)
+        self.object_from_dict = DefectInitialSetting.from_dict(self.dict)
 #        print(self.object_from_dict.as_dict()) 
 #        print("----------------")
 #        print(self._a.as_dict()) 
@@ -66,7 +66,7 @@ class DefectSettingTest(unittest.TestCase):
 
     def test_json_load(self):
         filename = "defect_input_json_file_test"
-        _b = DefectSetting.json_load(filename)
+        _b = DefectInitialSetting.json_load(filename)
         self.assertTrue(_b.as_dict() == self._a.as_dict())
 
 #        self.assertTrue(self._a.to_json())
@@ -103,7 +103,7 @@ class DefectInMakerTest(unittest.TestCase):
 #    def test_dict(self):
 #        print(self._a.as_dict())
 #        print("------------------")
-#        d = DefectSetting.from_dict(self._a.as_dict())
+#        d = DefectInitialSetting.from_dict(self._a.as_dict())
 #        print(d.as_dict())
 #        for k in d.as_dict():
             
@@ -113,7 +113,7 @@ class DefectInMakerTest(unittest.TestCase):
 
 #    def test_from_defect_in(self):
 #        print(self._a.__dict__)
-#        f = DefectSetting.from_defect_in("POSCAR-MgO64atoms", "defect.in.test_MgO")
+#        f = DefectInitialSetting.from_defect_in("POSCAR-MgO64atoms", "defect.in.test_MgO")
 #        print(f.__dict__)
 #        self.assertTrue(self._a == f)
 
