@@ -13,7 +13,7 @@ class NoStructureFoundError(Exception):
 
 
 def recommend_supercell_ase(poscar_path, criterion=0.5,
-                            min_natom=50, max_natom=400):
+                            min_natom=50, max_natom=400): # max_natom = 400
     poscar_ase= read_vasp(poscar_path)
     poscar_pmg = Poscar_pmg.from_file(poscar_path)
     unitcell_natoms = int(str(poscar_ase.get_number_of_atoms()))
@@ -27,12 +27,12 @@ def recommend_supercell_ase(poscar_path, criterion=0.5,
     screened_p = None
     min_dev = float("inf")
     for natom in range(max_natom+1, min_atom_modified, -unitcell_natoms):
+        print("-"*20+"loop at natom = {0}".format(natom)+"-"*20)
         num_target_cell = math.floor(float(natom) / int(unitcell_natoms))
-        print("num_target_cell = " + str(int(num_target_cell)))
+        print("num_target_cell = {0}".format(int(num_target_cell)))
         P = find_optimal_cell_shape(poscar_ase.cell, num_target_cell)
-        supercell = make_supercell(poscar_ase, P)
         structure_supercell = poscar_pmg.structure * P
-        natom_super = str(supercell.get_number_of_atoms())
+        natom_super = str(structure_supercell.num_sites)
         dev = get_deviation_from_optimal_cell_shape(np.dot(P, poscar_ase.cell))
         print("natom(super) = " + natom_super + " , dev = " + str(dev))
         if dev < criterion:
