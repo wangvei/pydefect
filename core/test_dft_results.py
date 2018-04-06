@@ -21,6 +21,7 @@ __date__ = "Feb. 25, 2018"
 
 TEST_DIRECTORY = "../examples/MgO"
 DIRNAME_VAC = TEST_DIRECTORY + "/defects/Va_O1_2"
+DIRNAME_PER = TEST_DIRECTORY + "/defects/perfect"
 DIRNAME_UNITCELL = TEST_DIRECTORY + "/unitcell/structure_optimization"
 DIRNAME_DIELECTRIC = TEST_DIRECTORY + "/unitcell/dielectric_constants"
 
@@ -55,19 +56,30 @@ class SupercellDftResultsTest(unittest.TestCase):
               [2.0783, 1.], [2.2655, 1.], [2.3217, 1.], [2.4294, 1.],
               [5.3997, 0.], [8.5505, 0.], [9.4856, 0.], [9.9455, 0.],
               [11.049, 0.], [11.9159, 0.], [12.5617, 0.], [12.8315, 0.]]])}
-        electrostatic_potential = \
-            [-34.59, -35.5244, -35.5244, -35.5244, -35.5244, -35.5244, -35.5244,
+        self.electrostatic_potential = \
+            [-34.69, -35.5244, -35.5244, -35.5244, -35.5244, -35.5244, -35.5244,
              -34.59, -70.0739, -70.0739, -70.0739, -70.0739, -70.0739, -70.0739,
              -70.4981]
 
         self._MgO_Va_O1_2 = SupercellDftResults(
             final_structure, total_energy, eigenvalues,
-            electrostatic_potential)
+            self.electrostatic_potential)
         self._MgO_Va_O1_2_from_vasp_files = \
             SupercellDftResults.from_vasp_files(DIRNAME_VAC)
-
+        self._MgO_perfect_from_vasp_files = \
+            SupercellDftResults.from_vasp_files(DIRNAME_PER)
         self.d = self._MgO_Va_O1_2.as_dict()
         self.d_from_vasp_files = self._MgO_Va_O1_2_from_vasp_files.as_dict()
+
+        initial_structure = Poscar.from_file(DIRNAME_VAC + "/POSCAR").structure
+        removed_atoms = {8: [0.25, 0.25, 0.25]}
+        inserted_atoms = {}
+        changes_of_num_elements = {"O": -1}
+        charge = 2
+
+        self._MgO_Va_O1_2 = \
+            DefectEntry(initial_structure, removed_atoms, inserted_atoms,
+                        changes_of_num_elements, charge)
 
     def test_from_vasp_files(self):
 #        self.assertTrue(self.d["initial_structure"] ==
@@ -91,6 +103,30 @@ class SupercellDftResultsTest(unittest.TestCase):
 
     def test_json_load(self):
         self._MgO_Va_O1_2.json_load("test_dft_results.json")
+
+    def test_relative_total_energy(self):
+        expected = -93.76904720 - -95.46878101
+        relative_total_energy = \
+            self._MgO_Va_O1_2_from_vasp_files.relative_total_energy(
+                self._MgO_perfect_from_vasp_files)
+        self.assertEqual(relative_total_energy, expected)
+
+    def test_relative_potential(self):
+        perfect_potential = [-35.2923, -35.2923, -35.2923, -35.2923, -35.2923,
+                             -35.2923, -35.2923, -35.2923, -69.8160, -69.8160,
+                             -69.8160, -69.8160, -69.8160, -69.8160, -69.8160]
+        expected = [x - y for x, y in
+                    zip(self.electrostatic_potential, perfect_potential)]
+        relative_potential = \
+            self._MgO_Va_O1_2_from_vasp_files.relative_potential(
+                self._MgO_perfect_from_vasp_files, self._MgO_Va_O1_2)
+        self.assertTrue(relative_potential == expected)
+
+    def test_defect_center(self):
+        expected = [0.25, 0.25, 0.25]
+        defect_center = self._MgO_perfect_from_vasp_files.\
+            defect_center(self._MgO_Va_O1_2)
+        self.assertTrue(defect_center == expected)
 
 
 class UnitcellDftResultsTest(unittest.TestCase):
@@ -194,14 +230,14 @@ class UnitcellDftResultsTest(unittest.TestCase):
         np.testing.assert_equal(self._MgO_unitcell.ionic_dielectric_tensor,
                                 self.ionic_dielectric_tensor)
 
-    def test_set_static_dielectric_tensor(self):
+    def test_static_dielectric_tensor(self):
         a = np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]])
-        self._MgO_unitcell.set_static_dielectric_tensor = a
+        self._MgO_unitcell.static_dielectric_tensor = a
         np.testing.assert_equal(self._MgO_unitcell.static_dielectric_tensor, a)
 
-    def test_set_ionic_dielectric_tensor(self):
+    def test_ionic_dielectric_tensor(self):
         b = np.array([[2, 0, 0], [0, 2, 0], [0, 0, 2]])
-        self._MgO_unitcell.set_ionic_dielectric_tensor = b
+        self._MgO_unitcell.ionic_dielectric_tensor = b
         np.testing.assert_equal(self._MgO_unitcell.ionic_dielectric_tensor, b)
 
     def test_set_static_dielectric_tensor_from_outcar(self):

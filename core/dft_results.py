@@ -25,19 +25,21 @@ __status__ = "Development"
 __date__ = "December 4, 2017"
 
 
-def calc_min_distance_and_its_v2coord(v1, v2, axis):
-    candidate_list = []
+def min_distance_and_its_v2coord(v1, v2, axis):
+    candidate = []
     v = np.dot(axis, v2 - v1)
+
     for index in product((-1, 0, 1), repeat=3):
         index = np.array(index)
         delta_v = np.dot(axis, index)
         distance = np.linalg.norm(delta_v + v)
-        candidate_list.append((distance, v2 + index))
-    return min(candidate_list, key=lambda t: t[0])
+        candidate.append((distance, v2 + index))
+
+    return min(candidate, key=lambda t: t[0])
 
 
-def calc_distance_list(structure, defect_coords):
-    return [calc_min_distance_and_its_v2coord(v, defect_coords, structure.axis)
+def distance_list(structure, defect_coords):
+    return [min_distance_and_its_v2coord(v, defect_coords, structure.axis)
             for v in structure.frac_coords]
 
 
@@ -148,8 +150,6 @@ class SupercellDftResults(DftResults):
     """
     DFT results for supercell systems both w/ and w/o a defect.
     """
-    pass
-
     def relative_total_energy(self, perfect_dft_results):
         """
         Args:
@@ -170,6 +170,7 @@ class SupercellDftResults(DftResults):
         mapping = defect_entry.atom_mapping_to_perfect
 
         relative_potential = []
+
         for d_atom, p_atom in enumerate(mapping):
             if p_atom is None:
                 relative_potential.append(None)
@@ -180,23 +181,24 @@ class SupercellDftResults(DftResults):
 
         return relative_potential
 
-    def inserted_atom_displacements(self, defect_entry):
-        """
-        Returns coordinates of defect center by calculating the averaged
-        coordinates. If len(defect_coords) == 1, returns defect_coords[0].
-        Args:
-            defect_entry (DefectEntry):
-                related DefectEntry class object
-        """
-        displacements = []
-        for k, v in defect_entry.inserted_atoms:
-            before_relaxation = v
-            after_relaxation = self.final_structure.frac_coords[k]
-            displacements.append(
-                calc_min_distance_and_its_v2coord(before_relaxation,
-                                                  after_relaxation,
-                                                  self.final_structure.axis))
-        return displacements
+#    def inserted_atom_displacements(self, defect_entry):
+#        """
+#        Returns coordinates of defect center by calculating the averaged
+#        coordinates. If len(defect_coords) == 1, returns defect_coords[0].
+#        Args:
+#            defect_entry (DefectEntry):
+#                related DefectEntry class object
+#        """
+#        displacements = []
+#
+#        for k in defect_entry.inserted_atoms.keys:
+#            before_relaxation = defect_entry.initial_structure.frac_coords[k]
+#            after_relaxation = self.final_structure.frac_coords[k]
+#            displacements.append(
+#                min_distance_and_its_v2coord(before_relaxation,
+#                                             after_relaxation,
+#                                             self.final_structure.axis))
+#        return displacements
 
     def defect_center(self, defect_entry):
         """
@@ -206,11 +208,11 @@ class SupercellDftResults(DftResults):
             defect_entry (DefectEntry):
                 related DefectEntry class object
         """
-        inserted_atom_coords = []
-        for k in defect_entry.inserted_atoms.keys:
-            inserted_atom_coords.append(self.final_structure.frac_coords[k])
+        inserted_atom_coords = \
+            list([self.final_structure.frac_coords[k]
+                  for k in defect_entry.inserted_atoms.keys()])
+        removed_atom_coords = list(defect_entry.removed_atoms.values())
 
-        removed_atom_coords = defect_entry.removed_atoms.values()
         defect_coords = inserted_atom_coords + removed_atom_coords
 
         return [np.mean(i) for i in np.array(defect_coords).transpose()]
@@ -313,40 +315,4 @@ class UnitcellDftResults(DftResults):
         return d
 
 
-class RelativeDftResults:
-    """
-    Args:
-        dft_results_1 (SupercellDftResults):
-        dft_results_2 (SupercellDftResults):
-
-    Return:
-        relative total energy (float)
-    """
-
-    def __init__(self, dft_results_1, dft_results_2, defect_entry):
-        if not (isinstance(dft_results_1, SupercellDftResults) and
-                isinstance(dft_results_2, SupercellDftResults) and
-                isinstance(defect_entry, DefectEntry)):
-            raise TypeError
-
-
-
-
-#def relative_total_energy(dft_results_1, dft_results_2):
-
-
-#    @property
-#    def relative_potential(self):
-#        try:
-#            return self._relative_potential
-#        except AttributeError:
-#            print("relative_potential is not set yet.")
-
-    #    @property
-    #    def relative_atomic_displacements(self):
-    #        if self._relative_atomic_displacements:
-    #            return self._relative_atomic_displacements
-    #        else:
-    #            warnings.warn("relative_atomic_displacements is not set.")
-    #            return None
 
