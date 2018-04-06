@@ -28,7 +28,7 @@ def get_nions(structure):
 
 class DefectEntry:
     """
-    This class object has all the information related to initial setting of a
+    This class object holds all the information related to initial setting of a
     single defect.
     Args:
         initial_structure (Structure):
@@ -46,15 +46,16 @@ class DefectEntry:
         changes_of_num_elements (dict):
             Keys: Element names
             Values: Change of the numbers of elements wrt perfect supercell.
-        in_name (str):
+        charge (int):
+            Charge state of the defect
+        in_name (str): Optional.
             Inserted element name.
             "Va" is inserted for vacancies.
             When in_name is not well defined, e.g, complex defects, set False.
-        out_name (str):
+        out_name (str): Optional.
             Removed atomic site name.
             "in", (n: integer), is inserted for interstitials. E.g., "i1".
             When out_name is not well defined, set False.
-        charge (int): Charge state of the defect
     """
     def __init__(self, initial_structure, removed_atoms, inserted_atoms,
                  changes_of_num_elements, charge, in_name=False,

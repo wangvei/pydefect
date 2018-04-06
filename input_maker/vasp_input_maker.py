@@ -68,6 +68,7 @@ def get_num_electrons_from_potcar(potcar, nions, charge):
     # check only the length of potcar and nions.
     if not len(p) == len(nions):
         raise ValueError("Size of elements in POTCAR file is different")
+
     return sum([v.nelectrons * nions[i] for i, v in enumerate(p)]) - charge
 
 

@@ -259,22 +259,22 @@ class DefectInitialSetting:
 #        s = Structure.from_file(poscar)
 #        symmetrized_structure = \
 #            SpacegroupAnalyzer(s, symprec=symprec).get_symmetrized_structure()
-        # The format change of POSCAR -> cif -> structure can sort the elements.
-        # This is important to be consistent with to method.
+        # The format change POSCAR -> cif -> structure sorts the elements.
+        # This is important to be consistent with *to* method.
         s = Structure.from_str(Structure.from_file(poscar).to(fmt="cif"),
                                fmt="cif")
         symmetrized_structure = \
             SpacegroupAnalyzer(s, symprec=symprec).get_symmetrized_structure()
 
-        # Set electronegativity and oxidation states for constituent elements
-        # and dopants
+        # Electronegativity and oxidation states for constituents and dopants
         electronegativity = {}
         oxidation_states = {}
 
         symbol_set = s.symbol_set
         dopant_symbol_set = tuple(dopants)
+        element_set = symbol_set + dopant_symbol_set
 
-        for s in symbol_set + dopant_symbol_set:
+        for s in element_set:
             electronegativity[s] = get_electronegativity(s)
             oxidation_states[s] = get_oxidation_state(s)
 
@@ -288,9 +288,9 @@ class DefectInitialSetting:
         equiv_sites = symmetrized_structure.equivalent_sites
         last_index = 0
 
-        for i, e in enumerate(equiv_sites):
+        for i, equiv_site in enumerate(equiv_sites):
             # set element name of equivalent site
-            element = e[0].species_string
+            element = equiv_site[0].species_string
 
             # increment number of inequivalent sites for element
             if element not in num_irreducible_sites.keys():
@@ -299,8 +299,8 @@ class DefectInitialSetting:
                 num_irreducible_sites[element] += 1
 
             first_index = last_index + 1
-            last_index = last_index + len(e)
-            repr_coords = e[0].frac_coords
+            last_index = last_index + len(equiv_site)
+            repr_coords = equiv_site[0].frac_coords
             irreducible_name = element + str(num_irreducible_sites[element])
 
             irreducible_sites.append(IrreducibleSite(irreducible_name,
@@ -312,31 +312,33 @@ class DefectInitialSetting:
         # E.g., antisite_configs = [["Mg, "O"], ...]
         antisite_configs = []
         if is_antisite is True:
-            for s1 in symbol_set:
-                for s2 in symbol_set:
-                    if s1 == s2:
+            for elem1 in symbol_set:
+                for elem2 in symbol_set:
+                    if elem1 == elem2:
                         continue
-                    if s1 in electronegativity and s2 in electronegativity:
-                        if abs(electronegativity[s1] - electronegativity[s2]) \
-                                < en_diff:
-                            antisite_configs.append([s1, s2])
+                    elif elem1 in electronegativity and \
+                            elem2 in electronegativity:
+                        if abs(electronegativity[elem1] -
+                               electronegativity[elem2]) < en_diff:
+                            antisite_configs.append([elem1, elem2])
                     else:
-                        cls.electronegativity_not_defined(s1, s2)
+                        cls.electronegativity_not_defined(elem1, elem2)
 
         # E.g., dopant_configs = [["Al", "Mg"], ...]
         dopant_configs = []
-        for d in dopants:
-            if d in symbol_set:
-                warnings.warn("Dopant " + d + " is a constituent of host.")
+        for dopant in dopants:
+            if dopant in symbol_set:
+                warnings.warn("Dopant " + dopant + " is a constituent of host.")
                 continue
-            for s1 in symbol_set:
-                if s1 in electronegativity and d in electronegativity:
-                    if abs(electronegativity[s1] - electronegativity[d]) \
-                            < en_diff:
-                        dopant_configs.append([d, s1])
+            for elem in symbol_set:
+                if elem in electronegativity and dopant in electronegativity:
+                    if abs(electronegativity[elem] -
+                           electronegativity[dopant]) < en_diff:
+                        dopant_configs.append([dopant, elem])
                 else:
-                    cls.electronegativity_not_defined(d, s1)
+                    cls.electronegativity_not_defined(dopant, elem)
 
+        # E.g., interstitial_coords = [[0, 0, 0], [0.1, 0.1, 0.1]]
         if flattened_interstitial_coords:
             if int(len(flattened_interstitial_coords)) % 3 == 0:
                 interstitial_coords = \
@@ -388,12 +390,8 @@ class DefectInitialSetting:
         self._write_defect_in(defect_in_file)
         # NOTE: pmg has a bug, Symmetrized structure object cannot be converted
         # to poscar
-#        Structure.from_str(self._structure.to(fmt="xsf"), fmt="xsf")\
-#            .to(fmt="poscar", filename=poscar_file)
-
-#        Structure.from_str(self._structure.to(fmt="cssr"), fmt="cssr")\
-#            .to(fmt="poscar", filename=poscar_file)
-        # Note: the following files change the sequence of elements.
+        # NOTE2: "xsf" and "cssr" format does not sort the elements, and so must
+        # not be used here.
         Structure.from_str(self._structure.to(fmt="cif"), fmt="cif") \
             .to(fmt="poscar", filename=poscar_file)
 
@@ -446,6 +444,11 @@ class DefectInitialSetting:
         return name_set
 
     def _write_defect_in(self, defect_in_file="defect.in"):
+        """
+        Helper function to write down defect.in file.
+        Args:
+            defect_in_file (str): Name of defect.in type file.
+        """
         with open(defect_in_file, 'w') as di:
 
             for e in self._irreducible_sites:
@@ -494,8 +497,8 @@ class DefectInitialSetting:
             di.write("Symprec: {}\n".format(self._symprec))
 
     @staticmethod
-    def electronegativity_not_defined(e1, e2):
-        print("Electronegativity of {} and/or {} is not defined".format(e1, e2))
+    def electronegativity_not_defined(a, b):
+        print("Electronegativity of {} and/or {} is not defined".format(a, b))
 
     @property
     def structure(self):
@@ -572,7 +575,7 @@ def get_oxidation_state(s):
 
 def print_dopant_info(dopant):
     """
-    This is used for adding dopant information a posteriori.
+    This method is used to add dopant information a posteriori.
     """
     # TODO: check if the dopant is element.
     electronegativity = get_electronegativity(dopant)

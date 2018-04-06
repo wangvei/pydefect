@@ -12,9 +12,9 @@ __date__ = "December 4, 2017"
 
 class IrreducibleSite:
     """
-    This class object holds properties related to irreducible atom set.
-    Note1: atomic indices need to be sorted. Thus, they can be written in one
-           sequence. E.g., 17..32
+    This class object holds properties related to the irreducible atom set.
+    Note1: atomic indices need to be sorted, meaning they can be written in a
+           sequence, like 17..32
     Note2: first_index atom is assumed to represent the irreducible atoms.
 
     Args:
@@ -46,13 +46,6 @@ class IrreducibleSite:
         return cls(d["irreducible_name"], d["element"], d["first_index"],
                    d["last_index"], d["repr_coords"])
 
-    @property
-    def num_atoms(self):
-        """
-        Returns the number of atoms.
-        """
-        return self._last_index - self._first_index + 1
-
     def as_dict(self):
         d = {"irreducible_name": self._irreducible_name,
              "element": self._element,
@@ -80,3 +73,10 @@ class IrreducibleSite:
     @property
     def repr_coords(self):
         return self._repr_coords
+
+    @property
+    def num_atoms(self):
+        """
+        Returns the number of atoms.
+        """
+        return self._last_index - self._first_index + 1

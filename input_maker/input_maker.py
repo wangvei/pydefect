@@ -150,14 +150,15 @@ def filter_name_set(name_set, filtering_words):
 
 class DefectMaker:
     """
-    Constructs a DefectEntry class object from a given defect_name.
+    Constructs a single DefectEntry class object from a given defect_name.
 
     Args:
-        defect_name (str): defect name in PyDefect manner, e.g., "Va_Mg2_-2".
-        structure (Structure): pmg Structure/IStructure class object
-                               corresponding to the perfect supercell.
-        irreducible_sites (array): objects of IrreducibleSite class at core/site
-        interstitial_coords (Nx3 array): coordinates of interstitial sites,
+        defect_name (str):
+            defect name in PyDefect manner, e.g., "Va_Mg2_-2".
+        structure (Structure):
+            Structure class object for the *perfect* supercell.
+        irreducible_sites ([IrreducibleSite])
+        interstitial_coords (Nx3 list): coordinates of interstitial sites,
                                          e.g., [[0, 0, 0], [0.1, 0.1, 0.1], ..]
 
     Parameters in use:

@@ -257,19 +257,17 @@ class DefectSupercell(Supercell):
 
     @property
     def relative_total_energy(self):
-        if self._relative_total_energy:
+        try:
             return self._relative_total_energy
-        else:
-            warnings.warn("relative_total_energy is not set yet.")
-            return None
+        except AttributeError:
+            print("relative_total_energy is not set yet.")
 
     @property
     def relative_potential(self):
-        if self._relative_potential:
+        try:
             return self._relative_potential
-        else:
-            warnings.warn("relative_potential is not set yet.")
-            return None
+        except AttributeError:
+            print("relative_potential is not set yet.")
 
 #    @property
 #    def relative_atomic_displacements(self):
