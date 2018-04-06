@@ -166,7 +166,7 @@ class DefectMaker:
         out_name" (str): Removed site name. "in", where n is an integer,
                          is used for interstitials. E.g., "i1".
         charge (int): DefectSupercell charge state
-        removed_atom_index (int): removed atom index from perfect structure.
+        removed_atom_index (int): removed atom index from the perfect structure.
     """
     def __init__(self, defect_name, structure, irreducible_sites,
                  interstitial_coords):

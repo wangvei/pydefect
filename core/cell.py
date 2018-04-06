@@ -248,14 +248,6 @@ class DefectSupercell(Supercell):
         return self._defect_entry.charge
 
     @property
-    def in_name(self):
-        return self._defect_entry.in_name
-
-    @property
-    def out_name(self):
-        return self._defect_entry.out_name
-
-    @property
     def relative_total_energy(self):
         try:
             return self._relative_total_energy

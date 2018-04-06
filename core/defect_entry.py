@@ -16,7 +16,7 @@ __status__ = "Development"
 __date__ = "December 4, 2017"
 
 
-def get_nions(structure):
+def get_num_atoms_for_elements(structure):
     """
     Return numbers of ions for elements in a structure.
     Example: Al1Mg63O6
@@ -48,30 +48,21 @@ class DefectEntry:
             Values: Change of the numbers of elements wrt perfect supercell.
         charge (int):
             Charge state of the defect
-        in_name (str): Optional.
-            Inserted element name.
-            "Va" is inserted for vacancies.
-            When in_name is not well defined, e.g, complex defects, set False.
-        out_name (str): Optional.
-            Removed atomic site name.
-            "in", (n: integer), is inserted for interstitials. E.g., "i1".
-            When out_name is not well defined, set False.
     """
     def __init__(self, initial_structure, removed_atoms, inserted_atoms,
-                 changes_of_num_elements, charge, in_name=False,
-                 out_name=False):
+                 changes_of_num_elements, charge):
         self._initial_structure = initial_structure
         self._removed_atoms = removed_atoms
         self._inserted_atoms = inserted_atoms
         self._changes_of_num_elements = changes_of_num_elements
         self._charge = charge
-        self._in_name = in_name
-        self._out_name = out_name
 
     def __eq__(self, other):
         if other is None or type(self) != type(other):
             raise TypeError
         return self.as_dict() == other.as_dict()
+
+    # TODO: Make yaml_load and from_yaml to make this object from a yaml file.
 
     @classmethod
     def from_dict(cls, d):
@@ -85,8 +76,7 @@ class DefectEntry:
             {k: int(v) for k, v in d["changes_of_num_elements"].items()}
 
         return cls(d["initial_structure"], removed_atoms, inserted_atoms,
-                   changes_of_num_elements, d["charge"], d["in_name"],
-                   d["out_name"])
+                   changes_of_num_elements, d["charge"])
 
     @classmethod
     def json_load(cls, filename):
@@ -116,14 +106,6 @@ class DefectEntry:
         return self._charge
 
     @property
-    def in_name(self):
-        return self._in_name
-
-    @property
-    def out_name(self):
-        return self._out_name
-
-    @property
     def defect_center(self):
         """
         Returns coordinates of defect center by calculating the averaged
@@ -143,7 +125,7 @@ class DefectEntry:
                 len(mapping) = 63
 
         """
-        total_nions = (sum(get_nions(self._initial_structure))
+        total_nions = (sum(get_num_atoms_for_elements(self._initial_structure))
                        - len(self._inserted_atoms)
                        + len(self._removed_atoms))
 
@@ -166,9 +148,7 @@ class DefectEntry:
              "removed_atoms": self._removed_atoms,
              "inserted_atoms": self._inserted_atoms,
              "changes_of_num_elements": self._changes_of_num_elements,
-             "charge": self._charge,
-             "in_name": self._in_name,
-             "out_name": self._out_name}
+             "charge": self._charge}
         return d
 
     def to_json_file(self, filename):

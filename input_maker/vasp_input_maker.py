@@ -8,7 +8,7 @@ import shutil
 from pymatgen.io.vasp.inputs import Potcar
 
 from pydefect.input_maker.defect_initial_setting import DefectInitialSetting
-from pydefect.core.defect_entry import get_nions
+from pydefect.core.defect_entry import get_num_atoms_for_elements
 from pydefect.input_maker.input_maker import \
     DefectMaker, DefectInputSetMaker,  print_already_exist, \
     print_is_being_constructed,  perturb_around_a_point
@@ -143,7 +143,7 @@ class VaspDefectInputSetMaker(DefectInputSetMaker):
             make_potcar(dir_name, elements, potcar_dir())
             # Construct INCAR file
             shutil.copyfile(self._incar, dir_name + "INCAR")
-            nions = get_nions(d.initial_structure)
+            nions = get_num_atoms_for_elements(d.initial_structure)
             nelect = get_num_electrons_from_potcar(dir_name + "POTCAR",
                                                    nions, d.charge)
 

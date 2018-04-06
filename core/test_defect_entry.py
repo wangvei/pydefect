@@ -27,12 +27,10 @@ class DefectEntryTest(unittest.TestCase):
         inserted_atoms = {}
         changes_of_num_elements = {"O": -1}
         charge = 2
-        in_name = None
-        out_name = "O1"
 
         self._MgO_Va_O1_2 = \
             DefectEntry(initial_structure, removed_atoms, inserted_atoms,
-                        changes_of_num_elements, charge, in_name, out_name)
+                        changes_of_num_elements, charge)
 
         initial_structure_complex = \
             Poscar.from_file(DIRNAME_VAC + "/POSCAR").structure
@@ -40,13 +38,11 @@ class DefectEntryTest(unittest.TestCase):
         inserted_atoms_complex = {8: [0.25, 0.25, 0.25]}
         changes_of_num_elements_complex = {"Mg": 1, "O": -2}
         charge_complex = 2
-        in_name_complex = False
-        out_name_complex = False
 
         self._MgO_complex = \
             DefectEntry(initial_structure_complex, removed_atoms_complex,
                         inserted_atoms_complex, changes_of_num_elements_complex,
-                        charge_complex, in_name_complex, out_name_complex)
+                        charge_complex)
 
     def test_Dict(self):
         d = self._MgO_Va_O1_2.as_dict()
