@@ -35,7 +35,7 @@ class DefectEntryTest(unittest.TestCase):
         initial_structure_complex = \
             Poscar.from_file(DIRNAME_VAC + "/POSCAR").structure
         removed_atoms_complex = {8: [0.25, 0.25, 0.25], 9: [0.25, 0.25, 0.75]}
-        inserted_atoms_complex = {8: [0.25, 0.25, 0.25]}
+        inserted_atoms_complex = {8: "Al"}
         changes_of_num_elements_complex = {"Mg": 1, "O": -2}
         charge_complex = 2
 
@@ -53,11 +53,6 @@ class DefectEntryTest(unittest.TestCase):
         self._MgO_Va_O1_2.to_json_file(FILENAME_JSON_VAC)
         from_json = DefectEntry.json_load(FILENAME_JSON_VAC)
         self.assertTrue(from_json == self._MgO_Va_O1_2)
-
-    def test_defect_center(self):
-        expected = [0.25, 0.25, 0.4166666666666667]
-        actual = self._MgO_complex.defect_center
-        self.assertAlmostEqual(actual, expected)
 
     def test_atom_mapping_to_perfect(self):
         expected = [0, 1, 2, 3, 4, 5, 6, 7, 9, 10, 11, 12, 13, 14, 15]

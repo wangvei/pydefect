@@ -42,7 +42,7 @@ class DefectEntry:
             Keys: Atom indices inserted in the supercell after removing atoms.
                   The index begins from 0.
                   For vacancies, set {}.
-            Values: DefectSupercell coordinates
+            Values: Element name
         changes_of_num_elements (dict):
             Keys: Element names
             Values: Change of the numbers of elements wrt perfect supercell.
@@ -104,16 +104,6 @@ class DefectEntry:
     @property
     def charge(self):
         return self._charge
-
-    @property
-    def defect_center(self):
-        """
-        Returns coordinates of defect center by calculating the averaged
-        coordinates. If len(defect_coords) == 1, returns defect_coords[0].
-        """
-        defect_coords = (list(self._removed_atoms.values()) +
-                         list(self._inserted_atoms.values()))
-        return [np.mean(i) for i in np.array(defect_coords).transpose()]
 
     @property
     def atom_mapping_to_perfect(self):

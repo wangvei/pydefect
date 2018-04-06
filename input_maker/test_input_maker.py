@@ -138,12 +138,10 @@ class DefectMakerTest(unittest.TestCase):
         _inserted_atoms = {}
         _changes_of_num_elements = {"Mg": -1}
         _charge = -2
-        _in_name = "Va"
-        _out_name = "Mg1"
 
         self.test_d = DefectEntry(_test_structure, _removed_atoms,
                                   _inserted_atoms, _changes_of_num_elements,
-                                  _charge, _in_name, _out_name)
+                                  _charge)
 
     def test_vacancies(self):
         self.maxDiff = None

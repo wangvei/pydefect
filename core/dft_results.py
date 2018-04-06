@@ -2,8 +2,10 @@
 # -*- coding: utf-8 -*-
 
 from abc import ABCMeta
+from itertools import product
 import json
 import numpy as np
+import warnings
 
 from monty.json import MontyEncoder
 from monty.serialization import loadfn
@@ -12,6 +14,8 @@ from pymatgen.io.vasp.inputs import Poscar
 from pymatgen.io.vasp.outputs import Outcar, Vasprun
 from pymatgen.electronic_structure.core import Spin
 
+from pydefect.core.defect_entry import DefectEntry
+
 __author__ = "Yu Kumagai"
 __copyright__ = "Copyright 2017, Oba group"
 __version__ = "0.1"
@@ -19,6 +23,22 @@ __maintainer__ = "Yu Kumagai"
 __email__ = "yuuukuma@gmail.com"
 __status__ = "Development"
 __date__ = "December 4, 2017"
+
+
+def calc_min_distance_and_its_v2coord(v1, v2, axis):
+    candidate_list = []
+    v = np.dot(axis, v2 - v1)
+    for index in product((-1, 0, 1), repeat=3):
+        index = np.array(index)
+        delta_v = np.dot(axis, index)
+        distance = np.linalg.norm(delta_v + v)
+        candidate_list.append((distance, v2 + index))
+    return min(candidate_list, key=lambda t: t[0])
+
+
+def calc_distance_list(structure, defect_coords):
+    return [calc_min_distance_and_its_v2coord(v, defect_coords, structure.axis)
+            for v in structure.frac_coords]
 
 
 class DftResults(metaclass=ABCMeta):
@@ -130,6 +150,74 @@ class SupercellDftResults(DftResults):
     """
     pass
 
+    def relative_total_energy(self, perfect_dft_results):
+        """
+        Args:
+            perfect_dft_results (SupercellDftResults):
+                SupercellDftResults class object for the perfect supercell.
+        """
+
+        return self._total_energy - perfect_dft_results.total_energy
+
+    def relative_potential(self, perfect_dft_results, defect_entry):
+        """
+        Args:
+            perfect_dft_results (SupercellDftResults):
+                SupercellDftResults class object for the perfect supercell.
+            defect_entry (DefectEntry):
+                related DefectEntry class object
+        """
+        mapping = defect_entry.atom_mapping_to_perfect
+
+        relative_potential = []
+        for d_atom, p_atom in enumerate(mapping):
+            if p_atom is None:
+                relative_potential.append(None)
+            else:
+                relative_potential.append(
+                    self.electrostatic_potential[d_atom] -
+                    perfect_dft_results.electrostatic_potential[p_atom])
+
+        return relative_potential
+
+    def inserted_atom_displacements(self, defect_entry):
+        """
+        Returns coordinates of defect center by calculating the averaged
+        coordinates. If len(defect_coords) == 1, returns defect_coords[0].
+        Args:
+            defect_entry (DefectEntry):
+                related DefectEntry class object
+        """
+        displacements = []
+        for k, v in defect_entry.inserted_atoms:
+            before_relaxation = v
+            after_relaxation = self.final_structure.frac_coords[k]
+            displacements.append(
+                calc_min_distance_and_its_v2coord(before_relaxation,
+                                                  after_relaxation,
+                                                  self.final_structure.axis))
+        return displacements
+
+    def defect_center(self, defect_entry):
+        """
+        Returns coordinates of defect center by calculating the averaged
+        coordinates. If len(defect_coords) == 1, returns defect_coords[0].
+        Args:
+            defect_entry (DefectEntry):
+                related DefectEntry class object
+        """
+        inserted_atom_coords = []
+        for k in defect_entry.inserted_atoms.keys:
+            inserted_atom_coords.append(self.final_structure.frac_coords[k])
+
+        removed_atom_coords = defect_entry.removed_atoms.values()
+        defect_coords = inserted_atom_coords + removed_atom_coords
+
+        return [np.mean(i) for i in np.array(defect_coords).transpose()]
+
+    def distances_from_defect(self, defect_entry):
+        pass
+
 
 class UnitcellDftResults(DftResults):
     """
@@ -171,11 +259,14 @@ class UnitcellDftResults(DftResults):
 
     @property
     def static_dielectric_tensor(self):
-        return self._static_dielectric_tensor
+        if self._static_dielectric_tensor is not None:
+            return self._static_dielectric_tensor
+        else:
+            warnings.warn(message="Static dielectric tensor is not set yet.")
+            return None
 
     @static_dielectric_tensor.setter
-    def set_static_dielectric_tensor(self, static_dielectric_tensor):
-        """ The matrix format is a 3 x 3 list. """
+    def static_dielectric_tensor(self, static_dielectric_tensor):
         self._static_dielectric_tensor = static_dielectric_tensor
 
     def set_static_dielectric_tensor_from_outcar(self, directory_path,
@@ -185,10 +276,14 @@ class UnitcellDftResults(DftResults):
 
     @property
     def ionic_dielectric_tensor(self):
-        return self._ionic_dielectric_tensor
+        if self._ionic_dielectric_tensor is not None:
+            return self._ionic_dielectric_tensor
+        else:
+            warnings.warn(message="Ionic dielectric tensor is not set yet.")
+            return None
 
     @ionic_dielectric_tensor.setter
-    def set_ionic_dielectric_tensor(self, ionic_dielectric_tensor):
+    def ionic_dielectric_tensor(self, ionic_dielectric_tensor):
         self._ionic_dielectric_tensor = ionic_dielectric_tensor
 
     def set_ionic_dielectric_tensor_from_outcar(self, directory_path,
@@ -216,3 +311,42 @@ class UnitcellDftResults(DftResults):
              "ionic_dielectric_tensor":  self._ionic_dielectric_tensor}
 
         return d
+
+
+class RelativeDftResults:
+    """
+    Args:
+        dft_results_1 (SupercellDftResults):
+        dft_results_2 (SupercellDftResults):
+
+    Return:
+        relative total energy (float)
+    """
+
+    def __init__(self, dft_results_1, dft_results_2, defect_entry):
+        if not (isinstance(dft_results_1, SupercellDftResults) and
+                isinstance(dft_results_2, SupercellDftResults) and
+                isinstance(defect_entry, DefectEntry)):
+            raise TypeError
+
+
+
+
+#def relative_total_energy(dft_results_1, dft_results_2):
+
+
+#    @property
+#    def relative_potential(self):
+#        try:
+#            return self._relative_potential
+#        except AttributeError:
+#            print("relative_potential is not set yet.")
+
+    #    @property
+    #    def relative_atomic_displacements(self):
+    #        if self._relative_atomic_displacements:
+    #            return self._relative_atomic_displacements
+    #        else:
+    #            warnings.warn("relative_atomic_displacements is not set.")
+    #            return None
+

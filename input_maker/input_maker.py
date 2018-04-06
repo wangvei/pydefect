@@ -215,14 +215,14 @@ class DefectMaker:
                 inserted_atoms[inserted_index] = defect_coords
             else:
                 inserted_index = 0
-                inserted_atoms[0] = defect_coords
+                inserted_atoms[0] = in_name
             defect_structure.insert(inserted_index, in_name, defect_coords)
         else:
             raise ValueError("{} in {} is improper.".format(out_name,
                                                             defect_name))
         self.defect = DefectEntry(defect_structure, removed_atoms,
                                   inserted_atoms, changes_of_num_elements,
-                                  charge, in_name, out_name)
+                                  charge)
 
 
 class DefectInputSetMaker(metaclass=ABCMeta):
