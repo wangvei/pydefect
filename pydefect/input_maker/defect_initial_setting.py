@@ -256,7 +256,7 @@ class DefectInitialSetting:
 
         if dopants is None:
             dopants = []
-        s = Structure.from_file(poscar)
+        s = Structure.from_file(poscar).get_sorted_structure()
         symmetrized_structure = \
             SpacegroupAnalyzer(s, symprec=symprec).get_symmetrized_structure()
 
