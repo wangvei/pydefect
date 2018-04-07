@@ -257,12 +257,6 @@ class DefectInitialSetting:
         if dopants is None:
             dopants = []
         s = Structure.from_file(poscar)
-#        symmetrized_structure = \
-#            SpacegroupAnalyzer(s, symprec=symprec).get_symmetrized_structure()
-        # The format change POSCAR -> cif -> structure sorts the elements.
-        # This is important to be consistent with *to* method.
-#        s = Structure.from_str(Structure.from_file(poscar).to(fmt="cif"),
-#                               fmt="cif")
         symmetrized_structure = \
             SpacegroupAnalyzer(s, symprec=symprec).get_symmetrized_structure()
 
