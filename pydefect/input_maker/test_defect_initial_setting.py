@@ -1,7 +1,6 @@
 import unittest
 
-from defect_initial_setting import *
-#from pydefect.input_maker.defect_initial_setting import *
+from pydefect.input_maker.defect_initial_setting import *
 
 __author__ = "Yu Kumagai"
 __copyright__ = "Copyright 2017, Oba group"
@@ -28,7 +27,7 @@ class ExtendedRangeTest(unittest.TestCase):
         self.assertEqual(actual_negative, expected_negative)
 
 
-class DefectSettingTest(unittest.TestCase):
+class DefectInitialSettingTest(unittest.TestCase):
 
     def setUp(self):
         """
