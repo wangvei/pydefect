@@ -53,7 +53,9 @@ class DefectEntryTest(unittest.TestCase):
         MgO_Va_O1_2_from_dict = DefectEntry.from_dict(d)
         self.assertTrue(MgO_Va_O1_2_from_dict == self._MgO_Va_O1_2)
 
-    def test_from_yaml(self):
+    @staticmethod
+    def test_from_yaml():
+        # TODO: write better test
         import os
         y = DefectEntry.from_yaml(YAML_COMPLEX_DIR, FILENAME_YAML_COMPLEX)
         y.to_json_file("defect_entry.json")

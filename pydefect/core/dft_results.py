@@ -218,7 +218,7 @@ class SupercellDftResults(DftResults):
         return [np.mean(i) for i in np.array(defect_coords).transpose()]
 
     def distances_from_defect(self, defect_entry):
-        pass
+
 
 
 class UnitcellDftResults(DftResults):

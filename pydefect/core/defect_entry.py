@@ -176,10 +176,10 @@ class DefectEntry:
 
     @staticmethod
     def element_diff_from_poscar_files(poscar1, poscar2):
-        c1 = Composition(Structure.from_file(poscar1).composition,
-                         allow_negative=True)
-        c2 = Composition(Structure.from_file(poscar2).composition,
-                         allow_negative=True)
+        c1 = Composition(
+            Structure.from_file(poscar1).composition, allow_negative=True)
+        c2 = Composition(
+            Structure.from_file(poscar2).composition, allow_negative=True)
         c_diff = c1 - c2
         return {str(e): c_diff[e] for e in c_diff}
 

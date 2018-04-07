@@ -3,7 +3,7 @@ import unittest
 from pymatgen.core.structure import Structure
 
 from pydefect.input_maker.input_maker import *
-from core.defect_entry import DefectEntry
+from pydefect.core.defect_entry import DefectEntry
 from pydefect.core.irreducible_site import IrreducibleSite
 
 __author__ = "Yu Kumagai"

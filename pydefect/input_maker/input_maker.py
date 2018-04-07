@@ -8,7 +8,7 @@ import re
 
 from pymatgen.core.periodic_table import Element
 
-from core.defect_entry import DefectEntry
+from pydefect.core.defect_entry import DefectEntry
 
 __author__ = "Yu Kumagai"
 __copyright__ = "Copyright 2017, Oba group"
@@ -198,7 +198,7 @@ class DefectMaker:
                 print("{} in {} is improper.".format(out_name, defect_name))
 
         # -------------------- analyze in_name ---------------------------------
-        inserted_atoms = {}
+        inserted_atoms = []
 
         # This block needs to be run after finishing analyze_out_name because
         # defect coordinates is needed when inserting an in_name atom.
@@ -212,10 +212,10 @@ class DefectMaker:
             if in_name in defect_structure.symbol_set:
                 inserted_index = \
                     min(defect_structure.indices_from_symbol(in_name))
-                inserted_atoms[inserted_index] = defect_coords
+                inserted_atoms.append(inserted_index)
             else:
                 inserted_index = 0
-                inserted_atoms[0] = in_name
+                inserted_atoms = [0]
             defect_structure.insert(inserted_index, in_name, defect_coords)
         else:
             raise ValueError("{} in {} is improper.".format(out_name,

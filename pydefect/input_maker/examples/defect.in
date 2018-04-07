@@ -1,17 +1,17 @@
-   Irreducible element: Sc1
+   Irreducible element: Mg1
       Equivalent atoms: 1..32
-Fractional coordinates: 0.0000000 0.0000000 0.0000000
-     Electronegativity: 1.36
-       Oxidation state: 3
+Fractional coordinates: 0.0000000  0.0000000  0.0000000
+     Electronegativity: 1.31
+       Oxidation state: 2
 
-   Irreducible element: N1
+   Irreducible element: O1
       Equivalent atoms: 33..64
-Fractional coordinates: 0.0000000 0.2500000 0.0000000
-     Electronegativity: 3.04
-       Oxidation state: -3
+Fractional coordinates: 0.2500000  0.2500000  0.2500000
+     Electronegativity: 3.44
+       Oxidation state: -2
 
 Interstitial coordinates: 
-Antisite defects: Sc_N N_Sc
+Antisite defects: 
 
 Substituted defects: 
 

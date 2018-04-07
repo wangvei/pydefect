@@ -1,16 +1,16 @@
    Irreducible element: Mg1
       Equivalent atoms: 1..32
-Fractional coordinates: 0.0000000 0.0000000 0.0000000
+Fractional coordinates: 0.0000000  0.0000000  0.0000000
      Electronegativity: 1.31
        Oxidation state: 2
 
    Irreducible element: O1
       Equivalent atoms: 33..64
-Fractional coordinates: 0.2500000 0.2500000 0.2500000
+Fractional coordinates: 0.2500000  0.2500000  0.2500000
      Electronegativity: 3.44
        Oxidation state: -2
 
-Interstitial coordinates: [0.1, 0.1, 0.1]
+Interstitial coordinates: 0.1000  0.1000  0.1000
 Antisite defects: Mg_O O_Mg
 
    Dopant element: Al
@@ -25,7 +25,7 @@ Substituted defects: Al_Mg Al_O N_Mg N_O
 
 Maximum Displacement: 0.15
 
-Exceptionally included: ['Va_O1_-1', 'Va_O1_-2']
-Exceptionally excluded: ['Va_O1_1', 'Va_O1_2']
+Exceptionally included: Va_O1_-1 Va_O1_-2
+Exceptionally excluded: Va_O1_1 Va_O1_2
 Cutoff region of atoms perturbed: 2.0
 Symprec: 0.001

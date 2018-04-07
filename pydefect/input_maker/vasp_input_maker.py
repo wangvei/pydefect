@@ -10,7 +10,7 @@ from pymatgen.io.vasp.inputs import Potcar
 from pydefect.input_maker.defect_initial_setting import DefectInitialSetting
 from pydefect.core.defect_entry import get_num_atoms_for_elements
 from pydefect.input_maker.input_maker import \
-    DefectMaker, DefectInputSetMaker,  print_already_exist, \
+    DefectMaker, DefectInputSetMaker, print_already_exist, \
     print_is_being_constructed,  perturb_around_a_point
 
 __author__ = "Yu Kumagai"
