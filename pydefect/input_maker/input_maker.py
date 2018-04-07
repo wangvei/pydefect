@@ -228,8 +228,8 @@ class DefectMaker:
 class DefectInputSetMaker(metaclass=ABCMeta):
     """
     Abstract class that is subclassed by a particular first-principles code
-    implementation. Constructs a set of DefectSupercell class objects based on given
-    oxidation states.
+    implementation. Constructs a set of DefectSupercell class objects based on
+    given oxidation states.
 
     Args:
         defect_initial_setting (DefectInitialSetting):

@@ -9,8 +9,8 @@ from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
 from monty.json import MontyEncoder
 from monty.serialization import loadfn
 
-import core.atom as atom
-from core.irreducible_site import IrreducibleSite
+import pydefect.core.atom as atom
+from pydefect.core.irreducible_site import IrreducibleSite
 
 __author__ = "Yu Kumagai"
 __copyright__ = "Copyright 2017, Oba group"
@@ -261,8 +261,8 @@ class DefectInitialSetting:
 #            SpacegroupAnalyzer(s, symprec=symprec).get_symmetrized_structure()
         # The format change POSCAR -> cif -> structure sorts the elements.
         # This is important to be consistent with *to* method.
-        s = Structure.from_str(Structure.from_file(poscar).to(fmt="cif"),
-                               fmt="cif")
+#        s = Structure.from_str(Structure.from_file(poscar).to(fmt="cif"),
+#                               fmt="cif")
         symmetrized_structure = \
             SpacegroupAnalyzer(s, symprec=symprec).get_symmetrized_structure()
 
@@ -395,7 +395,6 @@ class DefectInitialSetting:
 #        Structure.from_str(self._structure.to(fmt="cif"), fmt="cif") \
 #            .to(fmt="poscar", filename=poscar_file)
         Structure.to(fmt="poscar", filename=poscar_file)
-
 
     def make_defect_name_set(self):
         """
