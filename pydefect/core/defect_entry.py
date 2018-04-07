@@ -41,32 +41,28 @@ class DefectEntry:
                   The index begins from 0.
                   For interstitials, set {}.
             Values: DefectSupercell coordinates
-        inserted_atoms (dict):
-            Keys: Atom indices inserted in the supercell after removing atoms.
-                  The index begins from 0.
-                  For vacancies, set {}.
-            Values: Element name
-        TODO: Use Composition class
-        changes_of_num_elements (dict):
+        inserted_atoms (list):
+            Atom indices inserted in the supercell after removing atoms.
+            The index begins from 0.
+            For vacancies, set [].
+        element_diff (dict):
             Keys: Element names
             Values: Change of the numbers of elements wrt perfect supercell.
         charge (int):
             Charge state of the defect
     """
     def __init__(self, initial_structure, removed_atoms, inserted_atoms,
-                 changes_of_num_elements, charge):
+                 element_diff, charge):
         self._initial_structure = initial_structure
         self._removed_atoms = removed_atoms
         self._inserted_atoms = inserted_atoms
-        self._changes_of_num_elements = changes_of_num_elements
+        self._element_diff = element_diff
         self._charge = charge
 
     def __eq__(self, other):
         if other is None or type(self) != type(other):
             raise TypeError
         return self.as_dict() == other.as_dict()
-
-    # TODO: Make yaml_load and from_yaml to make this object from a yaml file.
 
     @classmethod
     def from_dict(cls, d):
@@ -75,17 +71,38 @@ class DefectEntry:
         """
         # The keys need to be converted to integers.
         removed_atoms = {int(k): v for k, v in d["removed_atoms"].items()}
-        inserted_atoms = {int(k): v for k, v in d["inserted_atoms"].items()}
-        changes_of_num_elements = \
-            {k: int(v) for k, v in d["changes_of_num_elements"].items()}
+#        inserted_atoms = {int(k): v for k, v in d["inserted_atoms"].items()}
+        element_diff = \
+            {k: int(v) for k, v in d["element_diff"].items()}
 
-        return cls(d["initial_structure"], removed_atoms, inserted_atoms,
-                   changes_of_num_elements, d["charge"])
+        #  return cls(d["initial_structure"], removed_atoms, inserted_atoms,
+        return cls(d["initial_structure"], removed_atoms, d["inserted_atoms"],
+                   element_diff, d["charge"])
 
-    # TODO: from yaml
     @classmethod
-    def from_yaml(cls, filename):
-        pass
+    def from_yaml(cls, dirname, filename):
+        """
+        An example of yaml file
+        initial_structure: POSCAR
+        perfect_structure: ../perfect/POSCAR
+        removed_atoms: {32: [0.25, 0.25, 0.25]}
+        inserted_atoms: !!null
+        charge: 2
+        """
+        import os
+        import yaml
+
+        os.chdir(dirname)
+        with open(filename, "r") as yaml_file:
+            yaml_data = yaml.load(yaml_file)
+
+        element_diff = \
+            cls.element_diff_from_poscar_files(
+                yaml_data["initial_structure"], yaml_data["perfect_structure"])
+        s = Structure.from_file(yaml_data["initial_structure"])
+
+        return cls(s, yaml_data["removed_atoms"], yaml_data["inserted_atoms"],
+                   element_diff, yaml_data["charge"])
 
     @classmethod
     def json_load(cls, filename):
@@ -107,8 +124,8 @@ class DefectEntry:
         return self._inserted_atoms
 
     @property
-    def changes_of_num_elements(self):
-        return self._changes_of_num_elements
+    def element_diff(self):
+        return self._element_diff
 
     @property
     def charge(self):
@@ -134,7 +151,7 @@ class DefectEntry:
         for o in sorted(self._removed_atoms.keys(), reverse=True):
             mapping.pop(o)
 
-        for i in sorted(self._inserted_atoms.keys(), reverse=True):
+        for i in sorted(self._inserted_atoms, reverse=True):
             mapping.insert(i, None)
 
         return mapping
@@ -146,7 +163,7 @@ class DefectEntry:
         d = {"initial_structure": self._initial_structure,
              "removed_atoms": self._removed_atoms,
              "inserted_atoms": self._inserted_atoms,
-             "changes_of_num_elements": self._changes_of_num_elements,
+             "element_diff": self._element_diff,
              "charge": self._charge}
         return d
 
@@ -158,12 +175,13 @@ class DefectEntry:
             json.dump(self.as_dict(), fw, indent=2, cls=MontyEncoder)
 
     @staticmethod
-    def changes_of_num_elements_from_poscar_files(poscar1, poscar2):
+    def element_diff_from_poscar_files(poscar1, poscar2):
         c1 = Composition(Structure.from_file(poscar1).composition,
                          allow_negative=True)
         c2 = Composition(Structure.from_file(poscar2).composition,
                          allow_negative=True)
-        return {str(k): v for k, v in (c1 - c2)}
+        c_diff = c1 - c2
+        return {str(e): c_diff[e] for e in c_diff}
 
     # TODO: remove bugs below
     # def anchor_atom_index(self):
