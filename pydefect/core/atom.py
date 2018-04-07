@@ -1,4 +1,5 @@
-# Pure Appl. Chem., Vol. 83, No. 2, pp. 359-396, 2011. is available but the following list is from 2006.
+# -*- coding: utf-8 -*-
+#  Pure Appl. Chem., Vol. 83, No. 2, pp. 359-396, 2011. is available but the following list is from 2006.
 
 # Pure Appl. Chem., Vol. 78, No. 11, pp. 2051-2066, 2006.
 atomic_weights = [

@@ -2,12 +2,15 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="53a15d07-02b4-4e1f-9994-d2be75aee484" name="Default" comment="defect_in.py works well.">
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
-      <change beforePath="$PROJECT_DIR$/taka_my_classes/energy_correction.py" afterPath="$PROJECT_DIR$/taka_my_classes/energy_correction.py" />
-      <change beforePath="$PROJECT_DIR$/taka_my_classes/energy_correction.py_formatted_string" afterPath="$PROJECT_DIR$/taka_my_classes/energy_correction.py_formatted_string" />
-      <change beforePath="$PROJECT_DIR$/taka_my_classes/energy_correction_backup.py" afterPath="$PROJECT_DIR$/taka_my_classes/energy_correction_backup.py" />
-      <change beforePath="$PROJECT_DIR$/taka_my_classes/perfect.py" afterPath="$PROJECT_DIR$/taka_my_classes/perfect.py" />
-      <change beforePath="$PROJECT_DIR$/taka_my_classes/test_perfect.py" afterPath="$PROJECT_DIR$/taka_my_classes/test_perfect.py" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/pydefect/analysis/plot_defect_energy.py" beforeDir="false" afterPath="$PROJECT_DIR$/pydefect/analysis/plot_defect_energy.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/pydefect/core/atom.py" beforeDir="false" afterPath="$PROJECT_DIR$/pydefect/core/atom.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/pydefect/core/defect_entry.py" beforeDir="false" afterPath="$PROJECT_DIR$/pydefect/core/defect_entry.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/pydefect/core/dft_results.py" beforeDir="false" afterPath="$PROJECT_DIR$/pydefect/core/dft_results.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/pydefect/core/irreducible_site.py" beforeDir="false" afterPath="$PROJECT_DIR$/pydefect/core/irreducible_site.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/pydefect/input_maker/defect_initial_setting.py" beforeDir="false" afterPath="$PROJECT_DIR$/pydefect/input_maker/defect_initial_setting.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/pydefect/input_maker/input_maker.py" beforeDir="false" afterPath="$PROJECT_DIR$/pydefect/input_maker/input_maker.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/pydefect/input_maker/vasp_input_maker.py" beforeDir="false" afterPath="$PROJECT_DIR$/pydefect/input_maker/vasp_input_maker.py" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="TRACKING_ENABLED" value="true" />
@@ -20,74 +23,108 @@
     <favorites_list name="pydefect" />
   </component>
   <component name="FileEditorManager">
-    <leaf SIDE_TABS_SIZE_LIMIT_KEY="300">
-      <file leaf-file-name="input_maker.py" pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/input_generator/input_maker.py">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="0">
-              <caret line="23" column="40" lean-forward="false" selection-start-line="23" selection-start-column="40" selection-end-line="23" selection-end-column="40" />
-              <folding>
-                <element signature="e#22#31#0" expanded="true" />
-              </folding>
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="perfect.py" pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/taka_my_classes/perfect.py">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="69">
-              <caret line="3" column="11" lean-forward="false" selection-start-line="3" selection-start-column="11" selection-end-line="3" selection-end-column="11" />
-              <folding />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="test_perfect.py" pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/taka_my_classes/test_perfect.py">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="23">
-              <caret line="1" column="42" lean-forward="false" selection-start-line="1" selection-start-column="42" selection-end-line="1" selection-end-column="42" />
-              <folding />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="test_defect_in.py" pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/input_generator/test_defect_in.py">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="1449">
-              <caret line="63" column="29" lean-forward="false" selection-start-line="63" selection-start-column="29" selection-end-line="63" selection-end-column="29" />
-              <folding>
-                <element signature="e#0#15#0" expanded="true" />
-              </folding>
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="energy_correction.py" pinned="false" current-in-tab="true">
-        <entry file="file://$PROJECT_DIR$/taka_my_classes/energy_correction.py">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="638">
-              <caret line="93" column="35" lean-forward="false" selection-start-line="93" selection-start-column="34" selection-end-line="93" selection-end-column="35" />
-              <folding>
-                <element signature="e#0#18#0" expanded="true" />
-              </folding>
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="energy_correction_backup.py" pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/taka_my_classes/energy_correction_backup.py">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="299">
-              <caret line="13" column="25" lean-forward="false" selection-start-line="13" selection-start-column="25" selection-end-line="13" selection-end-column="25" />
-              <folding />
-            </state>
-          </provider>
-        </entry>
-      </file>
-    </leaf>
+    <splitter split-orientation="horizontal" split-proportion="0.33169204">
+      <split-first>
+        <leaf SIDE_TABS_SIZE_LIMIT_KEY="300">
+          <file leaf-file-name="defect_initial_setting.py" pinned="false" current-in-tab="false">
+            <entry file="file://$PROJECT_DIR$/pydefect/input_maker/defect_initial_setting.py">
+              <provider selected="true" editor-type-id="text-editor">
+                <state relative-caret-position="17">
+                  <caret line="1" selection-start-line="1" selection-end-line="1" />
+                  <folding>
+                    <element signature="e#23#34#0" expanded="true" />
+                  </folding>
+                </state>
+              </provider>
+            </entry>
+          </file>
+          <file leaf-file-name="plot_defect_energy.py" pinned="false" current-in-tab="false">
+            <entry file="file://$PROJECT_DIR$/pydefect/analysis/plot_defect_energy.py">
+              <provider selected="true" editor-type-id="text-editor">
+                <state relative-caret-position="17">
+                  <caret line="1" selection-start-line="1" selection-end-line="1" />
+                </state>
+              </provider>
+            </entry>
+          </file>
+          <file leaf-file-name="defect.in" pinned="false" current-in-tab="false">
+            <entry file="file://$PROJECT_DIR$/pydefect/input_maker/defect.in">
+              <provider selected="true" editor-type-id="text-editor" />
+            </entry>
+          </file>
+          <file leaf-file-name="input_maker.py" pinned="false" current-in-tab="false">
+            <entry file="file://$PROJECT_DIR$/pydefect/input_maker/input_maker.py">
+              <provider selected="true" editor-type-id="text-editor" />
+            </entry>
+          </file>
+          <file leaf-file-name="vasp_input_maker.py" pinned="false" current-in-tab="false">
+            <entry file="file://$PROJECT_DIR$/pydefect/input_maker/vasp_input_maker.py">
+              <provider selected="true" editor-type-id="text-editor" />
+            </entry>
+          </file>
+          <file leaf-file-name="atom.py" pinned="false" current-in-tab="false">
+            <entry file="file://$PROJECT_DIR$/pydefect/core/atom.py">
+              <provider selected="true" editor-type-id="text-editor">
+                <state relative-caret-position="17">
+                  <caret line="1" selection-start-line="1" selection-end-line="1" />
+                </state>
+              </provider>
+            </entry>
+          </file>
+          <file leaf-file-name="defect_entry.py" pinned="false" current-in-tab="false">
+            <entry file="file://$PROJECT_DIR$/pydefect/core/defect_entry.py">
+              <provider selected="true" editor-type-id="text-editor" />
+            </entry>
+          </file>
+          <file leaf-file-name="dft_results.py" pinned="false" current-in-tab="false">
+            <entry file="file://$PROJECT_DIR$/pydefect/core/dft_results.py">
+              <provider selected="true" editor-type-id="text-editor" />
+            </entry>
+          </file>
+          <file leaf-file-name="irreducible_site.py" pinned="false" current-in-tab="true">
+            <entry file="file://$PROJECT_DIR$/pydefect/core/irreducible_site.py">
+              <provider selected="true" editor-type-id="text-editor" />
+            </entry>
+          </file>
+        </leaf>
+      </split-first>
+      <split-second>
+        <splitter split-orientation="horizontal" split-proportion="0.5">
+          <split-first>
+            <leaf>
+              <file leaf-file-name="test_defect_initial_setting.py" pinned="false" current-in-tab="true">
+                <entry file="file://$PROJECT_DIR$/pydefect/input_maker/test_defect_initial_setting.py">
+                  <provider selected="true" editor-type-id="text-editor">
+                    <state relative-caret-position="153">
+                      <caret line="9" column="25" selection-start-line="9" selection-start-column="25" selection-end-line="9" selection-end-column="25" />
+                      <folding>
+                        <element signature="e#0#15#0" expanded="true" />
+                      </folding>
+                    </state>
+                  </provider>
+                </entry>
+              </file>
+            </leaf>
+          </split-first>
+          <split-second>
+            <leaf>
+              <file leaf-file-name="test_defect_initial_setting.py" pinned="false" current-in-tab="true">
+                <entry file="file://$PROJECT_DIR$/pydefect/input_maker/test_defect_initial_setting.py">
+                  <provider selected="true" editor-type-id="text-editor">
+                    <state relative-caret-position="17">
+                      <caret line="26" column="38" selection-start-line="26" selection-start-column="38" selection-end-line="26" selection-end-column="38" />
+                      <folding>
+                        <element signature="e#0#15#0" expanded="true" />
+                      </folding>
+                    </state>
+                  </provider>
+                </entry>
+              </file>
+            </leaf>
+          </split-second>
+        </splitter>
+      </split-second>
+    </splitter>
   </component>
   <component name="FileTemplateManagerImpl">
     <option name="RECENT_TEMPLATES">
@@ -125,13 +162,22 @@
         <option value="$PROJECT_DIR$/__init__.py" />
         <option value="$PROJECT_DIR$/coding_rule.txt" />
         <option value="$PROJECT_DIR$/taka_my_classes/test_perfect.py" />
+        <option value="$PROJECT_DIR$/pydefect/input_maker/defect_initial_setting.py" />
+        <option value="$PROJECT_DIR$/pydefect/analysis/plot_defect_energy.py" />
+        <option value="$PROJECT_DIR$/pydefect/input_maker/input_maker.py" />
+        <option value="$PROJECT_DIR$/pydefect/input_maker/vasp_input_maker.py" />
+        <option value="$PROJECT_DIR$/pydefect/core/atom.py" />
+        <option value="$PROJECT_DIR$/pydefect/core/defect_entry.py" />
+        <option value="$PROJECT_DIR$/pydefect/core/dft_results.py" />
+        <option value="$PROJECT_DIR$/pydefect/core/energy_correction.py" />
+        <option value="$PROJECT_DIR$/pydefect/core/irreducible_site.py" />
       </list>
     </option>
   </component>
   <component name="ProjectFrameBounds" extendedState="6">
     <option name="y" value="23" />
     <option name="width" value="2560" />
-    <option name="height" value="1337" />
+    <option name="height" value="1339" />
   </component>
   <component name="ProjectInspectionProfilesVisibleTreeState">
     <entry key="Project Default">
@@ -151,21 +197,12 @@
     <ConfirmationsSetting value="2" id="Add" />
   </component>
   <component name="ProjectView">
-    <navigator currentView="ProjectPane" proportions="" version="1">
-      <flattenPackages />
-      <showMembers />
-      <showModules />
-      <showLibraryContents />
-      <hideEmptyPackages />
-      <abbreviatePackageNames />
-      <autoscrollToSource />
+    <navigator proportions="" version="1">
       <autoscrollFromSource ProjectPane="true" />
-      <sortByType />
-      <manualOrder />
       <foldersAlwaysOnTop value="true" />
     </navigator>
     <panes>
-      <pane id="Scratches" />
+      <pane id="Scope" />
       <pane id="ProjectPane">
         <subPane>
           <expand>
@@ -176,95 +213,30 @@
             <path>
               <item name="pydefect" type="b2602c69:ProjectViewProjectNode" />
               <item name="pydefect" type="462c0819:PsiDirectoryNode" />
-              <item name="input_generator" type="462c0819:PsiDirectoryNode" />
+              <item name="pydefect" type="462c0819:PsiDirectoryNode" />
             </path>
             <path>
               <item name="pydefect" type="b2602c69:ProjectViewProjectNode" />
               <item name="pydefect" type="462c0819:PsiDirectoryNode" />
-              <item name="input_generator" type="462c0819:PsiDirectoryNode" />
-              <item name="defect.py" type="8704e2dd:PyFileNode" />
+              <item name="pydefect" type="462c0819:PsiDirectoryNode" />
+              <item name="analysis" type="462c0819:PsiDirectoryNode" />
             </path>
             <path>
               <item name="pydefect" type="b2602c69:ProjectViewProjectNode" />
               <item name="pydefect" type="462c0819:PsiDirectoryNode" />
-              <item name="input_generator" type="462c0819:PsiDirectoryNode" />
-              <item name="defect.py" type="8704e2dd:PyFileNode" />
-              <item name="IrreducibleSite" type="dd8bbb05:PyElementNode" />
+              <item name="pydefect" type="462c0819:PsiDirectoryNode" />
+              <item name="core" type="462c0819:PsiDirectoryNode" />
             </path>
             <path>
               <item name="pydefect" type="b2602c69:ProjectViewProjectNode" />
               <item name="pydefect" type="462c0819:PsiDirectoryNode" />
-              <item name="input_generator" type="462c0819:PsiDirectoryNode" />
-              <item name="input_maker.py" type="8704e2dd:PyFileNode" />
-            </path>
-            <path>
-              <item name="pydefect" type="b2602c69:ProjectViewProjectNode" />
               <item name="pydefect" type="462c0819:PsiDirectoryNode" />
-              <item name="input_generator" type="462c0819:PsiDirectoryNode" />
-              <item name="input_maker.py" type="8704e2dd:PyFileNode" />
-              <item name="DefectInputSetMaker" type="dd8bbb05:PyElementNode" />
-            </path>
-            <path>
-              <item name="pydefect" type="b2602c69:ProjectViewProjectNode" />
-              <item name="pydefect" type="462c0819:PsiDirectoryNode" />
-              <item name="input_generator" type="462c0819:PsiDirectoryNode" />
-              <item name="test_defect_in.py" type="8704e2dd:PyFileNode" />
-            </path>
-            <path>
-              <item name="pydefect" type="b2602c69:ProjectViewProjectNode" />
-              <item name="pydefect" type="462c0819:PsiDirectoryNode" />
-              <item name="input_generator" type="462c0819:PsiDirectoryNode" />
-              <item name="test_defect_in.py" type="8704e2dd:PyFileNode" />
-              <item name="DefectSettingTest" type="dd8bbb05:PyElementNode" />
-            </path>
-            <path>
-              <item name="pydefect" type="b2602c69:ProjectViewProjectNode" />
-              <item name="pydefect" type="462c0819:PsiDirectoryNode" />
-              <item name="taka_my_classes" type="462c0819:PsiDirectoryNode" />
-            </path>
-            <path>
-              <item name="pydefect" type="b2602c69:ProjectViewProjectNode" />
-              <item name="pydefect" type="462c0819:PsiDirectoryNode" />
-              <item name="taka_my_classes" type="462c0819:PsiDirectoryNode" />
-              <item name="energy_correction.py" type="8704e2dd:PyFileNode" />
-            </path>
-            <path>
-              <item name="pydefect" type="b2602c69:ProjectViewProjectNode" />
-              <item name="pydefect" type="462c0819:PsiDirectoryNode" />
-              <item name="taka_my_classes" type="462c0819:PsiDirectoryNode" />
-              <item name="energy_correction_backup.py" type="8704e2dd:PyFileNode" />
-            </path>
-            <path>
-              <item name="pydefect" type="b2602c69:ProjectViewProjectNode" />
-              <item name="pydefect" type="462c0819:PsiDirectoryNode" />
-              <item name="taka_my_classes" type="462c0819:PsiDirectoryNode" />
-              <item name="perfect.py" type="8704e2dd:PyFileNode" />
-            </path>
-            <path>
-              <item name="pydefect" type="b2602c69:ProjectViewProjectNode" />
-              <item name="pydefect" type="462c0819:PsiDirectoryNode" />
-              <item name="taka_my_classes" type="462c0819:PsiDirectoryNode" />
-              <item name="perfect.py" type="8704e2dd:PyFileNode" />
-              <item name="Perfect" type="dd8bbb05:PyElementNode" />
-            </path>
-            <path>
-              <item name="pydefect" type="b2602c69:ProjectViewProjectNode" />
-              <item name="pydefect" type="462c0819:PsiDirectoryNode" />
-              <item name="taka_my_classes" type="462c0819:PsiDirectoryNode" />
-              <item name="test_perfect.py" type="8704e2dd:PyFileNode" />
-            </path>
-            <path>
-              <item name="pydefect" type="b2602c69:ProjectViewProjectNode" />
-              <item name="pydefect" type="462c0819:PsiDirectoryNode" />
-              <item name="taka_my_classes" type="462c0819:PsiDirectoryNode" />
-              <item name="test_perfect.py" type="8704e2dd:PyFileNode" />
-              <item name="PerfectTest" type="dd8bbb05:PyElementNode" />
+              <item name="input_maker" type="462c0819:PsiDirectoryNode" />
             </path>
           </expand>
           <select />
         </subPane>
       </pane>
-      <pane id="Scope" />
     </panes>
   </component>
   <component name="PropertiesComponent">
@@ -284,8 +256,9 @@
       </list>
     </option>
   </component>
-  <component name="RunManager" selected="Python tests.test_defect.py">
+  <component name="RunManager" selected="Python tests.Unittests in test_defect_initial_setting.py">
     <configuration name="defect" type="PythonConfigurationType" factoryName="Python" temporary="true">
+      <module name="pydefect" />
       <option name="INTERPRETER_OPTIONS" value="" />
       <option name="PARENT_ENVS" value="true" />
       <envs>
@@ -296,32 +269,14 @@
       <option name="IS_MODULE_SDK" value="true" />
       <option name="ADD_CONTENT_ROOTS" value="true" />
       <option name="ADD_SOURCE_ROOTS" value="true" />
-      <module name="pydefect" />
       <option name="SCRIPT_NAME" value="$PROJECT_DIR$/input_generator/defect.py" />
       <option name="PARAMETERS" value="" />
       <option name="SHOW_COMMAND_LINE" value="false" />
       <option name="EMULATE_TERMINAL" value="false" />
       <option name="MODULE_MODE" value="false" />
     </configuration>
-    <configuration name="input_maker" type="PythonConfigurationType" factoryName="Python" temporary="true">
-      <option name="INTERPRETER_OPTIONS" value="" />
-      <option name="PARENT_ENVS" value="true" />
-      <envs>
-        <env name="PYTHONUNBUFFERED" value="1" />
-      </envs>
-      <option name="SDK_HOME" value="" />
-      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/input_generator" />
-      <option name="IS_MODULE_SDK" value="true" />
-      <option name="ADD_CONTENT_ROOTS" value="true" />
-      <option name="ADD_SOURCE_ROOTS" value="true" />
-      <module name="pydefect" />
-      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/input_generator/input_maker.py" />
-      <option name="PARAMETERS" value="" />
-      <option name="SHOW_COMMAND_LINE" value="false" />
-      <option name="EMULATE_TERMINAL" value="false" />
-      <option name="MODULE_MODE" value="false" />
-    </configuration>
     <configuration name="vasp_input_maker" type="PythonConfigurationType" factoryName="Python" temporary="true">
+      <module name="pydefect" />
       <option name="INTERPRETER_OPTIONS" value="" />
       <option name="PARENT_ENVS" value="true" />
       <envs>
@@ -332,108 +287,112 @@
       <option name="IS_MODULE_SDK" value="true" />
       <option name="ADD_CONTENT_ROOTS" value="true" />
       <option name="ADD_SOURCE_ROOTS" value="true" />
-      <module name="pydefect" />
       <option name="SCRIPT_NAME" value="$PROJECT_DIR$/input_generator/vasp_input_maker.py" />
       <option name="PARAMETERS" value="" />
       <option name="SHOW_COMMAND_LINE" value="false" />
       <option name="EMULATE_TERMINAL" value="false" />
       <option name="MODULE_MODE" value="false" />
     </configuration>
-    <configuration name="Unittests in test_input_maker.py" type="tests" factoryName="Unittests" temporary="true" nameIsGenerated="true">
+    <configuration name="Unittests in test_defect_initial_setting.py" type="tests" factoryName="Unittests" temporary="true" nameIsGenerated="true">
+      <module name="pydefect" />
       <option name="INTERPRETER_OPTIONS" value="" />
       <option name="PARENT_ENVS" value="true" />
-      <envs />
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/pydefect/input_maker" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <option name="_new_additionalArguments" value="&quot;&quot;" />
+      <option name="_new_target" value="&quot;$PROJECT_DIR$/pydefect/input_maker/test_defect_initial_setting.py&quot;" />
+      <option name="_new_targetType" value="&quot;PATH&quot;" />
+    </configuration>
+    <configuration name="Unittests in test_input_maker.py" type="tests" factoryName="Unittests" temporary="true" nameIsGenerated="true">
+      <module name="pydefect" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
       <option name="SDK_HOME" value="" />
       <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/input_generator/tests" />
       <option name="IS_MODULE_SDK" value="true" />
       <option name="ADD_CONTENT_ROOTS" value="true" />
       <option name="ADD_SOURCE_ROOTS" value="true" />
-      <module name="pydefect" />
       <option name="_new_additionalArguments" value="&quot;&quot;" />
       <option name="_new_target" value="&quot;$PROJECT_DIR$/input_generator/tests/test_input_maker.py&quot;" />
       <option name="_new_targetType" value="&quot;PATH&quot;" />
     </configuration>
     <configuration name="Unittests in test_vasp_input_maker.py" type="tests" factoryName="Unittests" temporary="true" nameIsGenerated="true">
+      <module name="pydefect" />
       <option name="INTERPRETER_OPTIONS" value="" />
       <option name="PARENT_ENVS" value="true" />
-      <envs />
       <option name="SDK_HOME" value="" />
       <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/input_generator" />
       <option name="IS_MODULE_SDK" value="true" />
       <option name="ADD_CONTENT_ROOTS" value="true" />
       <option name="ADD_SOURCE_ROOTS" value="true" />
-      <module name="pydefect" />
       <option name="_new_additionalArguments" value="&quot;&quot;" />
       <option name="_new_target" value="&quot;$PROJECT_DIR$/input_generator/test_vasp_input_maker.py&quot;" />
       <option name="_new_targetType" value="&quot;PATH&quot;" />
     </configuration>
     <configuration name="test_defect_in" type="tests" factoryName="Unittests">
+      <module name="pydefect" />
       <option name="INTERPRETER_OPTIONS" value="" />
       <option name="PARENT_ENVS" value="true" />
-      <envs />
       <option name="SDK_HOME" value="$PROJECT_DIR$/../virtualenvs/python3/bin/python3" />
       <option name="WORKING_DIRECTORY" value="" />
       <option name="IS_MODULE_SDK" value="false" />
       <option name="ADD_CONTENT_ROOTS" value="true" />
       <option name="ADD_SOURCE_ROOTS" value="true" />
-      <module name="pydefect" />
       <option name="_new_pattern" value="&quot;&quot;" />
       <option name="_new_additionalArguments" value="&quot;&quot;" />
       <option name="_new_target" value="&quot;$PROJECT_DIR$/input_generator/test_defect_in.py&quot;" />
       <option name="_new_targetType" value="&quot;PATH&quot;" />
     </configuration>
     <configuration name="test_defect.py" type="tests" factoryName="Unittests">
+      <module name="pydefect" />
       <option name="INTERPRETER_OPTIONS" value="" />
       <option name="PARENT_ENVS" value="true" />
-      <envs />
       <option name="SDK_HOME" value="$PROJECT_DIR$/../virtualenvs/python3/bin/python3" />
       <option name="WORKING_DIRECTORY" value="" />
       <option name="IS_MODULE_SDK" value="false" />
       <option name="ADD_CONTENT_ROOTS" value="true" />
       <option name="ADD_SOURCE_ROOTS" value="true" />
-      <module name="pydefect" />
       <option name="_new_pattern" value="&quot;&quot;" />
       <option name="_new_additionalArguments" value="&quot;&quot;" />
       <option name="_new_target" value="&quot;$PROJECT_DIR$/input_generator/test_defect.py&quot;" />
       <option name="_new_targetType" value="&quot;PATH&quot;" />
     </configuration>
     <configuration name="test_input_maker.py" type="tests" factoryName="Unittests">
+      <module name="pydefect" />
       <option name="INTERPRETER_OPTIONS" value="" />
       <option name="PARENT_ENVS" value="true" />
-      <envs />
       <option name="SDK_HOME" value="$PROJECT_DIR$/../virtualenvs/python3/bin/python3" />
       <option name="WORKING_DIRECTORY" value="" />
       <option name="IS_MODULE_SDK" value="false" />
       <option name="ADD_CONTENT_ROOTS" value="true" />
       <option name="ADD_SOURCE_ROOTS" value="true" />
-      <module name="pydefect" />
       <option name="_new_pattern" value="&quot;&quot;" />
       <option name="_new_additionalArguments" value="&quot;&quot;" />
       <option name="_new_target" value="&quot;$PROJECT_DIR$/input_generator/test_input_maker.py&quot;" />
       <option name="_new_targetType" value="&quot;PATH&quot;" />
     </configuration>
-    <list size="8">
-      <item index="0" class="java.lang.String" itemvalue="Python tests.test_defect.py" />
-      <item index="1" class="java.lang.String" itemvalue="Python tests.test_input_maker.py" />
-      <item index="2" class="java.lang.String" itemvalue="Python tests.test_defect_in" />
-      <item index="3" class="java.lang.String" itemvalue="Python.input_maker" />
-      <item index="4" class="java.lang.String" itemvalue="Python tests.Unittests in test_input_maker.py" />
-      <item index="5" class="java.lang.String" itemvalue="Python tests.Unittests in test_vasp_input_maker.py" />
-      <item index="6" class="java.lang.String" itemvalue="Python.vasp_input_maker" />
-      <item index="7" class="java.lang.String" itemvalue="Python.defect" />
+    <list>
+      <item itemvalue="Python tests.test_defect.py" />
+      <item itemvalue="Python tests.test_input_maker.py" />
+      <item itemvalue="Python tests.test_defect_in" />
+      <item itemvalue="Python tests.Unittests in test_input_maker.py" />
+      <item itemvalue="Python tests.Unittests in test_vasp_input_maker.py" />
+      <item itemvalue="Python.vasp_input_maker" />
+      <item itemvalue="Python.defect" />
+      <item itemvalue="Python tests.Unittests in test_defect_initial_setting.py" />
     </list>
     <recent_temporary>
-      <list size="5">
-        <item index="0" class="java.lang.String" itemvalue="Python.defect" />
-        <item index="1" class="java.lang.String" itemvalue="Python.vasp_input_maker" />
-        <item index="2" class="java.lang.String" itemvalue="Python tests.Unittests in test_vasp_input_maker.py" />
-        <item index="3" class="java.lang.String" itemvalue="Python tests.Unittests in test_input_maker.py" />
-        <item index="4" class="java.lang.String" itemvalue="Python.input_maker" />
+      <list>
+        <item itemvalue="Python tests.Unittests in test_defect_initial_setting.py" />
+        <item itemvalue="Python.defect" />
+        <item itemvalue="Python.vasp_input_maker" />
+        <item itemvalue="Python tests.Unittests in test_vasp_input_maker.py" />
+        <item itemvalue="Python tests.Unittests in test_input_maker.py" />
       </list>
     </recent_temporary>
-  </component>
-  <component name="ShelveChangesManager" show_recycled="false">
-    <option name="remove_strategy" value="false" />
   </component>
   <component name="SvnConfiguration">
     <configuration>$USER_HOME$/.subversion</configuration>
@@ -481,26 +440,26 @@
     </history-entry>
   </component>
   <component name="ToolWindowManager">
-    <frame x="0" y="23" width="2560" height="1337" extended-state="6" />
+    <frame x="0" y="23" width="2560" height="1417" extended-state="6" />
     <editor active="true" />
     <layout>
-      <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.15390626" sideWeight="0.66478556" order="0" side_tool="false" content_ui="combo" />
-      <window_info id="TODO" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="6" side_tool="false" content_ui="tabs" />
-      <window_info id="Event Log" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.32964426" sideWeight="0.5013785" order="7" side_tool="true" content_ui="tabs" />
-      <window_info id="Run" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.19062027" sideWeight="0.5" order="2" side_tool="false" content_ui="tabs" />
-      <window_info id="Version Control" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
-      <window_info id="Python Console" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
-      <window_info id="Structure" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.25" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
-      <window_info id="Terminal" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.18986385" sideWeight="0.4986215" order="7" side_tool="false" content_ui="tabs" />
-      <window_info id="Debug" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.4" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
-      <window_info id="Favorites" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.045293424" sideWeight="0.33521444" order="2" side_tool="true" content_ui="tabs" />
-      <window_info id="Cvs" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.25" sideWeight="0.5" order="4" side_tool="false" content_ui="tabs" />
-      <window_info id="Message" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="0" side_tool="false" content_ui="tabs" />
-      <window_info id="Commander" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.4" sideWeight="0.5" order="0" side_tool="false" content_ui="tabs" />
-      <window_info id="Inspection" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.4" sideWeight="0.5" order="5" side_tool="false" content_ui="tabs" />
-      <window_info id="Hierarchy" active="true" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.12271644" sideWeight="0.5" order="2" side_tool="false" content_ui="combo" />
-      <window_info id="Find" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.32964426" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
-      <window_info id="Ant Build" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.25" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
+      <window_info active="true" content_ui="combo" id="Project" order="0" sideWeight="0.66478556" visible="true" weight="0.12012603" />
+      <window_info anchor="bottom" id="TODO" order="6" />
+      <window_info anchor="bottom" id="Event Log" order="7" sideWeight="0.5013785" side_tool="true" weight="0.32964426" />
+      <window_info anchor="bottom" id="Version Control" order="7" />
+      <window_info anchor="bottom" id="Python Console" order="7" />
+      <window_info anchor="bottom" id="Run" order="2" visible="true" weight="0.19015151" />
+      <window_info id="Structure" order="1" side_tool="true" weight="0.25" />
+      <window_info anchor="bottom" id="Terminal" order="7" sideWeight="0.4986215" weight="0.18986385" />
+      <window_info id="Favorites" order="2" sideWeight="0.33521444" side_tool="true" weight="0.045293424" />
+      <window_info anchor="bottom" id="Debug" order="3" weight="0.4" />
+      <window_info active="true" anchor="right" content_ui="combo" id="Hierarchy" order="2" visible="true" weight="0.12271644" />
+      <window_info anchor="right" id="Commander" order="0" weight="0.4" />
+      <window_info anchor="right" id="Ant Build" order="1" weight="0.25" />
+      <window_info anchor="bottom" id="Message" order="0" />
+      <window_info anchor="bottom" id="Inspection" order="5" weight="0.4" />
+      <window_info anchor="bottom" id="Cvs" order="4" weight="0.25" />
+      <window_info anchor="bottom" id="Find" order="1" weight="0.32964426" />
     </layout>
   </component>
   <component name="VcsContentAnnotationSettings">
@@ -529,332 +488,118 @@
           <option name="timeStamp" value="4" />
         </line-breakpoint>
       </breakpoints>
-      <option name="time" value="5" />
+      <option name="time" value="6" />
     </breakpoint-manager>
-    <watches-manager />
   </component>
   <component name="editorHistoryManager">
-    <entry file="file://$PROJECT_DIR$/input_generator/defect.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="782">
-          <caret line="46" column="10" lean-forward="false" selection-start-line="46" selection-start-column="10" selection-end-line="46" selection-end-column="10" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/input_generator/defect_in.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="4607">
-          <caret line="278" column="58" lean-forward="false" selection-start-line="278" selection-start-column="58" selection-end-line="278" selection-end-column="58" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/input_generator/input_maker.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="2108">
-          <caret line="130" column="0" lean-forward="false" selection-start-line="130" selection-start-column="0" selection-end-line="130" selection-end-column="0" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/input_generator/input_maker.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="0">
-          <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/input_generator/defect_in.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="4641">
-          <caret line="280" column="40" lean-forward="false" selection-start-line="280" selection-start-column="40" selection-end-line="280" selection-end-column="40" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/input_generator/defect.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="782">
-          <caret line="46" column="10" lean-forward="false" selection-start-line="46" selection-start-column="10" selection-end-line="46" selection-end-column="10" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/input_generator/input_maker.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="0">
-          <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/input_generator/defect_in.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="4845">
-          <caret line="292" column="0" lean-forward="true" selection-start-line="292" selection-start-column="0" selection-end-line="292" selection-end-column="0" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/input_generator/defect.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="782">
-          <caret line="46" column="10" lean-forward="false" selection-start-line="46" selection-start-column="10" selection-end-line="46" selection-end-column="10" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/input_generator/defect.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="782">
-          <caret line="46" column="10" lean-forward="false" selection-start-line="46" selection-start-column="10" selection-end-line="46" selection-end-column="10" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/input_generator/defect_in.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="3485">
-          <caret line="214" column="19" lean-forward="false" selection-start-line="214" selection-start-column="19" selection-end-line="214" selection-end-column="19" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/input_generator/input_maker.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="2108">
-          <caret line="130" column="0" lean-forward="false" selection-start-line="130" selection-start-column="0" selection-end-line="130" selection-end-column="0" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/input_generator/input_maker.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="0">
-          <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/input_generator/tests/test_input_maker.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="748">
-          <caret line="45" column="32" lean-forward="false" selection-start-line="45" selection-start-column="32" selection-end-line="45" selection-end-column="32" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/input_generator/input_maker.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="0">
-          <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/input_generator/input_maker.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="630">
-          <caret line="56" column="76" lean-forward="false" selection-start-line="56" selection-start-column="76" selection-end-line="56" selection-end-column="76" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/input_generator/defect_in.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="0">
-          <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/input_generator/input_maker.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="45">
-          <caret line="17" column="0" lean-forward="false" selection-start-line="17" selection-start-column="0" selection-end-line="17" selection-end-column="0" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/input_generator/defect_in.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="0">
-          <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/input_generator/input_maker.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="0">
-          <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
-        </state>
-      </provider>
-    </entry>
+    <entry file="file://$PROJECT_DIR$/input_generator/input_maker.py" />
+    <entry file="file://$PROJECT_DIR$/input_generator/input_maker.py" />
+    <entry file="file://$PROJECT_DIR$/input_generator/tests/test_input_maker.py" />
+    <entry file="file://$PROJECT_DIR$/input_generator/input_maker.py" />
+    <entry file="file://$PROJECT_DIR$/input_generator/input_maker.py" />
+    <entry file="file://$PROJECT_DIR$/input_generator/defect_in.py" />
+    <entry file="file://$PROJECT_DIR$/input_generator/input_maker.py" />
+    <entry file="file://$PROJECT_DIR$/input_generator/defect_in.py" />
+    <entry file="file://$PROJECT_DIR$/input_generator/input_maker.py" />
     <entry file="file://$PROJECT_DIR$/input_generator/defect.in" />
     <entry file="file://$PROJECT_DIR$/input_generator/defect_input.py" />
     <entry file="file://$PROJECT_DIR$/input_generator/parse_poscar.py" />
     <entry file="file://$PROJECT_DIR$/input_generator/make_input.py" />
     <entry file="file://$PROJECT_DIR$/../virtualenvs/python3/lib/python3.6/site-packages/sympy/functions/special/polynomials.py" />
-    <entry file="file://$PROJECT_DIR$/input_generator/tests/test_input_maker.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="408">
-          <caret line="24" column="41" lean-forward="false" selection-start-line="24" selection-start-column="41" selection-end-line="24" selection-end-column="41" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/input_generator/test_defect.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="595">
-          <caret line="131" column="16" lean-forward="false" selection-start-line="131" selection-start-column="16" selection-end-line="131" selection-end-column="16" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/taka_analyze/analyze_defect.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="305">
-          <caret line="18" column="28" lean-forward="false" selection-start-line="18" selection-start-column="28" selection-end-line="18" selection-end-column="28" />
-          <folding>
-            <element signature="e#23#38#0" expanded="false" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
+    <entry file="file://$PROJECT_DIR$/input_generator/tests/test_input_maker.py" />
+    <entry file="file://$PROJECT_DIR$/input_generator/test_defect.py" />
+    <entry file="file://$PROJECT_DIR$/taka_analyze/analyze_defect.py" />
     <entry file="file://$PROJECT_DIR$/../virtualenvs/python3/lib/python3.6/importlib/_bootstrap_external.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="-10488">
-          <caret line="425" column="0" lean-forward="false" selection-start-line="425" selection-start-column="0" selection-end-line="425" selection-end-column="0" />
+          <caret line="425" selection-start-line="425" selection-end-line="425" />
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/input_generator/input_maker.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="562">
-          <caret line="168" column="45" lean-forward="false" selection-start-line="168" selection-start-column="45" selection-end-line="168" selection-end-column="45" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/input_generator/test_defect_in.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="887">
-          <caret line="94" column="4" lean-forward="false" selection-start-line="94" selection-start-column="4" selection-end-line="94" selection-end-column="4" />
-          <folding>
-            <element signature="e#0#15#0" expanded="false" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
+    <entry file="file://$PROJECT_DIR$/input_generator/input_maker.py" />
+    <entry file="file://$PROJECT_DIR$/input_generator/test_defect_in.py" />
     <entry file="file://$PROJECT_DIR$/taka_analyze/analyze_defect.py" />
     <entry file="file://$PROJECT_DIR$/taka_analyze/defect_structure.txt" />
     <entry file="file://$PROJECT_DIR$/taka_my_classes/test_defect_corrector.py" />
     <entry file="file://$PROJECT_DIR$/taka_my_classes/test_defect_property.py" />
-    <entry file="file://$PROJECT_DIR$/taka_my_classes/to_make_defect.json">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="0">
-          <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/taka_my_classes/to_read_defect.json">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="0">
-          <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
-        </state>
-      </provider>
-    </entry>
+    <entry file="file://$PROJECT_DIR$/taka_my_classes/to_make_defect.json" />
+    <entry file="file://$PROJECT_DIR$/taka_my_classes/to_read_defect.json" />
     <entry file="file://$PROJECT_DIR$/taka_my_classes/EnergyCorrector" />
-    <entry file="file://$PROJECT_DIR$/input_generator/atom.py">
+    <entry file="file://$PROJECT_DIR$/input_generator/atom.py" />
+    <entry file="file://$PROJECT_DIR$/input_generator/defect.py" />
+    <entry file="file://$PROJECT_DIR$/taka_my_classes/__init__.py" />
+    <entry file="file://$PROJECT_DIR$/input_generator/test_defect_in.py" />
+    <entry file="file://$PROJECT_DIR$/input_generator/input_maker.py" />
+    <entry file="file://$PROJECT_DIR$/coding_rule.txt">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="-18401">
-          <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
+        <state relative-caret-position="253">
+          <caret line="11" column="61" selection-start-line="11" selection-start-column="57" selection-end-line="11" selection-end-column="61" />
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/input_generator/defect.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="322">
-          <caret line="14" column="28" lean-forward="false" selection-start-line="14" selection-start-column="28" selection-end-line="14" selection-end-column="28" />
-          <folding>
-            <element signature="e#23#34#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
+    <entry file="file://$PROJECT_DIR$/.gitignore">
+      <provider selected="true" editor-type-id="text-editor" />
     </entry>
-    <entry file="file://$PROJECT_DIR$/taka_my_classes/__init__.py">
+    <entry file="file://$PROJECT_DIR$/__init__.py" />
+    <entry file="file://$PROJECT_DIR$/input_generator/__init__.py" />
+    <entry file="file://$PROJECT_DIR$/taka_my_classes/energy_correction_backup.py" />
+    <entry file="file://$PROJECT_DIR$/taka_my_classes/test_perfect.py" />
+    <entry file="file://$PROJECT_DIR$/taka_my_classes/perfect.py" />
+    <entry file="file://$PROJECT_DIR$/taka_my_classes/energy_correction.py" />
+    <entry file="file://$PROJECT_DIR$/pydefect/input_maker/test_defect_initial_setting.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="1105">
-          <caret line="70" column="0" lean-forward="false" selection-start-line="70" selection-start-column="0" selection-end-line="70" selection-end-column="0" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/input_generator/test_defect_in.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="1449">
-          <caret line="63" column="29" lean-forward="false" selection-start-line="63" selection-start-column="29" selection-end-line="63" selection-end-column="29" />
+        <state relative-caret-position="153">
+          <caret line="9" column="25" selection-start-line="9" selection-start-column="25" selection-end-line="9" selection-end-column="25" />
           <folding>
             <element signature="e#0#15#0" expanded="true" />
           </folding>
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/input_generator/input_maker.py">
+    <entry file="file://$PROJECT_DIR$/pydefect/analysis/plot_defect_energy.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="0">
-          <caret line="23" column="40" lean-forward="false" selection-start-line="23" selection-start-column="40" selection-end-line="23" selection-end-column="40" />
+        <state relative-caret-position="17">
+          <caret line="1" selection-start-line="1" selection-end-line="1" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/pydefect/input_maker/defect.in">
+      <provider selected="true" editor-type-id="text-editor" />
+    </entry>
+    <entry file="file://$PROJECT_DIR$/pydefect/core/atom.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="17">
+          <caret line="1" selection-start-line="1" selection-end-line="1" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/pydefect/core/defect_entry.py">
+      <provider selected="true" editor-type-id="text-editor" />
+    </entry>
+    <entry file="file://$PROJECT_DIR$/pydefect/core/energy_correction.py">
+      <provider selected="true" editor-type-id="text-editor" />
+    </entry>
+    <entry file="file://$PROJECT_DIR$/pydefect/core/dft_results.py">
+      <provider selected="true" editor-type-id="text-editor" />
+    </entry>
+    <entry file="file://$PROJECT_DIR$/pydefect/input_maker/defect_initial_setting.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="17">
+          <caret line="1" selection-start-line="1" selection-end-line="1" />
           <folding>
-            <element signature="e#22#31#0" expanded="true" />
+            <element signature="e#23#34#0" expanded="true" />
           </folding>
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/coding_rule.txt">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="253">
-          <caret line="11" column="61" lean-forward="false" selection-start-line="11" selection-start-column="57" selection-end-line="11" selection-end-column="61" />
-          <folding />
-        </state>
-      </provider>
+    <entry file="file://$PROJECT_DIR$/pydefect/input_maker/vasp_input_maker.py">
+      <provider selected="true" editor-type-id="text-editor" />
     </entry>
-    <entry file="file://$PROJECT_DIR$/.gitignore">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="0">
-          <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
-          <folding />
-        </state>
-      </provider>
+    <entry file="file://$PROJECT_DIR$/pydefect/input_maker/input_maker.py">
+      <provider selected="true" editor-type-id="text-editor" />
     </entry>
-    <entry file="file://$PROJECT_DIR$/__init__.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="0">
-          <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/input_generator/__init__.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="0">
-          <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/taka_my_classes/energy_correction_backup.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="299">
-          <caret line="13" column="25" lean-forward="false" selection-start-line="13" selection-start-column="25" selection-end-line="13" selection-end-column="25" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/taka_my_classes/test_perfect.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="23">
-          <caret line="1" column="42" lean-forward="false" selection-start-line="1" selection-start-column="42" selection-end-line="1" selection-end-column="42" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/taka_my_classes/perfect.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="69">
-          <caret line="3" column="11" lean-forward="false" selection-start-line="3" selection-start-column="11" selection-end-line="3" selection-end-column="11" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/taka_my_classes/energy_correction.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="638">
-          <caret line="93" column="35" lean-forward="false" selection-start-line="93" selection-start-column="34" selection-end-line="93" selection-end-column="35" />
-          <folding>
-            <element signature="e#0#18#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
+    <entry file="file://$PROJECT_DIR$/pydefect/core/irreducible_site.py">
+      <provider selected="true" editor-type-id="text-editor" />
     </entry>
   </component>
   <component name="masterDetails">
