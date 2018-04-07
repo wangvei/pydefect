@@ -2,10 +2,13 @@
 # -*- coding: utf-8 -*-
 
 import json
-import numpy as np
+
+from pymatgen.core.structure import Structure
+from pymatgen.core.composition import Composition
 
 from monty.json import MontyEncoder
 from monty.serialization import loadfn
+
 
 __author__ = "Yu Kumagai"
 __copyright__ = "Copyright 2017, Oba group"
@@ -43,6 +46,7 @@ class DefectEntry:
                   The index begins from 0.
                   For vacancies, set {}.
             Values: Element name
+        TODO: Use Composition class
         changes_of_num_elements (dict):
             Keys: Element names
             Values: Change of the numbers of elements wrt perfect supercell.
@@ -77,6 +81,11 @@ class DefectEntry:
 
         return cls(d["initial_structure"], removed_atoms, inserted_atoms,
                    changes_of_num_elements, d["charge"])
+
+    # TODO: from yaml
+    @classmethod
+    def from_yaml(cls, filename):
+        pass
 
     @classmethod
     def json_load(cls, filename):
@@ -147,6 +156,14 @@ class DefectEntry:
         """
         with open(filename, 'w') as fw:
             json.dump(self.as_dict(), fw, indent=2, cls=MontyEncoder)
+
+    @staticmethod
+    def changes_of_num_elements_from_poscar_files(poscar1, poscar2):
+        c1 = Composition(Structure.from_file(poscar1).composition,
+                         allow_negative=True)
+        c2 = Composition(Structure.from_file(poscar2).composition,
+                         allow_negative=True)
+        return {str(k): v for k, v in (c1 - c2)}
 
     # TODO: remove bugs below
     # def anchor_atom_index(self):
