@@ -43,7 +43,7 @@ def random_vector(normed_vector, distance):
     return normed_vector * distance * np.random.random()
 
 
-def perturb_around_a_point(structure, center, cutoff, distance):
+def perturb_neighbors(structure, center, cutoff, distance):
     """
     Randomly perturbs atoms around an input point in a structure.
 

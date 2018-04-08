@@ -25,12 +25,34 @@ __status__ = "Development"
 __date__ = "December 4, 2017"
 
 
+def defect_center(structure, defect_entry):
+    """
+    Returns a fractional coordinates of the defect center which is
+    calculated by averaging the coordinates of vacancies and interstitials.
+    If len(defect_coords) == 1, returns defect_coords[0].
+
+    Args:
+        structure (Structure):
+        defect_entry (DefectEntry): related DefectEntry class object
+    """
+    inserted_atom_coords = list([structure.frac_coords[k]
+                                 for k in defect_entry.inserted_atoms])
+    removed_atom_coords = list(defect_entry.removed_atoms.values())
+
+    defect_coords = inserted_atom_coords + removed_atom_coords
+
+    # np.array([[0, 0.1, 0.2], [0.3, 0.4, 0.5]]).transpose() =
+    # np.array([[0, 0.3], [0.1, 0.4], [0.2, 0.5]])
+    return [np.mean(i) for i in np.array(defect_coords).transpose()]
+
+
 def min_distance_under_pbc(frac1, frac2, lattice_vector_matrix):
     """
     Return the shortest distance between two points in fractional coordinates
     under periodic boundary condition.
     Args:
-       frac1, frac2 (1x3 list): fractional coordinates
+       frac1 (1x3 list): fractional coordinates
+       frac2 (1x3 list): fractional coordinates
        lattice_vector_matrix (3x3 numpy array): a, b, c lattice vectors
     """
 
@@ -60,6 +82,19 @@ def distance_list(structure, coords):
     return [min_distance_under_pbc(host_atom_coords, coords,
                                    lattice_vector_matrix)
             for host_atom_coords in structure.frac_coords]
+
+
+def distances_from_a_point(structure, defect_entry):
+    """
+    Returns a list of distances at atomic sites from a defect center defined
+    by defect_entry. Note that in the case of an interstitial-type defect,
+    zero is also set.
+
+    Args:
+        structure (Structure):
+        defect_entry (DefectEntry): related DefectEntry class object
+    """
+    return distance_list(structure, defect_center(structure, defect_entry))
 
 
 class DftResults(metaclass=ABCMeta):
@@ -222,38 +257,6 @@ class SupercellDftResults(DftResults):
 #                                             after_relaxation,
 #                                             self.final_structure.axis))
 #        return displacements
-
-    def defect_center(self, defect_entry):
-        """
-        Returns a fractional coordinates of the defect center which is
-        calculated by averaging the coordinates of vacancies and interstitials.
-        If len(defect_coords) == 1, returns defect_coords[0].
-
-        Args:
-            defect_entry (DefectEntry): related DefectEntry class object
-        """
-        inserted_atom_coords = \
-            list([self.final_structure.frac_coords[k]
-                  for k in defect_entry.inserted_atoms.keys()])
-        removed_atom_coords = list(defect_entry.removed_atoms.values())
-
-        defect_coords = inserted_atom_coords + removed_atom_coords
-
-        # np.array([[0, 0.1, 0.2], [0.3, 0.4, 0.5]]).transpose() =
-        # np.array([[0, 0.3], [0.1, 0.4], [0.2, 0.5]])
-        return [np.mean(i) for i in np.array(defect_coords).transpose()]
-
-    def distances_from_a_point(self, defect_entry):
-        """
-        Returns a list of distances at atomic sites from a defect center defined
-        by defect_entry. Note that in the case of an interstitial-type defect,
-        zero is also set.
-
-        Args:
-            defect_entry (DefectEntry): related DefectEntry class object
-        """
-        return distance_list(self.final_structure,
-                             self.defect_center(defect_entry))
 
 
 class UnitcellDftResults(DftResults):

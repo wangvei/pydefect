@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import shutil
 import unittest
 
 from pymatgen.core.structure import Structure
@@ -23,11 +24,16 @@ FILENAME_POSCAR_AS1 = "examples/POSCAR-MgO64atoms-O_Mg"
 FILENAME_POSCAR_SS1 = "examples/POSCAR-MgO64atoms-N_O1"
 #FILENAME_JSON_VA1 = "examples/MgO64atoms-Va_Mg1.json"
 
+test_dir = os.path.join(os.path.dirname(__file__), "..", "..", "..",
+                        "test_files", "input_maker")
+
 
 class VaspDefectInputSetMakerTest(unittest.TestCase):
 
     def setUp(self):
-        structure = Structure.from_file(FILENAME_POSCAR)
+        structure = \
+            Structure.from_file(os.path.join(test_dir, "POSCAR-MgO64atoms"))
+
         Mg1 = IrreducibleSite(irreducible_name="Mg1", element="Mg",
                               first_index=1, last_index=32,
                               representative_coords=[0, 0, 0])
@@ -38,7 +44,6 @@ class VaspDefectInputSetMakerTest(unittest.TestCase):
         dopant_configs = [["Al", "Mg"]]
         antisite_configs = []
         interstitial_coords = [[0.1, 0.1, 0.1]]
-#        self.interstitial_coords = interstitial_coords
         included = ["Va_O1_-1", "Va_O1_-2"]
         excluded = ["Va_O1_1", "Va_O1_2"]
         distance = 0.15
@@ -53,7 +58,13 @@ class VaspDefectInputSetMakerTest(unittest.TestCase):
             symprec, oxidation_states, electronegativity)
 
     def test(self):
-        os.chdir("examples")
+        test_mgo_dir = os.path.join(test_dir, "MgO")
+        if os.path.exists(test_mgo_dir):
+            shutil.rmtree(test_mgo_dir)
+        os.mkdir(test_mgo_dir)
+        os.chdir(test_mgo_dir)
+        shutil.copyfile("../INCAR-MgO64atoms", "INCAR")
+        shutil.copyfile("../KPOINTS-MgO64atoms", "KPOINTS")
         VaspDefectInputSetMaker(defect_initial_setting=self._mgo)
         VaspDefectInputSetMaker(defect_initial_setting=self._mgo,
                                 particular_defects=["Sc_Mg1_0"])

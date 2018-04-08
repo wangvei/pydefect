@@ -6,11 +6,12 @@ import shutil
 
 from pymatgen.io.vasp.inputs import Potcar
 
-from pydefect.input_maker.defect_initial_setting import DefectInitialSetting
 from pydefect.core.defect_entry import get_num_atoms_for_elements
+from pydefect.core.dft_results import defect_center
+from pydefect.input_maker.defect_initial_setting import DefectInitialSetting
 from pydefect.input_maker.input_maker import \
     DefectMaker, DefectInputSetMaker, print_already_exist, \
-    print_is_being_constructed,  perturb_around_a_point
+    print_is_being_constructed,  perturb_neighbors
 
 __author__ = "Yu Kumagai"
 __copyright__ = "Copyright 2017, Oba group"
@@ -32,7 +33,7 @@ def potcar_dir():
     pydefect_yaml = None
     potcar_director_path = None
     try:
-        with open(SETTINGS_FILE, "rt") as f:
+        with open(SETTINGS_FILE, "r") as f:
             pydefect_yaml = yaml.safe_load(f)
     except IOError:
         print('.pydefect.yaml cannot be opened.')
@@ -90,71 +91,74 @@ class VaspDefectInputSetMaker(DefectInputSetMaker):
         self.make_input()
 
     def _make_perfect_input(self):
-        dir_name = "perfect/"
-        if os.path.exists(dir_name):
+        if os.path.exists("perfect"):
             print_already_exist("perfect")
         else:
             print_is_being_constructed("perfect")
-            os.makedirs(dir_name)
-            self._defect_initial_setting.structure.to(filename=dir_name + "POSCAR")
-            shutil.copyfile(self._incar, dir_name + "INCAR")
-            shutil.copyfile(self._kpoints, dir_name + "KPOINTS")
+            os.makedirs("perfect")
+            self._defect_initial_setting.structure.to(
+                filename=os.path.join("perfect", "POSCAR"))
+            shutil.copyfile(self._incar, os.path.join("perfect", "INCAR"))
+            shutil.copyfile(self._kpoints, os.path.join("perfect", "KPOINTS"))
             elements = self._defect_initial_setting.structure.symbol_set
-            make_potcar(dir_name, elements, potcar_dir())
+            make_potcar("perfect", elements, potcar_dir())
 
     def _make_defect_input(self, defect_name):
 
         #TODO: check if the defect_name is proper or not.
-
-        # Construct: defect_structure, defect_coords, defect_index
-        dir_name = defect_name + "/"
-
         if os.path.exists(defect_name):
             print_already_exist(defect_name)
         else:
             print_is_being_constructed(defect_name)
-            os.makedirs(dir_name)
+            os.makedirs(defect_name)
 
             # Constructs three POSCAR-type files
             # POSCAR-Initial: POSCAR with a defect
             # POSCAR-DisplacedInitial: POSCAR with perturbation near the defect
-            # POSCAR: POSCAR-DisplacedInitial if exist, otherwise POSCAR-Initial
+            # POSCAR: POSCAR-DisplacedInitial when neighboring atoms are
+            #         perturbed, otherwise POSCAR-Initial
             d = DefectMaker(
                 defect_name,
                 self._defect_initial_setting.structure,
                 self._defect_initial_setting.irreducible_sites,
                 self._defect_initial_setting.interstitial_coords).defect
-            d.to_json_file(dir_name + "defect.json")
-            d.initial_structure.to(filename=dir_name + "POSCAR-Initial")
+            d.to_json_file(os.path.join(defect_name, "defect.json"))
+            d.initial_structure.to(
+                filename=os.path.join(defect_name, "POSCAR-Initial"))
 
             if not self._defect_initial_setting.distance == 0.0:
+                center = defect_center(d.initial_structure, d)
                 perturbed_defect_structure, perturbed_sites = \
-                    perturb_around_a_point(d.initial_structure,
-                                           d.defect_center,
-                                           self._defect_initial_setting.cutoff,
-                                           self._defect_initial_setting.distance)
-                perturbed_defect_structure.to(
-                    filename=dir_name + "POSCAR-DisplacedInitial")
+                    perturb_neighbors(d.initial_structure,
+                                      center,
+                                      self._defect_initial_setting.cutoff,
+                                      self._defect_initial_setting.distance)
+                perturbed_defect_structure.\
+                    to(filename=os.path.join(defect_name,
+                                             "POSCAR-DisplacedInitial"))
                 shutil.copyfile(
-                    dir_name + "POSCAR-DisplacedInitial", dir_name + "POSCAR")
+                    os.path.join(defect_name, "POSCAR-DisplacedInitial"),
+                    os.path.join(defect_name, "POSCAR"))
             else:
                 shutil.copyfile(
-                    dir_name + "POSCAR-Initial", dir_name + "POSCAR")
+                    os.path.join(defect_name, "POSCAR-Initial"),
+                    os.path.join(defect_name, "POSCAR"))
 
             # Construct POTCAR file
             elements = d.initial_structure.symbol_set
-            make_potcar(dir_name, elements, potcar_dir())
-            # Construct INCAR file
-            shutil.copyfile(self._incar, dir_name + "INCAR")
-            nions = get_num_atoms_for_elements(d.initial_structure)
-            nelect = get_num_electrons_from_potcar(dir_name + "POTCAR",
-                                                   nions, d.charge)
+            make_potcar(defect_name, elements, potcar_dir())
 
-            with open(dir_name + 'INCAR', 'a') as fa:
+            # Construct INCAR file
+            shutil.copyfile(self._incar, os.path.join(defect_name, "INCAR"))
+            nions = get_num_atoms_for_elements(d.initial_structure)
+            nelect = get_num_electrons_from_potcar(
+                 os.path.join(defect_name, "POTCAR"), nions, d.charge)
+
+            with open(os.path.join(defect_name, 'INCAR'), 'a') as fa:
                 fa.write('NELECT = ' + str(nelect))
 
             # copy KPOINTS file
-            shutil.copyfile(self._kpoints, dir_name + "KPOINTS")
+            shutil.copyfile(self._kpoints, os.path.join(defect_name, "KPOINTS"))
 
 
 def main():

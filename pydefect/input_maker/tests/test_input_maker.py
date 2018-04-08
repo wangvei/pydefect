@@ -9,7 +9,7 @@ import unittest
 from pymatgen.core.structure import Structure
 
 from pydefect.input_maker.input_maker import normalized_random_3d_vector, \
-    random_vector, perturb_around_a_point, get_int_from_string, \
+    random_vector, perturb_neighbors, get_int_from_string, \
     parse_defect_name, print_already_exist, print_is_being_constructed, \
     filter_name_set, DefectMaker
 
@@ -65,7 +65,7 @@ class PerturbAroundAPointTest(unittest.TestCase):
         distance = 0.2
         # TODO: test the displacement distances
         perturbed_defect_structure, perturbed_sites = \
-            perturb_around_a_point(structure, center, cutoff, distance)
+            perturb_neighbors(structure, center, cutoff, distance)
         true_perturbed_sites = [0, 40, 44, 48, 50, 56, 57]
         self.assertEqual(perturbed_sites, true_perturbed_sites)
 
