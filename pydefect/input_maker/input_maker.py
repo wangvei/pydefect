@@ -59,6 +59,7 @@ def perturb_around_a_point(structure, center, cutoff, distance):
             cartesian_coords, cutoff, include_index=True)
     else:
         raise ValueError
+
     sites = []
     # Since translate_sites accepts only one vector, we need to iterate this.
     for i in neighbors:

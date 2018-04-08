@@ -1,9 +1,18 @@
 # -*- coding: utf-8 -*-
+
+from io import StringIO
+import numpy as np
+import os
+import sys
 import unittest
 
 from pymatgen.core.structure import Structure
 
-from pydefect.input_maker.input_maker import *
+from pydefect.input_maker.input_maker import normalized_random_3d_vector, \
+    random_vector, perturb_around_a_point, get_int_from_string, \
+    parse_defect_name, print_already_exist, print_is_being_constructed, \
+    filter_name_set, DefectMaker
+
 from pydefect.core.defect_entry import DefectEntry
 from pydefect.core.irreducible_site import IrreducibleSite
 
@@ -16,12 +25,9 @@ __status__ = "Development"
 __date__ = "December 4, 2017"
 
 DEFAULT_POTCAR_DIR = "/home/common/default_POTCAR"
-FILENAME_PerturbAroundAPointTest_POSCAR = "examples/POSCAR-MgO64atoms"
-FILENAME_POSCAR_VA1 = "examples/POSCAR-MgO64atoms-Va_Mg1"
-FILENAME_POSCAR_IN1 = "examples/POSCAR-MgO64atoms-O_i1"
-FILENAME_POSCAR_IN3 = "examples/POSCAR-MgO64atoms-Al_i1"
-FILENAME_POSCAR_AS1 = "examples/POSCAR-MgO64atoms-O_Mg"
-FILENAME_POSCAR_SS1 = "examples/POSCAR-MgO64atoms-N_O1"
+
+test_dir = os.path.join(os.path.dirname(__file__), "..", "..", "..",
+                        "test_files", "input_maker")
 
 
 class NormalizedRandom3dVectorTest(unittest.TestCase):
@@ -51,18 +57,15 @@ class RandomVectorTest(unittest.TestCase):
 
 class PerturbAroundAPointTest(unittest.TestCase):
 
-    def setUp(self):
-        self.structure = \
-            Structure.from_file(FILENAME_PerturbAroundAPointTest_POSCAR)
-        self.center = [0.0, 0.0, 0.0]
-        self.cutoff = 3.0
-        self.distance = 0.2
-
     def test(self):
+        structure = \
+            Structure.from_file(os.path.join(test_dir, "POSCAR-MgO64atoms"))
+        center = [0.0, 0.0, 0.0]
+        cutoff = 3.0
+        distance = 0.2
         # TODO: test the displacement distances
         perturbed_defect_structure, perturbed_sites = \
-            perturb_around_a_point(self.structure, self.center, self.cutoff,
-                                   self.distance)
+            perturb_around_a_point(structure, center, cutoff, distance)
         true_perturbed_sites = [0, 40, 44, 48, 50, 56, 57]
         self.assertEqual(perturbed_sites, true_perturbed_sites)
 
@@ -86,17 +89,42 @@ class ParseDefectNameTest(unittest.TestCase):
         self.assertEqual(actual_1, expected_1)
 
 
-class FilterDefectNameSetTest(unittest.TestCase):
+class PrintAlreadyExistTest(unittest.TestCase):
 
     def setUp(self):
-        self._name_set = \
+        self.org_stdout, sys.stdout = sys.stdout, StringIO()
+
+    def tearDown(self):
+        sys.stdout = self.org_stdout
+
+    def test(self):
+        print_already_exist(name="Va_O1_0")
+        expected = "   Va_O1_0 already exists, so nothing is done.\n"
+        self.assertEqual(sys.stdout.getvalue(), expected)
+
+
+class PrintIsBeingConstructedTest(unittest.TestCase):
+
+    def setUp(self):
+        self.org_stdout, sys.stdout = sys.stdout, StringIO()
+
+    def tearDown(self):
+        sys.stdout = self.org_stdout
+
+    def test(self):
+        print_is_being_constructed(name="Va_O1_0")
+        expected = "   Va_O1_0 is being constructed.\n"
+        self.assertEqual(sys.stdout.getvalue(), expected)
+
+
+class FilterDefectNameSetTest(unittest.TestCase):
+
+    def test(self):
+        name_set = \
             ['Va_Mg1_-2', 'Va_Mg1_-1', 'Va_Mg1_0', 'Va_O1_0', 'Va_O1_-1',
              'Va_O1_-2', 'Va_O2_0', 'Mg_i1_0', 'Mg_i1_1', 'Mg_i1_2', 'O_i1_-2',
              'O_i1_-1', 'O_i1_0', 'O_Mg1_-4', 'O_Mg1_-3', 'O_Mg1_-2',
              'O_Mg1_-1', 'O_Mg1_0', 'Al_Mg1_0', 'Al_Mg1_1']
-
-    def test(self):
-
         expected_Va = ['Va_Mg1_-2', 'Va_Mg1_-1', 'Va_Mg1_0', 'Va_O1_0',
                        'Va_O1_-1', 'Va_O1_-2', 'Va_O2_0']
         expected__i = ['Mg_i1_0', 'Mg_i1_1', 'Mg_i1_2', 'O_i1_-2', 'O_i1_-1',
@@ -105,11 +133,11 @@ class FilterDefectNameSetTest(unittest.TestCase):
         expected_Va_O = ['Va_O1_0', 'Va_O1_-1', 'Va_O1_-2', 'Va_O2_0']
         expected_Va_O1 = ['Va_O1_0', 'Va_O1_-1', 'Va_O1_-2']
 
-        actual_Va = filter_name_set(self._name_set, ["Va"])
-        actual__i = filter_name_set(self._name_set, ["_i"])
-        actual_Va_and__i = filter_name_set(self._name_set, ["Va", "_i"])
-        actual_Va_O = filter_name_set(self._name_set, ["Va_O"])
-        actual_Va_O1 = filter_name_set(self._name_set, ["Va_O1"])
+        actual_Va = filter_name_set(name_set, ["Va"])
+        actual__i = filter_name_set(name_set, ["_i"])
+        actual_Va_and__i = filter_name_set(name_set, ["Va", "_i"])
+        actual_Va_O = filter_name_set(name_set, ["Va_O"])
+        actual_Va_O1 = filter_name_set(name_set, ["Va_O1"])
 
         self.assertEqual(sorted(actual_Va), sorted(expected_Va))
         self.assertEqual(sorted(actual__i), sorted(expected__i))
@@ -122,7 +150,7 @@ class DefectMakerTest(unittest.TestCase):
 
     def setUp(self):
         self.structure = \
-            Structure.from_file(FILENAME_PerturbAroundAPointTest_POSCAR)
+            Structure.from_file(os.path.join(test_dir, "POSCAR-MgO64atoms"))
 
         Mg1 = IrreducibleSite(irreducible_name="Mg1", element="Mg",
                               first_index=1, last_index=32,
@@ -131,21 +159,19 @@ class DefectMakerTest(unittest.TestCase):
                              first_index=33, last_index=64,
                              representative_coords=[0.25, 0.25, 0.25])
         self.irreducible_sites = [Mg1, O1]
-
         self.interstitial_coords = [[0.1, 0.1, 0.1], [0.2, 0.2, 0.2]]
 
-        _test_structure = Structure.from_file(FILENAME_POSCAR_VA1)
+        _test_structure = Structure.from_file(
+            os.path.join(test_dir, "POSCAR-MgO64atoms-Va_Mg1"))
         _removed_atoms = {0: [0, 0, 0]}
-        _inserted_atoms = {}
-        _changes_of_num_elements = {"Mg": -1}
+        _inserted_atoms = []
+        _element_diff = {"Mg": -1}
         _charge = -2
 
         self.test_d = DefectEntry(_test_structure, _removed_atoms,
-                                  _inserted_atoms, _changes_of_num_elements,
-                                  _charge)
+                                  _inserted_atoms, _element_diff, _charge)
 
     def test_vacancies(self):
-        self.maxDiff = None
         vac1_d = \
             DefectMaker("Va_Mg1_-2", self.structure, self.irreducible_sites,
                         self.interstitial_coords)
@@ -154,5 +180,3 @@ class DefectMakerTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
-
-
