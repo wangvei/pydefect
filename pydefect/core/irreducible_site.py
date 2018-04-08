@@ -11,7 +11,8 @@ __date__ = "December 4, 2017"
 
 class IrreducibleSite:
     """
-    This class object holds properties related to the irreducible atom set.
+    This class object holds properties related to the symmetrically equivalent
+    atom set.
     Note1: atomic indices need to be sorted, meaning they can be written in a
            sequence, like 17..32
     Note2: first_index atom is assumed to represent the irreducible atoms.

@@ -21,8 +21,11 @@ __status__ = "Development"
 __date__ = "December 4, 2017"
 
 # Following defaults determine the condition of automatic defect calculations.
+# electronegativity difference for antisites and substitutional impurities
 _EN_DIFF = 1.0
+# Maximum displacement distance
 _DISTANCE = 0.2
+# Cutoff radius in which atoms are perturbed.
 _CUTOFF = 3.0
 _SYMPREC = 0.01
 
@@ -131,6 +134,8 @@ class DefectInitialSetting:
             raise TypeError
         # "return self.__dict__ == other.__dict__" is inapplicable,
         # because irreducible_sites returns pointers.
+        print(self.as_dict())
+        print(other.as_dict())
         return self.as_dict() == other.as_dict()
 
     @classmethod
@@ -325,7 +330,9 @@ class DefectInitialSetting:
 
             first_index = last_index + 1
             last_index = last_index + len(equiv_site)
-            repr_coords = equiv_site[0].frac_coords
+            # the following np.array type must be converted to list
+            # to keep the consistency of the IrreducibleSite object.
+            repr_coords = list(equiv_site[0].frac_coords)
             irreducible_name = element + str(num_irreducible_sites[element])
 
             irreducible_sites.append(IrreducibleSite(irreducible_name,
