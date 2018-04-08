@@ -1,3 +1,0 @@
-dielectric_tensor = x x x   x x x   x x x
-ewald_parameter =  
-ewald_accuracy = 

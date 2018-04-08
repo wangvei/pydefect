@@ -1,5 +1,0 @@
-initial_structure: POSCAR
-perfect_structure: ../../defects/perfect/POSCAR
-removed_atoms: {8: [0.25, 0.25, 0.25], 9:[0.25, 0.25, 0.75]}
-inserted_atoms: 8
-charge: 2
