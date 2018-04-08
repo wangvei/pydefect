@@ -77,7 +77,8 @@ class SupercellDftResultsTest(unittest.TestCase):
         self.d = self._MgO_Va_O1_2.as_dict()
         self.d_from_vasp_files = self._MgO_Va_O1_2_from_vasp_files.as_dict()
 
-        initial_structure = Poscar.from_file(DIRNAME_VAC + "/POSCAR").structure
+        initial_structure = \
+            Poscar.from_file(os.path.join(DIRNAME_VAC, "POSCAR")).structure
         removed_atoms = {8: [0.25, 0.25, 0.25]}
         inserted_atoms = {}
         changes_of_num_elements = {"O": -1}

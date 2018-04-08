@@ -325,7 +325,7 @@
     ]
   },
   "inserted_atoms": {},
-  "changes_of_num_elements": {
+  "element_diff": {
     "O": -1
   },
   "charge": 2

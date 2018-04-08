@@ -52,9 +52,13 @@ def make_potcar(dirname, elements, default_potcar_dir):
     Write POTCAR with a sequence of given elements names at *dirname*.
     So far, only default POTCAR files are supported.    
     """    
-    with open(dirname + '/POTCAR', 'w') as potcar:
+    constructed_potcar = os.path.join(dirname, "POTCAR")
+
+    with open(constructed_potcar, 'w') as potcar:
         for e in elements:
-            potcar_file_name = default_potcar_dir + "/POTCAR_" + e
+            potcar_e = "POTCAR_" + e
+            potcar_file_name = os.path.join(default_potcar_dir, potcar_e)
+
             with open(potcar_file_name) as pot:
                 potcar.write(pot.read())
 

@@ -4,6 +4,7 @@ from abc import ABCMeta
 from itertools import product
 import json
 import numpy as np
+import os
 import warnings
 
 from monty.json import MontyEncoder
@@ -84,9 +85,9 @@ class DftResults(metaclass=ABCMeta):
             vasprun_name (str): Name of vasprun.xml file.
                                 Defaults to vasprun.xml.
         """
-        contcar = Poscar.from_file(directory_path + "/" + contcar_name)
-        outcar = Outcar(directory_path + "/" + outcar_name)
-        vasprun = Vasprun(directory_path + "/" + vasprun_name)
+        contcar = Poscar.from_file(os.path.join(directory_path, contcar_name))
+        outcar = Outcar(os.path.join(directory_path, outcar_name))
+        vasprun = Vasprun(os.path.join(directory_path, vasprun_name))
 
         final_structure = contcar.structure
         total_energy = outcar.final_energy
@@ -282,7 +283,7 @@ class UnitcellDftResults(DftResults):
 
     def set_dielectric_constants_from_outcar(self, directory_path,
                                              outcar_name="OUTCAR"):
-        outcar = Outcar(directory_path + "/" + outcar_name)
+        outcar = Outcar(os.path.join(directory_path, outcar_name))
         self._static_dielectric_tensor = np.array(outcar.dielectric_tensor)
         self._ionic_dielectric_tensor = np.array(outcar.dielectric_ionic_tensor)
 
@@ -316,12 +317,12 @@ class UnitcellDftResults(DftResults):
 
     def set_static_dielectric_tensor_from_outcar(self, directory_path,
                                                  outcar_name="OUTCAR"):
-        outcar = Outcar(directory_path + "/" + outcar_name)
+        outcar = Outcar(os.path.join(directory_path, outcar_name))
         self._static_dielectric_tensor = np.array(outcar.dielectric_tensor)
 
     def set_ionic_dielectric_tensor_from_outcar(self, directory_path,
                                                 outcar_name="OUTCAR"):
-        outcar = Outcar(directory_path + "/" + outcar_name)
+        outcar = Outcar(os.path.join(directory_path, outcar_name))
         self._ionic_dielectric_tensor = np.array(outcar.dielectric_ionic_tensor)
 
     def set_dielectric_tensor_from_outcar(self, directory_path,
