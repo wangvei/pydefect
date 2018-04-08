@@ -1,0 +1,27 @@
+  Irreducible_element: Mg1
+  Representative_atom: 1
+     Equivalent_atoms: 1..32
+Factional_coordinates: 0.0000000 0.0000000 0.0000000
+    Electronegativity: 1.31
+      Oxidation_state: 2
+
+  Irreducible_element: O1
+  Representative_atom: 33
+     Equivalent_atoms: 33..64
+Factional_coordinates: 0.2500000 0.2500000 0.2500000
+    Electronegativity: 3.44
+      Oxidation_state: -2
+
+Interstital_sites: 
+Antisites: 
+
+Maximum_Displacement: 0
+
+Exceptionally_included: 
+Exceptionally_exclude: 
+Region_of_atoms_perturbed: 3.0
+Symprec: 0.01
+
+   Dopant_element:
+Electronegativity: 1.31
+  Oxidation_state: 2

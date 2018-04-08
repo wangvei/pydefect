@@ -1,0 +1,69 @@
+Based on coding rule of pymatgen of Materials Project.
+
+Naming:
+	Function:
+		Use verb firstly.
+		Write by small capital and use underscore.
+		e.g.
+			move_directory(src, dist)	
+			read_setting(filename)
+
+Spacing:
+	- Immediately inside parentheses, brackets or braces (PEP8)
+	e.g.
+		OK: function(array[1], {key: 2})
+		NG: function( array[1], { key: 2 } )
+
+	- Excepting above brackets rule,
+	 place one whitespace before/after operator.
+	 e.g.
+		OK: function(1 + 2)
+			 a = (-b + c) * 2
+		NG: function(1+2)
+			 a=(-b+c)*2
+			 a = ( -b + c) * 2
+<<<<<<< HEAD
+Line break:
+	Function & class Variables:
+    - Not begin a new line unless it the number of character becomes more than 80. 
+        OK:  def __init__(self, directory_path, poscar_name="/POSCAR",
+                 outcar_name="/OUTCAR", vasprun_name="/vasprun.xml"):
+        NG:  def __init__(self, 
+                          directory_path, 
+                          poscar_name="/POSCAR",
+                          outcar_name="/OUTCAR", 
+                          vasprun_name="/vasprun.xml"):
+=======
+	
+	-However, when keyward argument, no need to use space. (PEP8)
+	e.g.
+		OK : function(kw=42)
+		NG : function(kw = 42)
+
+Function:
+	Argument line: Don't use unnecessary new line until using 80 characters
+		OK : function(spam, egg, 42, 
+					  veryverylonglongname=beyond_eighty_characters)
+		NG : function(spam,
+					  egg,
+					  42,
+					  longlongname)
+
+Method:
+	Order: __init__, special_method(like __add__), Classmethod, 
+	property, setter, other method
+>>>>>>> f300860619396be2706e6ec9512f9177388ec1a2
+
+Index:
+	- In programing code, index of data begins from 0.
+	- In json file, index of data begins from 0.
+	- In other files which may be read by human, index of data begins from 1.
+
+Abbreviation:
+(If you catch up good abbreviation, please consult and add it to this file.)
+
+	dict = dictionary
+	coords = coordinates
+	sym = symmetry
+	fw = file of writing mode
+	fr = file of reading mode

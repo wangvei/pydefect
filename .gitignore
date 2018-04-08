@@ -1,0 +1,13 @@
+.DS_Store
+*.egg
+*.egg-info
+.idea/ # PyCharm Setting Directory
+*.o
+*.so
+*.pyc
+*.pyd
+*.swp
+POTCAR*
+core/test_*.json
+input_maker/examples/
+input_maker/tests_backup/
