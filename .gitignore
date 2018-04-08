@@ -8,6 +8,6 @@
 *.pyd
 *.swp
 POTCAR*
-core/test_*.json
-input_maker/examples/
-input_maker/tests_backup/
+pydefect/core/test_*.json
+pydefect/input_maker/examples/
+pydefect/input_maker/tests_backup/
