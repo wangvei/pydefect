@@ -24,7 +24,7 @@ DIRNAME_DIELECTRIC = TEST_DIRECTORY + "/unitcell/dielectric_constants"
 
 class DistanceListTest(unittest.TestCase):
     def setUp(self):
-        contcar = Poscar.from_file(DIRNAME_VAC + "/CONTCAR")
+        contcar = Poscar.from_file(os.path.join(DIRNAME_VAC, "CONTCAR"))
         self.final_structure = contcar.structure
         self.defect_coords = [0.25, 0.25, 0.25]
 
@@ -37,10 +37,9 @@ class SupercellDftResultsTest(unittest.TestCase):
     def setUp(self):
         """ """
         # CAUTION: When constructing Structure object from Structure.from_file
-        #          structure = Structure.from_file(DIRNAME_VAC + “/CONTCAR”)
         #          velocities are not stored.
-        #          Therefore, equality becomes False.
-        contcar = Poscar.from_file(DIRNAME_VAC + "/CONTCAR")
+        #          Therefore, equality returns False.
+        contcar = Poscar.from_file(os.path.join(DIRNAME_VAC, "CONTCAR"))
         final_structure = contcar.structure
         total_energy = -93.76904720
         eigenvalues = {Spin.up: np.array(
@@ -144,7 +143,7 @@ class UnitcellDftResultsTest(unittest.TestCase):
 
     def setUp(self):
         """ """
-        contcar = Poscar.from_file(DIRNAME_UNITCELL + "/CONTCAR")
+        contcar = Poscar.from_file(os.path.join(DIRNAME_UNITCELL, "CONTCAR"))
         final_structure = contcar.structure
         total_energy = -11.91129199
         self.static_dielectric_tensor = np.array(

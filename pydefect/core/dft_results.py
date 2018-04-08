@@ -25,31 +25,40 @@ __status__ = "Development"
 __date__ = "December 4, 2017"
 
 
-def min_distance_and_its_v2coord(v1, v2, lattice_vector_matrix):
+def min_distance_under_pbc(frac1, frac2, lattice_vector_matrix):
     """
+    Return the shortest distance between two points in fractional coordinates
+    under periodic boundary condition.
+    Args:
+       frac1, frac2 (1x3 list): fractional coordinates
+       lattice_vector_matrix (3x3 numpy array): a, b, c lattice vectors
     """
 
     candidate = []
-    v = np.dot(lattice_vector_matrix, v2 - v1)
+    frac = np.dot(lattice_vector_matrix, frac2 - frac1)
 
     for index in product((-1, 0, 1), repeat=3):
         index = np.array(index)
-        delta_v = np.dot(lattice_vector_matrix, index)
-        distance = np.linalg.norm(delta_v + v)
+        delta_frac = np.dot(lattice_vector_matrix, index)
+        distance = np.linalg.norm(delta_frac + frac)
         candidate.append(distance)
 
     return min(candidate)
 
 
-def distance_list(structure, defect_coords):
+def distance_list(structure, coords):
     """
+    Return a list of the shortest distances between a point and atoms in
+    structure under periodic boundary condition.
+    Args:
+       structure (Structure): pmg structure class object
+       coords (1x3 numpy array): fractional coordinates
     """
 
     lattice_vector_matrix = structure.lattice.matrix
 
-    return [min_distance_and_its_v2coord(host_atom_coords,
-                                         defect_coords,
-                                         lattice_vector_matrix)
+    return [min_distance_under_pbc(host_atom_coords, coords,
+                                   lattice_vector_matrix)
             for host_atom_coords in structure.frac_coords]
 
 
@@ -80,10 +89,8 @@ class DftResults(metaclass=ABCMeta):
         Args:
             directory_path (str): path of directory.
             contcar_name (str): Name of converged CONTCAR file.
-                                Defaults to CONTCAR.
-            outcar_name (str): Name of OUTCAR file. Defaults to OUTCAR.
+            outcar_name (str): Name of OUTCAR file.
             vasprun_name (str): Name of vasprun.xml file.
-                                Defaults to vasprun.xml.
         """
         contcar = Poscar.from_file(os.path.join(directory_path, contcar_name))
         outcar = Outcar(os.path.join(directory_path, outcar_name))
