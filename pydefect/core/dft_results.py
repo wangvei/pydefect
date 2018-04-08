@@ -294,15 +294,6 @@ class UnitcellDftResults(DftResults):
             warnings.warn(message="Static dielectric tensor is not set yet.")
             return None
 
-    @static_dielectric_tensor.setter
-    def static_dielectric_tensor(self, static_dielectric_tensor):
-        self._static_dielectric_tensor = static_dielectric_tensor
-
-    def set_static_dielectric_tensor_from_outcar(self, directory_path,
-                                                 outcar_name="OUTCAR"):
-        outcar = Outcar(directory_path + "/" + outcar_name)
-        self._static_dielectric_tensor = np.array(outcar.dielectric_tensor)
-
     @property
     def ionic_dielectric_tensor(self):
         if self._ionic_dielectric_tensor is not None:
@@ -311,18 +302,34 @@ class UnitcellDftResults(DftResults):
             warnings.warn(message="Ionic dielectric tensor is not set yet.")
             return None
 
+    @property
+    def total_dielectric_tensor(self):
+        return self._static_dielectric_tensor + self._ionic_dielectric_tensor
+
+    @static_dielectric_tensor.setter
+    def static_dielectric_tensor(self, static_dielectric_tensor):
+        self._static_dielectric_tensor = static_dielectric_tensor
+
     @ionic_dielectric_tensor.setter
     def ionic_dielectric_tensor(self, ionic_dielectric_tensor):
         self._ionic_dielectric_tensor = ionic_dielectric_tensor
+
+    def set_static_dielectric_tensor_from_outcar(self, directory_path,
+                                                 outcar_name="OUTCAR"):
+        outcar = Outcar(directory_path + "/" + outcar_name)
+        self._static_dielectric_tensor = np.array(outcar.dielectric_tensor)
 
     def set_ionic_dielectric_tensor_from_outcar(self, directory_path,
                                                 outcar_name="OUTCAR"):
         outcar = Outcar(directory_path + "/" + outcar_name)
         self._ionic_dielectric_tensor = np.array(outcar.dielectric_ionic_tensor)
 
-    @property
-    def total_dielectric_tensor(self):
-        return self._static_dielectric_tensor + self._ionic_dielectric_tensor
+    def set_dielectric_tensor_from_outcar(self, directory_path,
+                                          outcar_name="OUTCAR"):
+        self.set_static_dielectric_tensor_from_outcar(directory_path,
+                                                      outcar_name)
+        self.set_ionic_dielectric_tensor_from_outcar(directory_path,
+                                                     outcar_name)
 
     def as_dict(self):
         """
@@ -340,6 +347,3 @@ class UnitcellDftResults(DftResults):
              "ionic_dielectric_tensor":  self._ionic_dielectric_tensor}
 
         return d
-
-
-
