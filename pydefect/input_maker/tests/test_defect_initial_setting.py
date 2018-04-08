@@ -57,6 +57,11 @@ class GetOxidationStateTest(unittest.TestCase):
         self.assertEqual(get_oxidation_state(fake_element), expected)
 
 
+# TODO: write test_print_dopant_info
+class PrintDopantInfoTest(unittest.TestCase):
+    pass
+
+
 class DefectInitialSettingTest(unittest.TestCase):
 
     def setUp(self):
