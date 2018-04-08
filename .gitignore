@@ -11,3 +11,4 @@ POTCAR*
 pydefect/core/test_*.json
 pydefect/input_maker/examples/
 pydefect/input_maker/tests_backup/
+.idea/
