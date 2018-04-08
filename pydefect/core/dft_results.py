@@ -24,13 +24,16 @@ __status__ = "Development"
 __date__ = "December 4, 2017"
 
 
-def min_distance_and_its_v2coord(v1, v2, lattice_matrix):
+def min_distance_and_its_v2coord(v1, v2, lattice_vector_matrix):
+    """
+    """
+
     candidate = []
-    v = np.dot(lattice_matrix, v2 - v1)
+    v = np.dot(lattice_vector_matrix, v2 - v1)
 
     for index in product((-1, 0, 1), repeat=3):
         index = np.array(index)
-        delta_v = np.dot(lattice_matrix, index)
+        delta_v = np.dot(lattice_vector_matrix, index)
         distance = np.linalg.norm(delta_v + v)
         candidate.append(distance)
 
@@ -38,14 +41,20 @@ def min_distance_and_its_v2coord(v1, v2, lattice_matrix):
 
 
 def distance_list(structure, defect_coords):
-    return [min_distance_and_its_v2coord(v, defect_coords,
-                                         structure.lattice.matrix)
-            for v in structure.frac_coords]
+    """
+    """
+
+    lattice_vector_matrix = structure.lattice.matrix
+
+    return [min_distance_and_its_v2coord(host_atom_coords,
+                                         defect_coords,
+                                         lattice_vector_matrix)
+            for host_atom_coords in structure.frac_coords]
 
 
 class DftResults(metaclass=ABCMeta):
     """
-    DFT results
+    Abstract class holding some DFT results used for defect analysis.
     Args:
         final_structure (Structure): Optimized Structure
         total_energy (float): total energy
@@ -63,7 +72,7 @@ class DftResults(metaclass=ABCMeta):
     def from_vasp_files(cls, directory_path, contcar_name="CONTCAR",
                         outcar_name="OUTCAR", vasprun_name="vasprun.xml"):
         """
-        Although electrostatic_potential is useless for UnitcellDftResults,
+        Although electrostatic_potential is not used for UnitcellDftResults,
         this method is implemented in DftResults class because constructor is
         easily written.
 
@@ -103,7 +112,7 @@ class DftResults(metaclass=ABCMeta):
     @classmethod
     def json_load(cls, filename):
         """
-        Constructs a DefectSupercell class object from a json file.
+        Constructs a class object from a json file.
         """
         return cls.from_dict(loadfn(filename))
 
@@ -120,6 +129,7 @@ class DftResults(metaclass=ABCMeta):
              "total_energy":            self._total_energy,
              "eigenvalues":             eigenvalues,
              "electrostatic_potential": self._electrostatic_potential}
+
         return d
 
     def to_json_file(self, filename):
@@ -148,36 +158,41 @@ class DftResults(metaclass=ABCMeta):
 
 class SupercellDftResults(DftResults):
     """
-    DFT results for supercell systems both w/ and w/o a defect.
+    Subclass holding DFT results for supercell systems both w/ and w/o a defect.
     """
     def relative_total_energy(self, perfect_dft_results):
         """
+        Return relative total energy w.r.t. the perfect supercell.
+
         Args:
             perfect_dft_results (SupercellDftResults):
                 SupercellDftResults class object for the perfect supercell.
         """
-
         return self._total_energy - perfect_dft_results.total_energy
 
     def relative_potential(self, perfect_dft_results, defect_entry):
         """
+        Return a list of relative site potential w.r.t. the perfect supercell.
+        Note that None is inserted for interstitial sites.
+
         Args:
             perfect_dft_results (SupercellDftResults):
                 SupercellDftResults class object for the perfect supercell.
             defect_entry (DefectEntry):
-                related DefectEntry class object
+                DefectEntry class object.
         """
         mapping = defect_entry.atom_mapping_to_perfect
 
         relative_potential = []
 
         for d_atom, p_atom in enumerate(mapping):
+
             if p_atom is None:
                 relative_potential.append(None)
             else:
-                relative_potential.append(
-                    self.electrostatic_potential[d_atom] -
-                    perfect_dft_results.electrostatic_potential[p_atom])
+                ep_defect = self.electrostatic_potential[d_atom]
+                ep_perfect = perfect_dft_results.electrostatic_potential[p_atom]
+                relative_potential.append(ep_defect - ep_perfect)
 
         return relative_potential
 
@@ -202,11 +217,12 @@ class SupercellDftResults(DftResults):
 
     def defect_center(self, defect_entry):
         """
-        Returns coordinates of defect center by calculating the averaged
-        coordinates. If len(defect_coords) == 1, returns defect_coords[0].
+        Returns a fractional coordinates of the defect center which is
+        calculated by averaging the coordinates of vacancies and interstitials.
+        If len(defect_coords) == 1, returns defect_coords[0].
+
         Args:
-            defect_entry (DefectEntry):
-                related DefectEntry class object
+            defect_entry (DefectEntry): related DefectEntry class object
         """
         inserted_atom_coords = \
             list([self.final_structure.frac_coords[k]
@@ -215,13 +231,18 @@ class SupercellDftResults(DftResults):
 
         defect_coords = inserted_atom_coords + removed_atom_coords
 
+        # np.array([[0, 0.1, 0.2], [0.3, 0.4, 0.5]]).transpose() =
+        # np.array([[0, 0.3], [0.1, 0.4], [0.2, 0.5]])
         return [np.mean(i) for i in np.array(defect_coords).transpose()]
 
     def distances_from_a_point(self, defect_entry):
         """
+        Returns a list of distances at atomic sites from a defect center defined
+        by defect_entry. Note that in the case of an interstitial-type defect,
+        zero is also set.
+
         Args:
-            defect_entry (DefectEntry):
-                related DefectEntry class object
+            defect_entry (DefectEntry): related DefectEntry class object
         """
         return distance_list(self.final_structure,
                              self.defect_center(defect_entry))
