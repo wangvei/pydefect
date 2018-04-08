@@ -24,21 +24,22 @@ __status__ = "Development"
 __date__ = "December 4, 2017"
 
 
-def min_distance_and_its_v2coord(v1, v2, axis):
+def min_distance_and_its_v2coord(v1, v2, lattice_matrix):
     candidate = []
-    v = np.dot(axis, v2 - v1)
+    v = np.dot(lattice_matrix, v2 - v1)
 
     for index in product((-1, 0, 1), repeat=3):
         index = np.array(index)
-        delta_v = np.dot(axis, index)
+        delta_v = np.dot(lattice_matrix, index)
         distance = np.linalg.norm(delta_v + v)
-        candidate.append((distance, v2 + index))
+        candidate.append(distance)
 
-    return min(candidate, key=lambda t: t[0])
+    return min(candidate)
 
 
 def distance_list(structure, defect_coords):
-    return [min_distance_and_its_v2coord(v, defect_coords, structure.axis)
+    return [min_distance_and_its_v2coord(v, defect_coords,
+                                         structure.lattice.matrix)
             for v in structure.frac_coords]
 
 
@@ -216,8 +217,14 @@ class SupercellDftResults(DftResults):
 
         return [np.mean(i) for i in np.array(defect_coords).transpose()]
 
-    def distances_from_defect(self, defect_entry):
-
+    def distances_from_a_point(self, defect_entry):
+        """
+        Args:
+            defect_entry (DefectEntry):
+                related DefectEntry class object
+        """
+        return distance_list(self.final_structure,
+                             self.defect_center(defect_entry))
 
 
 class UnitcellDftResults(DftResults):

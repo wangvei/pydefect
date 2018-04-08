@@ -1,10 +1,6 @@
 #!/usr/bin/env python
 
-import numpy as np
 import unittest
-
-from pymatgen.io.vasp.inputs import Poscar
-from pymatgen.electronic_structure.core import Spin
 
 from pydefect.core.dft_results import *
 
@@ -19,11 +15,21 @@ __date__ = "Feb. 25, 2018"
 #FILENAME_TO_JSON_FILE_VAC = "examples/Va_Mg1_-2.json"
 #FILENAME_TO_JSON_FILE_INT = "examples/Mg_i1_1.json"
 
-TEST_DIRECTORY = "../examples/MgO"
+TEST_DIRECTORY = "../../examples/MgO"
 DIRNAME_VAC = TEST_DIRECTORY + "/defects/Va_O1_2"
 DIRNAME_PER = TEST_DIRECTORY + "/defects/perfect"
 DIRNAME_UNITCELL = TEST_DIRECTORY + "/unitcell/structure_optimization"
 DIRNAME_DIELECTRIC = TEST_DIRECTORY + "/unitcell/dielectric_constants"
+
+
+class DistanceListTest(unittest.TestCase):
+    def setUp(self):
+        contcar = Poscar.from_file(DIRNAME_VAC + "/CONTCAR")
+        self.final_structure = contcar.structure
+        self.defect_coords = [0.25, 0.25, 0.25]
+
+    def test_distance_list(self):
+        print(distance_list(self.final_structure, self.defect_coords))
 
 
 class SupercellDftResultsTest(unittest.TestCase):
@@ -124,9 +130,13 @@ class SupercellDftResultsTest(unittest.TestCase):
 
     def test_defect_center(self):
         expected = [0.25, 0.25, 0.25]
-        defect_center = self._MgO_perfect_from_vasp_files.\
+        defect_center = self._MgO_Va_O1_2_from_vasp_files.\
             defect_center(self._MgO_Va_O1_2)
         self.assertTrue(defect_center == expected)
+
+    def test_distances_from_a_point(self):
+        print(self._MgO_Va_O1_2_from_vasp_files.distances_from_a_point(self._MgO_Va_O1_2))
+        print(len(self._MgO_Va_O1_2_from_vasp_files.distances_from_a_point(self._MgO_Va_O1_2)))
 
 
 class UnitcellDftResultsTest(unittest.TestCase):
