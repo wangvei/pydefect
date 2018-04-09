@@ -50,8 +50,8 @@ def potcar_dir():
 
 def make_potcar(dirname, elements, default_potcar_dir):
     """    
-    Writes POTCAR with a sequence of given elements names at *dirname*.
-    So far, only default POTCAR files are supported.    
+    Writes POTCAR with a list of the given elements names.
+    Now, only default POTCAR files are supported.
     """    
     constructed_potcar = os.path.join(dirname, "POTCAR")
 
@@ -66,7 +66,8 @@ def make_potcar(dirname, elements, default_potcar_dir):
 
 def get_num_electrons_from_potcar(potcar, nions, charge):
     """
-    Returns total charge from POTCAR file, number of ions, and charge state.
+    Returns the number of electrons from POTCAR, number of ions, and charge
+    state.
     """
     p = Potcar.from_file(potcar)
     # check only the number of ions written in potcar and nions.
@@ -191,8 +192,7 @@ def main():
     parser.add_argument("--add", dest="add", type=str, default=None, nargs="+",
                         help="Particular defect name added.")
     parser.add_argument("--force_overwrite", dest="force_overwrite",
-#                        default=False,
-                        default=True,
+                        default=False,
                         help="If the folders are overwritten.")
 
     opts = parser.parse_args()

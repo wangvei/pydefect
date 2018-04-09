@@ -1,10 +1,12 @@
 # -*- coding: utf-8 -*-
+
+import os
 import shutil
 import unittest
 
 from pymatgen.core.structure import Structure
 
-from pydefect.input_maker.vasp_input_maker import *
+from pydefect.input_maker.vasp_input_maker import VaspDefectInputSetMaker
 from pydefect.core.irreducible_site import IrreducibleSite
 from pydefect.input_maker.defect_initial_setting import DefectInitialSetting
 

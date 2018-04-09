@@ -21,6 +21,9 @@ DIRNAME_PER = TEST_DIRECTORY + "/defects/perfect"
 DIRNAME_UNITCELL = TEST_DIRECTORY + "/unitcell/structure_optimization"
 DIRNAME_DIELECTRIC = TEST_DIRECTORY + "/unitcell/dielectric_constants"
 
+test_dir = os.path.join(os.path.dirname(__file__), "..", "..", "..",
+                        "test_files", "core")
+
 
 class DistanceListTest(unittest.TestCase):
     def setUp(self):
@@ -38,7 +41,7 @@ class SupercellDftResultsTest(unittest.TestCase):
         """ """
         # CAUTION: When constructing Structure object from Structure.from_file
         #          velocities are not stored.
-        #          Therefore, equality returns False.
+        #          Therefore, equality check returns False.
         contcar = Poscar.from_file(os.path.join(DIRNAME_VAC, "CONTCAR"))
         final_structure = contcar.structure
         total_energy = -93.76904720
