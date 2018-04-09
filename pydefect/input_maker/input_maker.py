@@ -102,6 +102,15 @@ def parse_defect_name(defect_name):
     return in_name, out_name, charge
 
 
+def print_is_being_removed(name):
+    """
+    Show the following message.
+    Args:
+        name (str): a string
+    """
+    print("{:>10} is being removed.".format(name))
+
+
 def print_already_exist(name):
     """
     Show the following message.
@@ -137,15 +146,21 @@ def filter_name_set(name_set, filtering_words):
     When complete defect_name is given, constructs a particular defect.
         e.g., "Va_O1_2",  "Mg_O1_0"
     """
-    filtered_name_set = []
+    filtered_names = []
+
+    if type(filtering_words) is not list:
+        raise TypeError("The type of filtering_words is not list.")
 
     for p in filtering_words:
-        pattern = r"" + re.escape(p)
-        for d in name_set:
-            if re.search(pattern, d):
-                filtered_name_set.append(d)
+        if p == "perfect":
+            filtered_names.append(p)
+        else:
+            pattern = r"" + re.escape(p)
+            for d in name_set:
+                if re.search(pattern, d):
+                    filtered_names.append(d)
 
-    return list(set(filtered_name_set))
+    return list(set(filtered_names))
 
 
 class DefectMaker:
@@ -245,11 +260,12 @@ class DefectInputSetMaker(metaclass=ABCMeta):
     """
 
     def __init__(self, defect_initial_setting, filtering_words=None,
-                 particular_defects=None):
+                 particular_defects=None, force_overwrite=False):
 
         self._defect_initial_setting = defect_initial_setting
         self._filtering_words = filtering_words
         self._particular_defects = particular_defects
+        self._force_overwrite = force_overwrite
 
         if particular_defects:
             self._defect_name_set = particular_defects

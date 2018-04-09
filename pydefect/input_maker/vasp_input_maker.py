@@ -10,8 +10,8 @@ from pydefect.core.defect_entry import get_num_atoms_for_elements
 from pydefect.core.dft_results import defect_center
 from pydefect.input_maker.defect_initial_setting import DefectInitialSetting
 from pydefect.input_maker.input_maker import \
-    DefectMaker, DefectInputSetMaker, print_already_exist, \
-    print_is_being_constructed,  perturb_neighbors
+    DefectMaker, DefectInputSetMaker, print_is_being_removed, \
+    print_already_exist, print_is_being_constructed, perturb_neighbors
 
 __author__ = "Yu Kumagai"
 __copyright__ = "Copyright 2017, Oba group"
@@ -27,7 +27,7 @@ SETTINGS_FILE = os.path.join(os.path.expanduser("~"), ".pydefect.yaml")
 
 def potcar_dir():
     """    
-    Return the name of POTCAR file directory.
+    Returns the name of POTCAR file directory.
     SETTINGS_FILE needs to be defined in the same module.
     """
     pydefect_yaml = None
@@ -50,7 +50,7 @@ def potcar_dir():
 
 def make_potcar(dirname, elements, default_potcar_dir):
     """    
-    Write POTCAR with a sequence of given elements names at *dirname*.
+    Writes POTCAR with a sequence of given elements names at *dirname*.
     So far, only default POTCAR files are supported.    
     """    
     constructed_potcar = os.path.join(dirname, "POTCAR")
@@ -66,10 +66,10 @@ def make_potcar(dirname, elements, default_potcar_dir):
 
 def get_num_electrons_from_potcar(potcar, nions, charge):
     """
-    Return total charge from POTCAR file, number of ions, and charge state.
+    Returns total charge from POTCAR file, number of ions, and charge state.
     """
     p = Potcar.from_file(potcar)
-    # check only the length of potcar and nions.
+    # check only the number of ions written in potcar and nions.
     if not len(p) == len(nions):
         raise ValueError("Size of elements in POTCAR file is different")
 
@@ -79,11 +79,12 @@ def get_num_electrons_from_potcar(potcar, nions, charge):
 class VaspDefectInputSetMaker(DefectInputSetMaker):
 
     def __init__(self, defect_initial_setting, filtering_words=None,
-                 particular_defects=None, incar="INCAR", kpoints="KPOINTS"):
+                 particular_defects=None, incar="INCAR", kpoints="KPOINTS",
+                 force_overwrite=False):
 
         # make self._defect_initial_setting and self._defect_name_set
         super().__init__(defect_initial_setting, filtering_words,
-                         particular_defects)
+                         particular_defects, force_overwrite)
 
         self._incar = incar
         self._kpoints = kpoints
@@ -91,6 +92,12 @@ class VaspDefectInputSetMaker(DefectInputSetMaker):
         self.make_input()
 
     def _make_perfect_input(self):
+
+        if self._force_overwrite:
+            if os.path.exists("perfect"):
+                print_is_being_removed("perfect")
+                shutil.rmtree("perfect")
+
         if os.path.exists("perfect"):
             print_already_exist("perfect")
         else:
@@ -105,7 +112,12 @@ class VaspDefectInputSetMaker(DefectInputSetMaker):
 
     def _make_defect_input(self, defect_name):
 
-        #TODO: check if the defect_name is proper or not.
+        # TODO: check if the defect_name is proper or not.
+        if self._force_overwrite:
+            if os.path.exists(defect_name):
+                print_is_being_removed(defect_name)
+                shutil.rmtree(defect_name)
+
         if os.path.exists(defect_name):
             print_already_exist(defect_name)
         else:
@@ -173,28 +185,26 @@ def main():
                         type=str, help="INCAR name.")
     parser.add_argument("--kpoints", dest="kpoints", default="KPOINTS", 
                         type=str, help="KPOINTS name.")
+    parser.add_argument("--filtering", dest="filtering", type=str,
+                        default=None, nargs="+",
+                        help="Filtering kwargs.")
     parser.add_argument("--add", dest="add", type=str, default=None, nargs="+",
                         help="Particular defect name added.")
+    parser.add_argument("--force_overwrite", dest="force_overwrite",
+#                        default=False,
+                        default=True,
+                        help="If the folders are overwritten.")
 
     opts = parser.parse_args()
     defect_initial_setting = DefectInitialSetting.\
         from_defect_in(poscar=opts.dposcar, defect_in_file=opts.defect_in)
 
-    # if opts.add:
-    #     for d in opts.add:
-    #         a = VaspDefectInputSetMaker(defect_initial_setting,
-    #                                     opts.incar,
-    #                                     opts.kpoints)
-    #         if a.is_directory:
-    #             print_already_exist(d)
-    #         else:
-    #             print_is_being_constructed(d)
-    #             a.constructor()
-    # else:
     VaspDefectInputSetMaker(defect_initial_setting=defect_initial_setting,
-                            filtering_words=opts.add,
+                            filtering_words=opts.filtering,
+                            particular_defects=opts.add,
                             incar=opts.incar,
-                            kpoints=opts.kpoints)
+                            kpoints=opts.kpoints,
+                            force_overwrite=opts.force_overwrite)
 
 
 if __name__ == "__main__":

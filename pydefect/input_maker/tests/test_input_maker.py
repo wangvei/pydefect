@@ -125,19 +125,23 @@ class FilterDefectNameSetTest(unittest.TestCase):
              'Va_O1_-2', 'Va_O2_0', 'Mg_i1_0', 'Mg_i1_1', 'Mg_i1_2', 'O_i1_-2',
              'O_i1_-1', 'O_i1_0', 'O_Mg1_-4', 'O_Mg1_-3', 'O_Mg1_-2',
              'O_Mg1_-1', 'O_Mg1_0', 'Al_Mg1_0', 'Al_Mg1_1']
-        expected_Va = ['Va_Mg1_-2', 'Va_Mg1_-1', 'Va_Mg1_0', 'Va_O1_0',
-                       'Va_O1_-1', 'Va_O1_-2', 'Va_O2_0']
-        expected__i = ['Mg_i1_0', 'Mg_i1_1', 'Mg_i1_2', 'O_i1_-2', 'O_i1_-1',
-                       'O_i1_0']
-        expected_Va_and__i = expected_Va + expected__i
-        expected_Va_O = ['Va_O1_0', 'Va_O1_-1', 'Va_O1_-2', 'Va_O2_0']
-        expected_Va_O1 = ['Va_O1_0', 'Va_O1_-1', 'Va_O1_-2']
 
         actual_Va = filter_name_set(name_set, ["Va"])
+        expected_Va = ['Va_Mg1_-2', 'Va_Mg1_-1', 'Va_Mg1_0', 'Va_O1_0',
+                       'Va_O1_-1', 'Va_O1_-2', 'Va_O2_0']
+
         actual__i = filter_name_set(name_set, ["_i"])
+        expected__i = ['Mg_i1_0', 'Mg_i1_1', 'Mg_i1_2', 'O_i1_-2', 'O_i1_-1',
+                       'O_i1_0']
+
         actual_Va_and__i = filter_name_set(name_set, ["Va", "_i"])
+        expected_Va_and__i = expected_Va + expected__i
+
         actual_Va_O = filter_name_set(name_set, ["Va_O"])
+        expected_Va_O = ['Va_O1_0', 'Va_O1_-1', 'Va_O1_-2', 'Va_O2_0']
+
         actual_Va_O1 = filter_name_set(name_set, ["Va_O1"])
+        expected_Va_O1 = ['Va_O1_0', 'Va_O1_-1', 'Va_O1_-2']
 
         self.assertEqual(sorted(actual_Va), sorted(expected_Va))
         self.assertEqual(sorted(actual__i), sorted(expected__i))

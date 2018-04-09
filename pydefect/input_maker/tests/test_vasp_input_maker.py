@@ -16,13 +16,11 @@ __email__ = "yuuukuma@gmail.com"
 __status__ = "Development"
 __date__ = "December 4, 2017"
 
-FILENAME_POSCAR = "examples/POSCAR-MgO64atoms"
 FILENAME_POSCAR_VA1 = "examples/POSCAR-MgO64atoms-Va_Mg1"
 FILENAME_POSCAR_IN1 = "examples/POSCAR-MgO64atoms-O_i1"
 FILENAME_POSCAR_IN3 = "examples/POSCAR-MgO64atoms-Al_i1"
 FILENAME_POSCAR_AS1 = "examples/POSCAR-MgO64atoms-O_Mg"
 FILENAME_POSCAR_SS1 = "examples/POSCAR-MgO64atoms-N_O1"
-#FILENAME_JSON_VA1 = "examples/MgO64atoms-Va_Mg1.json"
 
 test_dir = os.path.join(os.path.dirname(__file__), "..", "..", "..",
                         "test_files", "input_maker")
@@ -57,7 +55,7 @@ class VaspDefectInputSetMakerTest(unittest.TestCase):
             interstitial_coords, included, excluded, distance, cutoff,
             symprec, oxidation_states, electronegativity)
 
-    def test(self):
+    def test_mgo(self):
         test_mgo_dir = os.path.join(test_dir, "MgO")
         if os.path.exists(test_mgo_dir):
             shutil.rmtree(test_mgo_dir)
@@ -68,6 +66,18 @@ class VaspDefectInputSetMakerTest(unittest.TestCase):
         VaspDefectInputSetMaker(defect_initial_setting=self._mgo)
         VaspDefectInputSetMaker(defect_initial_setting=self._mgo,
                                 particular_defects=["Sc_Mg1_0"])
+
+    def test_vo_mgo(self):
+        test_vo_mgo_dir = os.path.join(test_dir, "MgO_Va_O")
+        if os.path.exists(test_vo_mgo_dir):
+            shutil.rmtree(test_vo_mgo_dir)
+        os.mkdir(test_vo_mgo_dir)
+        os.chdir(test_vo_mgo_dir)
+        shutil.copyfile("../INCAR-MgO64atoms", "INCAR")
+        shutil.copyfile("../KPOINTS-MgO64atoms", "KPOINTS")
+        # Note that the type of filtering_words is list.
+        VaspDefectInputSetMaker(defect_initial_setting=self._mgo,
+                                filtering_words=["Va_O"])
 
 
 if __name__ == "__main__":
