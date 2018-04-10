@@ -45,6 +45,7 @@ class DefectEntryTest(unittest.TestCase):
     def setUp(self):
         """ """
         # DefectEntry class object for a single vacancy
+        name = "Va_O1"
         initial_structure = Structure.from_file(
             os.path.join(test_dir, "POSCAR-MgO8atoms-Va_O1"))
         removed_atoms = {8: [0.25, 0.25, 0.25]}
@@ -52,10 +53,11 @@ class DefectEntryTest(unittest.TestCase):
         element_diff = {"O": -1}
         charge = 2
         self._MgO_Va_O1_2 = \
-            DefectEntry(initial_structure, removed_atoms, inserted_atoms,
+            DefectEntry(name, initial_structure, removed_atoms, inserted_atoms,
                         element_diff, charge)
 
         # DefectEntry class object for a complex defect
+        name = "Va_O1+N_O"
         initial_structure = Structure.from_file(
             os.path.join(test_dir, "POSCAR-MgO8atoms-Va_O1+N_O"))
         removed_atoms = {8: [0.25, 0.25, 0.25], 9: [0.25, 0.25, 0.75]}
@@ -64,7 +66,7 @@ class DefectEntryTest(unittest.TestCase):
         charge = 2
 
         self._MgO_complex = \
-            DefectEntry(initial_structure, removed_atoms, inserted_atoms,
+            DefectEntry(name, initial_structure, removed_atoms, inserted_atoms,
                         element_diff, charge)
 
     def test_dict(self):

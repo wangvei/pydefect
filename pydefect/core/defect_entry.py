@@ -45,6 +45,9 @@ class DefectEntry:
     This class object holds all the information related to initial setting of a
     single defect.
     Args:
+        name (str):
+            Name of a defect without charge. This is used when analyzing defect
+            formation energy.
         initial_structure (Structure):
             Structure with a defect before the structure optimization.
         removed_atoms (dict):
@@ -62,8 +65,9 @@ class DefectEntry:
         charge (int):
             Charge state of the defect
     """
-    def __init__(self, initial_structure, removed_atoms, inserted_atoms,
+    def __init__(self, name, initial_structure, removed_atoms, inserted_atoms,
                  element_diff, charge):
+        self._name = name
         self._initial_structure = initial_structure
         self._removed_atoms = removed_atoms
         self._inserted_atoms = inserted_atoms
@@ -86,9 +90,8 @@ class DefectEntry:
         element_diff = \
             {k: int(v) for k, v in d["element_diff"].items()}
 
-        #  return cls(d["initial_structure"], removed_atoms, inserted_atoms,
-        return cls(d["initial_structure"], removed_atoms, d["inserted_atoms"],
-                   element_diff, d["charge"])
+        return cls(d["name"], d["initial_structure"], removed_atoms,
+                   d["inserted_atoms"], element_diff, d["charge"])
 
     # TODO: get removed_atoms and inserted_atoms by comparing initial_structure
     #       and perfect_structure
@@ -96,6 +99,7 @@ class DefectEntry:
     def from_yaml(cls, filename):
         """
         An example of yaml file.
+            name: Va_O1
             initial_structure: POSCAR
             perfect_structure: ../perfect/POSCAR
             removed_atoms: {32: [0.25, 0.25, 0.25]}
@@ -115,8 +119,9 @@ class DefectEntry:
         s = Structure.from_file(os.path.join(abs_dir,
                                              yaml_data["initial_structure"]))
 
-        return cls(s, yaml_data["removed_atoms"], yaml_data["inserted_atoms"],
-                   element_diff, yaml_data["charge"])
+        return cls(yaml_data["name"], s, yaml_data["removed_atoms"],
+                   yaml_data["inserted_atoms"], element_diff,
+                   yaml_data["charge"])
 
     @classmethod
     def json_load(cls, filename):
@@ -124,6 +129,10 @@ class DefectEntry:
         Constructs a DefectEntry class object from a json file.
         """
         return cls.from_dict(loadfn(filename))
+
+    @property
+    def name(self):
+        return self._name
 
     @property
     def initial_structure(self):
@@ -174,7 +183,8 @@ class DefectEntry:
         """
         Dict representation of DefectInput class object.
         """
-        d = {"initial_structure": self._initial_structure,
+        d = {"name": self._name,
+             "initial_structure": self._initial_structure,
              "removed_atoms": self._removed_atoms,
              "inserted_atoms": self._inserted_atoms,
              "element_diff": self._element_diff,

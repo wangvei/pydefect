@@ -165,15 +165,16 @@ class DefectMakerTest(unittest.TestCase):
         self.irreducible_sites = [Mg1, O1]
         self.interstitial_coords = [[0.1, 0.1, 0.1], [0.2, 0.2, 0.2]]
 
-        _test_structure = Structure.from_file(
-            os.path.join(test_dir, "POSCAR-MgO64atoms-Va_Mg1"))
-        _removed_atoms = {0: [0, 0, 0]}
-        _inserted_atoms = []
-        _element_diff = {"Mg": -1}
-        _charge = -2
+        name = "Va_Mg1"
+        test_structure = Structure.from_file(
+           os.path.join(test_dir, "POSCAR-MgO64atoms-Va_Mg1"))
+        removed_atoms = {0: [0, 0, 0]}
+        inserted_atoms = []
+        element_diff = {"Mg": -1}
+        charge = -2
 
-        self.test_d = DefectEntry(_test_structure, _removed_atoms,
-                                  _inserted_atoms, _element_diff, _charge)
+        self.test_d = DefectEntry(name, test_structure, removed_atoms,
+                                  inserted_atoms, element_diff, charge)
 
     def test_vacancies(self):
         vac1_d = \

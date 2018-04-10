@@ -189,6 +189,8 @@ class DefectMaker:
         # deepcopy is required for modifying the original structure.
         defect_structure = deepcopy(structure)
         in_name, out_name, charge = parse_defect_name(defect_name)
+        name = in_name + "_" + out_name
+
         changes_of_num_elements = {}
         # -------------------- analyze out_name --------------------------------
         removed_atoms = {}
@@ -235,7 +237,7 @@ class DefectMaker:
         else:
             raise ValueError("{} in {} is improper.".format(out_name,
                                                             defect_name))
-        self.defect = DefectEntry(defect_structure, removed_atoms,
+        self.defect = DefectEntry(name, defect_structure, removed_atoms,
                                   inserted_atoms, changes_of_num_elements,
                                   charge)
 

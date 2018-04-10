@@ -27,6 +27,7 @@ test_dir = os.path.join(os.path.dirname(__file__), "..", "..", "..",
 class DefectCenterTest(unittest.TestCase):
     def test_defect_center(self):
 
+        name = "Va_O1"
         test_structure = Structure.from_file(
            os.path.join(test_dir, "POSCAR-MgO64atoms-Va_O1"))
         removed_atoms = {32: [0.25, 0.25, 0.25]}
@@ -34,7 +35,7 @@ class DefectCenterTest(unittest.TestCase):
         element_diff = {"O": -1}
         charge = 2
         # Construct DefectEntry class object.
-        vac_defect_entry = DefectEntry(test_structure, removed_atoms,
+        vac_defect_entry = DefectEntry(name, test_structure, removed_atoms,
                                        inserted_atoms, element_diff, charge)
 
         # Test a single defect.
@@ -49,6 +50,7 @@ class DefectCenterTest(unittest.TestCase):
         actual2 = defect_center(vac_defect_entry, contcar)
         self.assertEqual(actual2, expected)
 
+        name_complex = "Va_O1+i_2H"
         complex_structure = Structure.from_file(
             os.path.join(test_dir, "POSCAR-MgO64atoms-Va_O1+i_2H"))
         removed_atoms = {32: [0.25, 0.25, 0.25]}
@@ -57,8 +59,9 @@ class DefectCenterTest(unittest.TestCase):
         charge = 0
 
         # Construct DefectEntry class object.
-        complex_defect_entry = DefectEntry(complex_structure, removed_atoms,
-                                           inserted_atoms, element_diff, charge)
+        complex_defect_entry = DefectEntry(name_complex, complex_structure,
+                                           removed_atoms, inserted_atoms,
+                                           element_diff, charge)
         actual3 = defect_center(complex_defect_entry)
         expected = [0.26, 0.26, 0.26]
         self.assertEqual(actual3, expected)
@@ -66,6 +69,7 @@ class DefectCenterTest(unittest.TestCase):
 
 class DistancesFromPointTest(unittest.TestCase):
     def test_distances_from_point(self):
+        name = "tmp"
         structure = Structure.from_file(
             os.path.join(test_dir, "POSCAR-min_distance_under_pbc"))
         removed_atoms = {}
@@ -73,8 +77,8 @@ class DistancesFromPointTest(unittest.TestCase):
         element_diff = {"Fe": 1}
         charge = 0
         # Construct DefectEntry class object.
-        defect_entry = DefectEntry(structure, removed_atoms, inserted_atoms,
-                                   element_diff, charge)
+        defect_entry = DefectEntry(name, structure, removed_atoms,
+                                   inserted_atoms, element_diff, charge)
 
         # (Fe1 - Co1) = 7.70552(0)
         # Fe1 0.25000 0.25000 0.25000(0, 0, 0) + x, y, z
@@ -135,6 +139,7 @@ class SupercellDftResultsTest(unittest.TestCase):
         self.d = self._MgO_Va_O1_2.as_dict()
         self.d_from_vasp_files = self._MgO_Va_O1_2_from_vasp_files.as_dict()
 
+        name = "Va_O1"
         initial_structure = Structure.from_file(
             os.path.join(test_dir, "MgO/defects/Va_O1_2", "POSCAR"))
         removed_atoms = {8: [0.25, 0.25, 0.25]}
@@ -143,7 +148,7 @@ class SupercellDftResultsTest(unittest.TestCase):
         charge = 2
 
         self._defect_entry_MgO_Va_O1_2 = \
-            DefectEntry(initial_structure, removed_atoms, inserted_atoms,
+            DefectEntry(name, initial_structure, removed_atoms, inserted_atoms,
                         changes_of_num_elements, charge)
 
     def test_from_vasp_files(self):
