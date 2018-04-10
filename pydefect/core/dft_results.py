@@ -25,7 +25,7 @@ __status__ = "Development"
 __date__ = "December 4, 2017"
 
 
-def defect_center(structure, defect_entry):
+def defect_center(defect_entry, structure=None):
     """
     Returns a fractional coordinates of the defect center which is
     calculated by averaging the coordinates of vacancies and interstitials.
@@ -35,6 +35,10 @@ def defect_center(structure, defect_entry):
         structure (Structure):
         defect_entry (DefectEntry): related DefectEntry class object
     """
+    # If structure is not given, initial_structure of defect_entry is used.
+    if structure is None:
+        structure = defect_entry.initial_structure
+
     inserted_atom_coords = list([structure.frac_coords[k]
                                  for k in defect_entry.inserted_atoms])
     removed_atom_coords = list(defect_entry.removed_atoms.values())
@@ -50,6 +54,7 @@ def min_distance_under_pbc(frac1, frac2, lattice_vector_matrix):
     """
     Return the shortest distance between two points in fractional coordinates
     under periodic boundary condition.
+
     Args:
        frac1 (1x3 list): fractional coordinates
        frac2 (1x3 list): fractional coordinates
@@ -79,12 +84,11 @@ def distance_list(structure, coords):
 
     lattice_vector_matrix = structure.lattice.matrix
 
-    return [min_distance_under_pbc(host_atom_coords, coords,
-                                   lattice_vector_matrix)
-            for host_atom_coords in structure.frac_coords]
+    return [min_distance_under_pbc(host, coords, lattice_vector_matrix)
+            for host in structure.frac_coords]
 
 
-def distances_from_a_point(structure, defect_entry):
+def distances_from_point(structure, defect_entry):
     """
     Returns a list of distances at atomic sites from a defect center defined
     by defect_entry. Note that in the case of an interstitial-type defect,
@@ -94,12 +98,13 @@ def distances_from_a_point(structure, defect_entry):
         structure (Structure):
         defect_entry (DefectEntry): related DefectEntry class object
     """
-    return distance_list(structure, defect_center(structure, defect_entry))
+    return distance_list(structure, defect_center(defect_entry, structure))
 
 
 class DftResults(metaclass=ABCMeta):
     """
     Abstract class holding some DFT results used for defect analysis.
+
     Args:
         final_structure (Structure): Optimized Structure
         total_energy (float): total energy
@@ -131,6 +136,7 @@ class DftResults(metaclass=ABCMeta):
         outcar = Outcar(os.path.join(directory_path, outcar_name))
         vasprun = Vasprun(os.path.join(directory_path, vasprun_name))
 
+        # TODO: check if the structure optimization is finished or not
         final_structure = contcar.structure
         total_energy = outcar.final_energy
         eigenvalues = vasprun.eigenvalues
@@ -358,3 +364,32 @@ class UnitcellDftResults(DftResults):
              "ionic_dielectric_tensor":  self._ionic_dielectric_tensor}
 
         return d
+
+
+def main():
+    import argparse
+    parser = argparse.ArgumentParser(
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser.add_argument("--dirs", dest="dirs", nargs="+", required=True,
+                        type=str, help="POSCAR name.")
+    opts = parser.parse_args()
+
+    for d in opts.dirs:
+        if os.path.isdir(d):
+
+            try:
+                dft_results = DftResults.\
+                    from_vasp_files(d,
+                                    contcar_name="POSCAR-finish",
+                                    outcar_name="OUTCAR-finish",
+                                    vasprun_name="vasprun.xml")
+                dft_results.to_json_file(
+                    filename=os.path.join(d, "defect.json"))
+            except:
+                warnings.warn(message="Parsing data in " + d + " is failed.")
+        else:
+            warnings.warn(message=d + " does not exist, so nothing is done.")
+
+
+if __name__ == "__main__":
+    main()

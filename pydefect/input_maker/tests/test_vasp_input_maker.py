@@ -18,12 +18,6 @@ __email__ = "yuuukuma@gmail.com"
 __status__ = "Development"
 __date__ = "December 4, 2017"
 
-FILENAME_POSCAR_VA1 = "examples/POSCAR-MgO64atoms-Va_Mg1"
-FILENAME_POSCAR_IN1 = "examples/POSCAR-MgO64atoms-O_i1"
-FILENAME_POSCAR_IN3 = "examples/POSCAR-MgO64atoms-Al_i1"
-FILENAME_POSCAR_AS1 = "examples/POSCAR-MgO64atoms-O_Mg"
-FILENAME_POSCAR_SS1 = "examples/POSCAR-MgO64atoms-N_O1"
-
 test_dir = os.path.join(os.path.dirname(__file__), "..", "..", "..",
                         "test_files", "input_maker")
 
@@ -42,7 +36,7 @@ class VaspDefectInputSetMakerTest(unittest.TestCase):
                              representative_coords=[0.25, 0.25, 0.25])
         irreducible_elements = [Mg1, O1]
         dopant_configs = [["Al", "Mg"]]
-        antisite_configs = []
+        antisite_configs = [["Mg", "O"], ["O", "Mg"]]
         interstitial_coords = [[0.1, 0.1, 0.1]]
         included = ["Va_O1_-1", "Va_O1_-2"]
         excluded = ["Va_O1_1", "Va_O1_2"]

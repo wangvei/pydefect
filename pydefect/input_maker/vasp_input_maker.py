@@ -140,7 +140,8 @@ class VaspDefectInputSetMaker(DefectInputSetMaker):
                 filename=os.path.join(defect_name, "POSCAR-Initial"))
 
             if not self._defect_initial_setting.distance == 0.0:
-                center = defect_center(d.initial_structure, d)
+                center = defect_center(d)
+#                center = defect_center(d.initial_structure, d)
                 perturbed_defect_structure, perturbed_sites = \
                     perturb_neighbors(d.initial_structure,
                                       center,

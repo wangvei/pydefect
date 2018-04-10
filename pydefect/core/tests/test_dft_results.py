@@ -1,8 +1,16 @@
-#!/usr/bin/env python
+# -*- coding: utf-8 -*-
 
+import numpy as np
+import os
 import unittest
 
-from pydefect.core.dft_results import *
+from pymatgen.core.structure import Structure
+from pymatgen.io.vasp.inputs import Poscar
+from pymatgen.electronic_structure.core import Spin
+
+from pydefect.core.defect_entry import DefectEntry
+from pydefect.core.dft_results import defect_center, distances_from_point, \
+    SupercellDftResults, UnitcellDftResults
 
 __author__ = "Yu Kumagai"
 __copyright__ = "Copyright 2017, Oba group"
@@ -25,23 +33,73 @@ test_dir = os.path.join(os.path.dirname(__file__), "..", "..", "..",
                         "test_files", "core")
 
 
-class DistanceListTest(unittest.TestCase):
-    def setUp(self):
-        contcar = Poscar.from_file(os.path.join(DIRNAME_VAC, "CONTCAR"))
-        self.final_structure = contcar.structure
-        self.defect_coords = [0.25, 0.25, 0.25]
+class DefectCenterTest(unittest.TestCase):
+    def test_defect_center(self):
 
-    def test_distance_list(self):
-        print(distance_list(self.final_structure, self.defect_coords))
+        test_structure = Structure.from_file(
+           os.path.join(test_dir, "POSCAR-MgO64atoms-Va_O1"))
+        removed_atoms = {32: [0.25, 0.25, 0.25]}
+        inserted_atoms = []
+        element_diff = {"O": -1}
+        charge = 2
+        # Construct DefectEntry class object.
+        vac_defect_entry = DefectEntry(test_structure, removed_atoms,
+                                       inserted_atoms, element_diff, charge)
+
+        # Test a single defect.
+        actual1 = defect_center(vac_defect_entry)
+        expected = [0.25, 0.25, 0.25]
+        self.assertEqual(actual1, expected)
+
+        # Test with relaxed structure.
+        contcar = Structure.from_file(
+            os.path.join(test_dir, "CONTCAR-MgO64atoms-Va_O1"))
+
+        actual2 = defect_center(vac_defect_entry, contcar)
+        self.assertEqual(actual2, expected)
+
+        complex_structure = Structure.from_file(
+            os.path.join(test_dir, "POSCAR-MgO64atoms-Va_O1+i_2H"))
+        removed_atoms = {32: [0.25, 0.25, 0.25]}
+        inserted_atoms = [63, 64]
+        element_diff = {"O": -1, "H": 2}
+        charge = 0
+
+        # Construct DefectEntry class object.
+        complex_defect_entry = DefectEntry(complex_structure, removed_atoms,
+                                           inserted_atoms, element_diff, charge)
+        actual3 = defect_center(complex_defect_entry)
+        expected = [0.26, 0.26, 0.26]
+        self.assertEqual(actual3, expected)
+
+
+class DistancesFromPointTest(unittest.TestCase):
+    def test_distances_from_point(self):
+        structure = Structure.from_file(
+            os.path.join(test_dir, "POSCAR-min_distance_under_pbc"))
+        removed_atoms = {}
+        inserted_atoms = [0]
+        element_diff = {"Fe": 1}
+        charge = 0
+        # Construct DefectEntry class object.
+        defect_entry = DefectEntry(structure, removed_atoms, inserted_atoms,
+                                   element_diff, charge)
+
+        # (Fe1 - Co1) = 7.70552(0)
+        # Fe1 0.25000 0.25000 0.25000(0, 0, 0) + x, y, z
+        # Co1 0.50000 -0.12500 -0.12500(0, -1, -1) + x, y, z
+        # (Fe1 - Ni1) = 4.67707(0)
+        # Fe1  0.25000 0.25000 0.25000(0, 0, 0) + x, y, z
+        # Ni1 -0.12500 0.25000 0.50000(-1, 0, 0) + x, y, z
+        actual = distances_from_point(structure, defect_entry)
+        expected = [0.0, 7.705517503711221, 4.677071733467427]
+        self.assertEqual(actual, expected)
 
 
 class SupercellDftResultsTest(unittest.TestCase):
 
     def setUp(self):
         """ """
-        # CAUTION: When constructing Structure object from Structure.from_file
-        #          velocities are not stored.
-        #          Therefore, equality check returns False.
         contcar = Poscar.from_file(os.path.join(DIRNAME_VAC, "CONTCAR"))
         final_structure = contcar.structure
         total_energy = -93.76904720
@@ -91,8 +149,11 @@ class SupercellDftResultsTest(unittest.TestCase):
                         changes_of_num_elements, charge)
 
     def test_from_vasp_files(self):
-#        self.assertTrue(self.d["initial_structure"] ==
-#                        self.d_from_vasp_files["initial_structure"])
+        # CAUTION: When constructing Structure object from Structure.from_file
+        #          velocities are not stored.
+        #          Therefore, equality check returns False.
+        # self.assertTrue(self.d["initial_structure"] ==
+        #                 self.d_from_vasp_files["initial_structure"])
         self.assertTrue(self.d["final_structure"] ==
                         self.d_from_vasp_files["final_structure"])
         self.assertEqual(self.d["total_energy"],
