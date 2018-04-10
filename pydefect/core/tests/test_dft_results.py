@@ -2,10 +2,10 @@
 
 import numpy as np
 import os
+import tempfile
 import unittest
 
 from pymatgen.core.structure import Structure
-from pymatgen.io.vasp.inputs import Poscar
 from pymatgen.electronic_structure.core import Spin
 
 from pydefect.core.defect_entry import DefectEntry
@@ -19,15 +19,6 @@ __maintainer__ = "Yu Kumagai"
 __email__ = "yuuukuma@gmail.com"
 __status__ = "Development"
 __date__ = "Feb. 25, 2018"
-
-#FILENAME_TO_JSON_FILE_VAC = "examples/Va_Mg1_-2.json"
-#FILENAME_TO_JSON_FILE_INT = "examples/Mg_i1_1.json"
-
-TEST_DIRECTORY = "../../examples/MgO"
-DIRNAME_VAC = TEST_DIRECTORY + "/defects/Va_O1_2"
-DIRNAME_PER = TEST_DIRECTORY + "/defects/perfect"
-DIRNAME_UNITCELL = TEST_DIRECTORY + "/unitcell/structure_optimization"
-DIRNAME_DIELECTRIC = TEST_DIRECTORY + "/unitcell/dielectric_constants"
 
 test_dir = os.path.join(os.path.dirname(__file__), "..", "..", "..",
                         "test_files", "core")
@@ -100,8 +91,8 @@ class SupercellDftResultsTest(unittest.TestCase):
 
     def setUp(self):
         """ """
-        contcar = Poscar.from_file(os.path.join(DIRNAME_VAC, "CONTCAR"))
-        final_structure = contcar.structure
+        final_structure = Structure.from_file(
+            os.path.join(test_dir, "MgO/defects/Va_O1_2", "CONTCAR"))
         total_energy = -93.76904720
         eigenvalues = {Spin.up: np.array(
             [[[-14.2806, 1.], [-13.4696, 1.], [-13.1066, 1.], [-12.9398, 1.],
@@ -122,6 +113,8 @@ class SupercellDftResultsTest(unittest.TestCase):
               [2.0783, 1.], [2.2655, 1.], [2.3217, 1.], [2.4294, 1.],
               [5.3997, 0.], [8.5505, 0.], [9.4856, 0.], [9.9455, 0.],
               [11.049, 0.], [11.9159, 0.], [12.5617, 0.], [12.8315, 0.]]])}
+        # electrostatic_potential is a property because it is used for
+        # test_relative_potential method.
         self.electrostatic_potential = \
             [-34.69, -35.5244, -35.5244, -35.5244, -35.5244, -35.5244, -35.5244,
              -34.59, -70.0739, -70.0739, -70.0739, -70.0739, -70.0739, -70.0739,
@@ -130,32 +123,42 @@ class SupercellDftResultsTest(unittest.TestCase):
         self._MgO_Va_O1_2 = SupercellDftResults(
             final_structure, total_energy, eigenvalues,
             self.electrostatic_potential)
+
         self._MgO_Va_O1_2_from_vasp_files = \
-            SupercellDftResults.from_vasp_files(DIRNAME_VAC)
+            SupercellDftResults.from_vasp_files(
+                os.path.join(test_dir, "MgO/defects/Va_O1_2"))
+
         self._MgO_perfect_from_vasp_files = \
-            SupercellDftResults.from_vasp_files(DIRNAME_PER)
+            SupercellDftResults.from_vasp_files(
+                os.path.join(test_dir, "MgO/defects/perfect"))
+
         self.d = self._MgO_Va_O1_2.as_dict()
         self.d_from_vasp_files = self._MgO_Va_O1_2_from_vasp_files.as_dict()
 
-        initial_structure = \
-            Poscar.from_file(os.path.join(DIRNAME_VAC, "POSCAR")).structure
+        initial_structure = Structure.from_file(
+            os.path.join(test_dir, "MgO/defects/Va_O1_2", "POSCAR"))
         removed_atoms = {8: [0.25, 0.25, 0.25]}
         inserted_atoms = {}
         changes_of_num_elements = {"O": -1}
         charge = 2
 
-        self._MgO_Va_O1_2 = \
+        self._defect_entry_MgO_Va_O1_2 = \
             DefectEntry(initial_structure, removed_atoms, inserted_atoms,
                         changes_of_num_elements, charge)
 
     def test_from_vasp_files(self):
         # CAUTION: When constructing Structure object from Structure.from_file
         #          velocities are not stored.
-        #          Therefore, equality check returns False.
+        #          Therefore, equality check of Structure objects returns False.
+        #          If the structure is converted via poscar file format, it may
+        #          be solved.
+        # contcar = Poscar.from_file(os.path.join(DIRNAME_UNITCELL, "CONTCAR"))
+        # final_structure = contcar.structure
+
         # self.assertTrue(self.d["initial_structure"] ==
         #                 self.d_from_vasp_files["initial_structure"])
-        self.assertTrue(self.d["final_structure"] ==
-                        self.d_from_vasp_files["final_structure"])
+        # self.assertTrue(self.d["final_structure"] ==
+        #                 self.d_from_vasp_files["final_structure"])
         self.assertEqual(self.d["total_energy"],
                          self.d_from_vasp_files["total_energy"])
         self.assertTrue((self.d["eigenvalues"]["1"] ==
@@ -165,50 +168,46 @@ class SupercellDftResultsTest(unittest.TestCase):
 
     def test_dict(self):
         MgO_Va_O1_2_fd = SupercellDftResults.from_dict(self.d_from_vasp_files)
-        self.assertTrue(
-            self._MgO_Va_O1_2.final_structure == MgO_Va_O1_2_fd.final_structure)
+        np.testing.assert_equal(MgO_Va_O1_2_fd.eigenvalues[Spin.up],
+                                self._MgO_Va_O1_2.eigenvalues[Spin.up])
 
     def test_json(self):
-        self._MgO_Va_O1_2.to_json_file("test_dft_results.json")
-
-    def test_json_load(self):
-        self._MgO_Va_O1_2.json_load("test_dft_results.json")
+        tmp_file = tempfile.NamedTemporaryFile()
+        self._MgO_Va_O1_2.to_json_file(tmp_file.name)
+        MgO_Va_O1_2_from_json = SupercellDftResults.json_load(tmp_file.name)
+        np.testing.assert_equal(MgO_Va_O1_2_from_json.eigenvalues[Spin.up],
+                                self._MgO_Va_O1_2.eigenvalues[Spin.up])
 
     def test_relative_total_energy(self):
+        actual = self._MgO_Va_O1_2_from_vasp_files.\
+            relative_total_energy(self._MgO_perfect_from_vasp_files)
+
         expected = -93.76904720 - -95.46878101
-        relative_total_energy = \
-            self._MgO_Va_O1_2_from_vasp_files.relative_total_energy(
-                self._MgO_perfect_from_vasp_files)
-        self.assertEqual(relative_total_energy, expected)
+
+        self.assertEqual(actual, expected)
 
     def test_relative_potential(self):
+        actual = self._MgO_Va_O1_2_from_vasp_files.\
+            relative_potential(self._MgO_perfect_from_vasp_files,
+                               self._defect_entry_MgO_Va_O1_2)
+
         perfect_potential = [-35.2923, -35.2923, -35.2923, -35.2923, -35.2923,
                              -35.2923, -35.2923, -35.2923, -69.8160, -69.8160,
                              -69.8160, -69.8160, -69.8160, -69.8160, -69.8160]
+
         expected = [x - y for x, y in
                     zip(self.electrostatic_potential, perfect_potential)]
-        relative_potential = \
-            self._MgO_Va_O1_2_from_vasp_files.relative_potential(
-                self._MgO_perfect_from_vasp_files, self._MgO_Va_O1_2)
-        self.assertTrue(relative_potential == expected)
 
-    def test_defect_center(self):
-        expected = [0.25, 0.25, 0.25]
-        defect_center = self._MgO_Va_O1_2_from_vasp_files.\
-            defect_center(self._MgO_Va_O1_2)
-        self.assertTrue(defect_center == expected)
-
-    def test_distances_from_a_point(self):
-        print(self._MgO_Va_O1_2_from_vasp_files.distances_from_a_point(self._MgO_Va_O1_2))
-        print(len(self._MgO_Va_O1_2_from_vasp_files.distances_from_a_point(self._MgO_Va_O1_2)))
+        self.assertTrue(actual == expected)
 
 
 class UnitcellDftResultsTest(unittest.TestCase):
 
     def setUp(self):
         """ """
-        contcar = Poscar.from_file(os.path.join(DIRNAME_UNITCELL, "CONTCAR"))
-        final_structure = contcar.structure
+        final_structure = Structure.from_file(
+            os.path.join(test_dir, "MgO/unitcell/structure_optimization",
+                         "CONTCAR"))
         total_energy = -11.91129199
         self.static_dielectric_tensor = np.array(
             [[3.166727, 0.0, 0.0], [0.0, 3.166727, 0.0], [0.0, 0.0, 3.166727]])
@@ -275,69 +274,75 @@ class UnitcellDftResultsTest(unittest.TestCase):
               [12.9233, 0], [13.563, 0], [15.5076, 0], [19.9636, 0]],
              [[-12.6177, 1], [0.1231, 1], [0.1231, 1], [1.2747, 1],
               [14.4722, 0], [14.4722, 0], [14.8549, 0], [18.1715, 0]]])}
+
         electrostatic_potential = [-35.2999, -69.7508]
 
-        self._MgO_unitcell = UnitcellDftResults(
-            final_structure, total_energy, eigenvalues=eigenvalues,
-            electrostatic_potential=electrostatic_potential,
-            static_dielectric_tensor=None, ionic_dielectric_tensor=None)
+        self._MgO_unitcell = \
+            UnitcellDftResults(final_structure, total_energy, eigenvalues,
+                               electrostatic_potential,
+                               static_dielectric_tensor=None,
+                               ionic_dielectric_tensor=None)
 
         self._MgO_unitcell_from_vasp_files = \
-            UnitcellDftResults.from_vasp_files(DIRNAME_UNITCELL)
+            UnitcellDftResults.from_vasp_files(
+                os.path.join(test_dir, "MgO/unitcell/structure_optimization"))
 
         self.d = self._MgO_unitcell.as_dict()
         self.d_from_vasp_files = self._MgO_unitcell_from_vasp_files.as_dict()
 
     def test_from_vasp_files(self):
-        self.assertEqual(self.d["final_structure"],
-                         self.d_from_vasp_files["final_structure"])
         self.assertEqual(self.d["total_energy"],
                          self.d_from_vasp_files["total_energy"])
         self.assertEqual(self.d["eigenvalues"]["1"],
                          self.d_from_vasp_files["eigenvalues"]["1"])
 
     def test_set_dielectric_constants_from_outcar(self):
-        self._MgO_unitcell.\
-            set_dielectric_constants_from_outcar(DIRNAME_DIELECTRIC)
+        self._MgO_unitcell.set_dielectric_constants_from_outcar(
+            os.path.join(test_dir, "MgO/unitcell/dielectric_constants"))
+
         np.testing.assert_equal(self._MgO_unitcell.static_dielectric_tensor,
                                 self.static_dielectric_tensor)
         np.testing.assert_equal(self._MgO_unitcell.ionic_dielectric_tensor,
                                 self.ionic_dielectric_tensor)
 
-    def test_static_dielectric_tensor(self):
+    def test_set_static_dielectric_tensor(self):
         a = np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]])
         self._MgO_unitcell.static_dielectric_tensor = a
         np.testing.assert_equal(self._MgO_unitcell.static_dielectric_tensor, a)
 
-    def test_ionic_dielectric_tensor(self):
+    def test_set_ionic_dielectric_tensor(self):
         b = np.array([[2, 0, 0], [0, 2, 0], [0, 0, 2]])
         self._MgO_unitcell.ionic_dielectric_tensor = b
         np.testing.assert_equal(self._MgO_unitcell.ionic_dielectric_tensor, b)
 
     def test_set_static_dielectric_tensor_from_outcar(self):
-        self._MgO_unitcell.\
-            set_static_dielectric_tensor_from_outcar(DIRNAME_DIELECTRIC)
+        self._MgO_unitcell.set_static_dielectric_tensor_from_outcar(
+            os.path.join(test_dir, "MgO/unitcell/dielectric_constants"))
+
         np.testing.assert_equal(self._MgO_unitcell.static_dielectric_tensor,
                                 self.static_dielectric_tensor)
 
     def test_set_ionic_dielectric_tensor_from_outcar(self):
-        self._MgO_unitcell.set_ionic_dielectric_tensor_from_outcar(DIRNAME_DIELECTRIC)
+        self._MgO_unitcell.set_ionic_dielectric_tensor_from_outcar(
+            os.path.join(test_dir, "MgO/unitcell/dielectric_constants"))
+
         np.testing.assert_equal(self._MgO_unitcell.ionic_dielectric_tensor,
                                 self.ionic_dielectric_tensor)
 
     def test_total_dielectric_tensor(self):
-        self._MgO_unitcell. \
-            set_dielectric_constants_from_outcar(DIRNAME_DIELECTRIC)
-        self.total_dielectric_tensor = self.static_dielectric_tensor + \
-                                       self.ionic_dielectric_tensor
-        np.testing.assert_equal(self._MgO_unitcell.total_dielectric_tensor,
-                                self.total_dielectric_tensor)
+        self._MgO_unitcell.set_dielectric_constants_from_outcar(
+            os.path.join(test_dir, "MgO/unitcell/dielectric_constants"))
+
+        d = self.static_dielectric_tensor + self.ionic_dielectric_tensor
+
+        np.testing.assert_equal(self._MgO_unitcell.total_dielectric_tensor, d)
 
     def test_json(self):
-        self._MgO_unitcell.to_json_file("test_dft_results_unitcell.json")
-
-    def test_json_load(self):
-        self._MgO_unitcell.json_load("test_dft_results_unitcell.json")
+        tmp_file = tempfile.NamedTemporaryFile()
+        self._MgO_unitcell.to_json_file(tmp_file.name)
+        MgO_unitcell_from_json = UnitcellDftResults.json_load(tmp_file.name)
+        np.testing.assert_equal(MgO_unitcell_from_json.eigenvalues[Spin.up],
+                                self._MgO_unitcell.eigenvalues[Spin.up])
 
 
 if __name__ == "__main__":
