@@ -1,4 +1,5 @@
 {
+  "name": "Va_O1+N_O1",
   "initial_structure": {
     "@module": "pymatgen.core.structure",
     "@class": "Structure",
@@ -329,10 +330,12 @@
       0.75
     ]
   },
-  "inserted_atoms": 8,
+  "inserted_atoms": [
+    8
+  ],
   "element_diff": {
-    "Mg": 1.0,
-    "O": -2.0
+    "Mg": 1,
+    "O": -2
   },
   "charge": 2
 }

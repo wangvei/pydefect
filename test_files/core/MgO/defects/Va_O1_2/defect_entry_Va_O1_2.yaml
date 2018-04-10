@@ -1,0 +1,7 @@
+name: Va_O1
+initial_structure: POSCAR
+perfect_structure: ../perfect/POSCAR
+removed_atoms: {8: [0.25, 0.25, 0.25]}
+# inserted_atoms must be a list or !!null
+inserted_atoms: !!null
+charge: 2
