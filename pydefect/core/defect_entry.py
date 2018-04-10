@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 
+import os
 import json
+import ruamel.yaml as yaml
 
 from pymatgen.core.structure import Structure
 from pymatgen.core.composition import Composition
@@ -21,11 +23,20 @@ __date__ = "December 4, 2017"
 def get_num_atoms_for_elements(structure):
     """
     Return numbers of ions for elements in a structure.
-    Example: Al1Mg63O6
-        return: [1, 63, 64]
+    Example: Al1Mg31O32
+        return: [1, 31, 32]
 
     """
     return [int(i) for i in structure.to(fmt="poscar").split("\n")[6].split()]
+
+
+def element_diff_from_poscar_files(poscar1, poscar2):
+    c1 = Composition(
+        Structure.from_file(poscar1).composition, allow_negative=True)
+    c2 = Composition(
+        Structure.from_file(poscar2).composition, allow_negative=True)
+    c_diff = c1 - c2
+    return {str(e): int(c_diff[e]) for e in c_diff}
 
 
 class DefectEntry:
@@ -78,27 +89,30 @@ class DefectEntry:
         return cls(d["initial_structure"], removed_atoms, d["inserted_atoms"],
                    element_diff, d["charge"])
 
+    # TODO: get removed_atoms and inserted_atoms by comparing initial_structure
+    #       and perfect_structure
     @classmethod
-    def from_yaml(cls, dirname, filename):
+    def from_yaml(cls, filename):
         """
-        An example of yaml file
-        initial_structure: POSCAR
-        perfect_structure: ../perfect/POSCAR
-        removed_atoms: {32: [0.25, 0.25, 0.25]}
-        inserted_atoms: !!null
-        charge: 2
+        An example of yaml file.
+            initial_structure: POSCAR
+            perfect_structure: ../perfect/POSCAR
+            removed_atoms: {32: [0.25, 0.25, 0.25]}
+            inserted_atoms: !!null
+            charge: 2
         """
-        import os
-        import yaml
 
-        os.chdir(dirname)
+        abs_dir = os.path.split(os.path.abspath(filename))[0]
+
         with open(filename, "r") as yaml_file:
-            yaml_data = yaml.load(yaml_file)
+            yaml_data = yaml.safe_load(yaml_file)
 
-        element_diff = \
-            cls.element_diff_from_poscar_files(
-                yaml_data["initial_structure"], yaml_data["perfect_structure"])
-        s = Structure.from_file(yaml_data["initial_structure"])
+        element_diff = element_diff_from_poscar_files(
+            os.path.join(abs_dir, yaml_data["initial_structure"]),
+            os.path.join(abs_dir, yaml_data["perfect_structure"]))
+
+        s = Structure.from_file(os.path.join(abs_dir,
+                                             yaml_data["initial_structure"]))
 
         return cls(s, yaml_data["removed_atoms"], yaml_data["inserted_atoms"],
                    element_diff, yaml_data["charge"])
@@ -172,15 +186,6 @@ class DefectEntry:
         """
         with open(filename, 'w') as fw:
             json.dump(self.as_dict(), fw, indent=2, cls=MontyEncoder)
-
-    @staticmethod
-    def element_diff_from_poscar_files(poscar1, poscar2):
-        c1 = Composition(
-            Structure.from_file(poscar1).composition, allow_negative=True)
-        c2 = Composition(
-            Structure.from_file(poscar2).composition, allow_negative=True)
-        c_diff = c1 - c2
-        return {str(e): c_diff[e] for e in c_diff}
 
     # TODO: remove bugs below
     # def anchor_atom_index(self):
