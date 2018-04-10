@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
 
-import os
+import itertools
 import json
+import os
 import ruamel.yaml as yaml
 
 from pymatgen.core.structure import Structure
@@ -25,9 +26,9 @@ def get_num_atoms_for_elements(structure):
     Return numbers of ions for elements in a structure.
     Example: Al1Mg31O32
         return: [1, 31, 32]
-
     """
-    return [int(i) for i in structure.to(fmt="poscar").split("\n")[6].split()]
+    symbol_list = [site.specie.symbol for site in structure]
+    return [len(tuple(a[1])) for a in itertools.groupby(symbol_list)]
 
 
 def element_diff_from_poscar_files(poscar1, poscar2):
