@@ -23,7 +23,7 @@ __date__ = "December 4, 2017"
 
 def get_num_atoms_for_elements(structure):
     """
-    Return numbers of ions for elements in a structure.
+    Returns numbers of ions for elements in a structure.
     Example: Al1Mg31O32
         return: [1, 31, 32]
     """
@@ -32,6 +32,10 @@ def get_num_atoms_for_elements(structure):
 
 
 def element_diff_from_poscar_files(poscar1, poscar2):
+    """
+    Returns a dict of change of numbers of elements from poscar2 to poscar1
+    For defect calculations, poscar2="perfect".
+    """
     c1 = Composition(
         Structure.from_file(poscar1).composition, allow_negative=True)
     c2 = Composition(
@@ -99,12 +103,15 @@ class DefectEntry:
     def from_yaml(cls, filename):
         """
         An example of yaml file.
-            name: Va_O1
-            initial_structure: POSCAR
-            perfect_structure: ../perfect/POSCAR
-            removed_atoms: {32: [0.25, 0.25, 0.25]}
-            inserted_atoms: !!null
-            charge: 2
+        name: Va_O1+N_O1
+        initial_structure: POSCAR
+        perfect_structure: ../../defects/perfect/POSCAR
+        removed_atoms:
+            8: [0.25, 0.25, 0.25]
+            9: [0.25, 0.25, 0.75]
+        # inserted_atoms must be a list or !!null
+        inserted_atoms: [8]
+        charge: 2
         """
 
         abs_dir = os.path.split(os.path.abspath(filename))[0]
