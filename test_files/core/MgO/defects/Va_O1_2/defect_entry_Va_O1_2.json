@@ -325,7 +325,7 @@
       0.25
     ]
   },
-  "inserted_atoms": null,
+  "inserted_atoms": [],
   "element_diff": {
     "O": -1
   },
