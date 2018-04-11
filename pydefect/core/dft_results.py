@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from abc import ABCMeta
+from collections import defaultdict
 from itertools import product
 import json
 import numpy as np
@@ -75,7 +75,7 @@ def min_distance_under_pbc(frac1, frac2, lattice_vector_matrix):
 
 def distance_list(structure, coords):
     """
-    Return a list of the shortest distances between a point and atoms in
+    Returns a list of the shortest distances between a point and atoms in
     structure under periodic boundary condition.
     Args:
        structure (Structure): pmg structure class object
@@ -101,22 +101,53 @@ def distances_from_point(structure, defect_entry):
     return distance_list(structure, defect_center(defect_entry, structure))
 
 
-class DftResults(metaclass=ABCMeta):
+class SupercellDftResults:
     """
-    Abstract class holding some DFT results used for defect analysis.
+    Subclass holding DFT results for supercell systems both w/ and w/o a defect.
+    """
 
-    Args:
-        final_structure (Structure): Optimized Structure
-        total_energy (float): total energy
-        eigenvalues (N_k x N_band numpy array): eigenvalues
-        electrostatic_potential (list): electrostatic potential at atomic sites
-    """
     def __init__(self, final_structure, total_energy, eigenvalues,
                  electrostatic_potential):
         self._final_structure = final_structure
         self._total_energy = total_energy
         self._eigenvalues = eigenvalues
         self._electrostatic_potential = electrostatic_potential
+
+    def relative_total_energy(self, perfect_dft_results):
+        """
+        Return relative total energy w.r.t. the perfect supercell.
+
+        Args:
+            perfect_dft_results (SupercellDftResults):
+                SupercellDftResults class object for the perfect supercell.
+        """
+        return self._total_energy - perfect_dft_results.total_energy
+
+    def relative_potential(self, perfect_dft_results, defect_entry):
+        """
+        Return a list of relative site potential w.r.t. the perfect supercell.
+        Note that None is inserted for interstitial sites.
+
+        Args:
+            perfect_dft_results (SupercellDftResults):
+                SupercellDftResults class object for the perfect supercell.
+            defect_entry (DefectEntry):
+                DefectEntry class object.
+        """
+        mapping = defect_entry.atom_mapping_to_perfect
+
+        relative_potential = []
+
+        for d_atom, p_atom in enumerate(mapping):
+
+            if p_atom is None:
+                relative_potential.append(None)
+            else:
+                ep_defect = self.electrostatic_potential[d_atom]
+                ep_perfect = perfect_dft_results.electrostatic_potential[p_atom]
+                relative_potential.append(ep_defect - ep_perfect)
+
+        return relative_potential
 
     @classmethod
     def from_vasp_files(cls, directory_path, contcar_name="CONTCAR",
@@ -189,12 +220,12 @@ class DftResults(metaclass=ABCMeta):
             json.dump(self.as_dict(), fw, indent=2, cls=MontyEncoder)
 
     @property
-    def final_structure(self):
-        return self._final_structure
-
-    @property
     def eigenvalues(self):
         return self._eigenvalues
+
+    @property
+    def final_structure(self):
+        return self._final_structure
 
     @property
     def total_energy(self):
@@ -203,47 +234,6 @@ class DftResults(metaclass=ABCMeta):
     @property
     def electrostatic_potential(self):
         return self._electrostatic_potential
-
-
-class SupercellDftResults(DftResults):
-    """
-    Subclass holding DFT results for supercell systems both w/ and w/o a defect.
-    """
-    def relative_total_energy(self, perfect_dft_results):
-        """
-        Return relative total energy w.r.t. the perfect supercell.
-
-        Args:
-            perfect_dft_results (SupercellDftResults):
-                SupercellDftResults class object for the perfect supercell.
-        """
-        return self._total_energy - perfect_dft_results.total_energy
-
-    def relative_potential(self, perfect_dft_results, defect_entry):
-        """
-        Return a list of relative site potential w.r.t. the perfect supercell.
-        Note that None is inserted for interstitial sites.
-
-        Args:
-            perfect_dft_results (SupercellDftResults):
-                SupercellDftResults class object for the perfect supercell.
-            defect_entry (DefectEntry):
-                DefectEntry class object.
-        """
-        mapping = defect_entry.atom_mapping_to_perfect
-
-        relative_potential = []
-
-        for d_atom, p_atom in enumerate(mapping):
-
-            if p_atom is None:
-                relative_potential.append(None)
-            else:
-                ep_defect = self.electrostatic_potential[d_atom]
-                ep_perfect = perfect_dft_results.electrostatic_potential[p_atom]
-                relative_potential.append(ep_defect - ep_perfect)
-
-        return relative_potential
 
 #    def inserted_atom_displacements(self, defect_entry):
 #        """
@@ -265,43 +255,59 @@ class SupercellDftResults(DftResults):
 #        return displacements
 
 
-class UnitcellDftResults(DftResults):
+class UnitcellDftResults:
     """
     DFT results for a unitcell
     Args:
-        static_dielectric_tensor (3x3 numpy array):
-        ionic_dielectric_tensor (3x3 numpy array):
+        band_edge (1x2 list): VBM and CBM.
+        band_edge2 (1x2 list, optional): Alternative VBM and CBM
+        static_dielectric_tensor (3x3 array):
+        ionic_dielectric_tensor (3x3 array):
+        total_dos (2xN array): [[energy1, dos1], [energy2, dos2],...]
     """
 
-    def __init__(self, final_structure, total_energy, eigenvalues,
-                 electrostatic_potential, static_dielectric_tensor=None,
-                 ionic_dielectric_tensor=None):
+    def __init__(self, band_edge=None, band_edge2=None,
+                 static_dielectric_tensor=None, ionic_dielectric_tensor=None,
+                 total_dos=None):
         """ """
-        super().__init__(final_structure, total_energy, eigenvalues,
-                         electrostatic_potential)
-
+        self._band_edge = band_edge
+        self._band_edge2 = band_edge2
         self._static_dielectric_tensor = static_dielectric_tensor
         self._ionic_dielectric_tensor = ionic_dielectric_tensor
+        self._total_dos = total_dos
 
     @classmethod
     def from_dict(cls, d):
         """
         Constructs a class object from a dictionary.
         """
-        eigenvalues = {}
-        # Programmatic access to enumeration members in Enum class.
-        for spin, v in d["eigenvalues"].items():
-            eigenvalues[Spin(int(spin))] = np.array(v)
+        return cls(d["band_edge"], d["band_edge2"],
+                   d["static_dielectric_tensor"], d["ionic_dielectric_tensor"],
+                   d["total_dos"])
 
-        return cls(d["final_structure"], d["total_energy"], eigenvalues,
-                   d["electrostatic_potential"], d["static_dielectric_tensor"],
-                   d["ionic_dielectric_tensor"])
+    @classmethod
+    def json_load(cls, filename):
+        """
+        Constructs a class object from a json file.
+        """
+        return cls.from_dict(loadfn(filename))
 
-    def set_dielectric_constants_from_outcar(self, directory_path,
-                                             outcar_name="OUTCAR"):
-        outcar = Outcar(os.path.join(directory_path, outcar_name))
-        self._static_dielectric_tensor = np.array(outcar.dielectric_tensor)
-        self._ionic_dielectric_tensor = np.array(outcar.dielectric_ionic_tensor)
+    # getter
+    @property
+    def band_edge(self):
+        if self._band_edge is not None:
+            return self._band_edge
+        else:
+            warnings.warn(message="Band edges are not set yet.")
+            return None
+
+    @property
+    def band_edge2(self):
+        if self._band_edge2 is not None:
+            return self._band_edge2
+        else:
+            warnings.warn(message="Second band edges are not set yet.")
+            return None
 
     @property
     def static_dielectric_tensor(self):
@@ -323,6 +329,23 @@ class UnitcellDftResults(DftResults):
     def total_dielectric_tensor(self):
         return self._static_dielectric_tensor + self._ionic_dielectric_tensor
 
+    @property
+    def total_dos(self):
+        if self._total_dos is not None:
+            return self._total_dos
+        else:
+            warnings.warn(message="Total density of states is not set yet.")
+            return None
+
+    # setter
+    @band_edge.setter
+    def band_edge(self, band_edge):
+        self._band_edge = band_edge
+
+    @band_edge2.setter
+    def band_edge2(self, band_edge2):
+        self._band_edge2 = band_edge2
+
     @static_dielectric_tensor.setter
     def static_dielectric_tensor(self, static_dielectric_tensor):
         self._static_dielectric_tensor = static_dielectric_tensor
@@ -331,39 +354,59 @@ class UnitcellDftResults(DftResults):
     def ionic_dielectric_tensor(self, ionic_dielectric_tensor):
         self._ionic_dielectric_tensor = ionic_dielectric_tensor
 
-    def set_static_dielectric_tensor_from_outcar(self, directory_path,
-                                                 outcar_name="OUTCAR"):
+    @total_dos.setter
+    def total_dos(self, total_dos):
+        self._total_dos = total_dos
+
+    # setter from vasp results
+    def set_band_edge_from_vasp(self, directory_path,
+                                vasprun_name="vasprun.xml"):
+        vasprun = Vasprun(os.path.join(directory_path, vasprun_name))
+        cbm, vbm = vasprun.eigenvalue_band_properties[1:3]
+        self._band_edge = [vbm, cbm]
+
+    def set_band_edge2_from_vasp(self, directory_path,
+                                 vasprun_name="vasprun.xml"):
+        vasprun = Vasprun(os.path.join(directory_path, vasprun_name))
+        cbm, vbm = vasprun.eigenvalue_band_properties[1:3]
+        self._band_edge2 = [vbm, cbm]
+
+    def set_static_dielectric_tensor_from_vasp(self, directory_path,
+                                               outcar_name="OUTCAR"):
         outcar = Outcar(os.path.join(directory_path, outcar_name))
         self._static_dielectric_tensor = np.array(outcar.dielectric_tensor)
 
-    def set_ionic_dielectric_tensor_from_outcar(self, directory_path,
-                                                outcar_name="OUTCAR"):
+    def set_ionic_dielectric_tensor_from_vasp(self, directory_path,
+                                              outcar_name="OUTCAR"):
         outcar = Outcar(os.path.join(directory_path, outcar_name))
         self._ionic_dielectric_tensor = np.array(outcar.dielectric_ionic_tensor)
 
-    def set_dielectric_tensor_from_outcar(self, directory_path,
-                                          outcar_name="OUTCAR"):
-        self.set_static_dielectric_tensor_from_outcar(directory_path,
-                                                      outcar_name)
-        self.set_ionic_dielectric_tensor_from_outcar(directory_path,
-                                                     outcar_name)
+    def set_total_dos_from_vasp(self, directory_path,
+                                vasprun_name="vasprun.xml"):
+        vasprun = Vasprun(os.path.join(directory_path, vasprun_name))
+        dos, ene = vasprun.tdos.densities, vasprun.tdos.energies
+        # only non-magnetic
+        self._total_dos = np.vstack([dos[Spin.up], ene])
 
     def as_dict(self):
         """
         Dict representation of DefectInitialSetting class object.
         """
-        # Spin object must be converted to string for to_json_file.
-        eigenvalues = {str(spin): v.tolist()
-                       for spin, v in self._eigenvalues.items()}
 
-        d = {"final_structure":          self._final_structure,
-             "total_energy":             self._total_energy,
-             "eigenvalues":              eigenvalues,
-             "electrostatic_potential":  self._electrostatic_potential,
-             "static_dielectric_tensor": self._static_dielectric_tensor,
-             "ionic_dielectric_tensor":  self._ionic_dielectric_tensor}
+        d = {"band_edge":                self.band_edge,
+             "band_edge2":               self.band_edge2,
+             "static_dielectric_tensor": self.static_dielectric_tensor,
+             "ionic_dielectric_tensor":  self.ionic_dielectric_tensor,
+             "total_dos":                self.ionic_dielectric_tensor}
 
         return d
+
+    def to_json_file(self, filename):
+        """
+        Returns a json file.
+        """
+        with open(filename, 'w') as fw:
+            json.dump(self.as_dict(), fw, indent=2, cls=MontyEncoder)
 
 
 def main():
@@ -378,7 +421,7 @@ def main():
         if os.path.isdir(d):
 
             try:
-                dft_results = DftResults.\
+                dft_results = SupercellDftResults.\
                     from_vasp_files(d,
                                     contcar_name="POSCAR-finish",
                                     outcar_name="OUTCAR-finish",
