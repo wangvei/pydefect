@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+from collections import defaultdict
 import json
 import warnings
 
@@ -309,7 +310,7 @@ class DefectInitialSetting:
             oxidation_states[s] = get_oxidation_state(s)
 
         # num_irreducible_sites["Mg"] = 2 means Mg has 2 inequivalent sites
-        num_irreducible_sites = {}
+        num_irreducible_sites = defaultdict(int)
 
         # irreducible_sites (list): a set of IrreducibleSite class objects
         irreducible_sites = []
@@ -323,10 +324,7 @@ class DefectInitialSetting:
             element = equiv_site[0].species_string
 
             # increment number of inequivalent sites for element
-            if element not in num_irreducible_sites.keys():
-                num_irreducible_sites[element] = 1
-            else:
-                num_irreducible_sites[element] += 1
+            num_irreducible_sites[element] += 1
 
             first_index = last_index + 1
             last_index = last_index + len(equiv_site)
@@ -472,7 +470,7 @@ class DefectInitialSetting:
 
     def _write_defect_in(self, defect_in_file="defect.in"):
         """
-        Helper function to write down defect.in file.
+        Helper method to write down defect.in file.
         Args:
             defect_in_file (str): Name of defect.in type file.
         """
