@@ -6,12 +6,11 @@
 class EnergyPlotter:
 
 
-    def __init__(self, unitcell, perfec, defects, band_edges, chem_pot):
+    def __init__(self, unitcell, chem_pot, perfect, defects):
         """
 
-        use_lower_energy: If there are some defects with the same name and
+        is_lower_energy: If there are some defects with the same name and
         charge, use the lowest energy. False, raise error.
-
 
         1. Set relative energies of defects.
         2. Construct a set of data used for calculating the defect energies.
@@ -25,11 +24,14 @@ class EnergyPlotter:
 
         """
 
-        self._defect_set = defect_set
-        self._band_edges = band_edges
+        self._unitcell = unitcell
+        self._chem_pot = chem_pot
+        self._perfect = perfect
+        self._defects = defects
 
+    @classmethod
+    def from_files(cls,
+                   unitcell_json,
+                   chem_pot_json):
 
-
-    def calc_
-    # def
 

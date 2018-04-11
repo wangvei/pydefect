@@ -227,7 +227,7 @@ class UnitcellDftResultsTest(unittest.TestCase):
 
     def test_band_edge2(self):
         print(self.unitcell.band_edge2)
-        self.unitcell.band_edge2 = [0.0, 1.0]
+        self.unitcell.band_edge2 = [0.0, 2.0]
         print(self.unitcell.band_edge2)
         self.unitcell.set_band_edge2_from_vasp(
             directory_path=os.path.join(test_dir,
@@ -235,56 +235,53 @@ class UnitcellDftResultsTest(unittest.TestCase):
         print(self.unitcell.band_edge2)
 
     def test_dielectric_constant(self):
-        self.unitcell.set_dielectric_constants_from_outcar(
-            os.path.join(test_dir, "MgO/unitcell/dielectric_constants"))
+        print(self.unitcell.static_dielectric_tensor)
+        print(self.unitcell.ionic_dielectric_tensor)
+        print(self.unitcell.total_dielectric_tensor)
+        self.unitcell.static_dielectric_tensor = \
+            np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]])
+        self.unitcell.ionic_dielectric_tensor = \
+            np.array([[2, 0, 0], [0, 2, 0], [0, 0, 2]])
+        print(self.unitcell.static_dielectric_tensor)
+        print(self.unitcell.ionic_dielectric_tensor)
+        print(self.unitcell.total_dielectric_tensor)
+        self.unitcell.set_static_dielectric_tensor_from_vasp(
+            directory_path=os.path.join(test_dir,
+                                        "MgO/unitcell/dielectric_constants"))
+        self.unitcell.set_ionic_dielectric_tensor_from_vasp(
+            directory_path=os.path.join(test_dir,
+                                        "MgO/unitcell/dielectric_constants"))
+        print(self.unitcell.static_dielectric_tensor)
+        print(self.unitcell.ionic_dielectric_tensor)
+        print(self.unitcell.total_dielectric_tensor)
 
-        np.testing.assert_equal(self._MgO_unitcell.static_dielectric_tensor,
-                                self.static_dielectric_tensor)
-        np.testing.assert_equal(self._MgO_unitcell.ionic_dielectric_tensor,
-                                self.ionic_dielectric_tensor)
+    def test_total_dos(self):
+        print(self.unitcell.total_dos)
+        self.unitcell.total_dos = \
+            np.array([[0, 0.5, 1.0], [0.1, 0.2, 0.4]])
+        print(self.unitcell.total_dos)
+        self.unitcell.set_total_dos_from_vasp(
+            directory_path=os.path.join(test_dir,
+                                        "MgO/unitcell/structure_optimization"))
+        print(self.unitcell.total_dos)
 
+    def test_dict_json(self):
+        self.unitcell.band_edge = [0.0, 1.0]
+        self.unitcell.band_edge2 = [0.0, 2.0]
+        self.unitcell.static_dielectric_tensor = \
+            np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]])
+        self.unitcell.ionic_dielectric_tensor = \
+            np.array([[2, 0, 0], [0, 2, 0], [0, 0, 2]])
+        self.unitcell.total_dos = \
+            np.array([[0, 0.5, 1.0], [0.1, 0.2, 0.4]])
+        d = self.unitcell.as_dict()
+        unitcell_from_dict = UnitcellDftResults.from_dict(d)
+        print(vars(unitcell_from_dict))
 
-
-
-
-    def test_set_static_dielectric_tensor(self):
-        a = np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]])
-        self._MgO_unitcell.static_dielectric_tensor = a
-        np.testing.assert_equal(self._MgO_unitcell.static_dielectric_tensor, a)
-
-    def test_set_ionic_dielectric_tensor(self):
-        b = np.array([[2, 0, 0], [0, 2, 0], [0, 0, 2]])
-        self._MgO_unitcell.ionic_dielectric_tensor = b
-        np.testing.assert_equal(self._MgO_unitcell.ionic_dielectric_tensor, b)
-
-    def test_set_static_dielectric_tensor_from_outcar(self):
-        self._MgO_unitcell.set_static_dielectric_tensor_from_outcar(
-            os.path.join(test_dir, "MgO/unitcell/dielectric_constants"))
-
-        np.testing.assert_equal(self._MgO_unitcell.static_dielectric_tensor,
-                                self.static_dielectric_tensor)
-
-    def test_set_ionic_dielectric_tensor_from_outcar(self):
-        self._MgO_unitcell.set_ionic_dielectric_tensor_from_outcar(
-            os.path.join(test_dir, "MgO/unitcell/dielectric_constants"))
-
-        np.testing.assert_equal(self._MgO_unitcell.ionic_dielectric_tensor,
-                                self.ionic_dielectric_tensor)
-
-    def test_total_dielectric_tensor(self):
-        self._MgO_unitcell.set_dielectric_constants_from_outcar(
-            os.path.join(test_dir, "MgO/unitcell/dielectric_constants"))
-
-        d = self.static_dielectric_tensor + self.ionic_dielectric_tensor
-
-        np.testing.assert_equal(self._MgO_unitcell.total_dielectric_tensor, d)
-
-    def test_json(self):
         tmp_file = tempfile.NamedTemporaryFile()
-        self._MgO_unitcell.to_json_file(tmp_file.name)
-        MgO_unitcell_from_json = UnitcellDftResults.json_load(tmp_file.name)
-        np.testing.assert_equal(MgO_unitcell_from_json.eigenvalues[Spin.up],
-                                self._MgO_unitcell.eigenvalues[Spin.up])
+        self.unitcell.to_json_file(tmp_file.name)
+        unitcell_from_json = UnitcellDftResults.json_load(tmp_file.name)
+        print(vars(unitcell_from_json))
 
 
 if __name__ == "__main__":
