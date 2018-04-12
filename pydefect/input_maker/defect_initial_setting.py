@@ -135,8 +135,8 @@ class DefectInitialSetting:
             raise TypeError
         # "return self.__dict__ == other.__dict__" is inapplicable,
         # because irreducible_sites returns pointers.
-        print(self.as_dict())
-        print(other.as_dict())
+        # print(self.as_dict())
+        # print(other.as_dict())
         return self.as_dict() == other.as_dict()
 
     @classmethod

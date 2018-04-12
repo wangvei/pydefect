@@ -98,7 +98,7 @@ def parse_defect_name(defect_name):
         print("DefectSupercell {} is improper.".format(defect_name))
 
     if not re.match(r'^[a-xA-Z]+[1-9]+$', out_name):
-        raise ValueError("DefectSupercell {} is improper.".format(defect_name))
+        raise ValueError("Defect name {} is not proper.".format(defect_name))
     return in_name, out_name, charge
 
 
