@@ -24,8 +24,8 @@ dirname_perfect = test_dir + "/defects/perfect"
 # interstitial directory
 
 vacancy_expected_alignment = "NEED_TO_SPECIFY!"
-dirname_vacancy = test_dir + "/defects/Va_O1_2"
-vac_defect_entry_json = dirname_vacancy + "/defect_entry_Va_O1_2.json"
+dirname_vacancy = test_dir + "/defects/Va_O1_2/"
+vac_defect_entry_json = dirname_vacancy + "/defect_entry.json"
 
 
 class EwaldTest(unittest.TestCase):
