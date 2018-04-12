@@ -1,16 +1,16 @@
 #!/usr/bin/env python
 
-from enum import Enum, unique, auto
+from enum import Enum, unique
 from functools import reduce
 from itertools import product
+import json
 import math
 import numpy as np
-import os
-import ruamel.yaml as yaml
 import scipy
 import scipy.constants as sconst
 from scipy.stats import mstats
 
+from monty.json import MontyEncoder
 from monty.serialization import loadfn
 from pymatgen.core.lattice import Lattice
 
@@ -101,6 +101,41 @@ class Ewald:
     @property
     def num_reciprocal_lattice(self):
         return self._num_reciprocal_lattice
+
+    def as_dict(self):
+        d = {"lattice_matrix": self._lattice_matrix,
+             "dielectric_tensor": self._dielectric_tensor,
+             "ewald_param": self._ewald_param,
+             "prod_cutoff_fwhm": self._prod_cutoff_fwhm,
+             "num_real_lattice": self._num_real_lattice,
+             "num_reciprocal_lattice": self._num_reciprocal_lattice}
+        return d
+
+    @classmethod
+    def from_dict(cls, d):
+        return cls(d["lattice_matrix"], d["dielectric_tensor"],
+                   d["ewald_param"], d["prod_cutoff_fwhm"],
+                   d["num_real_lattice"], d["num_reciprocal_lattice"])
+
+    def to_json_file(self, filename):
+        """
+        Dump a json file.
+
+        Args:
+            filename (str):
+
+        Returns:
+
+        """
+        with open(filename, 'w') as fw:
+            json.dump(self.as_dict(), fw, indent=2, cls=MontyEncoder)
+
+    @classmethod
+    def load_json(cls, filename):
+        """
+        Constructs a DefectEntry class object from a json file.
+        """
+        return cls.from_dict(loadfn(filename))
 
     @classmethod
     def from_optimization(cls,
@@ -223,16 +258,20 @@ class Ewald:
 
 @unique
 class CorrectionMethod(Enum):
-    extended_fnv = auto()
+    extended_fnv = "Extended FNV"
+
+    def str(self):
+        return str(self.value)
 
 
 class Correction:
 
-    def __init__(self, method, ewald, corrected_energy,
+    def __init__(self, method, ewald, diff_ave_pot, alignment,
                  manually_set_energy=None):
         self._method = method
         self._ewald = ewald
-        self._corrected_energy = corrected_energy
+        self._diff_ave_pot = diff_ave_pot
+        self._alignment = alignment
         self._manually_set_energy = manually_set_energy
 
     @property
@@ -255,22 +294,54 @@ class Correction:
     def manually_set_energy(self, value):
         self._manually_set_energy = value
 
+    def as_dict(self):
+        """
+
+        Returns (dict):
+
+        """
+        d = {"method": str(self._method),
+             "ewald": self._ewald,
+             "diff_ave_pot": self._diff_ave_pot,
+             "alignment": self._alignment,
+             "manually_set_energy": self._manually_set_energy}
+        return d
+
     @classmethod
-    def from_yaml(cls, filename):
+    def from_dict(cls, d):
+        """
+        Constructs a DefectEntry class object from a dictionary.
+        """
+        method = CorrectionMethod(d["method"])
 
-        with open(filename, "r") as yaml_file:
-            yaml_data = yaml.safe_load(yaml_file)
+        return cls(method, d["ewald"], d["diff_ave_pot"], d["alignment"],
+                   d["manually_set_energy"])
 
-        return cls(yaml_data["method"], yaml_data["ewald"],
-                   yaml_data["corrected_energy"],
-                   yaml_data["manually_set_energy"])
+    def to_json_file(self, filename):
+        """
+        Dump a json file.
+
+        Args:
+            filename (str):
+
+        Returns:
+
+        """
+        with open(filename, 'w') as fw:
+            json.dump(self.as_dict(), fw, indent=2, cls=MontyEncoder)
+
+    @classmethod
+    def load_json(cls, filename):
+        """
+        Constructs a DefectEntry class object from a json file.
+        """
+        return cls.from_dict(loadfn(filename))
 
     @classmethod
     def compute_correction(cls, defect_entry, defect_dft, perfect_dft,
                            unitcell_dft, ewald=None,
                            method=CorrectionMethod.extended_fnv):
         """
-
         Args
             defect_entry(DefectEntry):
             defect_dft(SupercellDftResults):
@@ -285,11 +356,11 @@ class Correction:
                 perfect_dft.final_structure,
                 unitcell_dft.total_dielectric_tensor)
         if method == CorrectionMethod.extended_fnv:
-            return cls._compute_alignment_by_extended_fnv(defect_entry,
-                                                          defect_dft,
-                                                          perfect_dft,
-                                                          unitcell_dft,
-                                                          ewald)
+            return cls.compute_alignment_by_extended_fnv(defect_entry,
+                                                         defect_dft,
+                                                         perfect_dft,
+                                                         unitcell_dft,
+                                                         ewald)
         else:
             raise ValueError("Method named {0} is not implemented.".
                              format(method))
@@ -308,12 +379,12 @@ class Correction:
         return cls.from_dict(loadfn(filename))
 
     @classmethod
-    def _compute_alignment_by_extended_fnv(cls,
-                                           defect_entry,
-                                           defect_dft,
-                                           perfect_dft,
-                                           unitcell_dft,
-                                           ewald):
+    def compute_alignment_by_extended_fnv(cls,
+                                          defect_entry,
+                                          defect_dft,
+                                          perfect_dft,
+                                          unitcell_dft,
+                                          ewald):
 
         """
         Corrects error of formation energy of point defect due to
