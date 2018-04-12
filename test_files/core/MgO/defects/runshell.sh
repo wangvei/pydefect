@@ -5,7 +5,8 @@
 #$ -j y
 #$ -N test
 #$ -o std.log
-#$ -pe all_pe* 16
+#$ -q sl.q
+#$ -pe all_pe* 36
 #$ -l h_rt=01:00:00
 #============ Shell Script ============
 # A script for sequential calculations.
