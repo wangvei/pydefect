@@ -37,7 +37,7 @@ class UnitcellDftResults:
                  total_dos=None):
         """ """
         self._band_edge = band_edge
-        self._band_edge2 = band_edge2
+#        self._band_edge2 = band_edge2
         self._static_dielectric_tensor = static_dielectric_tensor
         self._ionic_dielectric_tensor = ionic_dielectric_tensor
         self._total_dos = total_dos
@@ -52,7 +52,8 @@ class UnitcellDftResults:
         """
         Constructs a class object from a dictionary.
         """
-        return cls(d["band_edge"], d["band_edge2"],
+#        return cls(d["band_edge"], d["band_edge2"],
+        return cls(d["band_edge"],
                    d["static_dielectric_tensor"], d["ionic_dielectric_tensor"],
                    d["total_dos"])
 
@@ -72,13 +73,13 @@ class UnitcellDftResults:
         else:
             return self._band_edge
 
-    @property
-    def band_edge2(self):
-        if self._band_edge2 is None:
-            warnings.warn(message="Second band edges are not set yet.")
-            return None
-        else:
-            return self._band_edge2
+    # @property
+    # def band_edge2(self):
+    #     if self._band_edge2 is None:
+    #         warnings.warn(message="Second band edges are not set yet.")
+    #         return None
+    #     else:
+    #         return self._band_edge2
 
     @property
     def static_dielectric_tensor(self):
@@ -117,8 +118,8 @@ class UnitcellDftResults:
             return self._total_dos
 
     def is_set_all(self):
+        #           self._band_edge2 is not None and \
         if self._band_edge is not None and \
-           self._band_edge2 is not None and \
            self._static_dielectric_tensor is not None and \
            self._ionic_dielectric_tensor is not None and \
            self._total_dos is not None:
@@ -131,9 +132,9 @@ class UnitcellDftResults:
     def band_edge(self, band_edge):
         self._band_edge = band_edge
 
-    @band_edge2.setter
-    def band_edge2(self, band_edge2):
-        self._band_edge2 = band_edge2
+    # @band_edge2.setter
+    # def band_edge2(self, band_edge2):
+    #     self._band_edge2 = band_edge2
 
     @static_dielectric_tensor.setter
     def static_dielectric_tensor(self, static_dielectric_tensor):
@@ -154,11 +155,11 @@ class UnitcellDftResults:
         _, cbm, vbm, _ = vasprun.eigenvalue_band_properties
         self._band_edge = [vbm, cbm]
 
-    def set_band_edge2_from_vasp(self, directory_path,
-                                 vasprun_name="vasprun.xml"):
-        vasprun = Vasprun(os.path.join(directory_path, vasprun_name))
-        _, cbm, vbm, _ = vasprun.eigenvalue_band_properties
-        self._band_edge2 = [vbm, cbm]
+    # def set_band_edge2_from_vasp(self, directory_path,
+    #                              vasprun_name="vasprun.xml"):
+    #     vasprun = Vasprun(os.path.join(directory_path, vasprun_name))
+    #     _, cbm, vbm, _ = vasprun.eigenvalue_band_properties
+    #     self._band_edge2 = [vbm, cbm]
 
     def set_static_dielectric_tensor_from_vasp(self, directory_path,
                                                outcar_name="OUTCAR"):
@@ -182,8 +183,8 @@ class UnitcellDftResults:
         Dict representation of DefectInitialSetting class object.
         """
 
+#        "band_edge2":               self.band_edge2,
         d = {"band_edge":                self.band_edge,
-             "band_edge2":               self.band_edge2,
              "static_dielectric_tensor": self.static_dielectric_tensor,
              "ionic_dielectric_tensor":  self.ionic_dielectric_tensor,
              "total_dos":                self.total_dos}
@@ -200,6 +201,52 @@ class UnitcellDftResults:
 
 def main():
     import argparse
+    parser = argparse.ArgumentParser(
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser.add_argument("--json_file", dest="json_file", default=None, type=str)
+    parser.add_argument("--band_edge_dir", dest="band_edge_dir", default=None, type=str)
+    parser.add_argument("--static_diele_dir", dest="static_diele_dir", default=None, type=str)
+    parser.add_argument("--ionic_diele_dir", dest="ionic_diele_dir", default=None, type=str)
+    parser.add_argument("--total_dos_dir", dest="total_dos_dir", default=None, type=str)
+
+    opts = parser.parse_args()
+
+    # if opts.json_file:
+    #     try:
+    #         dft_results = UnitcellDftResults.json_load(filename=opts.json_file)
+    #     except IOError:
+    #         print(opts.json_file, "does not exist.")
+    # else:
+    #     dft_results = UnitcellDftResults()
+    dft_results = UnitcellDftResults()
+
+    if opts.band_edge_dir:
+        try:
+            dft_results.set_band_edge_from_vasp(opts.band_edge_dir)
+        except IOError:
+            print(opts.band_edge_dir, "is not appropriate.")
+
+    if opts.static_diele_dir:
+        try:
+            dft_results.\
+                set_static_dielectric_tensor_from_vasp(opts.static_diele_dir)
+        except IOError:
+            print(opts.static_diele_dir, "is not appropriate.")
+
+    if opts.ionic_diele_dir:
+        try:
+            dft_results.\
+                set_ionic_dielectric_tensor_from_vasp(opts.ionic_diele_dir)
+        except IOError:
+            print(opts.ionic_diele_dir, "is not appropriate.")
+
+    if opts.total_dos_dir:
+        try:
+            dft_results.set_total_dos_from_vasp(opts.total_dos_dir)
+        except IOError:
+            print(opts.total_dos_dir, "is not appropriate.")
+
+    dft_results.to_json_file(opts.json_file)
 
 
 if __name__ == "__main__":
