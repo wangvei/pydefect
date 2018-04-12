@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 
-from collections import defaultdict
 from itertools import product
 import json
 import numpy as np
@@ -103,7 +102,7 @@ def distances_from_point(structure, defect_entry):
 
 class SupercellDftResults:
     """
-    Subclass holding DFT results for supercell systems both w/ and w/o a defect.
+    A class holding DFT results for supercell systems both w/ and w/o a defect.
     """
 
     def __init__(self, final_structure, total_energy, eigenvalues,
@@ -112,42 +111,6 @@ class SupercellDftResults:
         self._total_energy = total_energy
         self._eigenvalues = eigenvalues
         self._electrostatic_potential = electrostatic_potential
-
-    def relative_total_energy(self, perfect_dft_results):
-        """
-        Return relative total energy w.r.t. the perfect supercell.
-
-        Args:
-            perfect_dft_results (SupercellDftResults):
-                SupercellDftResults class object for the perfect supercell.
-        """
-        return self._total_energy - perfect_dft_results.total_energy
-
-    def relative_potential(self, perfect_dft_results, defect_entry):
-        """
-        Return a list of relative site potential w.r.t. the perfect supercell.
-        Note that None is inserted for interstitial sites.
-
-        Args:
-            perfect_dft_results (SupercellDftResults):
-                SupercellDftResults class object for the perfect supercell.
-            defect_entry (DefectEntry):
-                DefectEntry class object.
-        """
-        mapping = defect_entry.atom_mapping_to_perfect
-
-        relative_potential = []
-
-        for d_atom, p_atom in enumerate(mapping):
-
-            if p_atom is None:
-                relative_potential.append(None)
-            else:
-                ep_defect = self.electrostatic_potential[d_atom]
-                ep_perfect = perfect_dft_results.electrostatic_potential[p_atom]
-                relative_potential.append(ep_defect - ep_perfect)
-
-        return relative_potential
 
     @classmethod
     def from_vasp_files(cls, directory_path, contcar_name="CONTCAR",
@@ -214,7 +177,7 @@ class SupercellDftResults:
 
     def to_json_file(self, filename):
         """
-        Returns a json file.
+        Returns a json file, named dft_results.json.
         """
         with open(filename, 'w') as fw:
             json.dump(self.as_dict(), fw, indent=2, cls=MontyEncoder)
@@ -234,6 +197,42 @@ class SupercellDftResults:
     @property
     def electrostatic_potential(self):
         return self._electrostatic_potential
+
+    def relative_total_energy(self, perfect_dft_results):
+        """
+        Return relative total energy w.r.t. the perfect supercell.
+
+        Args:
+            perfect_dft_results (SupercellDftResults):
+                SupercellDftResults class object for the perfect supercell.
+        """
+        return self._total_energy - perfect_dft_results.total_energy
+
+    def relative_potential(self, perfect_dft_results, defect_entry):
+        """
+        Return a list of relative site potential w.r.t. the perfect supercell.
+        Note that None is inserted for interstitial sites.
+
+        Args:
+            perfect_dft_results (SupercellDftResults):
+                SupercellDftResults class object for the perfect supercell.
+            defect_entry (DefectEntry):
+                DefectEntry class object.
+        """
+        mapping = defect_entry.atom_mapping_to_perfect
+
+        relative_potential = []
+
+        for d_atom, p_atom in enumerate(mapping):
+
+            if p_atom is None:
+                relative_potential.append(None)
+            else:
+                ep_defect = self.electrostatic_potential[d_atom]
+                ep_perfect = perfect_dft_results.electrostatic_potential[p_atom]
+                relative_potential.append(ep_defect - ep_perfect)
+
+        return relative_potential
 
 #    def inserted_atom_displacements(self, defect_entry):
 #        """
@@ -350,6 +349,16 @@ class UnitcellDftResults:
         else:
             return self._total_dos
 
+    def is_set_all(self):
+        if self._band_edge is not None and \
+           self._band_edge2 is not None and \
+           self._static_dielectric_tensor is not None and \
+           self._ionic_dielectric_tensor is not None and \
+           self._total_dos is not None:
+            return True
+        else:
+            return False
+
     # setter
     @band_edge.setter
     def band_edge(self, band_edge):
@@ -375,13 +384,13 @@ class UnitcellDftResults:
     def set_band_edge_from_vasp(self, directory_path,
                                 vasprun_name="vasprun.xml"):
         vasprun = Vasprun(os.path.join(directory_path, vasprun_name))
-        cbm, vbm = vasprun.eigenvalue_band_properties[1:3]
+        _, cbm, vbm, _ = vasprun.eigenvalue_band_properties
         self._band_edge = [vbm, cbm]
 
     def set_band_edge2_from_vasp(self, directory_path,
                                  vasprun_name="vasprun.xml"):
         vasprun = Vasprun(os.path.join(directory_path, vasprun_name))
-        cbm, vbm = vasprun.eigenvalue_band_properties[1:3]
+        _, cbm, vbm, _ = vasprun.eigenvalue_band_properties
         self._band_edge2 = [vbm, cbm]
 
     def set_static_dielectric_tensor_from_vasp(self, directory_path,
@@ -416,7 +425,7 @@ class UnitcellDftResults:
 
     def to_json_file(self, filename):
         """
-        Returns a json file.
+        Returns a json file, named unitcell.json.
         """
         with open(filename, 'w') as fw:
             json.dump(self.as_dict(), fw, indent=2, cls=MontyEncoder)
@@ -426,21 +435,29 @@ def main():
     import argparse
     parser = argparse.ArgumentParser(
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument("--dirs", dest="dirs", nargs="+", required=True,
-                        type=str, help="POSCAR name.")
+    parser.add_argument("--dirs", dest="dirs", nargs="+", type=str,
+                        help="Directory names.")
+    parser.add_argument("--dir_all", dest="dir_all", action="store_true",
+                        help="Make dft_results.json for *[0-9] and perfect directory.")
     opts = parser.parse_args()
 
-    for d in opts.dirs:
-        if os.path.isdir(d):
+    if opts.dir_all:
+        from glob import glob
+        dirs = glob('*[0-9]/')
+        dirs.append("perfect")
+    else:
+        dirs = opts.dirs
 
+    for d in dirs:
+        print(d)
+        if os.path.isdir(d):
             try:
                 dft_results = SupercellDftResults.\
-                    from_vasp_files(d,
-                                    contcar_name="POSCAR-finish",
-                                    outcar_name="OUTCAR-finish",
+                    from_vasp_files(d, contcar_name="CONTCAR",
+                                    outcar_name="OUTCAR",
                                     vasprun_name="vasprun.xml")
                 dft_results.to_json_file(
-                    filename=os.path.join(d, "defect.json"))
+                    filename=os.path.join(d, "dft_results.json"))
             except:
                 warnings.warn(message="Parsing data in " + d + " is failed.")
         else:
