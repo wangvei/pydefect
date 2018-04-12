@@ -73,7 +73,7 @@ class VaspDefectInputSetMakerTest(unittest.TestCase):
         shutil.copyfile("../KPOINTS-MgO64atoms", "KPOINTS")
         # Note that the type of filtering_words is list.
         VaspDefectInputSetMaker(defect_initial_setting=self._mgo,
-                                filtering_words=["Va_O"])
+                                filtering_words=["perfect", "Va_O"])
 
 
 if __name__ == "__main__":

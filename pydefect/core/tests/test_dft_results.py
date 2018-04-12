@@ -9,7 +9,7 @@ from pymatgen.core.structure import Structure
 from pymatgen.electronic_structure.core import Spin
 
 from pydefect.core.defect_entry import DefectEntry
-from pydefect.core.dft_results import defect_center, distances_from_point, \
+from pydefect.core.supercell_dft_results import defect_center, distances_from_point, \
     SupercellDftResults, UnitcellDftResults
 
 __author__ = "Yu Kumagai"

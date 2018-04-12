@@ -7,7 +7,7 @@ import shutil
 from pymatgen.io.vasp.inputs import Potcar
 
 from pydefect.core.defect_entry import get_num_atoms_for_elements
-from pydefect.core.dft_results import defect_center
+from pydefect.core.supercell_dft_results import defect_center
 from pydefect.input_maker.defect_initial_setting import DefectInitialSetting
 from pydefect.input_maker.input_maker import \
     DefectMaker, DefectInputSetMaker, print_is_being_removed, \
@@ -135,7 +135,7 @@ class VaspDefectInputSetMaker(DefectInputSetMaker):
                 self._defect_initial_setting.structure,
                 self._defect_initial_setting.irreducible_sites,
                 self._defect_initial_setting.interstitial_coords).defect
-            d.to_json_file(os.path.join(defect_name, "defect.json"))
+            d.to_json_file(os.path.join(defect_name, "defect_entry.json"))
             d.initial_structure.to(
                 filename=os.path.join(defect_name, "POSCAR-Initial"))
 
