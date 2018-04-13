@@ -4,6 +4,7 @@ import numpy as np
 import os
 
 from collections import defaultdict, namedtuple
+from itertools import combinations
 from scipy.spatial import HalfspaceIntersection
 
 from pydefect.core.defect_entry import DefectEntry
@@ -84,52 +85,56 @@ class DefectEnergies:
 
 
     def calc_transition_levels(self):
-        points = {}
         # value = {charge: energy at the vbm}
-        for name, value in self._defect_energies.items():
-            half_spaces = [[- charge, 1, - energy_at_vbm]
-                           for charge, energy_at_vbm in value.items()]
-            # Estimate the energies at the vbm and cbm
-            energies = np.array(
-                [[energy_at_vbm, energy_at_vbm + charge * self._band_gap]
-                 for charge, energy_at_vbm in value.items()])
 
-            min_energy = np.amin(energies)
-            small_number = 0.1
-            lowest_energy = min_energy - small_number
+        transition_levels = {}
 
-            half_spaces.append([-1, 0, 0]) # x >= 0
-            half_spaces.append([1, 0, - self._band_gap]) # x <= band_gap
-            half_spaces.append([0, -1, lowest_energy]) # y >= lowest_energy
-            half_spaces = np.array(half_spaces)
+        for name, e_vs_c in self._defect_energies.items():
+            points = {}
+            charge = set()
+            # Estimate the lowest energies for each defect at the vbm and cbm
 
-            feasible_point = np.array([small_number, min_energy])
-            hs = HalfspaceIntersection(half_spaces, feasible_point)
+            min_e_vbm = float("inf")
+            for c, e in e_vs_c.items():
+                if e < min_e_vbm:
+                    c_vbm = c
+                    min_e_vbm = e
+            points[0.0] = min_e_vbm
+            charge.add(c_vbm)
 
-            points_by_name = []
-            # hs.dual_facets[0]: two half_spaces comprising 1st crossing point.
-            #                    e.g., [0, 1] --> 0th and 1st lines
-            # hs.dual_facets[1]: two half_spaces comprising 2nd crossing point.
-            for i, comprising_lines in enumerate(hs.dual_facets):
+            min_e_cbm = float("inf")
+            for c, e in e_vs_c.items():
+                e_cbm = e + self._band_gap * c
+                if e_cbm < min_e_cbm:
+                    c_cbm = c
+                    min_e_cbm = e_cbm
+            points[self._band_gap] = min_e_cbm
+            charge.add(c_cbm)
 
-                if comprising_lines[0] < len(half_spaces) - 3 and \
-                        comprising_lines[1] < len(half_spaces) - 3:
-                    charges = [int(-half_spaces[comprising_lines[0]][0]),
-                               int(-half_spaces[comprising_lines[1]][0])]
+            points[self._band_gap] = \
+                min([e + self._band_gap * c for c, e in e_vs_c.items()])
 
-                elif comprising_lines[0] == len(half_spaces) - 1:
-                    charges = [int(-half_spaces[comprising_lines[0]][0])]
+            for (c1, e1), (c2, e2) in combinations(e_vs_c.items(), r=2):
+                x = - (e1 - e2) / (c1 - c2)
+                y = (c1 * e2 - c2 * e1) / (c1 - c2)
 
-                elif comprising_lines[1] == len(half_spaces) - 1:
-                    charges = [int(-half_spaces[comprising_lines[1]][0])]
+                compared_energy = float("inf")
+                for c3, e3 in e_vs_c.items():
+                    if c3 == c1 or c3 == c2:
+                        continue
+                    else:
+                        e = e3 + c3 * x
+                        if e < compared_energy:
+                            compared_energy = e
 
-                else:
-                    break
-                points_by_name.append([hs.intersections[i], charges])
+                if 0 < x < self._band_gap and y < compared_energy:
+                    points[x] = y
+                    charge.add(c1)
+                    charge.add(c2)
 
-            points[name] = np.array(points_by_name)
+            transition_levels[name] = [points, charge]
 
-        return points
+        return transition_levels
 
 
     def plot_energy(self, does_plot_all=False):
