@@ -77,6 +77,9 @@ class DefectEnergiesTest(unittest.TestCase):
     def test_energies(self):
         print(self.defect_energies._defect_energies)
 
+    def test_calc_transition_levels(self):
+        print(self.defect_energies.calc_transition_levels())
+
         # # electrostatic_potential is a property because it is used for
         # # test_relative_potential method.
         # self.electrostatic_potential = \
