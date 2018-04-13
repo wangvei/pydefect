@@ -200,7 +200,7 @@ class DefectEntry:
 
     def to_json_file(self, filename):
         """
-        Returns a json file.
+        Writes a json file.
         """
         with open(filename, 'w') as fw:
             json.dump(self.as_dict(), fw, indent=2, cls=MontyEncoder)
