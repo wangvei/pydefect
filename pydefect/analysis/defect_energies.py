@@ -1,21 +1,21 @@
 # -*- coding: utf-8 -*-
 
-from collections import namedtuple
 import os
 
-from pydefect.core.supercell_dft_results import SupercellDftResults, UnitcellDftResults
+from collections import defaultdict, namedtuple
 
 from pydefect.core.defect_entry import DefectEntry
+from pydefect.core.supercell_dft_results import SupercellDftResults
+from pydefect.core.unitcell_dft_results import UnitcellDftResults
 
 
 class DefectEnergies:
 
-    Defect = namedtuple("Defect", ("defect_entry", "dft_results", "correction"))
-
-    def __init__(self, unitcell, chem_pot, perfect, defects, chem_pot_label,
-                 is_lower_energy=False):
+    def __init__(self, unitcell, perfect, defects, chem_pot, chem_pot_label):
+#        is_lower_energy=False):
         """
         Args:
+        Defect = namedtuple("Defect", "defect_entry", "dft_results", "correction")
             unitcell (UnitcellDftResults):
             chem_pot (ChemPot):
             perfect (SupercellDftResults)
@@ -26,49 +26,57 @@ class DefectEnergies:
         self._vbm, self._cbm = unitcell.band_edge
         # TODO: check if exists
 #        self._vbm2, self._cbm2 = unitcell.band_edge2
-        self._defect_energies = {}
 
         chem_pot = chem_pot[chem_pot_label]
 
+        self._defect_energies = defaultdict(lambda: defaultdict(float))
         for d in defects:
             name = d.defect_entry.name
+
             charge = d.defect_entry.charge
             element_diff = d.defect_entry.element_diff
 
             relative_energy = d.dft_results.relative_total_energy(perfect)
-            electron_part = self._vbm * charge
-            chempot_part = - sum([v * chem_pot[k] for k, v in element_diff.items()])
+            correction_energy = d.correction.total_correction_energy
+            electron_interchange_energy = self._vbm * charge
+            element_interchange_energy = \
+                - sum([v * chem_pot[k] for k, v in element_diff.items()])
 
-            energy = relative_energy + electron_part + chempot_part
+            energy = relative_energy + correction_energy + \
+                     electron_interchange_energy + element_interchange_energy
 
-            if self._defect_energies[name][charge]:
-                if is_lower_energy is True:
-                    if self._defect_energies[name][charge] > energy:
-                        self._defect_energies[name][charge] = energy
-                else:
-                    raise ArithmeticError
+            self._defect_energies[name][charge] = energy
+
+#        self._defect_energies = dict(defect_energies)
+
+#            if self._defect_energies[name][charge]:
+#                if is_lower_energy is True:
+#                    if self._defect_energies[name][charge] > energy:
+#                        self._defect_energies[name][charge] = energy
+#                else:
+#                    raise ArithmeticError
 
 
-    @classmethod
-    def from_directories(cls, unitcell_dir, chem_pot_dir, perfect_dir, defect_dirs):
-        """
-        Args:
-        """
+    # @classmethod
+    # def from_directories(cls, unitcell_dir, chem_pot_dir, perfect_dir, defect_dirs):
+    #     """
+    #     Args:
+    #     """
 
-        unitcell = UnitcellDftResults.\
-            json_load(os.path.join(unitcell_dir, "unitcell.json"))
-        chem_pot = "xx"
-        perfect = SupercellDftResults.json_load(os.path.join(perfect_dir, "perfect.json"))
+        # unitcell = UnitcellDftResults.\
+        #     json_load(os.path.join(unitcell_dir, "unitcell.json"))
+        # chem_pot = "xx"
+        # perfect = SupercellDftResults.json_load(os.path.join(perfect_dir, "perfect.json"))
 
-        defects = []
-        for d_dir in defect_dirs:
-            defect_entry = DefectEntry.json_load(os.path.join(d_dir, "defect_entry.json"))
-            dft_results = SupercellDftResults.json_load(os.path.join(d_dir, "defect_entry.json"))
-            correction = "aaa"
+        # defects = []
+        # for d_dir in defect_dirs:
+        #     defect_entry = DefectEntry.json_load(os.path.join(d_dir, "defect_entry.json"))
+        #     dft_results = SupercellDftResults.json_load(os.path.join(d_dir, "defect_entry.json"))
+        #     correction = "aaa"
 
-            defects.append([defect_entry, dft_results, correction])
+            # defects.append([defect_entry, dft_results, correction])
 
-        return cls(unitcell, chem_pot, perfect, defects)
+        # return cls(unitcell, chem_pot, perfect, defects)
 
 
     def calc_transition_levels(self):
