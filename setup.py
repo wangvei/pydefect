@@ -34,7 +34,7 @@ setup(
     classifiers=[
         'Programming Language :: Python :: 3.6',
     ],
-    install_requires=['numpy', 'pymatgen', 'monty'],
+    install_requires=['numpy', 'pymatgen', 'monty', 'matplotlib'],
     cmdclass = cmdclass,
     ext_modules=ext_modules,
 )

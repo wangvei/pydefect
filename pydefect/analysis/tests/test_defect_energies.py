@@ -48,9 +48,10 @@ class DefectEnergiesTest(unittest.TestCase):
         Defect = namedtuple("Defect",
                             ("defect_entry", "dft_results", "correction"))
 
-        defect_dirs = ["Mg_O1_0", "Mg_O1_1", "Mg_O1_2", "Mg_O1_3", "Mg_O1_4",
-                       "Mg_i1_0", "Mg_i1_1", "Mg_i1_2", "Va_O1_1", "Va_O1_2",
-                       "Va_O1_0"]
+        defect_dirs = ["Va_O1_1", "Va_O1_2", "Va_O1_0"]
+        # defect_dirs = ["Mg_O1_0", "Mg_O1_1", "Mg_O1_2", "Mg_O1_3", "Mg_O1_4",
+        #                "Mg_i1_0", "Mg_i1_1", "Mg_i1_2", "Va_O1_1", "Va_O1_2",
+        #                "Va_O1_0"]
         defects = []
         for dd in defect_dirs:
             d = os.path.join(test_dir, "MgO/defects", dd)
@@ -60,12 +61,13 @@ class DefectEnergiesTest(unittest.TestCase):
                 json_load(os.path.join(d, "dft_results.json"))
             correction = Correction()
 
-            defect = Defect(defect_entry=defect_entry, dft_results=dft_results,
+            defect = Defect(defect_entry=defect_entry,
+                            dft_results=dft_results,
                             correction=correction)
             defects.append(defect)
 
         # temporary insert values
-        chem_pot = {"A": {"Mg": -1.5, "O": 0}, "B": {"Mg": 0, "O": -1.5}}
+        chem_pot = {"A": {"Mg": -2.1, "O": 0}, "B": {"Mg": 0, "O": -2.1}}
         chem_pot_label = "A"
 
         self.defect_energies = DefectEnergies(unitcell=unitcell,
@@ -76,9 +78,14 @@ class DefectEnergiesTest(unittest.TestCase):
 
     def test_energies(self):
         print(self.defect_energies._defect_energies)
+        print(self.defect_energies.vbm)
+        print(self.defect_energies.cbm)
+        print(self.defect_energies.band_gap)
 
     def test_calc_transition_levels(self):
-        print(self.defect_energies.calc_transition_levels())
+        self.defect_energies.calc_transition_levels()
+        print(self.defect_energies._transition_levels)
+        self.defect_energies.plot_energy()
 
         # # electrostatic_potential is a property because it is used for
         # # test_relative_potential method.
