@@ -48,10 +48,10 @@ class DefectEnergiesTest(unittest.TestCase):
         Defect = namedtuple("Defect",
                             ("defect_entry", "dft_results", "correction"))
 
-        defect_dirs = ["Va_O1_1", "Va_O1_2", "Va_O1_0"]
-        # defect_dirs = ["Mg_O1_0", "Mg_O1_1", "Mg_O1_2", "Mg_O1_3", "Mg_O1_4",
-        #                "Mg_i1_0", "Mg_i1_1", "Mg_i1_2", "Va_O1_1", "Va_O1_2",
-        #                "Va_O1_0"]
+        # defect_dirs = ["Va_O1_1", "Va_O1_2", "Va_O1_0"]
+        defect_dirs = ["Mg_O1_0", "Mg_O1_1", "Mg_O1_2", "Mg_O1_3", "Mg_O1_4",
+                       "Mg_i1_0", "Mg_i1_1", "Mg_i1_2", "Va_O1_1", "Va_O1_2",
+                       "Va_O1_0"]
         defects = []
         for dd in defect_dirs:
             d = os.path.join(test_dir, "MgO/defects", dd)

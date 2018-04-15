@@ -37,10 +37,12 @@ class DefectEnergies:
         self._vbm, self._cbm = unitcell.band_edge
         # TODO: check if exists
         # self._vbm2, self._cbm2 = unitcell.band_edge2
+        self._transition_levels = {}
 
         chem_pot = chem_pot[chem_pot_label]
 
         self._defect_energies = defaultdict(dict)
+
         for d in defects:
             name = d.defect_entry.name
             charge = d.defect_entry.charge
@@ -64,8 +66,9 @@ class DefectEnergies:
 
     def calc_transition_levels(self):
         """"""
-        # value = {charge: energy at the vbm}
-        self._transition_levels = {}
+        transition_levels = {}
+        TransitionLevel = namedtuple("TransitionLevel",
+                                     ("cross_points", "charges"))
 
         for name, e_of_c in self._defect_energies.items():
             points = []
@@ -83,31 +86,43 @@ class DefectEnergies:
 
             for (c1, e1), (c2, e2) in combinations(e_of_c.items(), r=2):
                 # Estimate the cross point between two charge states
-                x_12 = - (e1 - e2) / (c1 - c2)
-                y_12 = (c1 * e2 - c2 * e1) / (c1 - c2)
+                x= - (e1 - e2) / (c1 - c2)
+                y = (c1 * e2 - c2 * e1) / (c1 - c2)
 
-                compared_energy = self.min_e_at_ef(e_of_c, x_12)[1] + 0.00001
+                compared_energy = self.min_e_at_ef(e_of_c, x)[1] + 0.00001
 
-                if 0 < x_12 < self.band_gap and y_12 < compared_energy:
-                    points.append([x_12, y_12])
+                if 0 < x < self.band_gap and y < compared_energy:
+                    points.append([x, y])
                     charge.add(c1)
                     charge.add(c2)
 
-            self._transition_levels[name] = [points, charge]
+            transition_levels[name] = \
+                TransitionLevel(cross_points=sorted(points, key=lambda x: x[0]),
+                                charges=sorted(charge))
+
+        self._transition_levels = transition_levels
 
     def plot_energy(self):
         fig = plt.figure()
-        ax = fig.add_subplot(111)
+#        ax = fig.add_subplot(111)
+#        y_max =
+#        y_min = np.array(tl.cross_points).transpose()
 
-#        x, y = np.random.random(size=(2, 10))
-        for name, (energy, charge) in self._transition_levels.items():
-            x, y = np.array(energy).transpose()
-            print(x, y)
+        for name, tl in self.transition_levels.items():
+            x, y = np.array(tl.cross_points).transpose()
             plt.plot(x, y, 'ro-')
 
         plt.show()
 
 #        ax.plot()
+
+    @property
+    def transition_levels(self):
+        """
+        transition_levels[name] = [[E_F, energy], [charge1, charge2]]
+
+        """
+        return self._transition_levels
 
     @property
     def vbm(self):
