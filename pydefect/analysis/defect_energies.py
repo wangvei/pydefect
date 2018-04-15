@@ -104,14 +104,31 @@ class DefectEnergies:
 
     def plot_energy(self):
         fig = plt.figure()
-#        ax = fig.add_subplot(111)
+        ax = fig.add_subplot(111)
+        ax.set_xlabel("Fermi level (eV)")
+        ax.set_ylabel("Formation energy (eV)")
+
 #        y_max =
 #        y_min = np.array(tl.cross_points).transpose()
 
-        for name, tl in self.transition_levels.items():
-            x, y = np.array(tl.cross_points).transpose()
-            plt.plot(x, y, 'ro-')
+        for i, (name, tl) in enumerate(self.transition_levels.items()):
+            cross_points = tl.cross_points
+            middle_points = \
+                reversed([[(a[0] + b[0]) / 2, (a[1] + b[1]) / 2 + 0.3]
+                          for a, b in zip(cross_points, cross_points[1:])])
 
+            print("middle_points", middle_points)
+            x, y = np.array(cross_points).transpose()
+
+            c = matplotlib.cm.hot(float(i) / len(self.transition_levels))
+
+            ax.plot(x, y, 'ro-', color=c, label=name)
+            ax.legend(bbox_to_anchor=(1.05, 0.0), loc="lower left")
+
+            for j, (x, y) in enumerate(middle_points):
+                ax.annotate(str(tl.charges[j]), (x, y))
+
+        fig.subplots_adjust(right=0.75)
         plt.show()
 
 #        ax.plot()
@@ -119,7 +136,6 @@ class DefectEnergies:
     @property
     def transition_levels(self):
         """
-        transition_levels[name] = [[E_F, energy], [charge1, charge2]]
 
         """
         return self._transition_levels
