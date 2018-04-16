@@ -9,6 +9,7 @@ from itertools import combinations
 
 from pydefect.core.supercell_dft_results import SupercellDftResults
 from pydefect.core.unitcell_dft_results import UnitcellDftResults
+from pydefect.input_maker.input_maker import filter_name
 
 
 TransitionLevel = namedtuple("TransitionLevel",
@@ -19,7 +20,8 @@ class DefectEnergies:
     """
     A class related to a set of defect formation energies.
     """
-    def __init__(self, unitcell, perfect, defects, chem_pot, chem_pot_label):
+    def __init__(self, unitcell, perfect, defects, chem_pot, chem_pot_label,
+                 filtering_words=None):
         """
         Calculates defect formation energies.
         Args:
@@ -45,6 +47,8 @@ class DefectEnergies:
 
         for d in defects:
             name = d.defect_entry.name
+            if filtering_words and filter_name(name, filtering_words) is False:
+                continue
             charge = d.defect_entry.charge
             element_diff = d.defect_entry.element_diff
 
@@ -58,6 +62,9 @@ class DefectEnergies:
             self._defect_energies[name][charge] = \
                 relative_energy + correction_energy + \
                 electron_interchange_energy + element_interchange_energy
+
+    def print_energies(self):
+        pass
 
     @staticmethod
     def min_e_at_ef(ec, ef):
@@ -103,7 +110,8 @@ class DefectEnergies:
 
         self._transition_levels = transition_levels
 
-    def plot_energy(self, file_name=None, x_range=None, y_range=None):
+    def plot_energy(self, file_name=None, x_range=None, y_range=None,
+                    filter=None):
         """
         Plots the defect formation energies as a function of the Fermi level.
         Args:
@@ -117,6 +125,9 @@ class DefectEnergies:
 
         ax.set_xlabel("Fermi level (eV)")
         ax.set_ylabel("Formation energy (eV)")
+
+#        if filter:
+#           transition_levels =
 
         x_max = max([max(np.array(tl.cross_points).transpose()[0])
                      for tl in self.transition_levels.values()])
@@ -132,7 +143,7 @@ class DefectEnergies:
         if y_range:
             plt.ylim(y_range[0], y_range[1])
         else:
-            margin = (y_max - y_min) * 0.05
+            margin = (y_max - y_min) * 0.08
             plt.ylim(y_min - margin, y_max + margin)
 
         # support lines

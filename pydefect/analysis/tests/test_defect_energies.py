@@ -74,7 +74,8 @@ class DefectEnergiesTest(unittest.TestCase):
                                               perfect=perfect,
                                               defects=defects,
                                               chem_pot=chem_pot,
-                                              chem_pot_label=chem_pot_label)
+                                              chem_pot_label=chem_pot_label,
+                                              filtering_words=["Va_O"])
 
     def test_energies(self):
         print(self.defect_energies._defect_energies)
