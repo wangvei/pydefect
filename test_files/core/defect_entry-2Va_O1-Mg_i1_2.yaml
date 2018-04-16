@@ -1,7 +1,4 @@
-name: Va_O1+N_O
-initial_structure: POSCAR-MgO8atoms-Va_O1+N_O
+name: 2Va_O1+Mg_i1_2
+initial_structure: POSCAR-MgO8atoms-2Va_O1-Mg_i1_2
 perfect_structure: POSCAR-MgO8atoms
-removed_atoms: {8: [0.25, 0.25, 0.25], 9:  [0.25, 0.25, 0.75]}
-# inserted_atoms must be a list
-inserted_atoms: [14]
 charge: 2

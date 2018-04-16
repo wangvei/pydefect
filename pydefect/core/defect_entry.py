@@ -2,6 +2,7 @@
 
 import itertools
 import json
+import numpy as np
 import os
 import ruamel.yaml as yaml
 
@@ -97,21 +98,14 @@ class DefectEntry:
         return cls(d["name"], d["initial_structure"], removed_atoms,
                    d["inserted_atoms"], element_diff, d["charge"])
 
-    # TODO: get removed_atoms and inserted_atoms by comparing initial_structure
-    #       and perfect_structure
     @classmethod
-    def from_yaml(cls, filename):
+    def from_yaml(cls, filename, tolerance=1):
         """
         An example of yaml file.
-        name: Va_O1+N_O1
-        initial_structure: POSCAR
-        perfect_structure: ../../defects/perfect/POSCAR
-        removed_atoms:
-            8: [0.25, 0.25, 0.25]
-            9: [0.25, 0.25, 0.75]
-        # inserted_atoms must be a list or !!null
-        inserted_atoms: [8]
-        charge: 2
+            name: Va_O1+N_O1
+            initial_structure: POSCAR
+            perfect_structure: ../../defects/perfect/POSCAR
+            charge: 2
         """
 
         abs_dir = os.path.split(os.path.abspath(filename))[0]
@@ -123,12 +117,34 @@ class DefectEntry:
             os.path.join(abs_dir, yaml_data["initial_structure"]),
             os.path.join(abs_dir, yaml_data["perfect_structure"]))
 
-        s = Structure.from_file(os.path.join(abs_dir,
-                                             yaml_data["initial_structure"]))
+        defect_structure = Structure.from_file(
+            os.path.join(abs_dir, yaml_data["initial_structure"]))
+        perfect_structure = Structure.from_file(
+            os.path.join(abs_dir, yaml_data["perfect_structure"]))
 
-        return cls(yaml_data["name"], s, yaml_data["removed_atoms"],
-                   yaml_data["inserted_atoms"], element_diff,
-                   yaml_data["charge"])
+        inserted_atoms = [i for i in range(defect_structure.num_sites)]
+        removed_atoms = {}
+
+        for i, p_site in enumerate(perfect_structure):
+            is_removed = True
+
+            for j in inserted_atoms:
+                d_site = defect_structure[j]
+                distance = p_site.distance(d_site)
+
+                if distance < tolerance and p_site.specie == d_site.specie:
+                    inserted_atoms.remove(j)
+                    is_removed = False
+                    break
+
+            if is_removed:
+                removed_atoms[i] = list(p_site.frac_coords)
+
+        # TODO: check the consistency of element_diff
+
+
+        return cls(yaml_data["name"], defect_structure, removed_atoms,
+                   inserted_atoms, element_diff, yaml_data["charge"])
 
     @classmethod
     def json_load(cls, filename):

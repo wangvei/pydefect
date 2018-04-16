@@ -12,8 +12,8 @@ from pydefect.core.unitcell_dft_results import UnitcellDftResults
 from pydefect.input_maker.input_maker import filter_name
 
 
-TransitionLevel = namedtuple("TransitionLevel",
-                             ("cross_points", "charges"))
+Defect = namedtuple("Defect", ("defect_entry", "dft_results", "correction"))
+TransitionLevel = namedtuple("TransitionLevel", ("cross_points", "charges"))
 
 
 class DefectEnergies:
@@ -21,7 +21,7 @@ class DefectEnergies:
     A class related to a set of defect formation energies.
     """
     def __init__(self, unitcell, perfect, defects, chem_pot, chem_pot_label,
-                 filtering_words=None):
+                 filtering_words=None, system_name=""):
         """
         Calculates defect formation energies.
         Args:
@@ -37,6 +37,7 @@ class DefectEnergies:
         """
 
         self._vbm, self._cbm = unitcell.band_edge
+        self.title = system_name + " condition " + chem_pot_label
         # TODO: check if exists
         # self._vbm2, self._cbm2 = unitcell.band_edge2
         self._transition_levels = {}
@@ -110,8 +111,7 @@ class DefectEnergies:
 
         self._transition_levels = transition_levels
 
-    def plot_energy(self, file_name=None, x_range=None, y_range=None,
-                    filter=None):
+    def plot_energy(self, file_name=None, x_range=None, y_range=None):
         """
         Plots the defect formation energies as a function of the Fermi level.
         Args:
@@ -123,11 +123,10 @@ class DefectEnergies:
         fig = plt.figure()
         ax = fig.add_subplot(111)
 
+        plt.title(self.title)
+
         ax.set_xlabel("Fermi level (eV)")
         ax.set_ylabel("Formation energy (eV)")
-
-#        if filter:
-#           transition_levels =
 
         x_max = max([max(np.array(tl.cross_points).transpose()[0])
                      for tl in self.transition_levels.values()])

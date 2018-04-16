@@ -154,6 +154,7 @@ def filter_name(name, filtering_words):
         pattern = r"" + re.escape(p)
         if re.search(pattern, name):
             return True
+
     return False
 
 
@@ -162,22 +163,8 @@ def filter_name_set(name_set, filtering_words):
      Args:
         name_set (list): A set of defect names.
         filtering_words (list):
-
-    When the following type names are given, constructs a set of defects.
-        "Va"    --> A set of all the vacancies.
-        "_i"     --> A set of all the interstitials.
-        "Va_O"  --> A set of all the oxygen vacancies
-        "Va_O1" --> A set of oxygen vacancies at O1 site
-        "Mg_O"  --> A set of all the Mg-on-O antisite pairs.
-        "Mg_O1" --> A set of Mg-on-O1 antisite pairs.
-
-    When complete defect_name is given, constructs a particular defect.
-        e.g., "Va_O1_2",  "Mg_O1_0"
     """
     filtered_names = []
-
-    if type(filtering_words) is not list:
-        raise TypeError("The type of filtering_words is not list.")
 
     for d in name_set:
         if filter_name(d, filtering_words):
