@@ -11,7 +11,7 @@ from pymatgen.core.structure import Structure
 from pydefect.input_maker.input_maker import normalized_random_3d_vector, \
     random_vector, perturb_neighbors, get_int_from_string, \
     parse_defect_name, print_already_exist, print_is_being_constructed, \
-    filter_name_set, DefectMaker
+    filter_name, filter_name_set, DefectMaker
 
 from pydefect.core.defect_entry import DefectEntry
 from pydefect.core.irreducible_site import IrreducibleSite
@@ -117,7 +117,13 @@ class PrintIsBeingConstructedTest(unittest.TestCase):
         self.assertEqual(sys.stdout.getvalue(), expected)
 
 
-class FilterDefectNameSetTest(unittest.TestCase):
+class FilterNameTest(unittest.TestCase):
+    def test(self):
+        self.assertTrue(filter_name("Va_Mg1_-2", filtering_words=["Va"]))
+        self.assertFalse(filter_name("Mg_i1_0", filtering_words=["Va"]))
+
+
+class FilterNameSetTest(unittest.TestCase):
 
     def test(self):
         name_set = \

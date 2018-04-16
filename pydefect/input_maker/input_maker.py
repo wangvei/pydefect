@@ -129,6 +129,34 @@ def print_is_being_constructed(name):
     print("{:>10} is being constructed.".format(name))
 
 
+def filter_name(name, filtering_words):
+    """
+     Args:
+        name (str): A defect name.
+        filtering_words (list):
+
+    When the following type names are given, constructs a set of defects.
+        "Va"    --> A set of all the vacancies.
+        "_i"     --> A set of all the interstitials.
+        "Va_O"  --> A set of all the oxygen vacancies
+        "Va_O1" --> A set of oxygen vacancies at O1 site
+        "Mg_O"  --> A set of all the Mg-on-O antisite pairs.
+        "Mg_O1" --> A set of Mg-on-O1 antisite pairs.
+
+    When complete defect_name is given, constructs a particular defect.
+        e.g., "Va_O1_2",  "Mg_O1_0"
+    """
+
+    if type(filtering_words) is not list:
+        raise TypeError("The type of filtering_words is not list.")
+
+    for p in filtering_words:
+        pattern = r"" + re.escape(p)
+        if re.search(pattern, name):
+            return True
+    return False
+
+
 def filter_name_set(name_set, filtering_words):
     """
      Args:
@@ -151,14 +179,9 @@ def filter_name_set(name_set, filtering_words):
     if type(filtering_words) is not list:
         raise TypeError("The type of filtering_words is not list.")
 
-    for p in filtering_words:
-        if p == "perfect":
-            filtered_names.append(p)
-        else:
-            pattern = r"" + re.escape(p)
-            for d in name_set:
-                if re.search(pattern, d):
-                    filtered_names.append(d)
+    for d in name_set:
+        if filter_name(d, filtering_words):
+            filtered_names.append(d)
 
     return list(set(filtered_names))
 
