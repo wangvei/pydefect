@@ -1,18 +1,18 @@
 # -*- coding: utf-8 -*-
 
 import numpy as np
-import os
 import matplotlib
 import matplotlib.pyplot as plt
-#import matplotlib.path as path
 
 from collections import defaultdict, namedtuple
 from itertools import combinations
-from scipy.spatial import HalfspaceIntersection
 
-from pydefect.core.defect_entry import DefectEntry
 from pydefect.core.supercell_dft_results import SupercellDftResults
 from pydefect.core.unitcell_dft_results import UnitcellDftResults
+
+
+TransitionLevel = namedtuple("TransitionLevel",
+                             ("cross_points", "charges"))
 
 
 class DefectEnergies:
@@ -65,10 +65,11 @@ class DefectEnergies:
         return min(d.items(), key=lambda x: x[1])
 
     def calc_transition_levels(self):
-        """"""
+        """
+        TransitionLevel (namedtuple)
+        """
+
         transition_levels = {}
-        TransitionLevel = namedtuple("TransitionLevel",
-                                     ("cross_points", "charges"))
 
         for name, e_of_c in self._defect_energies.items():
             points = []
@@ -79,14 +80,14 @@ class DefectEnergies:
             points.append([0.0, min_e_vbm])
             charge.add(c_vbm)
 
-            # Estimate the lowest energies for each defect at the cbm
+            # Same but at the cbm
             c_cbm, min_e_cbm = self.min_e_at_ef(e_of_c, self.band_gap)
             points.append([self.band_gap, min_e_cbm])
             charge.add(c_cbm)
 
             for (c1, e1), (c2, e2) in combinations(e_of_c.items(), r=2):
                 # Estimate the cross point between two charge states
-                x= - (e1 - e2) / (c1 - c2)
+                x = - (e1 - e2) / (c1 - c2)
                 y = (c1 * e2 - c2 * e1) / (c1 - c2)
 
                 compared_energy = self.min_e_at_ef(e_of_c, x)[1] + 0.00001
@@ -102,42 +103,76 @@ class DefectEnergies:
 
         self._transition_levels = transition_levels
 
-    def plot_energy(self):
+    def plot_energy(self, file_name=None, x_range=None, y_range=None):
+        """
+        Plots the defect formation energies as a function of the Fermi level.
+        Args:
+            file_name (str):
+            x_range (2x1 list):
+            y_range (2x1 list):
+        """
+
         fig = plt.figure()
         ax = fig.add_subplot(111)
+
         ax.set_xlabel("Fermi level (eV)")
         ax.set_ylabel("Formation energy (eV)")
 
-#        y_max =
-#        y_min = np.array(tl.cross_points).transpose()
+        x_max = max([max(np.array(tl.cross_points).transpose()[0])
+                     for tl in self.transition_levels.values()])
+        y_max = max([max(np.array(tl.cross_points).transpose()[1])
+                     for tl in self.transition_levels.values()])
+        y_min = min([min(np.array(tl.cross_points).transpose()[1])
+                     for tl in self.transition_levels.values()])
+        if y_min > 0:
+            y_min = 0
+
+        if x_range:
+            plt.xlim(x_range[0], x_range[1])
+        if y_range:
+            plt.ylim(y_range[0], y_range[1])
+        else:
+            margin = (y_max - y_min) * 0.05
+            plt.ylim(y_min - margin, y_max + margin)
+
+        # support lines
+        plt.axvline(x=0, linewidth=1.0, linestyle='dashed')
+        plt.axvline(x=x_max, linewidth=1.0, linestyle='dashed')
+        plt.axhline(y=0, linewidth=1.0, linestyle='dashed')
 
         for i, (name, tl) in enumerate(self.transition_levels.items()):
             cross_points = tl.cross_points
-            middle_points = \
-                reversed([[(a[0] + b[0]) / 2, (a[1] + b[1]) / 2 + 0.3]
-                          for a, b in zip(cross_points, cross_points[1:])])
-
-            print("middle_points", middle_points)
+            # set the x and y arrays to be compatible with matplotlib style.
+            # e.g., x = [0.0, 0.3, 0.5, ...], y = [2.1, 3.2, 1.2, ...]
             x, y = np.array(cross_points).transpose()
 
-            c = matplotlib.cm.hot(float(i) / len(self.transition_levels))
+            color = matplotlib.cm.hot(float(i) / len(self.transition_levels))
+            ax.plot(x, y, 'ro-', color=color, label=name)
 
-            ax.plot(x, y, 'ro-', color=c, label=name)
             ax.legend(bbox_to_anchor=(1.05, 0.0), loc="lower left")
 
+            # Arrange the charge states at the middle between the TLs.
+            margin_mp = (y_max - y_min) * 0.025
+            middle_points = \
+                reversed([[(a[0] + b[0]) / 2, (a[1] + b[1]) / 2 + margin_mp]
+                          for a, b in zip(cross_points, cross_points[1:])])
+
             for j, (x, y) in enumerate(middle_points):
-                ax.annotate(str(tl.charges[j]), (x, y))
+                ax.annotate(str(tl.charges[j]), (x, y), color=color)
 
         fig.subplots_adjust(right=0.75)
-        plt.show()
 
-#        ax.plot()
+        if file_name:
+            plt.savefig(file_name)
+        else:
+            plt.show()
+
+    @property
+    def defect_energies(self):
+        return self._defect_energies
 
     @property
     def transition_levels(self):
-        """
-
-        """
         return self._transition_levels
 
     @property
@@ -153,4 +188,11 @@ class DefectEnergies:
         return self._cbm - self._vbm
 
 
+# class FermiLevel:
+#     """
+#     A class related to a set of defect formation energies.
+#     """
+#     def __init__(self, defect_energies, dos):
+#         """
+#         """
 

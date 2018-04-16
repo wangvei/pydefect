@@ -71,10 +71,10 @@ class DefectEnergiesTest(unittest.TestCase):
         chem_pot_label = "A"
 
         self.defect_energies = DefectEnergies(unitcell=unitcell,
-                                         perfect=perfect,
-                                         defects=defects,
-                                         chem_pot=chem_pot,
-                                         chem_pot_label=chem_pot_label)
+                                              perfect=perfect,
+                                              defects=defects,
+                                              chem_pot=chem_pot,
+                                              chem_pot_label=chem_pot_label)
 
     def test_energies(self):
         print(self.defect_energies._defect_energies)
@@ -86,6 +86,8 @@ class DefectEnergiesTest(unittest.TestCase):
         self.defect_energies.calc_transition_levels()
         print(self.defect_energies._transition_levels)
         self.defect_energies.plot_energy()
+#        self.defect_energies.plot_energy(x_range=[-0.5, 5], y_range=[-5, 20])
+#        self.defect_energies.plot_energy(file_name="test.eps")
 
         # # electrostatic_potential is a property because it is used for
         # # test_relative_potential method.
