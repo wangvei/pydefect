@@ -2,7 +2,6 @@
 
 import itertools
 import json
-import numpy as np
 import os
 import ruamel.yaml as yaml
 
@@ -99,19 +98,23 @@ class DefectEntry:
                    d["inserted_atoms"], element_diff, d["charge"])
 
     @classmethod
-    def from_yaml(cls, filename, tolerance=1):
+    def from_yaml(cls, filename, tolerance=0.1):
         """
         An example of yaml file.
-            name: Va_O1+N_O1
+            name: 2Va_O1+Mg_i_2
             initial_structure: POSCAR
             perfect_structure: ../../defects/perfect/POSCAR
             charge: 2
+            tolerance: 0.2 (optional)
         """
 
         abs_dir = os.path.split(os.path.abspath(filename))[0]
 
         with open(filename, "r") as yaml_file:
             yaml_data = yaml.safe_load(yaml_file)
+
+        if "tolerance" in yaml_data.keys():
+            tolerance = yaml_data["tolerance"]
 
         element_diff = element_diff_from_poscar_files(
             os.path.join(abs_dir, yaml_data["initial_structure"]),
@@ -132,6 +135,7 @@ class DefectEntry:
                 d_site = defect_structure[j]
                 distance = p_site.distance(d_site)
 
+                # check distance and species for comparison
                 if distance < tolerance and p_site.specie == d_site.specie:
                     inserted_atoms.remove(j)
                     is_removed = False
@@ -140,8 +144,13 @@ class DefectEntry:
             if is_removed:
                 removed_atoms[i] = list(p_site.frac_coords)
 
-        # TODO: check the consistency of element_diff
-
+        # check the consistency of element_diff
+        if not (sum([i for i in element_diff.values() if i > 0])
+                == len(inserted_atoms)) \
+            and (sum([-i for i in element_diff.values() if i < 0])
+                 == len(removed_atoms)):
+            raise ImproperInputStructureError(
+                "Atoms in two structures are not mapped in the tolerance.")
 
         return cls(yaml_data["name"], defect_structure, removed_atoms,
                    inserted_atoms, element_diff, yaml_data["charge"])
@@ -244,3 +253,7 @@ class DefectEntry:
         # farthest_dist = shortest_distances[farthest_atom_index]
 
         # return farthest_atom_index, farthest_dist
+
+
+class ImproperInputStructureError(Exception):
+    pass
