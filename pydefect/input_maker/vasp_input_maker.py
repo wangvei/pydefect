@@ -4,10 +4,15 @@ import os
 import ruamel.yaml as yaml
 import shutil
 
+from monty.serialization import loadfn
+
+from pymatgen.io.vasp import Incar, Potcar
+
 from pydefect.core.defect_entry import get_num_atoms_for_elements, \
     get_num_electrons_from_potcar
 from pydefect.core.supercell_dft_results import defect_center
-from pydefect.input_maker.defect_initial_setting import DefectInitialSetting
+from pydefect.input_maker.defect_initial_setting import DefectInitialSetting, \
+    element_set
 from pydefect.input_maker.input_maker import \
     DefectMaker, DefectInputSetMaker, print_is_being_removed, \
     print_already_exist, print_is_being_constructed, perturb_neighbors
@@ -22,6 +27,8 @@ __date__ = "December 4, 2017"
 
 
 SETTINGS_FILE = os.path.join(os.path.expanduser("~"), ".pydefect.yaml")
+MODULE_DIR = os.path.dirname(os.path.abspath(__file__))
+DEFAULT_INCAR = os.path.join(MODULE_DIR, "default_INCAR")
 
 
 def potcar_dir():
@@ -52,15 +59,36 @@ def make_potcar(dirname, elements, default_potcar_dir):
     Writes POTCAR with a list of the given elements names.
     Now, only default POTCAR files are supported.
     """    
-    constructed_potcar = os.path.join(dirname, "POTCAR")
-
-    with open(constructed_potcar, 'w') as potcar:
+    with open(os.path.join(dirname, "POTCAR"), 'w') as potcar:
         for e in elements:
             potcar_e = "POTCAR_" + e
             potcar_file_name = os.path.join(default_potcar_dir, potcar_e)
 
             with open(potcar_file_name) as pot:
                 potcar.write(pot.read())
+
+
+def make_incar(dirname='.', poscar="DPOSCAR", defect_in=None, ):
+    """
+    """
+    incar = os.path.join(dirname, 'INCAR')
+    shutil.copyfile(DEFAULT_INCAR, incar)
+
+    with open(incar, 'a') as fa:
+        if defect_in:
+            enmax = []
+            defect_initial_setting = \
+                DefectInitialSetting.from_defect_in(poscar, defect_in)
+            for e in element_set(defect_initial_setting):
+                potcar_e = "POTCAR_" + e
+                potcar_file_name = os.path.join(potcar_dir(), potcar_e)
+                enmax.append(Potcar.from_file(potcar_file_name)[0].enmax)
+            encut = str(max(enmax) * 1.3)
+        else:
+            encut = input("Input ENCUT:")
+        fa.write('ENCUT = ' + encut + "\n")
+        npar = input("Input NPAR:")
+        fa.write('NPAR = ' + npar + "\n")
 
 
 class VaspDefectInputSetMaker(DefectInputSetMaker):

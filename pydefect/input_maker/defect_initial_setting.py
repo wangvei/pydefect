@@ -49,19 +49,19 @@ def extended_range(i):
         return range(i, 1)
 
 
-def get_electronegativity(s):
+def get_electronegativity(element):
     try:
-        return atom.electronegativity[s]
+        return atom.electronegativity[element]
     except KeyError:
-        warnings.warn("Electronegativity of " + s + " is unavailable.")
+        warnings.warn("Electronegativity of " + element + " is unavailable.")
         return None
 
 
-def get_oxidation_state(s):
+def get_oxidation_state(element):
     try:
-        return atom.charge[s]
+        return atom.charge[element]
     except KeyError:
-        warnings.warn("Oxidation state of " + s + " is unavailable.")
+        warnings.warn("Oxidation state of " + element + " is unavailable.")
         return None
 
 
@@ -71,13 +71,28 @@ def print_dopant_info(dopant):
     """
     if Element.is_valid_symbol(dopant):
         electronegativity = get_electronegativity(dopant)
-        oxidation_state = get_oxidation_state()
+        oxidation_state = get_oxidation_state(dopant)
 
         print("   Dopant element: {}".format(dopant))
         print("Electronegativity: {}".format(electronegativity))
         print("  Oxidation state: {}".format(oxidation_state))
     else:
         warnings.warn(dopant + " is not a proper element name.")
+
+
+def element_set(defect_initial_setting):
+    """
+    Args: defect_initial_setting (DefectInitialSetting)
+    """
+    e_set = set()
+
+    for i in defect_initial_setting.irreducible_sites:
+        e_set.add(i.element)
+
+    for d in defect_initial_setting.antisite_configs:
+        e_set.add(d[0])
+
+    return e_set
 
 
 class DefectInitialSetting:
@@ -305,9 +320,9 @@ class DefectInitialSetting:
         dopant_symbol_set = tuple(dopants)
         element_set = symbol_set + dopant_symbol_set
 
-        for s in element_set:
-            electronegativity[s] = get_electronegativity(s)
-            oxidation_states[s] = get_oxidation_state(s)
+        for element in element_set:
+            electronegativity[element] = get_electronegativity(element)
+            oxidation_states[element] = get_oxidation_state(element)
 
         # num_irreducible_sites["Mg"] = 2 means Mg has 2 inequivalent sites
         num_irreducible_sites = defaultdict(int)

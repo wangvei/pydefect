@@ -6,7 +6,8 @@ import unittest
 
 from pymatgen.core.structure import Structure
 
-from pydefect.input_maker.vasp_input_maker import VaspDefectInputSetMaker
+from pydefect.input_maker.vasp_input_maker import VaspDefectInputSetMaker, \
+    make_incar
 from pydefect.core.irreducible_site import IrreducibleSite
 from pydefect.input_maker.defect_initial_setting import DefectInitialSetting
 
@@ -20,6 +21,12 @@ __date__ = "December 4, 2017"
 
 test_dir = os.path.join(os.path.dirname(__file__), "..", "..", "..",
                         "test_files", "input_maker")
+
+
+class MakeIncarTest(unittest.TestCase):
+
+    def test_make_incar(self):
+        make_incar(dirname=".", defect_in="defect.in")
 
 
 class VaspDefectInputSetMakerTest(unittest.TestCase):

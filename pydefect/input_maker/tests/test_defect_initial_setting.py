@@ -7,7 +7,7 @@ from pymatgen.core.structure import Structure
 
 from pydefect.input_maker.defect_initial_setting import extended_range, \
     get_electronegativity, get_oxidation_state, print_dopant_info, \
-    DefectInitialSetting
+    element_set, DefectInitialSetting
 from pydefect.core.irreducible_site import IrreducibleSite
 
 __author__ = "Yu Kumagai"
@@ -60,6 +60,15 @@ class GetOxidationStateTest(unittest.TestCase):
 # TODO: write test_print_dopant_info
 class PrintDopantInfoTest(unittest.TestCase):
     pass
+
+
+class ElementSetTest(unittest.TestCase):
+    def test(self):
+        mgo_from_defect_in = \
+            DefectInitialSetting.from_defect_in(
+                poscar=os.path.join(test_dir, "POSCAR-MgO64atoms"),
+                defect_in_file=os.path.join(test_dir, "defect.in.example"))
+        print(element_set(mgo_from_defect_in))
 
 
 class DefectInitialSettingTest(unittest.TestCase):
