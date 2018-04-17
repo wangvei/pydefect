@@ -390,16 +390,18 @@ class Correction:
             # set color
             gradation = i / len(points_dictionary.items())
             color = tuple(np.array([0, gradation, 1-gradation]))
-            ax.scatter(x_set, y_set, c=color, label=symbol)
+            ax.scatter(x_set, y_set, c=color, marker="x", label=symbol)
         # model potential
         ax.scatter(self._distances_from_defect, self._model_pot,
-                   c=(1, 0, 0), label="model potential")
+                   c=(1, 0, 0), marker=".", label="model potential")
         # difference between model potential and electrostatic potential
         diff_model_electrostatic = \
             np.array(self._difference_electrostatic_pot) -\
             np.array(self._model_pot)
         ax.scatter(self._distances_from_defect, diff_model_electrostatic,
-                   c=(1, 1, 0), label="model - electrostatic")
+                   c=(1, 1, 1), marker="o", label="model - electrostatic",
+                   linewidth="0.6", edgecolors="black"
+                   )
         # potential difference
         point_x = [self.max_sphere_radius, self._distances_from_defect[-1]]
         #TODO magic number 2
