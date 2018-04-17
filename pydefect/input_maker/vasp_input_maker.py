@@ -83,6 +83,9 @@ class VaspDefectInputSetMaker(DefectInputSetMaker):
                  particular_defects=None, incar="INCAR", kpoints="KPOINTS",
                  force_overwrite=False):
 
+        if not os.path.exists("INCAR") or not os.path.exists("KPOINTS"):
+            raise VaspInputFileError("INCAR and/or KPOINTS is absent.")
+
         # make self._defect_initial_setting and self._defect_name_set
         super().__init__(defect_initial_setting, filtering_words,
                          particular_defects, force_overwrite)
@@ -173,6 +176,10 @@ class VaspDefectInputSetMaker(DefectInputSetMaker):
 
             # copy KPOINTS file
             shutil.copyfile(self._kpoints, os.path.join(defect_name, "KPOINTS"))
+
+
+class VaspInputFileError(Exception):
+    pass
 
 
 def main():

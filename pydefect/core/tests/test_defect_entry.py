@@ -80,6 +80,13 @@ class DefectEntryTest(unittest.TestCase):
             os.path.join(test_dir, "defect_entry-2Va_O1-Mg_i1_2.yaml"))
         self.assertTrue(defect_entry_from_yaml == self._MgO_complex)
 
+    def test_from_yaml_fail(self):
+        with self.assertRaises(Exception) as context:
+            DefectEntry.from_yaml(
+                os.path.join(test_dir, "defect_entry-2Va_O1-Mg_i1_2_fail.yaml"))
+
+            self.assertTrue('This is broken' in context.exception)
+
     def test_json(self):
         # object -> json file -> object
         tmp_file = tempfile.NamedTemporaryFile()

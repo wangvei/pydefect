@@ -90,9 +90,7 @@ class DefectEntry:
         """
         # The keys need to be converted to integers.
         removed_atoms = {int(k): v for k, v in d["removed_atoms"].items()}
-#        inserted_atoms = {int(k): v for k, v in d["inserted_atoms"].items()}
-        element_diff = \
-            {k: int(v) for k, v in d["element_diff"].items()}
+        element_diff = {k: int(v) for k, v in d["element_diff"].items()}
 
         return cls(d["name"], d["initial_structure"], removed_atoms,
                    d["inserted_atoms"], element_diff, d["charge"])
@@ -100,7 +98,7 @@ class DefectEntry:
     @classmethod
     def from_yaml(cls, filename, tolerance=0.1):
         """
-        An example of yaml file.
+        An example of the yaml file.
             name: 2Va_O1+Mg_i_2
             initial_structure: POSCAR
             perfect_structure: ../../defects/perfect/POSCAR
@@ -129,26 +127,23 @@ class DefectEntry:
         removed_atoms = {}
 
         for i, p_site in enumerate(perfect_structure):
-            is_removed = True
-
             for j in inserted_atoms:
                 d_site = defect_structure[j]
                 distance = p_site.distance(d_site)
-
                 # check distance and species for comparison
                 if distance < tolerance and p_site.specie == d_site.specie:
                     inserted_atoms.remove(j)
-                    is_removed = False
                     break
-
-            if is_removed:
+            # *else* block is active if *for j* loop is not broken.
+            # else is not recommended in effective python as it's confusing.
+            else:
                 removed_atoms[i] = list(p_site.frac_coords)
 
-        # check the consistency of element_diff
+        # check the consistency of the removed and inserted atoms
         if not (sum([i for i in element_diff.values() if i > 0])
-                == len(inserted_atoms)) \
-            and (sum([-i for i in element_diff.values() if i < 0])
-                 == len(removed_atoms)):
+                == len(inserted_atoms)
+                and sum([-i for i in element_diff.values() if i < 0])
+                == len(removed_atoms)):
             raise ImproperInputStructureError(
                 "Atoms in two structures are not mapped in the tolerance.")
 
@@ -156,7 +151,7 @@ class DefectEntry:
                    inserted_atoms, element_diff, yaml_data["charge"])
 
     @classmethod
-    def json_load(cls, filename):
+    def json_load(cls, filename="defect_entry.json"):
         """
         Constructs a DefectEntry class object from a json file.
         """
@@ -223,7 +218,7 @@ class DefectEntry:
              "charge": self._charge}
         return d
 
-    def to_json_file(self, filename):
+    def to_json_file(self, filename="defect_entry.json"):
         """
         Writes a json file.
         """
@@ -257,3 +252,23 @@ class DefectEntry:
 
 class ImproperInputStructureError(Exception):
     pass
+
+
+def main():
+    import argparse
+    parser = argparse.ArgumentParser(
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser.add_argument("--make_defect_entry", dest="make_defect_entry",
+                        action="store_true",
+                        help="Make defect_entry.json from yaml.")
+    parser.add_argument("--yaml", dest="yaml", type=str,
+                        help="Yaml file name.")
+
+    opts = parser.parse_args()
+    if opts.make_defect_entry:
+        defect_entry_from_yaml = DefectEntry.from_yaml(opts.yaml)
+        defect_entry_from_yaml.to_json_file("defect_entry.json")
+
+
+if __name__ == "__main__":
+    main()

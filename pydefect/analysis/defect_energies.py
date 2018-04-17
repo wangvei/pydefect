@@ -111,7 +111,8 @@ class DefectEnergies:
 
         self._transition_levels = transition_levels
 
-    def plot_energy(self, file_name=None, x_range=None, y_range=None):
+    def plot_energy(self, file_name=None, x_range=None, y_range=None,
+                    show_TLs=False):
         """
         Plots the defect formation energies as a function of the Fermi level.
         Args:
@@ -130,6 +131,7 @@ class DefectEnergies:
 
         x_max = max([max(np.array(tl.cross_points).transpose()[0])
                      for tl in self.transition_levels.values()])
+        x_min = 0
         y_max = max([max(np.array(tl.cross_points).transpose()[1])
                      for tl in self.transition_levels.values()])
         y_min = min([min(np.array(tl.cross_points).transpose()[1])
@@ -145,26 +147,59 @@ class DefectEnergies:
             margin = (y_max - y_min) * 0.08
             plt.ylim(y_min - margin, y_max + margin)
 
+        margin_plot_x = (x_max - x_min) * 0.025
+        margin_plot_y = (y_max - y_min) * 0.025
+
         # support lines
         plt.axvline(x=0, linewidth=1.0, linestyle='dashed')
         plt.axvline(x=x_max, linewidth=1.0, linestyle='dashed')
         plt.axhline(y=0, linewidth=1.0, linestyle='dashed')
 
         for i, (name, tl) in enumerate(self.transition_levels.items()):
-            cross_points = tl.cross_points
-            # set the x and y arrays to be compatible with matplotlib style.
-            # e.g., x = [0.0, 0.3, 0.5, ...], y = [2.1, 3.2, 1.2, ...]
-            x, y = np.array(cross_points).transpose()
 
             color = matplotlib.cm.hot(float(i) / len(self.transition_levels))
-            ax.plot(x, y, 'ro-', color=color, label=name)
+
+            cross_points = tl.cross_points
+            shallow = []
+            transition_levels = []
+
+            for cp in cross_points:
+                if cp[0] == 0.0 or cp[0] == self.band_gap:
+                    if cp[0] == 0.0 and max(tl.charges) < 0:
+                        shallow.append(cp)
+                    elif cp[0] == self.band_gap and min(tl.charges) > 0:
+                        shallow.append(cp)
+                else:
+                    transition_levels.append(cp)
+
+            # set the x and y arrays to be compatible with matplotlib style.
+            # e.g., x = [0.0, 0.3, 0.5, ...], y = [2.1, 3.2, 1.2, ...]
+            # plot lines
+            x, y = np.array(cross_points).transpose()
+            ax.plot(x, y, '-', color=color, label=name)
+
+            # plot filled circles for transition levels.
+            if transition_levels:
+                x, y = np.array(transition_levels).transpose()
+                ax.scatter(x, y, color=color)
+
+            # plot unfilled circles for shallow levels.
+            if shallow:
+                x, y = np.array(shallow).transpose()
+                ax.scatter(x, y, facecolor="white", edgecolor=color)
+
+            if show_TLs:
+                for cp in cross_points:
+                    s = str(round(cp[0], 2)) + ", " + str(round(cp[1], 2))
+                    ax.annotate(s,
+                                (cp[0] + margin_plot_x, cp[1] - margin_plot_y),
+                                color=color, fontsize=8)
 
             ax.legend(bbox_to_anchor=(1.05, 0.0), loc="lower left")
 
             # Arrange the charge states at the middle between the TLs.
-            margin_mp = (y_max - y_min) * 0.025
             middle_points = \
-                reversed([[(a[0] + b[0]) / 2, (a[1] + b[1]) / 2 + margin_mp]
+                reversed([[(a[0] + b[0]) / 2, (a[1] + b[1]) / 2 + margin_plot_y]
                           for a, b in zip(cross_points, cross_points[1:])])
 
             for j, (x, y) in enumerate(middle_points):
@@ -197,12 +232,4 @@ class DefectEnergies:
     def band_gap(self):
         return self._cbm - self._vbm
 
-
-# class FermiLevel:
-#     """
-#     A class related to a set of defect formation energies.
-#     """
-#     def __init__(self, defect_energies, dos):
-#         """
-#         """
 
