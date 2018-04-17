@@ -36,6 +36,21 @@ __status__ = "Development"
 __date__ = "December 8, 2017"
 
 
+def calc_distance_two_planes(lattice_vectors):
+    # (a_i \times a_j) \ddot a_k / |a_i \times  a_j|
+    distance = np.zeros(3, dtype=float)
+    for i in range(3):
+        a_i_a_j = np.cross(lattice_vectors[i - 2], lattice_vectors[i - 1])
+        a_k = lattice_vectors[i]
+        distance[i] = abs(np.dot(a_i_a_j, a_k)) / np.linalg.norm(a_i_a_j)
+    return distance
+
+
+def calc_max_sphere_radius(lattice_vectors):
+    # Maximum radius of a sphere fitting inside the unit cell.
+    return max(calc_distance_two_planes(lattice_vectors)) / 2.0
+
+
 class Ewald:
 
     def __init__(self, lattice_matrix, dielectric_tensor, ewald_param,
