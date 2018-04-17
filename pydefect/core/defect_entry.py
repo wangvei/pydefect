@@ -7,10 +7,11 @@ import ruamel.yaml as yaml
 
 from pymatgen.core.structure import Structure
 from pymatgen.core.composition import Composition
+from pymatgen.io.vasp import Incar
+from pymatgen.io.vasp.inputs import Potcar
 
 from monty.json import MontyEncoder
 from monty.serialization import loadfn
-
 
 __author__ = "Yu Kumagai"
 __copyright__ = "Copyright 2017, Oba group"
@@ -42,6 +43,25 @@ def element_diff_from_poscar_files(poscar1, poscar2):
         Structure.from_file(poscar2).composition, allow_negative=True)
     c_diff = c1 - c2
     return {str(e): int(c_diff[e]) for e in c_diff}
+
+
+def get_num_electrons_from_potcar(potcar, nions, charge=0):
+    """
+    Returns the number of electrons from POTCAR, number of ions, and charge
+    state.
+    """
+    p = Potcar.from_file(potcar)
+    # check only the number of ions written in potcar and nions.
+    if not len(p) == len(nions):
+        raise ValueError("Size of elements in POTCAR file is different")
+
+    return sum([v.nelectrons * nions[i] for i, v in enumerate(p)]) - charge
+
+
+def get_charge_from_vasp(nions, potcar="POTCAR", incar="INCAR"):
+    num_elect_neutral = get_num_electrons_from_potcar(potcar, nions)
+    num_elect_incar = Incar.from_file(incar)["NELECT"]
+    return - int((num_elect_incar - num_elect_neutral))
 
 
 class DefectEntry:
@@ -102,7 +122,7 @@ class DefectEntry:
             name: 2Va_O1+Mg_i_2
             initial_structure: POSCAR
             perfect_structure: ../../defects/perfect/POSCAR
-            charge: 2
+            charge: 2 (optional, otherwise calc from INCAR and POTCAR)
             tolerance: 0.2 (optional)
         """
 
@@ -122,6 +142,21 @@ class DefectEntry:
             os.path.join(abs_dir, yaml_data["initial_structure"]))
         perfect_structure = Structure.from_file(
             os.path.join(abs_dir, yaml_data["perfect_structure"]))
+
+        # set name
+        if "name" in yaml_data.keys():
+            name = yaml_data["name"]
+        else:
+            print("name is set from the directory name.")
+            name = os.path.split(os.getcwd())[1]
+
+        # set charge state
+        if "charge" in yaml_data.keys():
+            charge = yaml_data["charge"]
+        else:
+            print("charge is set from the initial files.")
+            nions = get_num_atoms_for_elements(defect_structure)
+            charge = get_charge_from_vasp(nions=nions)
 
         inserted_atoms = [i for i in range(defect_structure.num_sites)]
         removed_atoms = {}
@@ -147,8 +182,8 @@ class DefectEntry:
             raise ImproperInputStructureError(
                 "Atoms in two structures are not mapped in the tolerance.")
 
-        return cls(yaml_data["name"], defect_structure, removed_atoms,
-                   inserted_atoms, element_diff, yaml_data["charge"])
+        return cls(name, defect_structure, removed_atoms, inserted_atoms,
+                   element_diff, charge)
 
     @classmethod
     def json_load(cls, filename="defect_entry.json"):

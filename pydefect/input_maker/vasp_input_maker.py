@@ -4,9 +4,8 @@ import os
 import ruamel.yaml as yaml
 import shutil
 
-from pymatgen.io.vasp.inputs import Potcar
-
-from pydefect.core.defect_entry import get_num_atoms_for_elements
+from pydefect.core.defect_entry import get_num_atoms_for_elements, \
+    get_num_electrons_from_potcar
 from pydefect.core.supercell_dft_results import defect_center
 from pydefect.input_maker.defect_initial_setting import DefectInitialSetting
 from pydefect.input_maker.input_maker import \
@@ -62,19 +61,6 @@ def make_potcar(dirname, elements, default_potcar_dir):
 
             with open(potcar_file_name) as pot:
                 potcar.write(pot.read())
-
-
-def get_num_electrons_from_potcar(potcar, nions, charge):
-    """
-    Returns the number of electrons from POTCAR, number of ions, and charge
-    state.
-    """
-    p = Potcar.from_file(potcar)
-    # check only the number of ions written in potcar and nions.
-    if not len(p) == len(nions):
-        raise ValueError("Size of elements in POTCAR file is different")
-
-    return sum([v.nelectrons * nions[i] for i, v in enumerate(p)]) - charge
 
 
 class VaspDefectInputSetMaker(DefectInputSetMaker):

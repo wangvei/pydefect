@@ -197,7 +197,7 @@ class DefectEnergies:
 
             ax.legend(bbox_to_anchor=(1.05, 0.0), loc="lower left")
 
-            # Arrange the charge states at the middle between the TLs.
+            # Arrange the charge states at the middle of the transition levels.
             middle_points = \
                 reversed([[(a[0] + b[0]) / 2, (a[1] + b[1]) / 2 + margin_plot_y]
                           for a, b in zip(cross_points, cross_points[1:])])

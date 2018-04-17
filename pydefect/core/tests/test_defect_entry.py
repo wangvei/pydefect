@@ -80,6 +80,13 @@ class DefectEntryTest(unittest.TestCase):
             os.path.join(test_dir, "defect_entry-2Va_O1-Mg_i1_2.yaml"))
         self.assertTrue(defect_entry_from_yaml == self._MgO_complex)
 
+    def test_from_simpler_yaml(self):
+        simpler_dir = os.path.join(test_dir, "MgO/defects/2Va_O1-Mg_i1_2")
+        os.chdir(simpler_dir)
+        defect_entry_from_simpler_yaml = \
+            DefectEntry.from_yaml("defect_entry.yaml")
+        print(defect_entry_from_simpler_yaml.charge)
+
     def test_from_yaml_fail(self):
         with self.assertRaises(Exception) as context:
             DefectEntry.from_yaml(
