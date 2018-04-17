@@ -35,21 +35,37 @@ expected_num_reciprocal_vector = 10608
 expected_vacancy_potential_difference = 0.2812066
 expected_vacancy_alignment_like_term = -0.5624132
 expected_vacancy_lattice_energy = -1.2670479
-expected_vacancy_model_pot = [("Mg", -0.221616953329),
-                              ("Mg", -0.0757569991956),
-                              ("Mg", -0.0745712827233),
-                              ("Mg", -0.0770321065632),
-                              ("Mg", -0.0755424109893),
-                              ("Mg", -0.0784910684584),
-                              ("Mg", -0.0792252195274),
-                              ("Mg", -0.22161641786),
-                              ("O", -0.160982214428),
-                              ("O", -0.160966818748),
-                              ("O", -0.16098264708),
-                              ("O", -0.160975656079),
-                              ("O", -0.160984578901),
-                              ("O", -0.160983417362),
-                              ("O", -0.30115082168)]
+expected_vacancy_symbols = ["Mg"] * 8 + ["O"] * 7
+expected_vacancy_model_pot = [-0.221616953329,
+                              -0.0757569991956,
+                              -0.0745712827233,
+                              -0.0770321065632,
+                              -0.0755424109893,
+                              -0.0784910684584,
+                              -0.0792252195274,
+                              -0.22161641786,
+                              -0.160982214428,
+                              -0.160966818748,
+                              -0.16098264708,
+                              -0.160975656079,
+                              -0.160984578901,
+                              -0.160983417362,
+                              -0.30115082168]
+expected_vacancy_distances_list = [3.67147,
+                                   2.25636,
+                                   2.25288,
+                                   2.26013,
+                                   2.25573,
+                                   2.26446,
+                                   2.26664,
+                                   3.67347,
+                                   2.99998,
+                                   2.99316,
+                                   2.99870,
+                                   2.99665,
+                                   3.00100,
+                                   2.99985,
+                                   4.24097]
 
 
 class EwaldTest(unittest.TestCase):
@@ -98,7 +114,7 @@ class CorrectionTest(unittest.TestCase):
             num_reciprocal_lattice=expected_num_reciprocal_vector)
         # self._ewald = \
         #     Ewald.from_optimization(self._structure, self._dielectric_tensor)
-        print("setUp completed")
+        print("Correction_test setUp completed")
 
     def test_compute_extended_fnv(self):
         vacancy_correction = \
@@ -112,16 +128,12 @@ class CorrectionTest(unittest.TestCase):
                                expected_vacancy_potential_difference, 5)
         self.assertAlmostEqual(vacancy_correction.alignment,
                                expected_vacancy_alignment_like_term, 5)
-        print(vacancy_correction.model_pot)
         if len(vacancy_correction.model_pot) != len(expected_vacancy_model_pot):
             raise IndexError("Lengths of actual and expected model_pot differ")
         # TODO: Check case of irreducible sites like O1, O2
         for actual, expected in zip(vacancy_correction.model_pot,
                                     expected_vacancy_model_pot):
-            # symbol
-            self.assertEqual(actual[0], expected[0])
-            # energy
-            self.assertAlmostEqual(actual[1], expected[1], 5)
+            self.assertAlmostEqual(actual, expected, 5)
 
     def test_plot_distance_vs_potential(self):
 
@@ -130,7 +142,9 @@ class CorrectionTest(unittest.TestCase):
                                         expected_vacancy_lattice_energy,
                                         expected_vacancy_potential_difference,
                                         expected_vacancy_alignment_like_term,
-                                        expected_vacancy_model_pot)
+                                        expected_vacancy_symbols,
+                                        expected_vacancy_model_pot,
+                                        expected_vacancy_distances_list)
         expected_max_sphere_radius = 2.45194
         self.assertAlmostEqual(vacancy_correction.max_sphere_radius,
                                expected_max_sphere_radius, 5)

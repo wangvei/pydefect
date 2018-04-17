@@ -2,9 +2,10 @@
 
 from enum import Enum, unique
 from functools import reduce
-from itertools import product
+from itertools import product, groupby
 import json
 import math
+from operator import itemgetter
 
 import matplotlib
 import matplotlib.pyplot as plt
@@ -278,7 +279,7 @@ class CorrectionMethod(Enum):
 class Correction:
 
     def __init__(self, method, ewald, lattice_energy, diff_ave_pot, alignment,
-                 model_pot,
+                 symbols_without_defect, model_pot, distances_from_defect,
                  manually_set_energy=None):
         """
         Args:
@@ -287,16 +288,27 @@ class Correction:
             lattice_energy (float):
             diff_ave_pot (float):
             alignment (float):
-            model_pot (list of tuple): like {("Mg", 0.1), ("O", 0.2)}
+            symbols_without_defect (list of str):
+            model_pot (list of float):
+            distances_from_defect (list of float):
             manually_set_energy (float or None):
         """
 
+        # error check just in case (should be removed in the future)
+        if not len(symbols_without_defect) == len(distances_from_defect) == len(model_pot):
+            raise IndexError(
+                "Lengths of symbols({0}), distances({1}), "
+                "model_pot differs({2}) differ.".
+                format(len(symbols_without_defect),
+                       len(distances_from_defect), len(model_pot)))
         self._method = method
         self._ewald = ewald
         self._lattice_energy = lattice_energy
         self._diff_ave_pot = diff_ave_pot
         self._alignment = alignment
+        self._symbols_without_defect = symbols_without_defect
         self._model_pot = list(model_pot)
+        self._distances_from_defect = list(distances_from_defect)
         self._manually_set_energy = manually_set_energy
 
     @property
@@ -332,13 +344,26 @@ class Correction:
         return list(self._model_pot)
 
     @property
+    def distances_from_defect(self):
+        return list(self._distances_from_defect)
+
+    @property
     def max_sphere_radius(self):
         lattice_vectors = self._ewald.lattice_matrix
         return calc_max_sphere_radius(lattice_vectors)
 
     def plot_distance_vs_potential(self, file_name=None):
-        elements = []
-        elements_model_potentials = self._model_pot
+        property_without_defect = list(zip(self._symbols_without_defect,
+                                           self._distances_from_defect,
+                                           self._model_pot))
+        property_without_defect = sorted(property_without_defect,
+                                         key=itemgetter(0))
+        # model_pot_dict is like {"Mg": [-0.22, -0.7,...], # "O":[...]}
+        model_pot_dict = {}
+        for k, g in groupby(property_without_defect, key=itemgetter(0)):
+            values = [(x, y) for _, x, y in g]
+            model_pot_dict[k] = values
+        print(model_pot_dict)
         fig = plt.figure()
         ax = fig.add_subplot(111)
         plt.title("Distance vs potential")
@@ -514,8 +539,7 @@ class Correction:
                     np.exp(- g_epsilon_g / 4.0 / ewald_param ** 2)\
                     / g_epsilon_g * np.cos(np.dot(g, r))  # [A^2]
             reciprocal_part = summation / volume
-            val = (real_part + reciprocal_part + diff_pot) * coeff
-            model_pot[i] = (symbols_without_defect[i], val)
+            model_pot[i] = (real_part + reciprocal_part + diff_pot) * coeff
             # print("atom index = ", i)
             # print("real_part = ", real_part)
             # print("reciprocal_part = ", reciprocal_part)
@@ -579,14 +603,23 @@ class Correction:
         # calc ave_pot_diff
         distance_threshold = calc_max_sphere_radius(axis)
         pot_diff = []
+
+        # error check just in case (should be removed in the future)
+        if not len(distances_from_defect) == len(diff_ep) == len(model_pot):
+            raise IndexError(
+                "Lengths of distances_from_defect({0}), diff_ep({1}), "
+                "model_pot differs({2}) differ.".
+                format(len(distances_from_defect), len(diff_ep), len(model_pot)))
+
         for (d, a, m) in zip(distances_from_defect, diff_ep, model_pot):
             if d > distance_threshold:
-                pot_diff.append(a - m[1])
+                pot_diff.append(a - m)
         ave_pot_diff = float(np.mean(pot_diff))
         # print("potential difference = {0}".format(ave_pot_diff))
         alignment = -ave_pot_diff * charge
         # print("alignment-like term = {0}".format(alignment))
         # return alignment
         return cls(CorrectionMethod.extended_fnv,
-                   ewald, lattice_energy, ave_pot_diff, alignment, model_pot)
+                   ewald, lattice_energy, ave_pot_diff, alignment,
+                   symbols_without_defect, model_pot, distances_from_defect)
 
