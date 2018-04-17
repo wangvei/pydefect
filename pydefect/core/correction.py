@@ -333,17 +333,8 @@ class Correction:
 
     @property
     def max_sphere_radius(self):
-        # get_distance_two_planes(lattice_vectors):
-        # (a_i \times a_j) \ddot a_k / |a_i \times  a_j|
-        distance = np.zeros(3, dtype=float)
         lattice_vectors = self._ewald.lattice_matrix
-        for i in range(3):
-            a_i_times_a_j = np.cross(lattice_vectors[i - 2],
-                                     lattice_vectors[i - 1])
-            a_k = lattice_vectors[i]
-            distance[i] = \
-                abs(np.dot(a_i_times_a_j, a_k)) / np.linalg.norm(a_i_times_a_j)
-        return max(distance) / 2.0
+        return calc_max_sphere_radius(lattice_vectors)
 
     def plot_distance_vs_potential(self):
         potentials = {"Mg":[], "O":[]}
