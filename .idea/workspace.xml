@@ -2,8 +2,8 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="5082c86b-c443-48bf-932e-0e138b6b7230" name="Default" comment="">
-      <change beforePath="$PROJECT_DIR$/pydefect/core/supercell_dft_results.py" beforeDir="false" afterPath="$PROJECT_DIR$/pydefect/core/supercell_dft_results.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/pydefect/core/tests/test_dft_results.py" beforeDir="false" afterPath="$PROJECT_DIR$/pydefect/core/tests/test_dft_results.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/pydefect/core/unitcell_dft_results.py" beforeDir="false" afterPath="$PROJECT_DIR$/pydefect/core/unitcell_dft_results.py" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="TRACKING_ENABLED" value="true" />
@@ -15,13 +15,13 @@
   <component name="FileEditorManager">
     <splitter split-orientation="horizontal" split-proportion="0.5722467">
       <split-first>
-        <splitter split-orientation="horizontal" split-proportion="0.36742935">
+        <splitter split-orientation="horizontal" split-proportion="0.44530046">
           <split-first>
             <leaf SIDE_TABS_SIZE_LIMIT_KEY="300">
               <file leaf-file-name="defect_energies.py" pinned="false" current-in-tab="false">
                 <entry file="file://$PROJECT_DIR$/pydefect/analysis/defect_energies.py">
                   <provider selected="true" editor-type-id="text-editor">
-                    <state relative-caret-position="1094">
+                    <state relative-caret-position="250">
                       <caret line="203" lean-forward="true" selection-start-line="203" selection-end-line="203" />
                       <folding>
                         <element signature="e#25#43#0" expanded="true" />
@@ -38,8 +38,8 @@
               <file leaf-file-name="defect_entry.py" pinned="false" current-in-tab="true">
                 <entry file="file://$PROJECT_DIR$/pydefect/core/defect_entry.py">
                   <provider selected="true" editor-type-id="text-editor">
-                    <state relative-caret-position="459">
-                      <caret line="27" column="18" lean-forward="true" selection-start-line="27" selection-start-column="18" selection-end-line="27" selection-end-column="18" />
+                    <state relative-caret-position="390">
+                      <caret line="105" selection-start-line="105" selection-end-line="105" />
                       <folding>
                         <element signature="e#25#41#0" expanded="true" />
                       </folding>
@@ -120,8 +120,8 @@
               <file leaf-file-name="unitcell_dft_results.py" pinned="false" current-in-tab="true">
                 <entry file="file://$PROJECT_DIR$/pydefect/core/unitcell_dft_results.py">
                   <provider selected="true" editor-type-id="text-editor">
-                    <state relative-caret-position="2728">
-                      <caret line="186" column="45" selection-start-line="186" selection-start-column="45" selection-end-line="186" selection-end-column="45" />
+                    <state relative-caret-position="663">
+                      <caret line="49" column="21" selection-start-line="49" selection-start-column="21" selection-end-line="49" selection-end-column="21" />
                     </state>
                   </provider>
                 </entry>
@@ -147,8 +147,8 @@
           <file leaf-file-name="test_dft_results.py" pinned="false" current-in-tab="true">
             <entry file="file://$PROJECT_DIR$/pydefect/core/tests/test_dft_results.py">
               <provider selected="true" editor-type-id="text-editor">
-                <state relative-caret-position="374">
-                  <caret line="154" selection-start-line="154" selection-end-line="154" />
+                <state relative-caret-position="726">
+                  <caret line="293" column="8" selection-start-line="293" selection-start-column="8" selection-end-line="293" selection-end-column="8" />
                   <folding>
                     <element signature="e#25#43#0" expanded="true" />
                   </folding>
@@ -170,7 +170,6 @@
         <option value="$PROJECT_DIR$/pydefect/core/dft_results.py" />
         <option value="$PROJECT_DIR$/pydefect/analysis/analyze_defect_energy.py" />
         <option value="$PROJECT_DIR$/pydefect/analysis/tests/test_analyze_defect_energy.py" />
-        <option value="$PROJECT_DIR$/pydefect/core/unitcell_dft_results.py" />
         <option value="$PROJECT_DIR$/pydefect/input_maker/tests/test_input_maker.py" />
         <option value="$PROJECT_DIR$/pydefect/input_maker/input_maker.py" />
         <option value="$PROJECT_DIR$/pydefect/analysis/tests/test_defect_energies.py" />
@@ -180,6 +179,7 @@
         <option value="$PROJECT_DIR$/pydefect/core/defect_entry.py" />
         <option value="$PROJECT_DIR$/pydefect/core/supercell_dft_results.py" />
         <option value="$PROJECT_DIR$/pydefect/core/tests/test_dft_results.py" />
+        <option value="$PROJECT_DIR$/pydefect/core/unitcell_dft_results.py" />
       </list>
     </option>
   </component>
@@ -271,7 +271,7 @@
       </list>
     </option>
   </component>
-  <component name="RunManager" selected="Python tests.Unittests for test_dft_results.SupercellDftResultsTest.test_print">
+  <component name="RunManager" selected="Python tests.Unittests for test_dft_results.UnitcellDftResultsTest.test_print">
     <configuration name="Unittests for test_dft_results.SupercellDftResultsTest.test_print" type="tests" factoryName="Unittests" temporary="true" nameIsGenerated="true">
       <module name="pydefect" />
       <option name="INTERPRETER_OPTIONS" value="" />
@@ -285,7 +285,7 @@
       <option name="_new_target" value="&quot;test_dft_results.SupercellDftResultsTest.test_print&quot;" />
       <option name="_new_targetType" value="&quot;PYTHON&quot;" />
     </configuration>
-    <configuration name="Unittests for test_dft_results.UnitcellDftResultsTest.test_band_edge2" type="tests" factoryName="Unittests" temporary="true" nameIsGenerated="true">
+    <configuration name="Unittests for test_dft_results.UnitcellDftResultsTest" type="tests" factoryName="Unittests" temporary="true" nameIsGenerated="true">
       <module name="pydefect" />
       <option name="INTERPRETER_OPTIONS" value="" />
       <option name="PARENT_ENVS" value="true" />
@@ -295,7 +295,7 @@
       <option name="ADD_CONTENT_ROOTS" value="true" />
       <option name="ADD_SOURCE_ROOTS" value="true" />
       <option name="_new_additionalArguments" value="&quot;&quot;" />
-      <option name="_new_target" value="&quot;test_dft_results.UnitcellDftResultsTest.test_band_edge2&quot;" />
+      <option name="_new_target" value="&quot;test_dft_results.UnitcellDftResultsTest&quot;" />
       <option name="_new_targetType" value="&quot;PYTHON&quot;" />
     </configuration>
     <configuration name="Unittests for test_dft_results.UnitcellDftResultsTest.test_dict_json" type="tests" factoryName="Unittests" temporary="true" nameIsGenerated="true">
@@ -311,7 +311,7 @@
       <option name="_new_target" value="&quot;test_dft_results.UnitcellDftResultsTest.test_dict_json&quot;" />
       <option name="_new_targetType" value="&quot;PYTHON&quot;" />
     </configuration>
-    <configuration name="Unittests for test_dft_results.UnitcellDftResultsTest.test_dielectric_constant" type="tests" factoryName="Unittests" temporary="true" nameIsGenerated="true">
+    <configuration name="Unittests for test_dft_results.UnitcellDftResultsTest.test_print" type="tests" factoryName="Unittests" temporary="true" nameIsGenerated="true">
       <module name="pydefect" />
       <option name="INTERPRETER_OPTIONS" value="" />
       <option name="PARENT_ENVS" value="true" />
@@ -321,7 +321,7 @@
       <option name="ADD_CONTENT_ROOTS" value="true" />
       <option name="ADD_SOURCE_ROOTS" value="true" />
       <option name="_new_additionalArguments" value="&quot;&quot;" />
-      <option name="_new_target" value="&quot;test_dft_results.UnitcellDftResultsTest.test_dielectric_constant&quot;" />
+      <option name="_new_target" value="&quot;test_dft_results.UnitcellDftResultsTest.test_print&quot;" />
       <option name="_new_targetType" value="&quot;PYTHON&quot;" />
     </configuration>
     <configuration name="Unittests for test_dft_results.UnitcellDftResultsTest.test_total_dos" type="tests" factoryName="Unittests" temporary="true" nameIsGenerated="true">
@@ -338,19 +338,19 @@
       <option name="_new_targetType" value="&quot;PYTHON&quot;" />
     </configuration>
     <list>
-      <item itemvalue="Python tests.Unittests for test_dft_results.UnitcellDftResultsTest.test_band_edge2" />
-      <item itemvalue="Python tests.Unittests for test_dft_results.UnitcellDftResultsTest.test_dielectric_constant" />
       <item itemvalue="Python tests.Unittests for test_dft_results.UnitcellDftResultsTest.test_total_dos" />
       <item itemvalue="Python tests.Unittests for test_dft_results.UnitcellDftResultsTest.test_dict_json" />
       <item itemvalue="Python tests.Unittests for test_dft_results.SupercellDftResultsTest.test_print" />
+      <item itemvalue="Python tests.Unittests for test_dft_results.UnitcellDftResultsTest.test_print" />
+      <item itemvalue="Python tests.Unittests for test_dft_results.UnitcellDftResultsTest" />
     </list>
     <recent_temporary>
       <list>
+        <item itemvalue="Python tests.Unittests for test_dft_results.UnitcellDftResultsTest.test_print" />
+        <item itemvalue="Python tests.Unittests for test_dft_results.UnitcellDftResultsTest" />
         <item itemvalue="Python tests.Unittests for test_dft_results.SupercellDftResultsTest.test_print" />
         <item itemvalue="Python tests.Unittests for test_dft_results.UnitcellDftResultsTest.test_dict_json" />
         <item itemvalue="Python tests.Unittests for test_dft_results.UnitcellDftResultsTest.test_total_dos" />
-        <item itemvalue="Python tests.Unittests for test_dft_results.UnitcellDftResultsTest.test_dielectric_constant" />
-        <item itemvalue="Python tests.Unittests for test_dft_results.UnitcellDftResultsTest.test_band_edge2" />
       </list>
     </recent_temporary>
   </component>
@@ -368,42 +368,42 @@
     <servers />
   </component>
   <component name="TestHistory">
-    <history-entry file="Unittests_for_test_defect_entry_DefectEntryTest_test_from_simpler_yaml - 2018.04.17 at 10h 34m 33s.xml">
-      <configuration name="Unittests for test_defect_entry.DefectEntryTest.test_from_simpler_yaml" configurationId="tests" />
-    </history-entry>
-    <history-entry file="Unittests_for_test_defect_entry_DefectEntryTest_test_from_simpler_yaml - 2018.04.17 at 10h 34m 57s.xml">
-      <configuration name="Unittests for test_defect_entry.DefectEntryTest.test_from_simpler_yaml" configurationId="tests" />
-    </history-entry>
-    <history-entry file="Unittests_for_test_dft_results_UnitcellDftResultsTest - 2018.04.17 at 11h 36m 35s.xml">
-      <configuration name="Unittests for test_dft_results.UnitcellDftResultsTest" configurationId="tests" />
-    </history-entry>
-    <history-entry file="Unittests_for_test_dft_results_UnitcellDftResultsTest_test_band_edge - 2018.04.17 at 11h 36m 54s.xml">
-      <configuration name="Unittests for test_dft_results.UnitcellDftResultsTest.test_band_edge" configurationId="tests" />
-    </history-entry>
-    <history-entry file="Unittests_for_test_dft_results_UnitcellDftResultsTest_test_band_edge2 - 2018.04.17 at 11h 36m 57s.xml">
-      <configuration name="Unittests for test_dft_results.UnitcellDftResultsTest.test_band_edge2" configurationId="tests" />
-    </history-entry>
-    <history-entry file="Unittests_for_test_dft_results_UnitcellDftResultsTest_test_dielectric_constant - 2018.04.17 at 11h 37m 21s.xml">
-      <configuration name="Unittests for test_dft_results.UnitcellDftResultsTest.test_dielectric_constant" configurationId="tests" />
-    </history-entry>
-    <history-entry file="Unittests_for_test_dft_results_UnitcellDftResultsTest_test_total_dos - 2018.04.17 at 11h 37m 25s.xml">
-      <configuration name="Unittests for test_dft_results.UnitcellDftResultsTest.test_total_dos" configurationId="tests" />
-    </history-entry>
-    <history-entry file="Unittests_for_test_dft_results_UnitcellDftResultsTest_test_dict_json - 2018.04.17 at 11h 37m 33s.xml">
-      <configuration name="Unittests for test_dft_results.UnitcellDftResultsTest.test_dict_json" configurationId="tests" />
-    </history-entry>
-    <history-entry file="Unittests_for_test_dft_results_SupercellDftResultsTest_test_print - 2018.04.17 at 11h 38m 40s.xml">
-      <configuration name="Unittests for test_dft_results.SupercellDftResultsTest.test_print" configurationId="tests" />
-    </history-entry>
     <history-entry file="Unittests_for_test_dft_results_SupercellDftResultsTest_test_print - 2018.04.17 at 11h 38m 49s.xml">
       <configuration name="Unittests for test_dft_results.SupercellDftResultsTest.test_print" configurationId="tests" />
+    </history-entry>
+    <history-entry file="Unittests_for_test_dft_results_UnitcellDftResultsTest_test_print - 2018.04.17 at 11h 43m 45s.xml">
+      <configuration name="Unittests for test_dft_results.UnitcellDftResultsTest.test_print" configurationId="tests" />
+    </history-entry>
+    <history-entry file="Unittests_for_test_dft_results_UnitcellDftResultsTest - 2018.04.17 at 11h 43m 58s.xml">
+      <configuration name="Unittests for test_dft_results.UnitcellDftResultsTest" configurationId="tests" />
+    </history-entry>
+    <history-entry file="Unittests_for_test_dft_results_UnitcellDftResultsTest_test_print - 2018.04.17 at 11h 44m 26s.xml">
+      <configuration name="Unittests for test_dft_results.UnitcellDftResultsTest.test_print" configurationId="tests" />
+    </history-entry>
+    <history-entry file="Unittests_for_test_dft_results_UnitcellDftResultsTest - 2018.04.17 at 11h 44m 31s.xml">
+      <configuration name="Unittests for test_dft_results.UnitcellDftResultsTest" configurationId="tests" />
+    </history-entry>
+    <history-entry file="Unittests_for_test_dft_results_UnitcellDftResultsTest - 2018.04.17 at 11h 45m 50s.xml">
+      <configuration name="Unittests for test_dft_results.UnitcellDftResultsTest" configurationId="tests" />
+    </history-entry>
+    <history-entry file="Unittests_for_test_dft_results_UnitcellDftResultsTest_test_print - 2018.04.17 at 11h 46m 48s.xml">
+      <configuration name="Unittests for test_dft_results.UnitcellDftResultsTest.test_print" configurationId="tests" />
+    </history-entry>
+    <history-entry file="Unittests_for_test_dft_results_UnitcellDftResultsTest_test_print - 2018.04.17 at 11h 47m 17s.xml">
+      <configuration name="Unittests for test_dft_results.UnitcellDftResultsTest.test_print" configurationId="tests" />
+    </history-entry>
+    <history-entry file="Unittests_for_test_dft_results_UnitcellDftResultsTest_test_print - 2018.04.17 at 11h 47m 53s.xml">
+      <configuration name="Unittests for test_dft_results.UnitcellDftResultsTest.test_print" configurationId="tests" />
+    </history-entry>
+    <history-entry file="Unittests_for_test_dft_results_UnitcellDftResultsTest_test_print - 2018.04.17 at 11h 48m 04s.xml">
+      <configuration name="Unittests for test_dft_results.UnitcellDftResultsTest.test_print" configurationId="tests" />
     </history-entry>
   </component>
   <component name="ToolWindowManager">
     <frame x="0" y="23" width="2560" height="1417" extended-state="6" />
     <editor active="true" />
     <layout>
-      <window_info content_ui="combo" id="Project" order="0" visible="true" weight="0.10594723" />
+      <window_info content_ui="combo" id="Project" order="0" visible="true" weight="0.07128791" />
       <window_info anchor="bottom" id="TODO" order="6" />
       <window_info anchor="bottom" id="Event Log" order="7" side_tool="true" />
       <window_info anchor="bottom" id="Version Control" order="7" />
@@ -776,16 +776,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/pydefect/analysis/defect_energies.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="1094">
-          <caret line="203" lean-forward="true" selection-start-line="203" selection-end-line="203" />
-          <folding>
-            <element signature="e#25#43#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/pydefect/input_maker/input_maker.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="-896">
@@ -826,16 +816,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/pydefect/core/defect_entry.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="459">
-          <caret line="27" column="18" lean-forward="true" selection-start-line="27" selection-start-column="18" selection-end-line="27" selection-end-column="18" />
-          <folding>
-            <element signature="e#25#41#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/pydefect/analysis/tests/test_defect_energies.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="180">
@@ -856,10 +836,23 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/pydefect/core/unitcell_dft_results.py">
+    <entry file="file://$PROJECT_DIR$/pydefect/analysis/defect_energies.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="2728">
-          <caret line="186" column="45" selection-start-line="186" selection-start-column="45" selection-end-line="186" selection-end-column="45" />
+        <state relative-caret-position="250">
+          <caret line="203" lean-forward="true" selection-start-line="203" selection-end-line="203" />
+          <folding>
+            <element signature="e#25#43#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/pydefect/core/defect_entry.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="390">
+          <caret line="105" selection-start-line="105" selection-end-line="105" />
+          <folding>
+            <element signature="e#25#41#0" expanded="true" />
+          </folding>
         </state>
       </provider>
     </entry>
@@ -873,13 +866,27 @@
         </state>
       </provider>
     </entry>
+    <entry file="file:///usr/local/Cellar/python3/3.6.4_2/Frameworks/Python.framework/Versions/3.6/lib/python3.6/unittest/case.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="-1664">
+          <caret line="604" selection-start-line="604" selection-end-line="604" />
+        </state>
+      </provider>
+    </entry>
     <entry file="file://$PROJECT_DIR$/pydefect/core/tests/test_dft_results.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="374">
-          <caret line="154" selection-start-line="154" selection-end-line="154" />
+        <state relative-caret-position="726">
+          <caret line="293" column="8" selection-start-line="293" selection-start-column="8" selection-end-line="293" selection-end-column="8" />
           <folding>
             <element signature="e#25#43#0" expanded="true" />
           </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/pydefect/core/unitcell_dft_results.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="663">
+          <caret line="49" column="21" selection-start-line="49" selection-start-column="21" selection-end-line="49" selection-end-column="21" />
         </state>
       </provider>
     </entry>

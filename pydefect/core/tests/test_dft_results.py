@@ -287,6 +287,16 @@ class UnitcellDftResultsTest(unittest.TestCase):
         unitcell_from_json = UnitcellDftResults.json_load(tmp_file.name)
         print(vars(unitcell_from_json))
 
+    def test_print(self):
+        self.unitcell.band_edge = [0.0, 1.0]
+        self.unitcell.band_edge2 = [0.0, 2.0]
+        self.unitcell.static_dielectric_tensor = \
+            np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]])
+        self.unitcell.ionic_dielectric_tensor = \
+            np.array([[2, 0, 0], [0, 2, 0], [0, 0, 2]])
+        print("---------")
+        print(self.unitcell)
+
 
 if __name__ == "__main__":
     unittest.main()

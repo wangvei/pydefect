@@ -47,6 +47,16 @@ class UnitcellDftResults:
             raise TypeError
         return self.__dict__ == other.__dict__
 
+    def __str__(self):
+        outs = ["vbm: " + str(self._band_edge[0]),
+                "cbm: " + str(self._band_edge[1]),
+                "static dielectric tensor:\n"
+                                          + str(self._static_dielectric_tensor),
+                "ionic dielectric tensor:\n" + str(self._ionic_dielectric_tensor),
+                "total dielectric tensor:\n" + str(self.total_dielectric_tensor)]
+
+        return "\n".join(outs)
+
     @classmethod
     def from_dict(cls, d):
         """
