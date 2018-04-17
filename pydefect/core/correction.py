@@ -367,7 +367,7 @@ class Correction:
     def plot_distance_vs_potential(self, file_name=None):
         property_without_defect = list(zip(self._symbols_without_defect,
                                            self._distances_from_defect,
-                                           self._model_pot))
+                                           self._difference_electrostatic_pot))
         property_without_defect = sorted(property_without_defect,
                                          key=itemgetter(0))
         # points_dictionary is like {"Mg": [-0.22, -0.7,...], # "O":[...]}
@@ -378,7 +378,8 @@ class Correction:
         print(points_dictionary)
         fig = plt.figure()
         ax = fig.add_subplot(111)
-        for symbol, points in points_dictionary.items():
+        # elemental electrostatic potential
+        for i, (symbol, points) in enumerate(points_dictionary.items()):
             print("symbol = ")
             print(symbol)
             print("points = ")
@@ -386,7 +387,26 @@ class Correction:
             x_set = np.array([point[0] for point in points])
             y_set = np.array([point[1] for point in points])
             print(symbol, x_set, y_set)
-            ax.scatter(x_set, y_set)
+            # set color
+            gradation = i / len(points_dictionary.items())
+            color = tuple(np.array([0, gradation, 1-gradation]))
+            ax.scatter(x_set, y_set, c=color, label=symbol)
+        # model potential
+        ax.scatter(self._distances_from_defect, self._model_pot,
+                   c=(1, 0, 0), label="model potential")
+        # difference between model potential and electrostatic potential
+        diff_model_electrostatic = \
+            np.array(self._difference_electrostatic_pot) -\
+            np.array(self._model_pot)
+        ax.scatter(self._distances_from_defect, diff_model_electrostatic,
+                   c=(1, 1, 0), label="model - electrostatic")
+        # potential difference
+        point_x = [self.max_sphere_radius, self._distances_from_defect[-1]]
+        #TODO magic number 2
+        point_y = [self.diff_ave_pot, self.diff_ave_pot]
+        ax.plot(point_x, point_y,
+                c=(0, 0, 0), label="potential difference")
+        ax.legend(loc="upper left")
         plt.title("Distance vs potential")
         if file_name:
             plt.savefig(file_name)
