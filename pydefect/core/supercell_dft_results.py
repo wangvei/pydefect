@@ -112,6 +112,13 @@ class SupercellDftResults:
         self._eigenvalues = eigenvalues
         self._electrostatic_potential = electrostatic_potential
 
+    def __str__(self):
+        outs = ["total energy:" + str(self._total_energy),
+                "electrostatic potential:" + str(self._electrostatic_potential),
+                "eigenvalues:" + str(self._eigenvalues),
+                "final structure: \n" + str(self._final_structure)]
+        return "\n".join(outs)
+
     @classmethod
     def from_vasp_files(cls, directory_path, contcar_name="CONTCAR",
                         outcar_name="OUTCAR", vasprun_name="vasprun.xml"):

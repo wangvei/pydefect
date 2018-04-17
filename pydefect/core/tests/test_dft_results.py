@@ -10,7 +10,8 @@ from pymatgen.electronic_structure.core import Spin
 
 from pydefect.core.defect_entry import DefectEntry
 from pydefect.core.supercell_dft_results import defect_center, distances_from_point, \
-    SupercellDftResults, UnitcellDftResults
+    SupercellDftResults
+from pydefect.core.unitcell_dft_results import UnitcellDftResults
 
 __author__ = "Yu Kumagai"
 __copyright__ = "Copyright 2017, Oba group"
@@ -151,6 +152,9 @@ class SupercellDftResultsTest(unittest.TestCase):
             DefectEntry(name, initial_structure, removed_atoms, inserted_atoms,
                         changes_of_num_elements, charge)
 
+    def test_print(self):
+        print(self._MgO_Va_O1_2)
+
     def test_from_vasp_files(self):
         # CAUTION: When constructing Structure object from Structure.from_file
         #          velocities are not stored.
@@ -225,14 +229,14 @@ class UnitcellDftResultsTest(unittest.TestCase):
                                         "MgO/unitcell/structure_optimization"))
         print(self.unitcell.band_edge)
 
-    def test_band_edge2(self):
-        print(self.unitcell.band_edge2)
-        self.unitcell.band_edge2 = [0.0, 2.0]
-        print(self.unitcell.band_edge2)
-        self.unitcell.set_band_edge2_from_vasp(
-            directory_path=os.path.join(test_dir,
-                                        "MgO/unitcell/structure_optimization"))
-        print(self.unitcell.band_edge2)
+    # def test_band_edge2(self):
+    #     print(self.unitcell.band_edge2)
+    #     self.unitcell.band_edge2 = [0.0, 2.0]
+    #     print(self.unitcell.band_edge2)
+    #     self.unitcell.set_band_edge2_from_vasp(
+    #         directory_path=os.path.join(test_dir,
+    #                                     "MgO/unitcell/structure_optimization"))
+    #     print(self.unitcell.band_edge2)
 
     def test_dielectric_constant(self):
         print(self.unitcell.static_dielectric_tensor)
@@ -282,6 +286,16 @@ class UnitcellDftResultsTest(unittest.TestCase):
         self.unitcell.to_json_file(tmp_file.name)
         unitcell_from_json = UnitcellDftResults.json_load(tmp_file.name)
         print(vars(unitcell_from_json))
+
+    def test_print(self):
+        self.unitcell.band_edge = [0.0, 1.0]
+        self.unitcell.band_edge2 = [0.0, 2.0]
+        self.unitcell.static_dielectric_tensor = \
+            np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]])
+        self.unitcell.ionic_dielectric_tensor = \
+            np.array([[2, 0, 0], [0, 2, 0], [0, 0, 2]])
+        print("---------")
+        print(self.unitcell)
 
 
 if __name__ == "__main__":
