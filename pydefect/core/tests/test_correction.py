@@ -1,6 +1,9 @@
 import unittest
 import os
 
+import numpy as np
+from numpy.testing import assert_array_almost_equal
+
 from pydefect.core.correction import Ewald, Correction, CorrectionMethod
 from pydefect.core.supercell_dft_results import SupercellDftResults
 from pydefect.core.unitcell_dft_results import UnitcellDftResults
@@ -36,6 +39,21 @@ expected_num_reciprocal_vector = 10608
 expected_vacancy_potential_difference = 0.2812066
 expected_vacancy_alignment_like_term = -0.5624132
 expected_vacancy_lattice_energy = -1.2670479
+expected_vacancy_model_pot = [-0.221616953329,
+                              -0.0757569991956,
+                              -0.0745712827233,
+                              -0.0770321065632,
+                              -0.0755424109893,
+                              -0.0784910684584,
+                              -0.0792252195274,
+                              -0.22161641786,
+                              -0.160982214428,
+                              -0.160966818748,
+                              -0.16098264708,
+                              -0.160975656079,
+                              -0.160984578901,
+                              -0.160983417362,
+                              -0.30115082168]
 
 
 class EwaldTest(unittest.TestCase):
@@ -52,10 +70,10 @@ class EwaldTest(unittest.TestCase):
         ewald =\
             Ewald.from_optimization(self._structure, self._dielectric_tensor)
 
-        self.assertAlmostEquals(0, 1-expected_ewald/ewald.ewald_param, 1)
-        self.assertAlmostEquals(
+        self.assertAlmostEqual(0, 1-expected_ewald/ewald.ewald_param, 1)
+        self.assertAlmostEqual(
             0, 1-expected_num_real_vector/ewald.num_real_lattice, 1)
-        self.assertAlmostEquals(
+        self.assertAlmostEqual(
             0, 1-expected_num_reciprocal_vector/ewald.num_reciprocal_lattice, 1)
         # print(ewald.ewald_param)
         # print(ewald.num_real_lattice)
@@ -87,26 +105,32 @@ class CorrectionTest(unittest.TestCase):
         print("setUp completed")
 
     def test_compute_extended_fnv(self):
-        self._vacancy_correction = \
+        vacancy_correction = \
             Correction.compute_correction(self._vacancy_entry,
                                           self._vacancy,
                                           self._perfect,
                                           self._unitcell)
-        self.assertAlmostEqual(self._vacancy_correction.lattice_energy,
+        self.assertAlmostEqual(vacancy_correction.lattice_energy,
                                expected_vacancy_lattice_energy, 4)
-        self.assertAlmostEqual(self._vacancy_correction.diff_ave_pot,
+        self.assertAlmostEqual(vacancy_correction.diff_ave_pot,
                                expected_vacancy_potential_difference, 5)
-        self.assertAlmostEqual(self._vacancy_correction.alignment,
+        self.assertAlmostEqual(vacancy_correction.alignment,
                                expected_vacancy_alignment_like_term, 5)
-        # TODO: write expected value.
-        # vacancy
-        # self.assertAlmostEqual(actual_vacancy,
-        #                        vacancy_expected_alignment)
+        assert_array_almost_equal(np.array(vacancy_correction.model_pot),
+                                  expected_vacancy_model_pot, 5)
 
-    # def test_yaml(self):
-    #     ewald = Ewald()
-    #     correction = Correction(CorrectionMethod.extended_fnv,
-    #                             )
+    def test_plot_distance_vs_potential(self):
+
+        vacancy_correction = Correction(CorrectionMethod.extended_fnv,
+                                        self._ewald,
+                                        expected_vacancy_lattice_energy,
+                                        expected_vacancy_potential_difference,
+                                        expected_vacancy_alignment_like_term,
+                                        expected_vacancy_model_pot)
+        expected_max_sphere_radius = 2.45194
+        self.assertAlmostEqual(vacancy_correction.max_sphere_radius,
+                               expected_max_sphere_radius, 5)
+        vacancy_correction.plot_distance_vs_potential()
 
 
 if __name__ == "__main__":

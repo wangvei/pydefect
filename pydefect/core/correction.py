@@ -6,6 +6,8 @@ from itertools import product
 import json
 import math
 
+import matplotlib
+import matplotlib.pyplot as plt
 from monty.json import MontyEncoder
 from monty.serialization import loadfn
 import numpy as np
@@ -276,12 +278,25 @@ class CorrectionMethod(Enum):
 class Correction:
 
     def __init__(self, method, ewald, lattice_energy, diff_ave_pot, alignment,
+                 model_pot,
                  manually_set_energy=None):
+        """
+        Args:
+            method (CorrectionMethod):
+            ewald (Ewald):
+            lattice_energy (float):
+            diff_ave_pot (float):
+            alignment (float):
+            model_pot (list of float):
+            manually_set_energy (float or None):
+        """
+
         self._method = method
         self._ewald = ewald
         self._lattice_energy = lattice_energy
         self._diff_ave_pot = diff_ave_pot
         self._alignment = alignment
+        self._model_pot = list(model_pot)
         self._manually_set_energy = manually_set_energy
 
     @property
@@ -312,11 +327,30 @@ class Correction:
     def alignment(self):
         return self._alignment
 
+    @property
+    def model_pot(self):
+        return list(self._model_pot)
+
+    @property
+    def max_sphere_radius(self):
+        # get_distance_two_planes(lattice_vectors):
+        # (a_i \times a_j) \ddot a_k / |a_i \times  a_j|
+        distance = np.zeros(3, dtype=float)
+        lattice_vectors = self._ewald.lattice_matrix
+        for i in range(3):
+            a_i_times_a_j = np.cross(lattice_vectors[i - 2],
+                                     lattice_vectors[i - 1])
+            a_k = lattice_vectors[i]
+            distance[i] = \
+                abs(np.dot(a_i_times_a_j, a_k)) / np.linalg.norm(a_i_times_a_j)
+        return max(distance) / 2.0
+
+    def plot_distance_vs_potential(self):
+        potentials = {"Mg":[], "O":[]}
+
     def as_dict(self):
         """
-
         Returns (dict):
-
         """
         d = {"method": str(self._method),
              "ewald": self._ewald,
@@ -434,7 +468,7 @@ class Correction:
         # model potential and lattice energy
         coeff = charge * sconst.elementary_charge * \
             1.0e10 / sconst.epsilon_0  # [V]
-        model_pot = [None for _ in ewald.generate_neighbor_lattices()]
+        model_pot = [None for _ in atomic_position_without_defect]
         root_det_epsilon = np.sqrt(np.linalg.det(ewald.dielectric_tensor))
         epsilon_inv = np.linalg.inv(ewald.dielectric_tensor)
         cube_root_vol = math.pow(volume, 1/3)
@@ -550,5 +584,5 @@ class Correction:
         # print("alignment-like term = {0}".format(alignment))
         # return alignment
         return cls(CorrectionMethod.extended_fnv,
-                   ewald, lattice_energy, ave_pot_diff, alignment)
+                   ewald, lattice_energy, ave_pot_diff, alignment, model_pot)
 
