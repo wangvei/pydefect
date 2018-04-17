@@ -5,14 +5,14 @@ from functools import reduce
 from itertools import product
 import json
 import math
-import numpy as np
-import scipy
-import scipy.constants as sconst
-from scipy.stats import mstats
 
 from monty.json import MontyEncoder
 from monty.serialization import loadfn
+import numpy as np
 from pymatgen.core.lattice import Lattice
+import scipy
+import scipy.constants as sconst
+from scipy.stats import mstats
 
 from pydefect.core.supercell_dft_results import SupercellDftResults,\
     distance_list, defect_center
