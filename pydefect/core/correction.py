@@ -279,7 +279,8 @@ class CorrectionMethod(Enum):
 class Correction:
 
     def __init__(self, method, ewald, lattice_energy, diff_ave_pot, alignment,
-                 symbols_without_defect, model_pot, distances_from_defect,
+                 symbols_without_defect, distances_from_defect,
+                 difference_electrostatic_pot, model_pot,
                  manually_set_energy=None):
         """
         Args:
@@ -289,26 +290,29 @@ class Correction:
             diff_ave_pot (float):
             alignment (float):
             symbols_without_defect (list of str):
-            model_pot (list of float):
             distances_from_defect (list of float):
+            model_pot (list of float):
+            difference_electrostatic_pot (list of float):
             manually_set_energy (float or None):
         """
 
         # error check just in case (should be removed in the future)
-        if not len(symbols_without_defect) == len(distances_from_defect) == len(model_pot):
+        if not len(symbols_without_defect) == len(distances_from_defect) \
+                == len(difference_electrostatic_pot) == len(model_pot):
             raise IndexError(
                 "Lengths of symbols({0}), distances({1}), "
-                "model_pot differs({2}) differ.".
-                format(len(symbols_without_defect),
-                       len(distances_from_defect), len(model_pot)))
+                "electro_static_pot({2}), model_pot differs({3}) differ.".
+                format(len(symbols_without_defect), len(distances_from_defect),
+                       len(difference_electrostatic_pot), len(model_pot)))
         self._method = method
         self._ewald = ewald
         self._lattice_energy = lattice_energy
         self._diff_ave_pot = diff_ave_pot
         self._alignment = alignment
         self._symbols_without_defect = symbols_without_defect
-        self._model_pot = list(model_pot)
         self._distances_from_defect = list(distances_from_defect)
+        self._difference_electrostatic_pot = list(difference_electrostatic_pot)
+        self._model_pot = list(model_pot)
         self._manually_set_energy = manually_set_energy
 
     @property
@@ -340,12 +344,20 @@ class Correction:
         return self._alignment
 
     @property
-    def model_pot(self):
-        return list(self._model_pot)
+    def symbols_without_defect(self):
+        return list(self._symbols_without_defect)
 
     @property
     def distances_from_defect(self):
         return list(self._distances_from_defect)
+
+    @property
+    def difference_electrostatic_pot(self):
+        return list(self._difference_electrostatic_pot)
+
+    @property
+    def model_pot(self):
+        return list(self._model_pot)
 
     @property
     def max_sphere_radius(self):
@@ -358,14 +370,23 @@ class Correction:
                                            self._model_pot))
         property_without_defect = sorted(property_without_defect,
                                          key=itemgetter(0))
-        # model_pot_dict is like {"Mg": [-0.22, -0.7,...], # "O":[...]}
-        model_pot_dict = {}
+        # points_dictionary is like {"Mg": [-0.22, -0.7,...], # "O":[...]}
+        points_dictionary = {}
         for k, g in groupby(property_without_defect, key=itemgetter(0)):
             values = [(x, y) for _, x, y in g]
-            model_pot_dict[k] = values
-        print(model_pot_dict)
+            points_dictionary[k] = values
+        print(points_dictionary)
         fig = plt.figure()
         ax = fig.add_subplot(111)
+        for symbol, points in points_dictionary.items():
+            print("symbol = ")
+            print(symbol)
+            print("points = ")
+            print(points)
+            x_set = np.array([point[0] for point in points])
+            y_set = np.array([point[1] for point in points])
+            print(symbol, x_set, y_set)
+            ax.scatter(x_set, y_set)
         plt.title("Distance vs potential")
         if file_name:
             plt.savefig(file_name)
@@ -621,5 +642,6 @@ class Correction:
         # return alignment
         return cls(CorrectionMethod.extended_fnv,
                    ewald, lattice_energy, ave_pot_diff, alignment,
-                   symbols_without_defect, model_pot, distances_from_defect)
+                   symbols_without_defect, distances_from_defect, diff_ep,
+                   model_pot)
 

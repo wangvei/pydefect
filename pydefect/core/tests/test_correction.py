@@ -1,6 +1,9 @@
 import unittest
 import os
 
+import numpy as np
+from numpy.testing import assert_array_equal, assert_array_almost_equal
+
 from pydefect.core.correction import Ewald, Correction, CorrectionMethod
 from pydefect.core.supercell_dft_results import SupercellDftResults
 from pydefect.core.unitcell_dft_results import UnitcellDftResults
@@ -51,6 +54,23 @@ expected_vacancy_model_pot = [-0.221616953329,
                               -0.160984578901,
                               -0.160983417362,
                               -0.30115082168]
+expected_vacancy_difference_electrostatic_pot = [
+    -0.7019,
+    0.2297,
+    0.2336,
+    0.2350,
+    0.2338,
+    0.2323,
+    0.2259,
+    -0.7017,
+    0.2582,
+    0.2575,
+    0.2573,
+    0.2580,
+    0.2581,
+    0.2584,
+    0.6767
+]
 expected_vacancy_distances_list = [3.67147,
                                    2.25636,
                                    2.25288,
@@ -128,23 +148,29 @@ class CorrectionTest(unittest.TestCase):
                                expected_vacancy_potential_difference, 5)
         self.assertAlmostEqual(vacancy_correction.alignment,
                                expected_vacancy_alignment_like_term, 5)
-        if len(vacancy_correction.model_pot) != len(expected_vacancy_model_pot):
-            raise IndexError("Lengths of actual and expected model_pot differ")
+
         # TODO: Check case of irreducible sites like O1, O2
-        for actual, expected in zip(vacancy_correction.model_pot,
-                                    expected_vacancy_model_pot):
-            self.assertAlmostEqual(actual, expected, 5)
+        assert_array_equal(vacancy_correction.symbols_without_defect,
+                           expected_vacancy_symbols)
+        assert_array_almost_equal(vacancy_correction.distances_from_defect,
+                                  expected_vacancy_distances_list, 5)
+        assert_array_almost_equal(vacancy_correction.model_pot,
+                                  expected_vacancy_model_pot, 5)
+        assert_array_almost_equal(vacancy_correction.difference_electrostatic_pot,
+                                  expected_vacancy_difference_electrostatic_pot, 5)
 
     def test_plot_distance_vs_potential(self):
 
-        vacancy_correction = Correction(CorrectionMethod.extended_fnv,
-                                        self._ewald,
-                                        expected_vacancy_lattice_energy,
-                                        expected_vacancy_potential_difference,
-                                        expected_vacancy_alignment_like_term,
-                                        expected_vacancy_symbols,
-                                        expected_vacancy_model_pot,
-                                        expected_vacancy_distances_list)
+        vacancy_correction = \
+            Correction(CorrectionMethod.extended_fnv,
+                       self._ewald,
+                       expected_vacancy_lattice_energy,
+                       expected_vacancy_potential_difference,
+                       expected_vacancy_alignment_like_term,
+                       expected_vacancy_symbols,
+                       expected_vacancy_distances_list,
+                       expected_vacancy_difference_electrostatic_pot,
+                       expected_vacancy_model_pot)
         expected_max_sphere_radius = 2.45194
         self.assertAlmostEqual(vacancy_correction.max_sphere_radius,
                                expected_max_sphere_radius, 5)
