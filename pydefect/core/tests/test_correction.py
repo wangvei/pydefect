@@ -1,7 +1,8 @@
 import unittest
 import os
 from pydefect.core.correction import Ewald, Correction, CorrectionMethod
-from pydefect.core.dft_results import SupercellDftResults, UnitcellDftResults
+from pydefect.core.supercell_dft_results import SupercellDftResults
+from pydefect.core.unitcell_dft_results import UnitcellDftResults
 from pydefect.core.defect_entry import DefectEntry
 
 __author__ = "Akira Takahashi"
@@ -27,6 +28,14 @@ vacancy_expected_alignment = "NEED_TO_SPECIFY!"
 dirname_vacancy = test_dir + "/defects/Va_O1_2/"
 vac_defect_entry_json = dirname_vacancy + "/defect_entry.json"
 
+# calculated by shell script made by Dr. Kumagai
+expected_ewald = 0.0411503184705
+expected_num_real_vector = 11051
+expected_num_reciprocal_vector = 10608
+expected_vacancy_potential_difference = 0.2812066
+expected_vacancy_alignment_like_term = -0.5624132
+expected_vacancy_lattice_energy = -1.2670479
+
 
 class EwaldTest(unittest.TestCase):
 
@@ -41,11 +50,17 @@ class EwaldTest(unittest.TestCase):
     def test_optimize(self):
         ewald =\
             Ewald.from_optimization(self._structure, self._dielectric_tensor)
-        print(ewald.ewald_param)
-        print(ewald.num_real_lattice)
-        print(ewald.num_reciprocal_lattice)
-        print(ewald.dielectric_tensor)
-        print(ewald.num_real_lattice)
+
+        self.assertAlmostEquals(0, 1-expected_ewald/ewald.ewald_param, 1)
+        self.assertAlmostEquals(
+            0, 1-expected_num_real_vector/ewald.num_real_lattice, 1)
+        self.assertAlmostEquals(
+            0, 1-expected_num_reciprocal_vector/ewald.num_reciprocal_lattice, 1)
+        # print(ewald.ewald_param)
+        # print(ewald.num_real_lattice)
+        # print(ewald.num_reciprocal_lattice)
+        # print(ewald.dielectric_tensor)
+        # print(ewald.num_real_lattice)
 
 
 class CorrectionTest(unittest.TestCase):
@@ -63,9 +78,9 @@ class CorrectionTest(unittest.TestCase):
         self._ewald = Ewald(
             lattice_matrix=self._structure.lattice.matrix,
             dielectric_tensor=self._unitcell.total_dielectric_tensor,
-            ewald_param=0.3314065604136566,
-            num_real_lattice=11051,
-            num_reciprocal_lattice=10692)
+            ewald_param=expected_ewald,
+            num_real_lattice=expected_num_real_vector,
+            num_reciprocal_lattice=expected_num_reciprocal_vector)
         # self._ewald = \
         #     Ewald.from_optimization(self._structure, self._dielectric_tensor)
         print("setUp completed")
@@ -76,6 +91,12 @@ class CorrectionTest(unittest.TestCase):
                                           self._vacancy,
                                           self._perfect,
                                           self._unitcell)
+        self.assertAlmostEqual(self._vacancy_correction.lattice_energy,
+                               expected_vacancy_lattice_energy, 4)
+        self.assertAlmostEqual(self._vacancy_correction.diff_ave_pot,
+                               expected_vacancy_potential_difference, 5)
+        self.assertAlmostEqual(self._vacancy_correction.alignment,
+                               expected_vacancy_alignment_like_term, 5)
         # TODO: write expected value.
         # vacancy
         # self.assertAlmostEqual(actual_vacancy,
