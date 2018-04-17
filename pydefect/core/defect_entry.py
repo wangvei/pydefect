@@ -103,6 +103,15 @@ class DefectEntry:
             raise TypeError
         return self.as_dict() == other.as_dict()
 
+    def __str__(self):
+        outs = ["name:" + str(self._name),
+                "removed_atoms:" + str(self._removed_atoms),
+                "inserted_atoms:" + str(self._inserted_atoms),
+                "element_diff:" + str(self._element_diff),
+                "charge:" + str(self._charge),
+                "structure: \n" + str(self._initial_structure)]
+        return "\n".join(outs)
+
     @classmethod
     def from_dict(cls, d):
         """
@@ -147,16 +156,16 @@ class DefectEntry:
         if "name" in yaml_data.keys():
             name = yaml_data["name"]
         else:
-            print("name is set from the directory name.")
-            name = os.path.split(os.getcwd())[1]
+            _, name = os.path.split(os.getcwd())
+            print("name", name, "is set from the directory name.")
 
         # set charge state
         if "charge" in yaml_data.keys():
             charge = yaml_data["charge"]
         else:
-            print("charge is set from the initial files.")
             nions = get_num_atoms_for_elements(defect_structure)
             charge = get_charge_from_vasp(nions=nions)
+            print("charge", charge, "is set from the initial files.")
 
         inserted_atoms = [i for i in range(defect_structure.num_sites)]
         removed_atoms = {}

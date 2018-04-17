@@ -85,7 +85,8 @@ class DefectEntryTest(unittest.TestCase):
         os.chdir(simpler_dir)
         defect_entry_from_simpler_yaml = \
             DefectEntry.from_yaml("defect_entry.yaml")
-        print(defect_entry_from_simpler_yaml.charge)
+        print(defect_entry_from_simpler_yaml)
+#        self.assertTrue(defect_entry_from_simpler_yaml == self._MgO_complex)
 
     def test_from_yaml_fail(self):
         with self.assertRaises(Exception) as context:
