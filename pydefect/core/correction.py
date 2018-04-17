@@ -519,7 +519,10 @@ class Correction:
         dielectric_tensor = unitcell_dft.total_dielectric_tensor
         perfect_structure = perfect_dft.final_structure
         diff_ep = [-ep for ep in
-                   defect_dft.relative_potential(perfect_dft, defect_entry)]
+                   defect_dft.relative_potential(perfect_dft, defect_entry)
+                   if ep is not None]
+        print("defect_dft.final_structure")
+        print(defect_dft.final_structure)
         atomic_position_without_defect =\
             [defect_dft.final_structure.frac_coords[i]
              for i, j in enumerate(defect_entry.atom_mapping_to_perfect)
@@ -534,7 +537,8 @@ class Correction:
         volume = perfect_structure.lattice.volume
         defect_coords = defect_center(defect_entry, defect_dft.final_structure)
         distances_from_defect = \
-            distance_list(defect_dft.final_structure, defect_coords)
+            [d for d in distance_list(defect_dft.final_structure, defect_coords)
+             if d > 1e-5] # if d=0, interstitial or antisite
 
         # TODO: check ewald or ewald_param?
         # model potential and lattice energy
@@ -583,12 +587,14 @@ class Correction:
                     / g_epsilon_g * np.cos(np.dot(g, r))  # [A^2]
             reciprocal_part = summation / volume
             model_pot[i] = (real_part + reciprocal_part + diff_pot) * coeff
-            # print("atom index = ", i)
-            # print("real_part = ", real_part)
-            # print("reciprocal_part = ", reciprocal_part)
-            # print("diff_pot = ", diff_pot)
-            # print("coeff = ", coeff)
-            # print("")
+            print("atom index = ", i)
+            print("atomic_pos = ", r)
+            print("shift = ", shift)
+            print("real_part = ", real_part)
+            print("reciprocal_part = ", reciprocal_part)
+            print("diff_pot = ", diff_pot)
+            print("coeff = ", coeff)
+            print("")
 
         # defect site
         # TODO: Can be this part included above loop?
@@ -628,13 +634,13 @@ class Correction:
         self_pot =\
             - ewald_param / (2.0 * np.pi * np.sqrt(np.pi * det_epsilon))
 
-        # print("atom index = at site")
-        # print("real_part = ", real_part)
-        # print("reciprocal_part = ", reciprocal_part)
-        # print("diff_pot = ", diff_pot)
-        # print("self_pot = ", self_pot)
-        # print("coeff = ", coeff)
-        # print("")
+        print("atom index = at site")
+        print("real_part = ", real_part)
+        print("reciprocal_part = ", reciprocal_part)
+        print("diff_pot = ", diff_pot)
+        print("self_pot = ", self_pot)
+        print("coeff = ", coeff)
+        print("")
 
         model_pot_defect_site \
             = (real_part + reciprocal_part + diff_pot + self_pot) * coeff
