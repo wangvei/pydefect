@@ -287,7 +287,7 @@ class Correction:
             lattice_energy (float):
             diff_ave_pot (float):
             alignment (float):
-            model_pot (list of float):
+            model_pot (list of tuple): like {("Mg", 0.1), ("O", 0.2)}
             manually_set_energy (float or None):
         """
 
@@ -336,8 +336,16 @@ class Correction:
         lattice_vectors = self._ewald.lattice_matrix
         return calc_max_sphere_radius(lattice_vectors)
 
-    def plot_distance_vs_potential(self):
-        potentials = {"Mg":[], "O":[]}
+    def plot_distance_vs_potential(self, file_name=None):
+        elements = []
+        elements_model_potentials = self._model_pot
+        fig = plt.figure()
+        ax = fig.add_subplot(111)
+        plt.title("Distance vs potential")
+        if file_name:
+            plt.savefig(file_name)
+        else:
+            plt.show()
 
     def as_dict(self):
         """
@@ -448,6 +456,11 @@ class Correction:
             [defect_dft.final_structure.frac_coords[i]
              for i, j in enumerate(defect_entry.atom_mapping_to_perfect)
              if j is not None]
+        symbols_without_defect =\
+            [defect_dft.final_structure.sites[i].specie.symbol
+             for i, j in enumerate(defect_entry.atom_mapping_to_perfect)
+             if j is not None]
+
         charge = defect_entry.charge
         axis = np.array(perfect_structure.lattice.matrix)
         volume = perfect_structure.lattice.volume
@@ -501,8 +514,8 @@ class Correction:
                     np.exp(- g_epsilon_g / 4.0 / ewald_param ** 2)\
                     / g_epsilon_g * np.cos(np.dot(g, r))  # [A^2]
             reciprocal_part = summation / volume
-            model_pot[i] \
-                = (real_part + reciprocal_part + diff_pot) * coeff
+            val = (real_part + reciprocal_part + diff_pot) * coeff
+            model_pot[i] = (symbols_without_defect[i], val)
             # print("atom index = ", i)
             # print("real_part = ", real_part)
             # print("reciprocal_part = ", reciprocal_part)
@@ -568,7 +581,7 @@ class Correction:
         pot_diff = []
         for (d, a, m) in zip(distances_from_defect, diff_ep, model_pot):
             if d > distance_threshold:
-                pot_diff.append(a - m)
+                pot_diff.append(a - m[1])
         ave_pot_diff = float(np.mean(pot_diff))
         # print("potential difference = {0}".format(ave_pot_diff))
         alignment = -ave_pot_diff * charge

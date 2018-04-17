@@ -1,9 +1,6 @@
 import unittest
 import os
 
-import numpy as np
-from numpy.testing import assert_array_almost_equal
-
 from pydefect.core.correction import Ewald, Correction, CorrectionMethod
 from pydefect.core.supercell_dft_results import SupercellDftResults
 from pydefect.core.unitcell_dft_results import UnitcellDftResults
@@ -17,7 +14,6 @@ __email__ = "takahashi.akira.36m@gmail.com"
 __status__ = "Development"
 __date__ = "February 20, 2018"
 
-# TODO: write test directory.
 test_dir = os.path.join(os.path.dirname(__file__), "..", "..", "..",
                         "test_files", "core", "MgO")
 
@@ -39,21 +35,21 @@ expected_num_reciprocal_vector = 10608
 expected_vacancy_potential_difference = 0.2812066
 expected_vacancy_alignment_like_term = -0.5624132
 expected_vacancy_lattice_energy = -1.2670479
-expected_vacancy_model_pot = [-0.221616953329,
-                              -0.0757569991956,
-                              -0.0745712827233,
-                              -0.0770321065632,
-                              -0.0755424109893,
-                              -0.0784910684584,
-                              -0.0792252195274,
-                              -0.22161641786,
-                              -0.160982214428,
-                              -0.160966818748,
-                              -0.16098264708,
-                              -0.160975656079,
-                              -0.160984578901,
-                              -0.160983417362,
-                              -0.30115082168]
+expected_vacancy_model_pot = [("Mg", -0.221616953329),
+                              ("Mg", -0.0757569991956),
+                              ("Mg", -0.0745712827233),
+                              ("Mg", -0.0770321065632),
+                              ("Mg", -0.0755424109893),
+                              ("Mg", -0.0784910684584),
+                              ("Mg", -0.0792252195274),
+                              ("Mg", -0.22161641786),
+                              ("O", -0.160982214428),
+                              ("O", -0.160966818748),
+                              ("O", -0.16098264708),
+                              ("O", -0.160975656079),
+                              ("O", -0.160984578901),
+                              ("O", -0.160983417362),
+                              ("O", -0.30115082168)]
 
 
 class EwaldTest(unittest.TestCase):
@@ -116,8 +112,16 @@ class CorrectionTest(unittest.TestCase):
                                expected_vacancy_potential_difference, 5)
         self.assertAlmostEqual(vacancy_correction.alignment,
                                expected_vacancy_alignment_like_term, 5)
-        assert_array_almost_equal(np.array(vacancy_correction.model_pot),
-                                  expected_vacancy_model_pot, 5)
+        print(vacancy_correction.model_pot)
+        if len(vacancy_correction.model_pot) != len(expected_vacancy_model_pot):
+            raise IndexError("Lengths of actual and expected model_pot differ")
+        # TODO: Check case of irreducible sites like O1, O2
+        for actual, expected in zip(vacancy_correction.model_pot,
+                                    expected_vacancy_model_pot):
+            # symbol
+            self.assertEqual(actual[0], expected[0])
+            # energy
+            self.assertAlmostEqual(actual[1], expected[1], 5)
 
     def test_plot_distance_vs_potential(self):
 
