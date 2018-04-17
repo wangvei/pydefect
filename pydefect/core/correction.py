@@ -569,7 +569,7 @@ class Correction:
         for (d, a, m) in zip(distances_from_defect, diff_ep, model_pot):
             if d > distance_threshold:
                 pot_diff.append(a - m)
-        ave_pot_diff = np.mean(pot_diff)
+        ave_pot_diff = float(np.mean(pot_diff))
         # print("potential difference = {0}".format(ave_pot_diff))
         alignment = -ave_pot_diff * charge
         # print("alignment-like term = {0}".format(alignment))
