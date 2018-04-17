@@ -2,17 +2,20 @@
 
 from enum import Enum, unique
 from functools import reduce
-from itertools import product
+from itertools import product, groupby
 import json
 import math
+from operator import itemgetter
+
+import matplotlib
+import matplotlib.pyplot as plt
+from monty.json import MontyEncoder
+from monty.serialization import loadfn
 import numpy as np
+from pymatgen.core.lattice import Lattice
 import scipy
 import scipy.constants as sconst
 from scipy.stats import mstats
-
-from monty.json import MontyEncoder
-from monty.serialization import loadfn
-from pymatgen.core.lattice import Lattice
 
 from pydefect.core.supercell_dft_results import SupercellDftResults,\
     distance_list, defect_center
@@ -276,12 +279,40 @@ class CorrectionMethod(Enum):
 class Correction:
 
     def __init__(self, method, ewald, lattice_energy, diff_ave_pot, alignment,
+                 symbols_without_defect, distances_from_defect,
+                 difference_electrostatic_pot, model_pot,
                  manually_set_energy=None):
+        """
+        Args:
+            method (CorrectionMethod):
+            ewald (Ewald):
+            lattice_energy (float):
+            diff_ave_pot (float):
+            alignment (float):
+            symbols_without_defect (list of str):
+            distances_from_defect (list of float):
+            model_pot (list of float):
+            difference_electrostatic_pot (list of float):
+            manually_set_energy (float or None):
+        """
+
+        # error check just in case (should be removed in the future)
+        if not len(symbols_without_defect) == len(distances_from_defect) \
+                == len(difference_electrostatic_pot) == len(model_pot):
+            raise IndexError(
+                "Lengths of symbols({0}), distances({1}), "
+                "electro_static_pot({2}), model_pot differs({3}) differ.".
+                format(len(symbols_without_defect), len(distances_from_defect),
+                       len(difference_electrostatic_pot), len(model_pot)))
         self._method = method
         self._ewald = ewald
         self._lattice_energy = lattice_energy
         self._diff_ave_pot = diff_ave_pot
         self._alignment = alignment
+        self._symbols_without_defect = symbols_without_defect
+        self._distances_from_defect = list(distances_from_defect)
+        self._difference_electrostatic_pot = list(difference_electrostatic_pot)
+        self._model_pot = list(model_pot)
         self._manually_set_energy = manually_set_energy
 
     @property
@@ -312,11 +343,81 @@ class Correction:
     def alignment(self):
         return self._alignment
 
+    @property
+    def symbols_without_defect(self):
+        return list(self._symbols_without_defect)
+
+    @property
+    def distances_from_defect(self):
+        return list(self._distances_from_defect)
+
+    @property
+    def difference_electrostatic_pot(self):
+        return list(self._difference_electrostatic_pot)
+
+    @property
+    def model_pot(self):
+        return list(self._model_pot)
+
+    @property
+    def max_sphere_radius(self):
+        lattice_vectors = self._ewald.lattice_matrix
+        return calc_max_sphere_radius(lattice_vectors)
+
+    def plot_distance_vs_potential(self, file_name=None):
+        property_without_defect = list(zip(self._symbols_without_defect,
+                                           self._distances_from_defect,
+                                           self._difference_electrostatic_pot))
+        property_without_defect = sorted(property_without_defect,
+                                         key=itemgetter(0))
+        # points_dictionary is like {"Mg": [-0.22, -0.7,...], # "O":[...]}
+        points_dictionary = {}
+        for k, g in groupby(property_without_defect, key=itemgetter(0)):
+            values = [(x, y) for _, x, y in g]
+            points_dictionary[k] = values
+        print(points_dictionary)
+        fig = plt.figure()
+        ax = fig.add_subplot(111)
+        # elemental electrostatic potential
+        for i, (symbol, points) in enumerate(points_dictionary.items()):
+            print("symbol = ")
+            print(symbol)
+            print("points = ")
+            print(points)
+            x_set = np.array([point[0] for point in points])
+            y_set = np.array([point[1] for point in points])
+            print(symbol, x_set, y_set)
+            # set color
+            gradation = i / len(points_dictionary.items())
+            color = tuple(np.array([0, gradation, 1-gradation]))
+            ax.scatter(x_set, y_set, c=color, marker="x", label=symbol)
+        # model potential
+        ax.scatter(self._distances_from_defect, self._model_pot,
+                   c=(1, 0, 0), marker=".", label="model potential")
+        # difference between model potential and electrostatic potential
+        diff_model_electrostatic = \
+            np.array(self._difference_electrostatic_pot) -\
+            np.array(self._model_pot)
+        ax.scatter(self._distances_from_defect, diff_model_electrostatic,
+                   c=(1, 1, 1), marker="o", label="model - electrostatic",
+                   linewidth="0.6", edgecolors="black"
+                   )
+        # potential difference
+        point_x = [self.max_sphere_radius, self._distances_from_defect[-1]]
+        #TODO magic number 2
+        point_y = [self.diff_ave_pot, self.diff_ave_pot]
+        ax.plot(point_x, point_y,
+                c=(0, 0, 0), label="potential difference")
+        ax.legend(loc="upper left")
+        plt.title("Distance vs potential")
+        if file_name:
+            plt.savefig(file_name)
+        else:
+            plt.show()
+
     def as_dict(self):
         """
-
         Returns (dict):
-
         """
         d = {"method": str(self._method),
              "ewald": self._ewald,
@@ -418,23 +519,32 @@ class Correction:
         dielectric_tensor = unitcell_dft.total_dielectric_tensor
         perfect_structure = perfect_dft.final_structure
         diff_ep = [-ep for ep in
-                   defect_dft.relative_potential(perfect_dft, defect_entry)]
+                   defect_dft.relative_potential(perfect_dft, defect_entry)
+                   if ep is not None]
+        print("defect_dft.final_structure")
+        print(defect_dft.final_structure)
         atomic_position_without_defect =\
             [defect_dft.final_structure.frac_coords[i]
              for i, j in enumerate(defect_entry.atom_mapping_to_perfect)
              if j is not None]
+        symbols_without_defect =\
+            [defect_dft.final_structure.sites[i].specie.symbol
+             for i, j in enumerate(defect_entry.atom_mapping_to_perfect)
+             if j is not None]
+
         charge = defect_entry.charge
         axis = np.array(perfect_structure.lattice.matrix)
         volume = perfect_structure.lattice.volume
         defect_coords = defect_center(defect_entry, defect_dft.final_structure)
         distances_from_defect = \
-            distance_list(defect_dft.final_structure, defect_coords)
+            [d for d in distance_list(defect_dft.final_structure, defect_coords)
+             if d > 1e-5] # if d=0, interstitial or antisite
 
         # TODO: check ewald or ewald_param?
         # model potential and lattice energy
         coeff = charge * sconst.elementary_charge * \
             1.0e10 / sconst.epsilon_0  # [V]
-        model_pot = [None for _ in ewald.generate_neighbor_lattices()]
+        model_pot = [None for _ in atomic_position_without_defect]
         root_det_epsilon = np.sqrt(np.linalg.det(ewald.dielectric_tensor))
         epsilon_inv = np.linalg.inv(ewald.dielectric_tensor)
         cube_root_vol = math.pow(volume, 1/3)
@@ -476,14 +586,15 @@ class Correction:
                     np.exp(- g_epsilon_g / 4.0 / ewald_param ** 2)\
                     / g_epsilon_g * np.cos(np.dot(g, r))  # [A^2]
             reciprocal_part = summation / volume
-            model_pot[i] \
-                = (real_part + reciprocal_part + diff_pot) * coeff
-            # print("atom index = ", i)
-            # print("real_part = ", real_part)
-            # print("reciprocal_part = ", reciprocal_part)
-            # print("diff_pot = ", diff_pot)
-            # print("coeff = ", coeff)
-            # print("")
+            model_pot[i] = (real_part + reciprocal_part + diff_pot) * coeff
+            print("atom index = ", i)
+            print("atomic_pos = ", r)
+            print("shift = ", shift)
+            print("real_part = ", real_part)
+            print("reciprocal_part = ", reciprocal_part)
+            print("diff_pot = ", diff_pot)
+            print("coeff = ", coeff)
+            print("")
 
         # defect site
         # TODO: Can be this part included above loop?
@@ -523,13 +634,13 @@ class Correction:
         self_pot =\
             - ewald_param / (2.0 * np.pi * np.sqrt(np.pi * det_epsilon))
 
-        # print("atom index = at site")
-        # print("real_part = ", real_part)
-        # print("reciprocal_part = ", reciprocal_part)
-        # print("diff_pot = ", diff_pot)
-        # print("self_pot = ", self_pot)
-        # print("coeff = ", coeff)
-        # print("")
+        print("atom index = at site")
+        print("real_part = ", real_part)
+        print("reciprocal_part = ", reciprocal_part)
+        print("diff_pot = ", diff_pot)
+        print("self_pot = ", self_pot)
+        print("coeff = ", coeff)
+        print("")
 
         model_pot_defect_site \
             = (real_part + reciprocal_part + diff_pot + self_pot) * coeff
@@ -541,14 +652,24 @@ class Correction:
         # calc ave_pot_diff
         distance_threshold = calc_max_sphere_radius(axis)
         pot_diff = []
+
+        # error check just in case (should be removed in the future)
+        if not len(distances_from_defect) == len(diff_ep) == len(model_pot):
+            raise IndexError(
+                "Lengths of distances_from_defect({0}), diff_ep({1}), "
+                "model_pot differs({2}) differ.".
+                format(len(distances_from_defect), len(diff_ep), len(model_pot)))
+
         for (d, a, m) in zip(distances_from_defect, diff_ep, model_pot):
             if d > distance_threshold:
                 pot_diff.append(a - m)
-        ave_pot_diff = np.mean(pot_diff)
+        ave_pot_diff = float(np.mean(pot_diff))
         # print("potential difference = {0}".format(ave_pot_diff))
         alignment = -ave_pot_diff * charge
         # print("alignment-like term = {0}".format(alignment))
         # return alignment
         return cls(CorrectionMethod.extended_fnv,
-                   ewald, lattice_energy, ave_pot_diff, alignment)
+                   ewald, lattice_energy, ave_pot_diff, alignment,
+                   symbols_without_defect, distances_from_defect, diff_ep,
+                   model_pot)
 
