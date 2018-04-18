@@ -7,7 +7,7 @@ import unittest
 from pymatgen.core.structure import Structure
 
 from pydefect.input_maker.vasp_input_maker import VaspDefectInputSetMaker, \
-    make_incar
+    make_incar, make_kpoints
 from pydefect.core.irreducible_site import IrreducibleSite
 from pydefect.input_maker.defect_initial_setting import DefectInitialSetting
 
@@ -27,6 +27,12 @@ class MakeIncarTest(unittest.TestCase):
 
     def test_make_incar(self):
         make_incar(dirname=".", defect_in="defect.in")
+
+
+class MakeKpointsTest(unittest.TestCase):
+
+    def test_make_kpoints(self):
+        make_kpoints()
 
 
 class VaspDefectInputSetMakerTest(unittest.TestCase):
