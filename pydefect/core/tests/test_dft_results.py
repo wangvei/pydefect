@@ -67,6 +67,25 @@ class DefectCenterTest(unittest.TestCase):
         expected = [0.26, 0.26, 0.26]
         self.assertEqual(actual3, expected)
 
+    def test_defect_center4(self):
+        # Test for periodic boundary condition (PBC).
+        name = "MgO64atoms-Va_Mg1+Va_O1"
+        test_structure = Structure.from_file(
+            os.path.join(test_dir, "POSCAR-MgO64atoms-Va_Mg1+Va_O1"))
+        removed_atoms = {0: [0, 0, 0], 39: [0.75, 0.75, 0.75]}
+        inserted_atoms = []
+        element_diff = {"Mg": -1, "O": -1}
+        charge = 0
+        # Construct DefectEntry class object.
+        pbc_defect_entry = DefectEntry(name, test_structure, removed_atoms,
+                                        inserted_atoms, element_diff, charge)
+
+        # Test a single defect.
+        actual4 = defect_center(pbc_defect_entry)
+        expected = [-0.125, -0.125, -0.125]
+        self.assertEqual(actual4, expected)
+
+
 
 class DistancesFromPointTest(unittest.TestCase):
     def test_distances_from_point(self):

@@ -29,6 +29,8 @@ def defect_center(defect_entry, structure=None):
     Returns a fractional coordinates of the defect center which is
     calculated by averaging the coordinates of vacancies and interstitials.
     If len(defect_coords) == 1, returns defect_coords[0].
+    First defect_coords is based when the periodic boundary condition is
+    considered.
 
     Args:
         structure (Structure):
@@ -44,9 +46,19 @@ def defect_center(defect_entry, structure=None):
 
     defect_coords = inserted_atom_coords + removed_atom_coords
 
+    # First defect_coords is based when PBC is considered
+    base = defect_coords[0]
+    shortest_defect_coords = []
+
+    for dc in defect_coords:
+        diff = min_distance_under_pbc(
+            np.array(base), np.array(dc), structure.lattice.matrix)[1]
+        shortest_defect_coords.append(dc + diff)
+
     # np.array([[0, 0.1, 0.2], [0.3, 0.4, 0.5]]).transpose() =
     # np.array([[0, 0.3], [0.1, 0.4], [0.2, 0.5]])
-    return [np.mean(i) for i in np.array(defect_coords).transpose()]
+
+    return [np.mean(i) for i in np.array(shortest_defect_coords).transpose()]
 
 
 def min_distance_under_pbc(frac1, frac2, lattice_vector_matrix):
@@ -55,21 +67,21 @@ def min_distance_under_pbc(frac1, frac2, lattice_vector_matrix):
     under periodic boundary condition.
 
     Args:
-       frac1 (1x3 list): fractional coordinates
-       frac2 (1x3 list): fractional coordinates
+       frac1 (1x3 np.array): fractional coordinates
+       frac2 (1x3 np.array): fractional coordinates
        lattice_vector_matrix (3x3 numpy array): a, b, c lattice vectors
     """
 
     candidate = []
-    frac = np.dot(lattice_vector_matrix, frac2 - frac1)
+    diff = np.dot(lattice_vector_matrix, frac2 - frac1)
 
     for index in product((-1, 0, 1), repeat=3):
         index = np.array(index)
-        delta_frac = np.dot(lattice_vector_matrix, index)
-        distance = np.linalg.norm(delta_frac + frac)
-        candidate.append(distance)
+        delta_diff = np.dot(lattice_vector_matrix, index)
+        distance = np.linalg.norm(delta_diff + diff)
+        candidate.append([distance, index])
 
-    return min(candidate)
+    return min(candidate, key=lambda x: x[0])
 
 
 def distance_list(structure, coords):
@@ -83,7 +95,7 @@ def distance_list(structure, coords):
 
     lattice_vector_matrix = structure.lattice.matrix
 
-    return [min_distance_under_pbc(host, coords, lattice_vector_matrix)
+    return [min_distance_under_pbc(host, coords, lattice_vector_matrix)[0]
             for host in structure.frac_coords]
 
 
