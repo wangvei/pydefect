@@ -12,6 +12,7 @@ from pydefect.input_maker.vasp_input_maker \
 from pydefect.core.defect_entry import DefectEntry
 from pydefect.core.supercell_dft_results import SupercellDftResults
 from pydefect.core.unitcell_dft_results import UnitcellDftResults
+from pydefect.core.correction import Ewald, Correction
 
 
 __version__ = "0.0.1"
@@ -212,6 +213,48 @@ def main():
 
     parser_unitcell_results.set_defaults(func=unitcell_results)
 
+    # -- correction -------------------------------------------------
+    parser_correction = subparsers.add_parser(
+        name="correction",
+        description="Tools for configuring defect_entry files for post process"
+                    "of defect calculations.",
+        aliases=['c'])
+
+    # needed files
+    parser_correction.add_argument(
+        "--unitcell_json", dest="unitcell_json",
+        default="unitcell.json", type=str)
+    parser_correction.add_argument(
+        "--perfect_json", dest="perfect_json",
+        default="perfect/dft_results.json", type=str)
+
+    # ewald
+    parser_correction.add_argument(
+        "--read_ewald_json", dest="read_ewald_json",
+        default="ewald.json", type=str)
+    parser_correction.add_argument(
+        "--dump_ewald_json", dest="dump_ewald_json",
+        default="ewald.json", type=str)
+    parser_correction.add_argument(
+        "--ewald_init", dest="ewald_init",
+        default=None)
+    parser_correction.add_argument(
+        "--ewald_convergence", dest="ewald_convergence",
+        default=None)
+    parser_correction.add_argument(
+        "--ewald_accuracy", dest="ewald_accuracy",
+        default=None)
+
+    # correction
+    parser_correction.add_argument(
+        "--dirs", dest="dirs", nargs="+", type=str,
+        help="Directory names.")
+    parser_correction.add_argument(
+        "--dir_all", dest="dir_all", action="store_true",
+        help="Make dft_results.json for *[0-9] and " "perfect directory.")
+
+    parser_correction.set_defaults(func=correction)
+
     args = parser.parse_args()
     args.func(args)
 
@@ -326,6 +369,63 @@ def unitcell_results(args):
             print(args.total_dos_dir, "is not appropriate.")
 
     dft_results.to_json_file(args.json_file)
+
+
+def correction(args):
+    from glob import glob
+
+    try:
+        unitcell_dft_data = UnitcellDftResults.json_load(args.unitcell_json)
+    except IOError:
+        raise FileNotFoundError("JSON of unitcell was not found.")
+
+    try:
+        perfect_dft_data = SupercellDftResults.json_load(args.perfect_json)
+    except IOError:
+        raise FileNotFoundError("JSON of perfect was not found.")
+
+    if args.dump_ewald_json:
+        print("optimizing ewald...")
+        ewald_kwargs = {}
+        if args.ewald_init:
+            ewald_kwargs["initial_value"] = args.ewald_init
+        if args.ewald_convergence:
+            ewald_kwargs["convergence"] = args.ewald_convergence
+        if args.ewald_init:
+            ewald_kwargs["prod_cutoff_fwhm"] = args.ewald_accuracy
+        ewald_data = \
+            Ewald.from_optimization(perfect_dft_data.final_structure,
+                                    unitcell_dft_data.total_dielectric_tensor,
+                                    **ewald_kwargs)
+        ewald_data.to_json_file(args.dump_ewald_json)
+    elif args.read_ewald_json:
+        try:
+            ewald_data = Ewald.load_json(args.read_ewald_json)
+        except IOError:
+            raise FileNotFoundError("JSON of ewald was not found.")
+
+    if args.dir_all:
+        dirs = glob('*[0-9]/')
+    else:
+        dirs = args.dirs
+
+    for directory in dirs:
+        print("correcting {0} ...".format(directory))
+        try:
+            entry = DefectEntry.json_load(directory + "/defect_entry.json")
+            defect_dft_data = \
+                SupercellDftResults.json_load(directory + "/dft_results.json")
+            c = Correction.compute_alignment_by_extended_fnv(entry,
+                                                             defect_dft_data,
+                                                             perfect_dft_data,
+                                                             unitcell_dft_data,
+                                                             ewald_data)
+        except Exception as e:
+            warnings.warn("Correction for {0} is failed. "
+                          "The calculation for {0} is skipped."
+                          "Exception type and message is {1}, {2}".
+                          format(directory, type(e), e.args))
+        c.to_json_file(directory + "/correction.json")
 
 
 if __name__ == "__main__":
