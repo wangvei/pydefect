@@ -26,18 +26,15 @@ class UnitcellDftResults:
     DFT results for a unitcell
     Args:
         band_edge (1x2 list): VBM and CBM.
-        band_edge2 (1x2 list, optional): Alternative VBM and CBM
         static_dielectric_tensor (3x3 numpy array):
         ionic_dielectric_tensor (3x3 numpy array):
         total_dos (2xN numpy array): [[energy1, dos1], [energy2, dos2],...]
     """
 
-    def __init__(self, band_edge=None, band_edge2=None,
-                 static_dielectric_tensor=None, ionic_dielectric_tensor=None,
-                 total_dos=None):
+    def __init__(self, band_edge=None, static_dielectric_tensor=None,
+                 ionic_dielectric_tensor=None, total_dos=None):
         """ """
         self._band_edge = band_edge
-#        self._band_edge2 = band_edge2
         self._static_dielectric_tensor = static_dielectric_tensor
         self._ionic_dielectric_tensor = ionic_dielectric_tensor
         self._total_dos = total_dos
@@ -50,10 +47,18 @@ class UnitcellDftResults:
     def __str__(self):
         outs = ["vbm: " + str(self._band_edge[0]),
                 "cbm: " + str(self._band_edge[1]),
-                "static dielectric tensor:\n"
-                                          + str(self._static_dielectric_tensor),
-                "ionic dielectric tensor:\n" + str(self._ionic_dielectric_tensor),
-                "total dielectric tensor:\n" + str(self.total_dielectric_tensor)]
+                "static dielectric tensor:",
+                str(self._static_dielectric_tensor),
+                "ionic dielectric tensor:",
+                str(self._ionic_dielectric_tensor),
+                "total dielectric tensor:",
+                str(self.total_dielectric_tensor),
+                "total density of states:"]
+
+        if self._total_dos is None:
+            outs.append("Not set yet")
+        else:
+            outs.append("Already set")
 
         return "\n".join(outs)
 
@@ -62,10 +67,8 @@ class UnitcellDftResults:
         """
         Constructs a class object from a dictionary.
         """
-#        return cls(d["band_edge"], d["band_edge2"],
-        return cls(d["band_edge"],
-                   d["static_dielectric_tensor"], d["ionic_dielectric_tensor"],
-                   d["total_dos"])
+        return cls(d["band_edge"], d["static_dielectric_tensor"],
+                   d["ionic_dielectric_tensor"], d["total_dos"])
 
     @classmethod
     def json_load(cls, filename):
@@ -83,18 +86,10 @@ class UnitcellDftResults:
         else:
             return self._band_edge
 
-    # @property
-    # def band_edge2(self):
-    #     if self._band_edge2 is None:
-    #         warnings.warn(message="Second band edges are not set yet.")
-    #         return None
-    #     else:
-    #         return self._band_edge2
-
     @property
     def static_dielectric_tensor(self):
         if self._static_dielectric_tensor is None:
-            warnings.warn(message="Static dielectric tensor is not set yet.")
+            print("Static dielectric tensor is not set yet.")
             return None
         else:
             return self._static_dielectric_tensor
@@ -102,7 +97,7 @@ class UnitcellDftResults:
     @property
     def ionic_dielectric_tensor(self):
         if self._ionic_dielectric_tensor is None:
-            warnings.warn(message="Ionic dielectric tensor is not set yet.")
+            print("Ionic dielectric tensor is not set yet.")
             return None
         else:
             return self._ionic_dielectric_tensor
@@ -110,10 +105,10 @@ class UnitcellDftResults:
     @property
     def total_dielectric_tensor(self):
         if self._static_dielectric_tensor is None:
-            warnings.warn(message="Static dielectric tensor is not set yet.")
+            print("Static dielectric tensor is not set yet.")
             return None
         elif self._ionic_dielectric_tensor is None:
-            warnings.warn(message="Ionic dielectric tensor is not set yet.")
+            print("Ionic dielectric tensor is not set yet.")
             return None
         else:
             return self._static_dielectric_tensor + \
@@ -122,13 +117,12 @@ class UnitcellDftResults:
     @property
     def total_dos(self):
         if self._total_dos is None:
-            warnings.warn(message="Total density of states is not set yet.")
+            print("Total density of states is not set yet.")
             return None
         else:
             return self._total_dos
 
     def is_set_all(self):
-        #           self._band_edge2 is not None and \
         if self._band_edge is not None and \
            self._static_dielectric_tensor is not None and \
            self._ionic_dielectric_tensor is not None and \
@@ -142,17 +136,47 @@ class UnitcellDftResults:
     def band_edge(self, band_edge):
         self._band_edge = band_edge
 
-    # @band_edge2.setter
-    # def band_edge2(self, band_edge2):
-    #     self._band_edge2 = band_edge2
-
     @static_dielectric_tensor.setter
-    def static_dielectric_tensor(self, static_dielectric_tensor):
-        self._static_dielectric_tensor = static_dielectric_tensor
+    def static_dielectric_tensor(self, d):
+        """
+        d (list):
+            len(d) == 1: Suppose cubic system
+            len(d) == 3: Suppose tetragonal or orthorhombic system
+            len(d) == 6: Suppose the other system
+        """
+        if len(d) == 1:
+            self._static_dielectric_tensor = \
+                np.array([[d[0], 0, 0],
+                          [0, d[0], 0],
+                          [0, 0, d[0]]])
+        elif len(d) == 3:
+            self._static_dielectric_tensor = \
+                np.array([[d[0], 0, 0],
+                          [0, d[1], 0],
+                          [0, 0, d[2]]])
+        elif len(d) == 6:
+            self._static_dielectric_tensor = \
+                np.array([[d[0], d[1], d[2]],
+                          [d[1], d[3], d[4]],
+                          [d[2], d[4], d[5]]])
 
     @ionic_dielectric_tensor.setter
-    def ionic_dielectric_tensor(self, ionic_dielectric_tensor):
-        self._ionic_dielectric_tensor = ionic_dielectric_tensor
+    def ionic_dielectric_tensor(self, d):
+        if len(d) == 1:
+            self._ionic_dielectric_tensor = \
+                np.array([[d[0], 0, 0],
+                          [0, d[0], 0],
+                          [0, 0, d[0]]])
+        elif len(d) == 3:
+            self._ionic_dielectric_tensor = \
+                np.array([[d[0], 0, 0],
+                          [0, d[1], 0],
+                          [0, 0, d[2]]])
+        else:
+            self._ionic_dielectric_tensor = \
+                np.array([[d[0], d[1], d[2]],
+                          [d[1], d[3], d[4]],
+                          [d[2], d[4], d[5]]])
 
     @total_dos.setter
     def total_dos(self, total_dos):
@@ -164,12 +188,6 @@ class UnitcellDftResults:
         vasprun = Vasprun(os.path.join(directory_path, vasprun_name))
         _, cbm, vbm, _ = vasprun.eigenvalue_band_properties
         self._band_edge = [vbm, cbm]
-
-    # def set_band_edge2_from_vasp(self, directory_path,
-    #                              vasprun_name="vasprun.xml"):
-    #     vasprun = Vasprun(os.path.join(directory_path, vasprun_name))
-    #     _, cbm, vbm, _ = vasprun.eigenvalue_band_properties
-    #     self._band_edge2 = [vbm, cbm]
 
     def set_static_dielectric_tensor_from_vasp(self, directory_path,
                                                outcar_name="OUTCAR"):
@@ -193,7 +211,6 @@ class UnitcellDftResults:
         Dict representation of DefectInitialSetting class object.
         """
 
-#        "band_edge2":               self.band_edge2,
         d = {"band_edge":                self.band_edge,
              "static_dielectric_tensor": self.static_dielectric_tensor,
              "ionic_dielectric_tensor":  self.ionic_dielectric_tensor,

@@ -5,9 +5,7 @@ import os
 import ruamel.yaml as yaml
 import shutil
 
-from monty.serialization import loadfn
-
-from pymatgen.io.vasp import Incar, Potcar, Kpoints
+from pymatgen.io.vasp import Potcar, Kpoints
 from pymatgen.core.structure import Structure
 
 from pydefect.core.defect_entry import get_num_atoms_for_elements, \

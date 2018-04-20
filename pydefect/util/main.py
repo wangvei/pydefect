@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import os
+import sys
 import warnings
 
 from pydefect.input_maker.defect_initial_setting \
@@ -178,15 +179,36 @@ def main():
         aliases=['unitcell', 'ur'])
 
     parser_unitcell_results.add_argument(
-        "--json_file", dest="json_file", default=None, type=str)
+        "--json_file", dest="json_file", default="unitcell.json", type=str)
     parser_unitcell_results.add_argument(
-        "--band_edge_dir", dest="band_edge_dir", default=None, type=str)
+        "--band_edge_dir", dest="band_edge_dir", default=None, type=str,
+        help="Set band edge from a vasprun.xml file")
+
     parser_unitcell_results.add_argument(
-        "--static_diele_dir", dest="static_diele_dir", default=None, type=str)
+        "--static_diele", dest="static_diele", default=None, type=float,
+        nargs="+",
+        help="Set static dielectric constant")
     parser_unitcell_results.add_argument(
-        "--ionic_diele_dir", dest="ionic_diele_dir", default=None, type=str)
+        "--ionic_diele", dest="ionic_diele", default=None, type=float,
+        nargs="+",
+        help="Set ionic dielectric constant")
+
     parser_unitcell_results.add_argument(
-        "--total_dos_dir", dest="total_dos_dir", default=None, type=str)
+        "--static_diele_dir", dest="static_diele_dir", default=None, type=str,
+        help="Set static dielectric constant from an OUTCAR file")
+    parser_unitcell_results.add_argument(
+        "--ionic_diele_dir", dest="ionic_diele_dir", default=None, type=str,
+        help="Set ionic dielectric constant from an OUTCAR file")
+    parser_unitcell_results.add_argument(
+        "--total_dos_dir", dest="total_dos_dir", default=None, type=str,
+        help="Set total density of states from a vasprun.xml file")
+    parser_unitcell_results.add_argument(
+        "-o", dest="outcar", type=str, default="OUTCAR")
+    parser_unitcell_results.add_argument(
+        "-v", dest="vasprun", type=str, default="vasprun.xml")
+    parser_unitcell_results.add_argument(
+        "--print", dest="print", action="store_true",
+        help="Print Unitcell class object information.")
 
     parser_unitcell_results.set_defaults(func=unitcell_results)
 
@@ -260,39 +282,46 @@ def supercell_results(args):
 
 def unitcell_results(args):
 
-    # if opts.json_file:
-    #     try:
-    #         dft_results = UnitcellDftResults.json_load(filename=opts.json_file)
-    #     except IOError:
-    #         print(opts.json_file, "does not exist.")
-    # else:
-    #     dft_results = UnitcellDftResults()
+    try:
+        dft_results = UnitcellDftResults.json_load(filename=args.json_file)
+    except IOError:
+        print(args.json_file, "does not exist.")
 
-    dft_results = UnitcellDftResults()
+    if args.print:
+        print(dft_results)
+        return None
 
     if args.band_edge_dir:
         try:
-            dft_results.set_band_edge_from_vasp(args.band_edge_dir)
+            dft_results.set_band_edge_from_vasp(args.band_edge_dir,
+                                                vasprun_name=args.vasprun)
         except IOError:
             print(args.band_edge_dir, "is not appropriate.")
 
-    if args.static_diele_dir:
+    if args.static_diele:
+        dft_results.static_dielectric_tensor = args.static_diele
+    elif args.static_diele_dir:
         try:
             dft_results.\
-                set_static_dielectric_tensor_from_vasp(args.static_diele_dir)
+                set_static_dielectric_tensor_from_vasp(args.static_diele_dir,
+                                                       outcar_name=args.outcar)
         except IOError:
             print(args.static_diele_dir, "is not appropriate.")
 
-    if args.ionic_diele_dir:
+    if args.ionic_diele:
+        dft_results.ionic_dielectric_tensor = args.ionic_diele
+    elif args.ionic_diele_dir:
         try:
             dft_results.\
-                set_ionic_dielectric_tensor_from_vasp(args.ionic_diele_dir)
+                set_ionic_dielectric_tensor_from_vasp(args.ionic_diele_dir,
+                                                      outcar_name=args.outcar)
         except IOError:
             print(args.ionic_diele_dir, "is not appropriate.")
 
     if args.total_dos_dir:
         try:
-            dft_results.set_total_dos_from_vasp(args.total_dos_dir)
+            dft_results.set_total_dos_from_vasp(args.total_dos_dir,
+                                                vasprun_name=args.vasprun)
         except IOError:
             print(args.total_dos_dir, "is not appropriate.")
 

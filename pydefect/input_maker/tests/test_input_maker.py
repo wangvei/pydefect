@@ -11,7 +11,7 @@ from pymatgen.core.structure import Structure
 from pydefect.input_maker.input_maker import normalized_random_3d_vector, \
     random_vector, perturb_neighbors, get_int_from_string, \
     parse_defect_name, print_already_exist, print_is_being_constructed, \
-    filter_name, filter_name_set, DefectMaker
+    is_name_selected, select_defect_names, DefectMaker
 
 from pydefect.core.defect_entry import DefectEntry
 from pydefect.core.irreducible_site import IrreducibleSite
@@ -119,8 +119,8 @@ class PrintIsBeingConstructedTest(unittest.TestCase):
 
 class FilterNameTest(unittest.TestCase):
     def test(self):
-        self.assertTrue(filter_name("Va_Mg1_-2", filtering_words=["Va"]))
-        self.assertFalse(filter_name("Mg_i1_0", filtering_words=["Va"]))
+        self.assertTrue(is_name_selected("Va_Mg1_-2", keywords=["Va"]))
+        self.assertFalse(is_name_selected("Mg_i1_0", keywords=["Va"]))
 
 
 class FilterNameSetTest(unittest.TestCase):
@@ -132,21 +132,21 @@ class FilterNameSetTest(unittest.TestCase):
              'O_i1_-1', 'O_i1_0', 'O_Mg1_-4', 'O_Mg1_-3', 'O_Mg1_-2',
              'O_Mg1_-1', 'O_Mg1_0', 'Al_Mg1_0', 'Al_Mg1_1']
 
-        actual_Va = filter_name_set(name_set, ["Va"])
+        actual_Va = select_defect_names(name_set, ["Va"])
         expected_Va = ['Va_Mg1_-2', 'Va_Mg1_-1', 'Va_Mg1_0', 'Va_O1_0',
                        'Va_O1_-1', 'Va_O1_-2', 'Va_O2_0']
 
-        actual__i = filter_name_set(name_set, ["_i"])
+        actual__i = select_defect_names(name_set, ["_i"])
         expected__i = ['Mg_i1_0', 'Mg_i1_1', 'Mg_i1_2', 'O_i1_-2', 'O_i1_-1',
                        'O_i1_0']
 
-        actual_Va_and__i = filter_name_set(name_set, ["Va", "_i"])
+        actual_Va_and__i = select_defect_names(name_set, ["Va", "_i"])
         expected_Va_and__i = expected_Va + expected__i
 
-        actual_Va_O = filter_name_set(name_set, ["Va_O"])
+        actual_Va_O = select_defect_names(name_set, ["Va_O"])
         expected_Va_O = ['Va_O1_0', 'Va_O1_-1', 'Va_O1_-2', 'Va_O2_0']
 
-        actual_Va_O1 = filter_name_set(name_set, ["Va_O1"])
+        actual_Va_O1 = select_defect_names(name_set, ["Va_O1"])
         expected_Va_O1 = ['Va_O1_0', 'Va_O1_-1', 'Va_O1_-2']
 
         self.assertEqual(sorted(actual_Va), sorted(expected_Va))

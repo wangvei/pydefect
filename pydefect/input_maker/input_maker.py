@@ -104,7 +104,7 @@ def parse_defect_name(defect_name):
 
 def print_is_being_removed(name):
     """
-    Show the following message.
+    Shows the message.
     Args:
         name (str): a string
     """
@@ -113,7 +113,7 @@ def print_is_being_removed(name):
 
 def print_already_exist(name):
     """
-    Show the following message.
+    Shows the message.
     Args:
         name (str): a string
     """
@@ -122,18 +122,19 @@ def print_already_exist(name):
 
 def print_is_being_constructed(name):
     """
-    Show the following message.
+    Shows the message.
     Args:
         name (str): a string
     """
     print("{:>10} is being constructed.".format(name))
 
 
-def filter_name(name, filtering_words):
+def is_name_selected(name, keywords):
     """
+    Returns if name is selected by selected_keywords.
      Args:
-        name (str): A defect name.
-        filtering_words (list):
+        name (str): Target name.
+        keywords (list): Keywords used for checking if name is selected or not.
 
     When the following type names are given, constructs a set of defects.
         "Va"    --> A set of all the vacancies.
@@ -147,10 +148,10 @@ def filter_name(name, filtering_words):
         e.g., "Va_O1_2",  "Mg_O1_0"
     """
 
-    if type(filtering_words) is not list:
-        raise TypeError("The type of filtering_words is not list.")
+    if type(keywords) is not list:
+        raise TypeError("The type of keywords is not list.")
 
-    for p in filtering_words:
+    for p in keywords:
         pattern = r"" + re.escape(p)
         if re.search(pattern, name):
             return True
@@ -158,19 +159,20 @@ def filter_name(name, filtering_words):
     return False
 
 
-def filter_name_set(name_set, filtering_words):
+def select_defect_names(name_set, keywords):
     """
+    Returns names selected by selected_keywords.
      Args:
-        name_set (list): A set of defect names.
-        filtering_words (list):
+        name_set (list): A set of names.
+        keywords (list): Keywords used for checking if name is selected or not.
     """
-    filtered_names = []
+    names = []
 
     for d in name_set:
-        if filter_name(d, filtering_words):
-            filtered_names.append(d)
+        if is_name_selected(d, keywords):
+            names.append(d)
 
-    return list(set(filtered_names))
+    return list(set(names))
 
 
 class DefectMaker:
@@ -261,7 +263,7 @@ class DefectInputSetMaker(metaclass=ABCMeta):
     Args:
         defect_initial_setting (DefectInitialSetting):
             DefectInitialSetting class object.
-        filtering_words (list):
+        keywords (list):
             Specify a type of defects.
         particular_defects (list):
             It specifies (a) particular defect(s).
@@ -271,11 +273,11 @@ class DefectInputSetMaker(metaclass=ABCMeta):
         out_pattern (str): pattern for screening out_name
     """
 
-    def __init__(self, defect_initial_setting, filtering_words=None,
+    def __init__(self, defect_initial_setting, keywords=None,
                  particular_defects=None, force_overwrite=False):
 
         self._defect_initial_setting = defect_initial_setting
-        self._filtering_words = filtering_words
+        self._keywords = keywords
         self._particular_defects = particular_defects
         self._force_overwrite = force_overwrite
 
@@ -283,9 +285,9 @@ class DefectInputSetMaker(metaclass=ABCMeta):
             self._defect_name_set = particular_defects
         else:
             defect_all_name_set = defect_initial_setting.make_defect_name_set()
-            if filtering_words:
+            if keywords:
                 self._defect_name_set = \
-                    filter_name_set(defect_all_name_set, filtering_words)
+                    select_defect_names(defect_all_name_set, keywords)
             else:
                 defect_all_name_set.append("perfect")
                 self._defect_name_set = defect_all_name_set

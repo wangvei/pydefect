@@ -10,7 +10,7 @@ from itertools import combinations
 
 from pydefect.core.supercell_dft_results import SupercellDftResults
 from pydefect.core.unitcell_dft_results import UnitcellDftResults
-from pydefect.input_maker.input_maker import filter_name
+from pydefect.input_maker.input_maker import is_name_selected
 
 
 Defect = namedtuple("Defect", ("defect_entry", "dft_results", "correction"))
@@ -49,7 +49,7 @@ class DefectEnergies:
 
         for d in defects:
             name = d.defect_entry.name
-            if filtering_words and filter_name(name, filtering_words) is False:
+            if filtering_words and is_name_selected(name, filtering_words) is False:
                 continue
             charge = d.defect_entry.charge
             element_diff = d.defect_entry.element_diff
@@ -75,7 +75,10 @@ class DefectEnergies:
 
     def calc_transition_levels(self):
         """
-        TransitionLevel (namedtuple)
+        Calculates a set of transition levels
+
+        Parameter in use:
+            TransitionLevel (namedtuple):
         """
 
         transition_levels = {}
@@ -116,10 +119,12 @@ class DefectEnergies:
                     show_tls=False):
         """
         Plots the defect formation energies as a function of the Fermi level.
+
         Args:
-            file_name (str):
-            x_range (2x1 list):
-            y_range (2x1 list):
+            file_name (str): File name for saving the plot.
+            x_range (2x1 list): x range for the plot.
+            y_range (2x1 list): y range for the plot.
+            show_tls (bool): If transition level values are shown or not.
         """
 
         fig = plt.figure()
