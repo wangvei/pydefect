@@ -7,7 +7,6 @@ import json
 import math
 from operator import itemgetter
 
-import matplotlib
 import matplotlib.pyplot as plt
 from monty.json import MontyEncoder
 from monty.serialization import loadfn
@@ -17,10 +16,7 @@ import scipy
 import scipy.constants as sconst
 from scipy.stats import mstats
 
-from pydefect.core.supercell_dft_results import SupercellDftResults,\
-    distance_list, defect_center
-from pydefect.core.unitcell_dft_results import UnitcellDftResults
-from pydefect.core.defect_entry import DefectEntry
+from pydefect.core.supercell_dft_results import distance_list, defect_center
 
 
 """
@@ -375,18 +371,18 @@ class Correction:
         for k, g in groupby(property_without_defect, key=itemgetter(0)):
             values = [(x, y) for _, x, y in g]
             points_dictionary[k] = values
-        print(points_dictionary)
+        # print(points_dictionary)
         fig = plt.figure()
         ax = fig.add_subplot(111)
         # elemental electrostatic potential
         for i, (symbol, points) in enumerate(points_dictionary.items()):
-            print("symbol = ")
-            print(symbol)
-            print("points = ")
-            print(points)
+            # print("symbol = ")
+            # print(symbol)
+            # print("points = ")
+            # print(points)
             x_set = np.array([point[0] for point in points])
             y_set = np.array([point[1] for point in points])
-            print(symbol, x_set, y_set)
+            # print(symbol, x_set, y_set)
             # set color
             gradation = i / len(points_dictionary.items())
             color = tuple(np.array([0, gradation, 1-gradation]))
@@ -521,8 +517,8 @@ class Correction:
         diff_ep = [-ep for ep in
                    defect_dft.relative_potential(perfect_dft, defect_entry)
                    if ep is not None]
-        print("defect_dft.final_structure")
-        print(defect_dft.final_structure)
+        # print("defect_dft.final_structure")
+        # print(defect_dft.final_structure)
         atomic_position_without_defect =\
             [defect_dft.final_structure.frac_coords[i]
              for i, j in enumerate(defect_entry.atom_mapping_to_perfect)
@@ -535,10 +531,18 @@ class Correction:
         charge = defect_entry.charge
         axis = np.array(perfect_structure.lattice.matrix)
         volume = perfect_structure.lattice.volume
+        # print("defect_entry.name = ")
+        # print(defect_entry.name)
         defect_coords = defect_center(defect_entry, defect_dft.final_structure)
+        # print("defect_coords")
+        # print(defect_coords)
+        # print("distance_list")
+        # print(distance_list(defect_dft.final_structure, defect_coords))
         distances_from_defect = \
             [d for d in distance_list(defect_dft.final_structure, defect_coords)
-             if d > 1e-5] # if d=0, interstitial or antisite
+             if d > 1e-2] # if d=0, interstitial or antisite
+        # print("distances_from_defect")
+        # print(distances_from_defect)
 
         # TODO: check ewald or ewald_param?
         # model potential and lattice energy
@@ -587,14 +591,14 @@ class Correction:
                     / g_epsilon_g * np.cos(np.dot(g, r))  # [A^2]
             reciprocal_part = summation / volume
             model_pot[i] = (real_part + reciprocal_part + diff_pot) * coeff
-            print("atom index = ", i)
-            print("atomic_pos = ", r)
-            print("shift = ", shift)
-            print("real_part = ", real_part)
-            print("reciprocal_part = ", reciprocal_part)
-            print("diff_pot = ", diff_pot)
-            print("coeff = ", coeff)
-            print("")
+            # print("atom index = ", i)
+            # print("atomic_pos = ", r)
+            # print("shift = ", shift)
+            # print("real_part = ", real_part)
+            # print("reciprocal_part = ", reciprocal_part)
+            # print("diff_pot = ", diff_pot)
+            # print("coeff = ", coeff)
+            # print("")
 
         # defect site
         # TODO: Can be this part included above loop?
@@ -634,13 +638,13 @@ class Correction:
         self_pot =\
             - ewald_param / (2.0 * np.pi * np.sqrt(np.pi * det_epsilon))
 
-        print("atom index = at site")
-        print("real_part = ", real_part)
-        print("reciprocal_part = ", reciprocal_part)
-        print("diff_pot = ", diff_pot)
-        print("self_pot = ", self_pot)
-        print("coeff = ", coeff)
-        print("")
+        # print("atom index = at site")
+        # print("real_part = ", real_part)
+        # print("reciprocal_part = ", reciprocal_part)
+        # print("diff_pot = ", diff_pot)
+        # print("self_pot = ", self_pot)
+        # print("coeff = ", coeff)
+        # print("")
 
         model_pot_defect_site \
             = (real_part + reciprocal_part + diff_pot + self_pot) * coeff
