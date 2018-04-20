@@ -3,6 +3,9 @@
 
 from pydefect.input_maker.defect_initial_setting \
     import print_dopant_info, DefectInitialSetting
+from pydefect.input_maker.vasp_input_maker \
+    import make_incar, make_kpoints, VaspDefectInputSetMaker
+
 
 __version__ = "0.0.1"
 __date__ = "19.4.2018"
@@ -33,16 +36,16 @@ def main():
 
     subparsers = parser.add_subparsers()
 
+    # -- initial_setting -------------------------------------------------------
     parser_initial = subparsers.add_parser(
         name="initial_setting",
         description="Tools for configuring initial settings for a set of "
-                    "defect calculations. One need to set .pydefect.yaml"
-                    "for potcar setup.",
+                    "defect calculations.",
         aliases=['initial', 'in'])
 
     parser_initial.add_argument(
-        "-p", "--poscar", dest="poscar", default="POSCAR", type=str,
-        help="POSCAR name for the unitcell.")
+        "--poscar", dest="poscar", default="POSCAR", type=str,
+        help="POSCAR-type file name for the unitcell.")
     parser_initial.add_argument(
         "-d", "--dopants", dest="dopants", default="", nargs="+", type=str,
         help="Dopant elements, e.g., Ga In.")
@@ -79,6 +82,45 @@ def main():
     #    groups = parser_input.add_mutually_exclusive_group(required=True)
     parser_initial.set_defaults(func=initial_setting)
 
+    # -- vasp_input_maker ------------------------------------------------------
+    parser_vasp_input = subparsers.add_parser(
+        name="vasp_input",
+        description="Tools for configuring vasp input files for a set of "
+                    "defect calculations. One needs to set .pydefect.yaml"
+                    "for potcar setup.",
+        aliases=['vasp', 'vi'])
+
+    parser_vasp_input.add_argument(
+        "--defect_in", dest="defect_in", default="defect.in", type=str,
+        help="defect.in-type file name.")
+    parser_vasp_input.add_argument(
+        "--dposcar", dest="dposcar", default="DPOSCAR", type=str,
+        help="DPOSCAR-type file name.")
+    parser_vasp_input.add_argument(
+        "--incar", dest="incar", default="INCAR", type=str,
+        help="INCAR-type file name.")
+    parser_vasp_input.add_argument(
+        "--kpoints", dest="kpoints", default="KPOINTS", type=str,
+        help="KPOINTS-type file name.")
+    parser_vasp_input.add_argument(
+        "--filtering", dest="filtering", type=str, default=None, nargs="+",
+        help="Filtering kwargs.")
+    parser_vasp_input.add_argument(
+        "--add", dest="add", type=str, default=None, nargs="+",
+        help="Particular defect names to be added.")
+    parser_vasp_input.add_argument(
+        "--force_overwrite", dest="force_overwrite", default=False,
+        help="Set if the existing folders are overwritten.")
+    parser_vasp_input.add_argument(
+        "--make_incar", dest="make_incar", action="store_true",
+        help="Make INCAR file using several default setting.")
+    parser_vasp_input.add_argument(
+        "--make_kpoints", dest="make_kpoints", action="store_true",
+        help="Make KPOINTS file based on the lattice constants.")
+
+    parser_vasp_input.set_defaults(func=vasp_input)
+
+
     try:
         import argcomplete
         argcomplete.autocomplete(parser)
@@ -100,6 +142,25 @@ def initial_setting(args):
             args.is_antisite, args.en_diff, args.included, args.excluded,
             args.distance, args.cutoff, args.symprec)
         defect_setting.to()
+
+
+def vasp_input(args):
+
+    if args.make_incar:
+        make_incar(defect_in=args.defect_in)
+    elif args.make_kpoints:
+        make_kpoints(poscar=args.dposcar)
+
+    else:
+        defect_initial_setting = DefectInitialSetting.\
+            from_defect_in(poscar=args.dposcar, defect_in_file=args.defect_in)
+
+        VaspDefectInputSetMaker(defect_initial_setting=defect_initial_setting,
+                                filtering_words=args.filtering,
+                                particular_defects=args.add,
+                                incar=args.incar,
+                                kpoints=args.kpoints,
+                                force_overwrite=args.force_overwrite)
 
 
 if __name__ == "__main__":
