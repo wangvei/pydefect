@@ -417,8 +417,13 @@ class Correction:
         """
         d = {"method": str(self._method),
              "ewald": self._ewald,
+             "lattice_energy": self._lattice_energy,
              "diff_ave_pot": self._diff_ave_pot,
              "alignment": self._alignment,
+             "symbols_without_defect": self._symbols_without_defect,
+             "distances_from_defect": list(self._distances_from_defect),
+             "difference_electrostatic_pot": list(self._difference_electrostatic_pot),
+             "model_pot": list(self._model_pot),
              "manually_set_energy": self._manually_set_energy}
         return d
 
@@ -480,19 +485,6 @@ class Correction:
             raise ValueError("Method named {0} is not implemented.".
                              format(method))
 
-    def as_dict(self):
-        #TODO: not yet implemented
-        d = {}
-        return d
-
-    @classmethod
-    def from_dict(cls, d):
-        return cls(d["distance_list"])
-
-    @classmethod
-    def load_json(cls, filename):
-        return cls.from_dict(loadfn(filename))
-
     @classmethod
     def compute_alignment_by_extended_fnv(cls,
                                           defect_entry,
@@ -539,8 +531,9 @@ class Correction:
         # print("distance_list")
         # print(distance_list(defect_dft.final_structure, defect_coords))
         distances_from_defect = \
-            [d for d in distance_list(defect_dft.final_structure, defect_coords)
-             if d > 1e-2] # if d=0, interstitial or antisite
+            [distance_list(defect_dft.final_structure, defect_coords)[i]
+             for i, j in enumerate(defect_entry.atom_mapping_to_perfect)
+             if j is not None]
         # print("distances_from_defect")
         # print(distances_from_defect)
 
