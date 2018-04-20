@@ -3,6 +3,7 @@
 import numpy as np
 import matplotlib
 import matplotlib.pyplot as plt
+import warnings
 
 from collections import defaultdict, namedtuple
 from itertools import combinations
@@ -112,7 +113,7 @@ class DefectEnergies:
         self._transition_levels = transition_levels
 
     def plot_energy(self, file_name=None, x_range=None, y_range=None,
-                    show_TLs=False):
+                    show_tls=False):
         """
         Plots the defect formation energies as a function of the Fermi level.
         Args:
@@ -188,7 +189,7 @@ class DefectEnergies:
                 x, y = np.array(shallow).transpose()
                 ax.scatter(x, y, facecolor="white", edgecolor=color)
 
-            if show_TLs:
+            if show_tls:
                 for cp in cross_points:
                     s = str(round(cp[0], 2)) + ", " + str(round(cp[1], 2))
                     ax.annotate(s,
@@ -233,3 +234,35 @@ class DefectEnergies:
         return self._cbm - self._vbm
 
 
+def main():
+    import argparse
+    parser = argparse.ArgumentParser(
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser.add_argument("--perfect", dest="perfect",
+                        default="perfect", type=str)
+    parser.add_argument("--defects", dest="defects",
+                        default="", type=str)
+
+    opts = parser.parse_args()
+
+    perfect = SupercellDftResults.json_load(opts.perfect + "dft_results.json")
+
+    if not opts.defects:
+        from glob import glob
+        defects_dirs = glob('*[0-9]/')
+    else:
+        defects_dirs = opts.defects
+
+    defects = []
+    for d in defects_dirs:
+        try:
+            defect_dft_results = \
+                SupercellDftResults.json_load(d + "dft_results.json")
+            defects.append(defect_dft_results)
+        except:
+            warnings.warn(message="Parsing data in " + d + " is failed.")
+
+
+
+if __name__ == "__main__":
+    main()

@@ -29,19 +29,21 @@ def get_num_atoms_for_elements(structure):
         return: [1, 31, 32]
     """
     symbol_list = [site.specie.symbol for site in structure]
+
     return [len(tuple(a[1])) for a in itertools.groupby(symbol_list)]
 
 
 def element_diff_from_poscar_files(poscar1, poscar2):
     """
     Returns a dict of change of numbers of elements from poscar2 to poscar1
-    For defect calculations, poscar2="perfect".
+    For defect calculations, poscar2 should be "perfect".
     """
     c1 = Composition(
         Structure.from_file(poscar1).composition, allow_negative=True)
     c2 = Composition(
         Structure.from_file(poscar2).composition, allow_negative=True)
     c_diff = c1 - c2
+
     return {str(e): int(c_diff[e]) for e in c_diff}
 
 
@@ -58,10 +60,16 @@ def get_num_electrons_from_potcar(potcar, nions, charge=0):
     return sum([v.nelectrons * nions[i] for i, v in enumerate(p)]) - charge
 
 
-def get_charge_from_vasp(nions, potcar="POTCAR", incar="INCAR"):
+def get_defect_charge_from_vasp(nions, potcar="POTCAR", incar="INCAR"):
+    """
+    Returns the defect charge by comparing nion, number of electrons in POTCAR,
+    and NELECT in INCAR.
+    """
     num_elect_neutral = get_num_electrons_from_potcar(potcar, nions)
     num_elect_incar = Incar.from_file(incar)["NELECT"]
-    return - int((num_elect_incar - num_elect_neutral))
+
+    # charge is minus of difference of the electrons
+    return int(num_elect_neutral - num_elect_incar)
 
 
 class DefectEntry:
@@ -164,7 +172,7 @@ class DefectEntry:
             charge = yaml_data["charge"]
         else:
             nions = get_num_atoms_for_elements(defect_structure)
-            charge = get_charge_from_vasp(nions=nions)
+            charge = get_defect_charge_from_vasp(nions=nions)
             print("charge", charge, "is set from the initial files.")
 
         inserted_atoms = [i for i in range(defect_structure.num_sites)]
@@ -298,21 +306,3 @@ class ImproperInputStructureError(Exception):
     pass
 
 
-def main():
-    import argparse
-    parser = argparse.ArgumentParser(
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument("--make_defect_entry", dest="make_defect_entry",
-                        action="store_true",
-                        help="Make defect_entry.json from yaml.")
-    parser.add_argument("--yaml", dest="yaml", type=str,
-                        help="Yaml file name.")
-
-    opts = parser.parse_args()
-    if opts.make_defect_entry:
-        defect_entry_from_yaml = DefectEntry.from_yaml(opts.yaml)
-        defect_entry_from_yaml.to_json_file("defect_entry.json")
-
-
-if __name__ == "__main__":
-    main()

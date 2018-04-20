@@ -4,7 +4,6 @@ from itertools import product
 import json
 import numpy as np
 import os
-import warnings
 
 from monty.json import MontyEncoder
 from monty.serialization import loadfn
@@ -57,7 +56,6 @@ def defect_center(defect_entry, structure=None):
 
     # np.array([[0, 0.1, 0.2], [0.3, 0.4, 0.5]]).transpose() =
     # np.array([[0, 0.3], [0.1, 0.4], [0.2, 0.5]])
-
     return [np.mean(i) for i in np.array(shortest_defect_coords).transpose()]
 
 
@@ -273,38 +271,4 @@ class SupercellDftResults:
 #        return displacements
 
 
-def main():
-    import argparse
-    parser = argparse.ArgumentParser(
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument("--dirs", dest="dirs", nargs="+", type=str,
-                        help="Directory names.")
-    parser.add_argument("--dir_all", dest="dir_all", action="store_true",
-                        help="Make dft_results.json for *[0-9] and perfect directory.")
-    opts = parser.parse_args()
 
-    if opts.dir_all:
-        from glob import glob
-        dirs = glob('*[0-9]/')
-        dirs.append("perfect")
-    else:
-        dirs = opts.dirs
-
-    for d in dirs:
-        print(d)
-        if os.path.isdir(d):
-            try:
-                dft_results = SupercellDftResults.\
-                    from_vasp_files(d, contcar_name="CONTCAR",
-                                    outcar_name="OUTCAR",
-                                    vasprun_name="vasprun.xml")
-                dft_results.to_json_file(
-                    filename=os.path.join(d, "dft_results.json"))
-            except:
-                warnings.warn(message="Parsing data in " + d + " is failed.")
-        else:
-            warnings.warn(message=d + " does not exist, so nothing is done.")
-
-
-if __name__ == "__main__":
-    main()
