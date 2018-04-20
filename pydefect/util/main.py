@@ -420,6 +420,7 @@ def correction(args):
                                                              perfect_dft_data,
                                                              unitcell_dft_data,
                                                              ewald_data)
+            c.plot_distance_vs_potential(file_name=directory+"/potential.eps")
         except Exception as e:
             warnings.warn("Correction for {0} is failed. "
                           "The calculation for {0} is skipped."

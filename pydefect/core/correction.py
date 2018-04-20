@@ -7,6 +7,7 @@ import json
 import math
 from operator import itemgetter
 
+import matplotlib
 import matplotlib.pyplot as plt
 from monty.json import MontyEncoder
 from monty.serialization import loadfn
@@ -360,6 +361,8 @@ class Correction:
         lattice_vectors = self._ewald.lattice_matrix
         return calc_max_sphere_radius(lattice_vectors)
 
+    # TODO: if remote connect and can't be display figure by X,
+    # matplotlib maybe raise exception.
     def plot_distance_vs_potential(self, file_name=None):
         property_without_defect = list(zip(self._symbols_without_defect,
                                            self._distances_from_defect,
@@ -407,7 +410,8 @@ class Correction:
         ax.legend(loc="upper left")
         plt.title("Distance vs potential")
         if file_name:
-            plt.savefig(file_name)
+            plt.savefig(file_name, format="eps")
+            plt.close(fig)
         else:
             plt.show()
 
