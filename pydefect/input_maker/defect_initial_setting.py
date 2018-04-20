@@ -105,7 +105,7 @@ class DefectInitialSetting:
                                perfect supercell
         irreducible_sites (list): list of IrreducibleSite class objects
         dopant_configs (Nx2 list): dopant configurations,
-                                    e.g., [["Al", Mg"], ["N", "O"]
+                                    e.g., [["Al", Mg"], ["N", "O"]]
         antisite_configs (Nx2 list): antisite configurations,
                                   e.g., [["Mg","O"], ["O", "Mg"]]
         interstitial_coords (Nx3 list): coordinates for interstitial sites,
@@ -597,53 +597,3 @@ class NotSupportedFlagError(Exception):
     pass
 
 
-def main():
-    import argparse
-    parser = argparse.ArgumentParser(
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument("-p", "--poscar", dest="poscar", default="POSCAR",
-                        type=str, help="POSCAR name.")
-    parser.add_argument("-d", "--dopants", dest="dopants", default="",
-                        nargs="+", type=str, help="Dopant elements. Eg. Ga In.")
-    parser.add_argument("-i", dest="interstitial_coords", nargs="+",
-                        default=None, type=float,
-                        help="Interstitial coordinates. Eg., 0.5 0.5 0.5.")
-    parser.add_argument("-a", "--antisite", dest="is_antisite",
-                        action="store_false",
-                        help="Set if antisites are not considered.")
-    parser.add_argument("-e", dest="en_diff", type=float, default=_EN_DIFF,
-                        help="Criterion of the electronegativity difference \
-                        determining antisites and/or impurities.")
-    parser.add_argument("--included", dest="included", type=str, default="",
-                        nargs="+",
-                        help="Exceptionally included defects. E.g., Va_O2_-1.")
-    parser.add_argument("--excluded", dest="excluded", type=str, default="",
-                        nargs="+",
-                        help="Exceptionally excluded defects. E.g., Va_O2_0.")
-    parser.add_argument("--distance", dest="distance", type=float,
-                        default=_DISTANCE,
-                        help="Displacement distance. 0 means that \
-                        random displacement is not considered.")
-    parser.add_argument("--cutoff", dest="cutoff", type=float, default=_CUTOFF,
-                        help="Set the cutoff radius [A] in which atoms are \
-                        displaced.")
-    parser.add_argument("--symprec", dest="symprec", type=float,
-                        default=_SYMPREC,
-                        help="Set precision used for symmetry analysis [A].")
-    parser.add_argument("--print_dopant", dest="print_dopant", default=None,
-                        type=str, help="Print dopant information that can be \
-                        added a posteriori.")
-    opts = parser.parse_args()
-
-    if opts.print_dopant:
-        print_dopant_info(opts.print_dopant)
-    else:
-        defect_setting = DefectInitialSetting.from_basic_settings(
-            opts.poscar, opts.dopants, opts.interstitial_coords,
-            opts.is_antisite, opts.en_diff, opts.included, opts.excluded,
-            opts.distance, opts.cutoff, opts.symprec)
-        defect_setting.to()
-
-
-if __name__ == "__main__":
-    main()

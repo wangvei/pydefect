@@ -83,9 +83,14 @@ def make_incar(dirname='.', poscar="DPOSCAR", defect_in=None):
             enmax = []
             defect_initial_setting = \
                 DefectInitialSetting.from_defect_in(poscar, defect_in)
-            for e in element_set(defect_initial_setting):
-                potcar_e = "POTCAR_" + e
-                potcar_file_name = os.path.join(potcar_dir(), potcar_e)
+
+            elem_set = set()
+            for intrinsic_elements in element_set(defect_initial_setting):
+                elem_set.add(intrinsic_elements)
+            for dopant_config in defect_initial_setting.dopant_configs:
+                elem_set.add(dopant_config[0])
+            for e in elem_set:
+                potcar_file_name = os.path.join(potcar_dir(), "POTCAR_" + e)
                 enmax.append(Potcar.from_file(potcar_file_name)[0].enmax)
             encut = str(max(enmax))
         else:
@@ -93,6 +98,8 @@ def make_incar(dirname='.', poscar="DPOSCAR", defect_in=None):
         fa.write('ENCUT = ' + encut + "\n")
         npar = input("Input NPAR:")
         fa.write('NPAR = ' + npar + "\n")
+        kpar = input("Input KPAR:")
+        fa.write('KPAR = ' + kpar + "\n")
 
 
 def make_kpoints(dirname='.', poscar="DPOSCAR", kpts_shift=None):
@@ -102,7 +109,7 @@ def make_kpoints(dirname='.', poscar="DPOSCAR", kpts_shift=None):
 
     s = Structure.from_file(os.path.join(poscar))
     reciprocal_lattice = s.lattice.reciprocal_lattice
-    kpt_mesh = [int(np.ceil(0.8 / r)) for r in reciprocal_lattice.abc]
+    kpt_mesh = [int(np.ceil(2.5 * r)) for r in reciprocal_lattice.abc]
     kpts = (tuple(kpt_mesh), )
 
     # Check if reciprocal lattice vectors are perpendicular to the other two.
@@ -226,38 +233,3 @@ class VaspInputFileError(Exception):
     pass
 
 
-def main():
-    import argparse
-    parser = argparse.ArgumentParser(
-                        formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument("-d", "--defect_in", dest="defect_in",
-                        default="defect.in", type=str, help="defect.in name.")
-    parser.add_argument("-p", "--dposcar", dest="dposcar", default="DPOSCAR",
-                        type=str, help="DPOSCAR name.")
-    parser.add_argument("--incar", dest="incar", default="INCAR", 
-                        type=str, help="INCAR name.")
-    parser.add_argument("--kpoints", dest="kpoints", default="KPOINTS", 
-                        type=str, help="KPOINTS name.")
-    parser.add_argument("--filtering", dest="filtering", type=str,
-                        default=None, nargs="+",
-                        help="Filtering kwargs.")
-    parser.add_argument("--add", dest="add", type=str, default=None, nargs="+",
-                        help="Particular defect name added.")
-    parser.add_argument("--force_overwrite", dest="force_overwrite",
-                        default=False,
-                        help="If the folders are overwritten.")
-
-    opts = parser.parse_args()
-    defect_initial_setting = DefectInitialSetting.\
-        from_defect_in(poscar=opts.dposcar, defect_in_file=opts.defect_in)
-
-    VaspDefectInputSetMaker(defect_initial_setting=defect_initial_setting,
-                            filtering_words=opts.filtering,
-                            particular_defects=opts.add,
-                            incar=opts.incar,
-                            kpoints=opts.kpoints,
-                            force_overwrite=opts.force_overwrite)
-
-
-if __name__ == "__main__":
-    main()
