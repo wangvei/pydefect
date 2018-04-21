@@ -7,7 +7,6 @@ import json
 import math
 from operator import itemgetter
 
-import matplotlib
 import matplotlib.pyplot as plt
 from monty.json import MontyEncoder
 from monty.serialization import loadfn
@@ -425,7 +424,8 @@ class Correction:
              "alignment": self._alignment,
              "symbols_without_defect": self._symbols_without_defect,
              "distances_from_defect": list(self._distances_from_defect),
-             "difference_electrostatic_pot": list(self._difference_electrostatic_pot),
+             "difference_electrostatic_pot":
+                 list(self._difference_electrostatic_pot),
              "model_pot": list(self._model_pot),
              "manually_set_energy": self._manually_set_energy}
         return d
@@ -433,11 +433,14 @@ class Correction:
     @classmethod
     def from_dict(cls, d):
         """
-        Constructs a DefectEntry class object from a dictionary.
+        Constructs a Correction class object from a dictionary.
         """
         method = CorrectionMethod(d["method"])
 
-        return cls(method, d["ewald"], d["diff_ave_pot"], d["alignment"],
+        return cls(method, d["ewald"], d["lattice_energy"], d["diff_ave_pot"],
+                   d["alignment"], d["symbols_without_defect"],
+                   d["distances_from_defect"],
+                   d["difference_electrostatic_pot"], d["model_pot"],
                    d["manually_set_energy"])
 
     def to_json_file(self, filename):
