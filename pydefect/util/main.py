@@ -216,8 +216,8 @@ def main():
     # -- correction ------------------------------------------------------------
     parser_correction = subparsers.add_parser(
         name="correction",
-        description="Tools for configuring defect_entry files for post process"
-                    "of defect calculations.",
+        description="Tools for correction of error of defect formation energy"
+                    " due to finite cell size.",
         aliases=['c'])
 
     # needed files
