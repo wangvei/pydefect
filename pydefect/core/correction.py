@@ -403,7 +403,6 @@ class Correction:
                    )
         # potential difference
         point_x = [self.max_sphere_radius, self._distances_from_defect[-1]]
-        #TODO magic number 2
         point_y = [self.diff_ave_pot, self.diff_ave_pot]
         ax.plot(point_x, point_y,
                 c=(0, 0, 0), label="potential difference")
