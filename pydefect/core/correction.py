@@ -251,7 +251,6 @@ class Ewald:
                                 Defaults to zero vector.
         Yields (np.ndarray): Cartesian vector of lattice point.
         """
-        #print(lattice_vectors)
         max_int = [int(max_length / np.linalg.norm(lattice_vectors[i])) + 1
                    for i in range(3)]
         for index in product(range(-max_int[0], max_int[0] + 1),
@@ -373,18 +372,12 @@ class Correction:
         for k, g in groupby(property_without_defect, key=itemgetter(0)):
             values = [(x, y) for _, x, y in g]
             points_dictionary[k] = values
-        # print(points_dictionary)
         fig = plt.figure()
         ax = fig.add_subplot(111)
         # elemental electrostatic potential
         for i, (symbol, points) in enumerate(points_dictionary.items()):
-            # print("symbol = ")
-            # print(symbol)
-            # print("points = ")
-            # print(points)
             x_set = np.array([point[0] for point in points])
             y_set = np.array([point[1] for point in points])
-            # print(symbol, x_set, y_set)
             # set color
             gradation = i / len(points_dictionary.items())
             color = tuple(np.array([0, gradation, 1-gradation]))
@@ -515,8 +508,6 @@ class Correction:
         diff_ep = [-ep for ep in
                    defect_dft.relative_potential(perfect_dft, defect_entry)
                    if ep is not None]
-        # print("defect_dft.final_structure")
-        # print(defect_dft.final_structure)
         atomic_position_without_defect =\
             [defect_dft.final_structure.frac_coords[i]
              for i, j in enumerate(defect_entry.atom_mapping_to_perfect)
@@ -529,19 +520,11 @@ class Correction:
         charge = defect_entry.charge
         axis = np.array(perfect_structure.lattice.matrix)
         volume = perfect_structure.lattice.volume
-        # print("defect_entry.name = ")
-        # print(defect_entry.name)
         defect_coords = defect_center(defect_entry, defect_dft.final_structure)
-        # print("defect_coords")
-        # print(defect_coords)
-        # print("distance_list")
-        # print(distance_list(defect_dft.final_structure, defect_coords))
         distances_from_defect = \
             [distance_list(defect_dft.final_structure, defect_coords)[i]
              for i, j in enumerate(defect_entry.atom_mapping_to_perfect)
              if j is not None]
-        # print("distances_from_defect")
-        # print(distances_from_defect)
 
         # TODO: check ewald or ewald_param?
         # model potential and lattice energy
@@ -552,7 +535,6 @@ class Correction:
         epsilon_inv = np.linalg.inv(ewald.dielectric_tensor)
         cube_root_vol = math.pow(volume, 1/3)
         ewald_param = ewald.ewald_param / cube_root_vol * root_det_epsilon
-        # print("ewald_param = ", ewald_param)
         diff_pot = -0.25 / volume / ewald_param ** 2  # [1/A]
         for i, r in enumerate(atomic_position_without_defect):
             # Ewald real part
@@ -562,10 +544,6 @@ class Correction:
             shift =\
                 defect_dft.final_structure.lattice.\
                 get_cartesian_coords(r-defect_coords)
-            # print("matrix, r-defect_coords, shift")
-            # print(defect_dft.final_structure.lattice.matrix)
-            # print(r-defect_coords)
-            # print(shift)
 
             for v in ewald.generate_neighbor_lattices(shift=shift):
                 # Skip the potential caused by the defect itself
@@ -590,14 +568,6 @@ class Correction:
                     / g_epsilon_g * np.cos(np.dot(g, r))  # [A^2]
             reciprocal_part = summation / volume
             model_pot[i] = (real_part + reciprocal_part + diff_pot) * coeff
-            # print("atom index = ", i)
-            # print("atomic_pos = ", r)
-            # print("shift = ", shift)
-            # print("real_part = ", real_part)
-            # print("reciprocal_part = ", reciprocal_part)
-            # print("diff_pot = ", diff_pot)
-            # print("coeff = ", coeff)
-            # print("")
 
         # defect site
         # TODO: Can be this part included above loop?
@@ -637,21 +607,10 @@ class Correction:
         self_pot =\
             - ewald_param / (2.0 * np.pi * np.sqrt(np.pi * det_epsilon))
 
-        # print("atom index = at site")
-        # print("real_part = ", real_part)
-        # print("reciprocal_part = ", reciprocal_part)
-        # print("diff_pot = ", diff_pot)
-        # print("self_pot = ", self_pot)
-        # print("coeff = ", coeff)
-        # print("")
-
         model_pot_defect_site \
             = (real_part + reciprocal_part + diff_pot + self_pot) * coeff
         lattice_energy = model_pot_defect_site * charge / 2
-        # return model_pot, model_pot_defect_site, lattice_energy
 
-        # print("model pot on site = {0}".format(model_pot_defect_site))
-        # print("lattice energy = {0}".format(lattice_energy))
         # calc ave_pot_diff
         distance_threshold = calc_max_sphere_radius(axis)
         pot_diff = []
@@ -667,10 +626,7 @@ class Correction:
             if d > distance_threshold:
                 pot_diff.append(a - m)
         ave_pot_diff = float(np.mean(pot_diff))
-        # print("potential difference = {0}".format(ave_pot_diff))
         alignment = -ave_pot_diff * charge
-        # print("alignment-like term = {0}".format(alignment))
-        # return alignment
         return cls(CorrectionMethod.extended_fnv,
                    ewald, lattice_energy, ave_pot_diff, alignment,
                    symbols_without_defect, distances_from_defect, diff_ep,
