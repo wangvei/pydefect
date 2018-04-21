@@ -213,7 +213,7 @@ def main():
 
     parser_unitcell_results.set_defaults(func=unitcell_results)
 
-    # -- correction -------------------------------------------------
+    # -- correction ------------------------------------------------------------
     parser_correction = subparsers.add_parser(
         name="correction",
         description="Tools for configuring defect_entry files for post process"
