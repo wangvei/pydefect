@@ -13,6 +13,7 @@ from pydefect.core.defect_entry import DefectEntry
 from pydefect.core.supercell_dft_results import SupercellDftResults
 from pydefect.core.unitcell_dft_results import UnitcellDftResults
 from pydefect.core.correction import Ewald, Correction
+from pydefect.analysis.chempotdiag.chem_pot_diag import ChemPotDiag
 
 
 __version__ = "0.0.1"
@@ -255,6 +256,66 @@ def main():
 
     parser_correction.set_defaults(func=correction)
 
+    # -- chempotdiag -----------------------------------------------------------
+    parser_chempotdiag = subparsers.add_parser(
+        name="chempotdiag",
+        description="Tools for configuring defect_entry files for post process"
+                    "of defect calculations.",
+        aliases=['cp'])
+
+    # input
+    parser_chempotdiag.add_argument("-e", "--energy", dest="energy_file",
+                                    type=str, default=None,
+                                    help="Name of text file of "
+                                         "energies of compounds")
+    parser_chempotdiag.add_argument("-v", "--vasp_dirs",
+                                    dest="vasp_dirs", type=str, nargs='+',
+                                    default=None,
+                                    help="Drawing diagram from specified "
+                                         "directories of vasp calculations")
+    parser_chempotdiag.add_argument("-p", "--poscar_name",
+                                    dest="poscar_name", type=str,
+                                    default="POSCAR",
+                                    help="Name of POSCAR, like CONTCAR, "
+                                         "POSCAR-finish,...")
+    parser_chempotdiag.add_argument("-o", "--outcar_name",
+                                    dest="outcar_name", type=str,
+                                    default="OUTCAR",
+                                    help="Name of OUTCAR, like OUTCAR-finish")
+
+    # drawing diagram
+    parser_chempotdiag.add_argument("-w", "--without_label",
+                                    help="Draw diagram without label.",
+                                    action="store_true")
+    parser_chempotdiag.add_argument("-c", "--remarked_compound",
+                                    dest="remarked_compound", type=str,
+                                    default=None,
+                                    help="Name of compound you are remarking."
+                                         "Outputted equilibrium_points are "
+                                         "limited to neighboring that "
+                                         "compounds, and those equilibrium "
+                                         "points are labeled in "
+                                         "chem_pot_diagram.")
+    parser_chempotdiag.add_argument("-d", "--draw_range",
+                                    dest="draw_range", type=float,
+                                    default=None,
+                                    help="Drawing range of diagram."
+                                         "If range is shallower than the "
+                                         "deepest vertex, "
+                                         "ValueError will occur")
+
+    # output
+    parser_chempotdiag.add_argument("-s", "--save_file",
+                                    dest="save_file", type=str,
+                                    default=None,
+                                    help="File name to save the drawn diagram.")
+    parser_chempotdiag.add_argument("-y", "--yaml",
+                                    action="store_const", const=True,
+                                    default=False,
+                                    help="Dumps yaml of remarked_compound")
+
+    parser_chempotdiag.set_defaults(func=chempotdiag)
+
     args = parser.parse_args()
     args.func(args)
 
@@ -427,6 +488,53 @@ def correction(args):
                           "Exception type and message is {1}, {2}".
                           format(directory, type(e), e.args))
         c.to_json_file(directory + "/correction.json")
+
+
+def chempotdiag(args):
+    if args.energy_file and args.vasp_dirs:
+        raise ValueError("You can not specify energy_file and vasp_dirs "
+                         "simultaneously.")
+    if args.energy_file:
+        cp = ChemPotDiag.from_file(args.energy_file)
+    if args.vasp_dirs:
+        poscar_paths = [d + args.poscar_name for d in args.vasp_dirs]
+        outcar_paths = [d + args.outcar_name for d in args.vasp_dirs]
+        cp = ChemPotDiag.from_vasp_calculations_files(poscar_paths,
+                                                      outcar_paths)
+    print("Energies of elements ({0}) : {1}"
+          .format(cp.elements, cp.element_energy))
+    #  Read args of drawing diagram from parser
+    if args.remarked_compound:
+        try:
+            for vertex in cp.get_neighbor_vertices(args.remarked_compound):
+                print(vertex)
+        except ValueError:
+            print("{0} is unstable. No vertex is labeled."
+                  .format(args.remarked_compound))
+
+    kwargs_for_diagram = {}
+    if args.remarked_compound:
+        kwargs_for_diagram["remarked_compound"] = args.remarked_compound
+    if args.save_file:
+        kwargs_for_diagram["save_file_name"] = args.save_file
+    if args.without_label:
+        kwargs_for_diagram["with_label"] = False
+    if args.draw_range:
+        kwargs_for_diagram["draw_range"] = args.draw_range
+
+    if cp.dim >= 4:
+        print("Currently diagram is not available for quaternary or more.")
+    else:
+        try:
+            cp.draw_diagram(**kwargs_for_diagram)
+        except ValueError:
+            kwargs_for_diagram.pop("remarked_compound")
+            cp.draw_diagram(**kwargs_for_diagram)
+
+    if args.yaml:
+        if args.remarked_compound is None:
+            raise ValueError("remarked_compound is needed to dump yaml")
+        cp.dump_yaml(".", args.remarked_compound)
 
 
 if __name__ == "__main__":
