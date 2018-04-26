@@ -9,9 +9,10 @@ from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 import numpy as np
 from scipy.spatial import HalfspaceIntersection
 
-from chempotdiag.compound import Compound, DummyCompoundForDiagram,\
-    CompoundsList
-from chempotdiag.vertex import Vertex, VertexOnBoundary, VerticesList
+from pydefect.analysis.chempotdiag.compound \
+    import Compound, DummyCompoundForDiagram, CompoundsList
+from pydefect.analysis.chempotdiag.vertex \
+    import Vertex, VertexOnBoundary, VerticesList
 
 
 class ChemPotDiag:
