@@ -13,7 +13,8 @@ from pydefect.core.defect_entry import DefectEntry
 from pydefect.core.supercell_dft_results import SupercellDftResults
 from pydefect.core.unitcell_dft_results import UnitcellDftResults
 from pydefect.core.correction import Ewald, Correction
-from pydefect.analysis.chempotdiag.chem_pot_diag import ChemPotDiag
+from pydefect.analysis.chempotdiag.chem_pot_diag \
+    import ChemPotDiag, make_vasp_inputs_from_mp
 
 
 __version__ = "0.0.1"
@@ -263,6 +264,26 @@ def main():
                     "of defect calculations.",
         aliases=['cp'])
 
+    # get poscar from materials project
+    parser_chempotdiag.add_argument("-m", "--mat_proj_poscar",
+                                    help="",
+                                    action="store_true")
+    parser_chempotdiag.add_argument("-el", "--elements",
+                                    dest="elements", type=str, nargs='+',
+                                    default=None,
+                                    help="")
+    parser_chempotdiag.add_argument("-dp", "--dir_path",
+                                    dest="dir_path", type=str,
+                                    default=None,
+                                    help="")
+    parser_chempotdiag.add_argument("-ch", "--criterion_hull",
+                                    dest="criterion_hull", type=float,
+                                    default=None,
+                                    help="")
+    parser_chempotdiag.add_argument("-k", "--mp_api_key",
+                                    help="",
+                                    action="store_true")
+
     # input
     parser_chempotdiag.add_argument("-e", "--energy", dest="energy_file",
                                     type=str, default=None,
@@ -491,50 +512,63 @@ def correction(args):
 
 
 def chempotdiag(args):
-    if args.energy_file and args.vasp_dirs:
-        raise ValueError("You can not specify energy_file and vasp_dirs "
-                         "simultaneously.")
-    if args.energy_file:
-        cp = ChemPotDiag.from_file(args.energy_file)
-    if args.vasp_dirs:
-        poscar_paths = [d + args.poscar_name for d in args.vasp_dirs]
-        outcar_paths = [d + args.outcar_name for d in args.vasp_dirs]
-        cp = ChemPotDiag.from_vasp_calculations_files(poscar_paths,
-                                                      outcar_paths)
-    print("Energies of elements ({0}) : {1}"
-          .format(cp.elements, cp.element_energy))
-    #  Read args of drawing diagram from parser
-    if args.remarked_compound:
-        try:
-            for vertex in cp.get_neighbor_vertices(args.remarked_compound):
-                print(vertex)
-        except ValueError:
-            print("{0} is unstable. No vertex is labeled."
-                  .format(args.remarked_compound))
 
-    kwargs_for_diagram = {}
-    if args.remarked_compound:
-        kwargs_for_diagram["remarked_compound"] = args.remarked_compound
-    if args.save_file:
-        kwargs_for_diagram["save_file_name"] = args.save_file
-    if args.without_label:
-        kwargs_for_diagram["with_label"] = False
-    if args.draw_range:
-        kwargs_for_diagram["draw_range"] = args.draw_range
-
-    if cp.dim >= 4:
-        print("Currently diagram is not available for quaternary or more.")
+    if args.mat_proj_poscar:
+        kwargs_to_make_vasp_inputs = {}
+        if args.dir_path:
+            kwargs_to_make_vasp_inputs["dir_path"] = args.dir_path
+        if args.criterion_hull:
+            kwargs_to_make_vasp_inputs["criterion_e_above_hull"] \
+                = args.criterion_hull
+        if args.mp_api_key:
+            kwargs_to_make_vasp_inputs["api_key"] \
+                = args.mp_api_key
+        make_vasp_inputs_from_mp(args.elements, **kwargs_to_make_vasp_inputs)
     else:
-        try:
-            cp.draw_diagram(**kwargs_for_diagram)
-        except ValueError:
-            kwargs_for_diagram.pop("remarked_compound")
-            cp.draw_diagram(**kwargs_for_diagram)
+        if args.energy_file and args.vasp_dirs:
+            raise ValueError("You can not specify energy_file and vasp_dirs "
+                             "simultaneously.")
+        if args.energy_file:
+            cp = ChemPotDiag.from_file(args.energy_file)
+        if args.vasp_dirs:
+            poscar_paths = [d + args.poscar_name for d in args.vasp_dirs]
+            outcar_paths = [d + args.outcar_name for d in args.vasp_dirs]
+            cp = ChemPotDiag.from_vasp_calculations_files(poscar_paths,
+                                                          outcar_paths)
+        print("Energies of elements ({0}) : {1}"
+              .format(cp.elements, cp.element_energy))
+        #  Read args of drawing diagram from parser
+        if args.remarked_compound:
+            try:
+                for vertex in cp.get_neighbor_vertices(args.remarked_compound):
+                    print(vertex)
+            except ValueError:
+                print("{0} is unstable. No vertex is labeled."
+                      .format(args.remarked_compound))
 
-    if args.yaml:
-        if args.remarked_compound is None:
-            raise ValueError("remarked_compound is needed to dump yaml")
-        cp.dump_yaml(".", args.remarked_compound)
+        kwargs_for_diagram = {}
+        if args.remarked_compound:
+            kwargs_for_diagram["remarked_compound"] = args.remarked_compound
+        if args.save_file:
+            kwargs_for_diagram["save_file_name"] = args.save_file
+        if args.without_label:
+            kwargs_for_diagram["with_label"] = False
+        if args.draw_range:
+            kwargs_for_diagram["draw_range"] = args.draw_range
+
+        if cp.dim >= 4:
+            print("Currently diagram is not available for quaternary or more.")
+        else:
+            try:
+                cp.draw_diagram(**kwargs_for_diagram)
+            except ValueError:
+                kwargs_for_diagram.pop("remarked_compound")
+                cp.draw_diagram(**kwargs_for_diagram)
+
+        if args.yaml:
+            if args.remarked_compound is None:
+                raise ValueError("remarked_compound is needed to dump yaml")
+            cp.dump_yaml(".", args.remarked_compound)
 
 
 if __name__ == "__main__":

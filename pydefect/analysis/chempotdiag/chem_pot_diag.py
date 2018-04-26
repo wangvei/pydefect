@@ -1,8 +1,12 @@
 from __future__ import print_function
 import argparse
 import copy
-from collections import OrderedDict
+from itertools import combinations
+import os
 
+from pymatgen import MPRester
+from pymatgen.core.structure import Structure
+from pymatgen.io.vasp.inputs import Poscar
 import ruamel.yaml
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d.art3d import Poly3DCollection
@@ -13,6 +17,49 @@ from pydefect.analysis.chempotdiag.compound \
     import Compound, DummyCompoundForDiagram, CompoundsList
 from pydefect.analysis.chempotdiag.vertex \
     import Vertex, VertexOnBoundary, VerticesList
+
+
+# TODO: Need to write test
+def make_vasp_inputs_from_mp(elements,
+                             dir_path=".",
+                             criterion_e_above_hull=float("inf"),
+                             api_key=None):
+    """
+
+    Args:
+        elements(list): like ["Cu", "O"]
+        dir_path(str):
+        criterion_e_above_hull(float):
+        api_key(str):
+
+    Returns:
+
+    """
+    if not os.path.isdir(dir_path):
+        raise NotADirectoryError(dir_path + " is not directory.")
+    mp_rester = MPRester(api_key)
+    # make directory
+    chem_sys = "-".join(elements)
+    chem_sys_dir = dir_path + "/" + chem_sys
+    if not os.path.exists(chem_sys_dir):
+        os.mkdir(dir_path + "/" + chem_sys)
+
+    for i in range(len(elements)):
+        for els in combinations(elements, i+1):
+            els_str = "-".join(els)
+            all_materials = mp_rester.get_data(els_str, data_type="vasp")
+            materials = [material for material in all_materials
+                         if material["e_above_hull"] < criterion_e_above_hull]
+            for material in materials:
+                full_formula = material["full_formula"]
+                mp_id = material["material_id"]
+                dirname = full_formula + "_" + mp_id
+                dirname2 = "/".join([chem_sys_dir, dirname])
+                if not os.path.exists(dirname2):
+                    os.mkdir(dirname2)
+                    structure = Structure.from_str(material["cif"], "cif")
+                    poscar = Poscar(structure)
+                    poscar.write_file(dirname2 + "/POSCAR")
 
 
 class ChemPotDiag:
