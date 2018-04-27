@@ -494,21 +494,24 @@ def correction(args):
     for directory in dirs:
         print("correcting {0} ...".format(directory))
         try:
-            entry = DefectEntry.json_load(directory + "/defect_entry.json")
+            entry = DefectEntry.json_load(
+                os.path.join(directory, "defect_entry.json"))
             defect_dft_data = \
-                SupercellDftResults.json_load(directory + "/dft_results.json")
+                SupercellDftResults.json_load(
+                    os.path.join(directory, "dft_results.json"))
             c = Correction.compute_alignment_by_extended_fnv(entry,
                                                              defect_dft_data,
                                                              perfect_dft_data,
                                                              unitcell_dft_data,
                                                              ewald_data)
-            c.plot_distance_vs_potential(file_name=directory+"/potential.eps")
+            c.plot_distance_vs_potential(
+                file_name=os.path.join(directory, "potential.eps"))
         except Exception as e:
             warnings.warn("Correction for {0} is failed. "
                           "The calculation for {0} is skipped."
                           "Exception type and message is {1}, {2}".
                           format(directory, type(e), e.args))
-        c.to_json_file(directory + "/correction.json")
+        c.to_json_file(os.path.join(directory, "correction.json"))
 
 
 def chempotdiag(args):
@@ -568,7 +571,7 @@ def chempotdiag(args):
         if args.yaml:
             if args.remarked_compound is None:
                 raise ValueError("remarked_compound is needed to dump yaml")
-            cp.dump_yaml(".", args.remarked_compound)
+            cp.dump_yaml(os.getcwd(), args.remarked_compound)
 
 
 if __name__ == "__main__":

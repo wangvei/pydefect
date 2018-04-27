@@ -21,7 +21,7 @@ from pydefect.analysis.chempotdiag.vertex \
 
 # TODO: Need to write test
 def make_vasp_inputs_from_mp(elements,
-                             dir_path=".",
+                             dir_path=os.getcwd(),
                              criterion_e_above_hull=float("inf"),
                              api_key=None):
     """
@@ -40,9 +40,9 @@ def make_vasp_inputs_from_mp(elements,
     mp_rester = MPRester(api_key)
     # make directory
     chem_sys = "-".join(elements)
-    chem_sys_dir = dir_path + "/" + chem_sys
+    chem_sys_dir = os.path.join(dir_path, chem_sys)
     if not os.path.exists(chem_sys_dir):
-        os.mkdir(dir_path + "/" + chem_sys)
+        os.mkdir(os.path.join(dir_path, chem_sys))
 
     for i in range(len(elements)):
         for els in combinations(elements, i+1):
@@ -54,12 +54,12 @@ def make_vasp_inputs_from_mp(elements,
                 full_formula = material["full_formula"]
                 mp_id = material["material_id"]
                 dirname = full_formula + "_" + mp_id
-                dirname2 = "/".join([chem_sys_dir, dirname])
+                dirname2 = os.path.join(chem_sys_dir, dirname)
                 if not os.path.exists(dirname2):
                     os.mkdir(dirname2)
                     structure = Structure.from_str(material["cif"], "cif")
                     poscar = Poscar(structure)
-                    poscar.write_file(dirname2 + "/POSCAR")
+                    poscar.write_file(os.path.join(dirname2, "POSCAR"))
 
 
 class ChemPotDiag:
