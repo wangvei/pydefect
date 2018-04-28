@@ -276,7 +276,7 @@ class Correction:
     def __init__(self, method, ewald, lattice_energy, diff_ave_pot,
                  alignment_energy, symbols_without_defect,
                  distances_from_defect, difference_electrostatic_pot, model_pot,
-                 manually_set_energy=None):
+                 manually_set_energy=0):
         """
         Args:
             method (CorrectionMethod):
@@ -340,7 +340,8 @@ class Correction:
 
     @property
     def total_correction_energy(self):
-        return -self._lattice_energy + self._alignment_energy
+        return -self._lattice_energy + self._alignment_energy \
+               + self._manually_set_energy
 
     @property
     def symbols_without_defect(self):
