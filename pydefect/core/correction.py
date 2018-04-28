@@ -121,8 +121,6 @@ class Ewald:
 
     @classmethod
     def from_dict(cls, d):
-        print("dielectric tensor")
-        print(d["dielectric_tensor"])
         return cls(d["lattice_matrix"], d["dielectric_tensor"],
                    d["ewald_param"], d["prod_cutoff_fwhm"],
                    d["num_real_lattice"], d["num_reciprocal_lattice"])
