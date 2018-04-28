@@ -5,6 +5,7 @@ import numpy as np
 import os
 import warnings
 
+from collections import defaultdict
 from monty.json import MontyEncoder
 from monty.serialization import loadfn
 
@@ -78,8 +79,12 @@ class UnitcellDftResults:
     def load_json(cls, filename):
         """
         Constructs a class object from a json file.
+        defaultdict is imperative to keep the backward compatibility.
+        For instance, when one adds new attributes, they do not exist in old
+        json files. Then, the corresponding values are set to None.
         """
-        return cls.from_dict(loadfn(filename))
+        dd = defaultdict(lambda: None, loadfn(filename))
+        return cls.from_dict(dd)
 
     # getter
     @property
@@ -245,5 +250,3 @@ class UnitcellDftResults:
         """
         with open(filename, 'w') as fw:
             json.dump(self.as_dict(), fw, indent=2, cls=MontyEncoder)
-
-

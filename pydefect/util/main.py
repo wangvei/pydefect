@@ -2,15 +2,17 @@
 # -*- coding: utf-8 -*-
 
 import os
-import sys
 import warnings
+
+from glob import glob
 
 from pydefect.input_maker.defect_initial_setting \
     import print_dopant_info, DefectInitialSetting
 from pydefect.input_maker.vasp_input_maker \
     import make_incar, make_kpoints, VaspDefectInputSetMaker
 from pydefect.core.defect_entry import DefectEntry
-from pydefect.core.supercell_dft_results import SupercellDftResults
+from pydefect.core.supercell_dft_results import SupercellDftResults, \
+    vasp_convergence_ionic, vasp_convergence_electronic
 from pydefect.core.unitcell_dft_results import UnitcellDftResults
 from pydefect.core.correction import Ewald, Correction
 from pydefect.analysis.chempotdiag.chem_pot_diag \
@@ -158,6 +160,9 @@ def main():
         description="Tools for analyzing vasp supercell results",
         aliases=['supercell', 'sr'])
 
+    parser_supercell_results.add_argument(
+        "-c", "--convergence", dest="convergence", action="store_true",
+        help="Check convergence of vasp calc at electronic and ionic steps.")
     parser_supercell_results.add_argument(
         "--dirs", dest="dirs", nargs="+", type=str,
         help="Directory names.")
@@ -379,25 +384,39 @@ def defect_entry(args):
 
 def supercell_results(args):
     if args.dir_all:
-        from glob import glob
         dirs = glob('*[0-9]/')
-        dirs.append("perfect")
+        dirs.append("perfect/")
     else:
         dirs = args.dirs
 
     for d in dirs:
-        print(d)
         if os.path.isdir(d):
-            try:
-                dft_results = SupercellDftResults. \
-                    from_vasp_files(d,
-                                    contcar_name=args.poscar,
-                                    outcar_name=args.outcar,
-                                    vasprun_name=args.vasprun)
-                dft_results.to_json_file(
-                    filename=os.path.join(d, "dft_results.json"))
-            except:
-                warnings.warn(message="Parsing data in " + d + " is failed.")
+            if args.convergence:
+                if vasp_convergence_ionic(d, vasprun_name=args.vasprun):
+                    ionic = "Y"
+                else:
+                    ionic = "N"
+                if vasp_convergence_electronic(d, vasprun_name=args.vasprun):
+                    electronic = "Y"
+                else:
+                    electronic = "N"
+
+                print("{:>20}  ionic:{:>3}  electronic:{:>3}".
+                      format(d, ionic, electronic))
+            else:
+                print(d)
+                try:
+                    dft_results = SupercellDftResults.from_vasp_files(
+                        d,
+                        contcar_name=args.poscar,
+                        outcar_name=args.outcar,
+                        vasprun_name=args.vasprun)
+
+                    dft_results.to_json_file(
+                        filename=os.path.join(d, "dft_results.json"))
+                except:
+                    warnings.warn(
+                        message="Parsing data in " + d + " is failed.")
         else:
             warnings.warn(message=d + " does not exist, so nothing is done.")
 
@@ -451,7 +470,6 @@ def unitcell_results(args):
 
 
 def correction(args):
-    from glob import glob
 
     try:
         unitcell_dft_data = UnitcellDftResults.load_json(args.unitcell_json)

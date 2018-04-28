@@ -23,6 +23,18 @@ __status__ = "Development"
 __date__ = "December 4, 2017"
 
 
+def vasp_convergence_ionic(directory_path, vasprun_name="vasprun.xml"):
+    """ """
+    vasprun = Vasprun(os.path.join(directory_path, vasprun_name))
+    return vasprun.converged_ionic
+
+
+def vasp_convergence_electronic(directory_path, vasprun_name="vasprun.xml"):
+    """ """
+    vasprun = Vasprun(os.path.join(directory_path, vasprun_name))
+    return vasprun.converged_electronic
+
+
 def defect_center(defect_entry, structure=None):
     """
     Returns a fractional coordinates of the defect center that is calculated
@@ -154,7 +166,7 @@ class SupercellDftResults:
         outcar = Outcar(os.path.join(directory_path, outcar_name))
         vasprun = Vasprun(os.path.join(directory_path, vasprun_name))
 
-        # TODO: check if the structure optimization is finished or not
+        # TODO: check if the structure optimization is converged or not
         final_structure = contcar.structure
         total_energy = outcar.final_energy
         magnetization = outcar.total_mag
