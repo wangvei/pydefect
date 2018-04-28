@@ -265,6 +265,16 @@ class CorrectionTest(unittest.TestCase):
         self._substitutional = \
             SupercellDftResults.from_vasp_files(dirname_substitutional)
 
+    def test_json(self):
+        vacancy_correction = \
+            Correction.compute_correction(self._vacancy_entry,
+                                          self._vacancy,
+                                          self._perfect,
+                                          self._unitcell)
+        vacancy_correction.to_json_file("correction.json")
+        v = Correction.load_json("correction.json")
+
+
     def test_compute_extended_fnv(self):
         # vacancy
         vacancy_correction = \
