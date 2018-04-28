@@ -8,7 +8,7 @@ import warnings
 from monty.json import MontyEncoder
 from monty.serialization import loadfn
 
-from pymatgen.io.vasp.outputs import Outcar, Vasprun
+from pymatgen.io.vasp.outputs import Outcar, Vasprun, Poscar
 from pymatgen.electronic_structure.core import Spin
 
 
@@ -29,15 +29,17 @@ class UnitcellDftResults:
         static_dielectric_tensor (3x3 numpy array):
         ionic_dielectric_tensor (3x3 numpy array):
         total_dos (2xN numpy array): [[energy1, dos1], [energy2, dos2],...]
+        volume (float):
     """
 
     def __init__(self, band_edge=None, static_dielectric_tensor=None,
-                 ionic_dielectric_tensor=None, total_dos=None):
+                 ionic_dielectric_tensor=None, total_dos=None, volume=None):
         """ """
         self._band_edge = band_edge
         self._static_dielectric_tensor = static_dielectric_tensor
         self._ionic_dielectric_tensor = ionic_dielectric_tensor
         self._total_dos = total_dos
+        self._volume = volume
 
     def __eq__(self, other):
         if other is None or type(self) != type(other):
@@ -45,15 +47,17 @@ class UnitcellDftResults:
         return self.__dict__ == other.__dict__
 
     def __str__(self):
-        outs = ["vbm: " + str(self._band_edge[0]),
-                "cbm: " + str(self._band_edge[1]),
+        outs = ["vbm (eV): " + str(self._band_edge[0]),
+                "cbm (eV): " + str(self._band_edge[1]),
                 "static dielectric tensor:",
                 str(self._static_dielectric_tensor),
                 "ionic dielectric tensor:",
                 str(self._ionic_dielectric_tensor),
                 "total dielectric tensor:",
                 str(self.total_dielectric_tensor),
-                "total density of states:"]
+                "total density of states:",
+                str(self._volume),
+                "volume (A^3):"]
 
         if self._total_dos is None:
             outs.append("Not set yet")
@@ -68,7 +72,7 @@ class UnitcellDftResults:
         Constructs a class object from a dictionary.
         """
         return cls(d["band_edge"], d["static_dielectric_tensor"],
-                   d["ionic_dielectric_tensor"], d["total_dos"])
+                   d["ionic_dielectric_tensor"], d["total_dos"], d["volume"])
 
     @classmethod
     def load_json(cls, filename):
@@ -121,6 +125,14 @@ class UnitcellDftResults:
             return None
         else:
             return self._total_dos
+
+    @property
+    def volume(self):
+        if self._volume is None:
+            print("Volume is not set yet.")
+            return None
+        else:
+            return self._volume
 
     def is_set_all(self):
         if self._band_edge is not None and \
@@ -182,6 +194,10 @@ class UnitcellDftResults:
     def total_dos(self, total_dos):
         self._total_dos = total_dos
 
+    @volume.setter
+    def volume(self, volume):
+        self._volume = volume
+
     # setter from vasp results
     def set_band_edge_from_vasp(self, directory_path,
                                 vasprun_name="vasprun.xml"):
@@ -206,6 +222,10 @@ class UnitcellDftResults:
         # only non-magnetic
         self._total_dos = np.vstack([dos[Spin.up], ene])
 
+    def set_volume_from_vasp(self, directory_path, contcar_name="CONTCAR"):
+        contcar = Poscar.from_file(os.path.join(directory_path, contcar_name))
+        self._volume = contcar.structure.volume
+
     def as_dict(self):
         """
         Dict representation of DefectInitialSetting class object.
@@ -214,7 +234,8 @@ class UnitcellDftResults:
         d = {"band_edge":                self.band_edge,
              "static_dielectric_tensor": self.static_dielectric_tensor,
              "ionic_dielectric_tensor":  self.ionic_dielectric_tensor,
-             "total_dos":                self.total_dos}
+             "total_dos":                self.total_dos,
+             "volume":                   self.volume}
 
         return d
 

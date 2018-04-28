@@ -67,7 +67,7 @@ class DefectCenterTest(unittest.TestCase):
         expected = [0.26, 0.26, 0.26]
         self.assertEqual(actual3, expected)
 
-    def test_defect_center4(self):
+    def test_defect_center(self):
         # Test for periodic boundary condition (PBC).
         name = "MgO64atoms-Va_Mg1+Va_O1"
         test_structure = Structure.from_file(
@@ -116,8 +116,11 @@ class SupercellDftResultsTest(unittest.TestCase):
         """ """
         final_structure = Structure.from_file(
             os.path.join(test_dir, "MgO/defects/Va_O1_2", "CONTCAR"))
-        total_energy = -93.76904720
+        total_energy = -93.76931583
+        magnetization = -1.6e-06
         eigenvalues = {Spin.up: np.array(
+
+
             [[[-14.2806, 1.], [-13.4696, 1.], [-13.1066, 1.], [-12.9398, 1.],
               [-12.9398, 1.], [-12.7681, 1.], [-12.7681, 1.], [-1.4322, 1.],
               [-1.4322, 1.], [-1.2961, 1.], [-0.9877, 1.], [-0.667, 1.],
@@ -144,7 +147,7 @@ class SupercellDftResultsTest(unittest.TestCase):
              -70.4981]
 
         self._MgO_Va_O1_2 = SupercellDftResults(
-            final_structure, total_energy, eigenvalues,
+            final_structure, total_energy, magnetization, eigenvalues,
             self.electrostatic_potential)
 
         self._MgO_Va_O1_2_from_vasp_files = \
@@ -172,6 +175,7 @@ class SupercellDftResultsTest(unittest.TestCase):
 
     def test_print(self):
         print(self._MgO_Va_O1_2)
+        print(self._MgO_Va_O1_2_from_vasp_files)
 
     def test_from_vasp_files(self):
         # CAUTION: When constructing Structure object from Structure.from_file
@@ -188,6 +192,10 @@ class SupercellDftResultsTest(unittest.TestCase):
         #                 self.d_from_vasp_files["final_structure"])
         self.assertEqual(self.d["total_energy"],
                          self.d_from_vasp_files["total_energy"])
+        self.assertEqual(self.d["magnetization"],
+                         self.d_from_vasp_files["magnetization"])
+        print(self.d["eigenvalues"]["1"])
+        print(self.d_from_vasp_files["eigenvalues"]["1"])
         self.assertTrue((self.d["eigenvalues"]["1"] ==
                          self.d_from_vasp_files["eigenvalues"]["1"]))
         self.assertTrue(self.d["electrostatic_potential"] ==
@@ -235,7 +243,8 @@ class UnitcellDftResultsTest(unittest.TestCase):
         self.unitcell = UnitcellDftResults(band_edge=None,
                                            static_dielectric_tensor=None,
                                            ionic_dielectric_tensor=None,
-                                           total_dos=None)
+                                           total_dos=None,
+                                           volume=None)
 
     def test_band_edge(self):
         print(self.unitcell.band_edge)
@@ -276,6 +285,15 @@ class UnitcellDftResultsTest(unittest.TestCase):
             directory_path=os.path.join(test_dir,
                                         "MgO/unitcell/structure_optimization"))
         print(self.unitcell.total_dos)
+
+    def test_volume(self):
+        print(self.unitcell.volume)
+        self.unitcell.volume = 10
+        print(self.unitcell.volume)
+        self.unitcell.set_volume_from_vasp(
+            directory_path=os.path.join(test_dir,
+                                        "MgO/unitcell/structure_optimization"))
+        print(self.unitcell.volume)
 
     def test_dict_json(self):
         self.unitcell.band_edge = [0.0, 1.0]
