@@ -108,7 +108,7 @@ class ChemPotDiag:
                        vertices,
                        compounds_to_vertex_list, vertex_to_compounds_list)
         # set boundary range
-        BOUNDARY_RATE = 1.1  # can be arbitrary number > 1.0
+        boundary_rate = 1.1  # can be arbitrary number > 1.0
         intersections = np.zeros((len(compounds_array), dim))
         for i, comp_dat in enumerate(compounds_array):
             e = comp_dat.energy
@@ -118,7 +118,7 @@ class ChemPotDiag:
                     intersections[i][j] = e / c[j]
                 else:  # This case does not related to search_vertices_range.
                     intersections[i][j] = float("inf")
-        search_vertices_range = np.min(intersections) * BOUNDARY_RATE
+        search_vertices_range = np.min(intersections) * boundary_rate
         elements = compounds_array.elements
         for e in compounds_array.elements:
             energy = search_vertices_range
