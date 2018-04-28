@@ -339,6 +339,10 @@ class Correction:
         return self._alignment
 
     @property
+    def total_correction_energy(self):
+        return -self._lattice_energy + self._alignment
+
+    @property
     def symbols_without_defect(self):
         return list(self._symbols_without_defect)
 
