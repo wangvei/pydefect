@@ -271,7 +271,7 @@ class CorrectionTest(unittest.TestCase):
             Correction(CorrectionMethod.extended_fnv, self._ewald,
                        lattice_energy=expected_vacancy_lattice_energy,
                        diff_ave_pot=expected_vacancy_potential_difference,
-                       alignment=expected_vacancy_alignment_like_term,
+                       alignment_energy=expected_vacancy_alignment_like_term,
                        symbols_without_defect=expected_vacancy_symbols,
                        distances_from_defect=expected_vacancy_distances_list,
                        difference_electrostatic_pot=
@@ -289,7 +289,7 @@ class CorrectionTest(unittest.TestCase):
             Correction(CorrectionMethod.extended_fnv, self._ewald,
                        lattice_energy=expected_vacancy_lattice_energy,
                        diff_ave_pot=expected_vacancy_potential_difference,
-                       alignment=expected_vacancy_alignment_like_term,
+                       alignment_energy=expected_vacancy_alignment_like_term,
                        symbols_without_defect=expected_vacancy_symbols,
                        distances_from_defect=expected_vacancy_distances_list,
                        difference_electrostatic_pot=
@@ -311,7 +311,7 @@ class CorrectionTest(unittest.TestCase):
                                expected_vacancy_lattice_energy, 4)
         self.assertAlmostEqual(vacancy_correction.diff_ave_pot,
                                expected_vacancy_potential_difference, 5)
-        self.assertAlmostEqual(vacancy_correction.alignment,
+        self.assertAlmostEqual(vacancy_correction.alignment_energy,
                                expected_vacancy_alignment_like_term, 5)
         # TODO: Check case of irreducible sites like O1, O2
         assert_array_equal(vacancy_correction.symbols_without_defect,
@@ -333,7 +333,7 @@ class CorrectionTest(unittest.TestCase):
                                expected_interstitial_lattice_energy, 4)
         self.assertAlmostEqual(interstitial_correction.diff_ave_pot,
                                expected_interstitial_potential_difference, 5)
-        self.assertAlmostEqual(interstitial_correction.alignment,
+        self.assertAlmostEqual(interstitial_correction.alignment_energy,
                                expected_interstitial_alignment_like_term, 5)
         # TODO: Check case of irreducible sites like O1, O2
         assert_array_equal(interstitial_correction.symbols_without_defect,
@@ -356,7 +356,7 @@ class CorrectionTest(unittest.TestCase):
                                expected_substitutional_lattice_energy, 4)
         self.assertAlmostEqual(substitutional_correction.diff_ave_pot,
                                expected_substitutional_potential_difference, 5)
-        self.assertAlmostEqual(substitutional_correction.alignment,
+        self.assertAlmostEqual(substitutional_correction.alignment_energy,
                                expected_substitutional_alignment_like_term, 5)
         # TODO: Check case of irreducible sites like O1, O2
         # Methods to get defect position slightly differs between that of shell

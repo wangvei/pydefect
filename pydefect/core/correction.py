@@ -273,9 +273,9 @@ class CorrectionMethod(Enum):
 
 class Correction:
 
-    def __init__(self, method, ewald, lattice_energy, diff_ave_pot, alignment,
-                 symbols_without_defect, distances_from_defect,
-                 difference_electrostatic_pot, model_pot,
+    def __init__(self, method, ewald, lattice_energy, diff_ave_pot,
+                 alignment_energy, symbols_without_defect,
+                 distances_from_defect, difference_electrostatic_pot, model_pot,
                  manually_set_energy=None):
         """
         Args:
@@ -283,7 +283,7 @@ class Correction:
             ewald (Ewald):
             lattice_energy (float):
             diff_ave_pot (float):
-            alignment (float):
+            alignment_energy (float):
             symbols_without_defect (list of str):
             distances_from_defect (list of float):
             model_pot (list of float):
@@ -303,7 +303,7 @@ class Correction:
         self._ewald = ewald
         self._lattice_energy = lattice_energy
         self._diff_ave_pot = diff_ave_pot
-        self._alignment = alignment
+        self._alignment_energy = alignment_energy
         self._symbols_without_defect = symbols_without_defect
         self._distances_from_defect = list(distances_from_defect)
         self._difference_electrostatic_pot = list(difference_electrostatic_pot)
@@ -335,12 +335,12 @@ class Correction:
         return self._diff_ave_pot
 
     @property
-    def alignment(self):
-        return self._alignment
+    def alignment_energy(self):
+        return self._alignment_energy
 
     @property
     def total_correction_energy(self):
-        return -self._lattice_energy + self._alignment
+        return -self._lattice_energy + self._alignment_energy
 
     @property
     def symbols_without_defect(self):
@@ -418,7 +418,7 @@ class Correction:
              "ewald": self._ewald,
              "lattice_energy": self._lattice_energy,
              "diff_ave_pot": self._diff_ave_pot,
-             "alignment": self._alignment,
+             "alignment": self._alignment_energy,
              "symbols_without_defect": self._symbols_without_defect,
              "distances_from_defect": list(self._distances_from_defect),
              "difference_electrostatic_pot":
