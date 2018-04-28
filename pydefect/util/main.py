@@ -2,8 +2,9 @@
 # -*- coding: utf-8 -*-
 
 import os
-import sys
 import warnings
+
+from glob import glob
 
 from pydefect.input_maker.defect_initial_setting \
     import print_dopant_info, DefectInitialSetting
@@ -383,7 +384,6 @@ def defect_entry(args):
 
 def supercell_results(args):
     if args.dir_all:
-        from glob import glob
         dirs = glob('*[0-9]/')
         dirs.append("perfect/")
     else:
@@ -394,7 +394,6 @@ def supercell_results(args):
             if args.convergence:
                 if vasp_convergence_ionic(d, vasprun_name=args.vasprun):
                     ionic = "Y"
-#                    ionic = "Converged"
                 else:
                     ionic = "N"
                 if vasp_convergence_electronic(d, vasprun_name=args.vasprun):
@@ -402,17 +401,17 @@ def supercell_results(args):
                 else:
                     electronic = "N"
 
-                print("{:>20}  ionic:{:>3}  electronic:{:>3}".\
+                print("{:>20}  ionic:{:>3}  electronic:{:>3}".
                       format(d, ionic, electronic))
             else:
                 print(d)
                 try:
-                    dft_results = \
-                        SupercellDftResults.\
-                            from_vasp_files(d,
-                                            contcar_name=args.poscar,
-                                            outcar_name=args.outcar,
-                                            vasprun_name=args.vasprun)
+                    dft_results = SupercellDftResults.from_vasp_files(
+                        d,
+                        contcar_name=args.poscar,
+                        outcar_name=args.outcar,
+                        vasprun_name=args.vasprun)
+
                     dft_results.to_json_file(
                         filename=os.path.join(d, "dft_results.json"))
                 except:
@@ -471,7 +470,6 @@ def unitcell_results(args):
 
 
 def correction(args):
-    from glob import glob
 
     try:
         unitcell_dft_data = UnitcellDftResults.load_json(args.unitcell_json)
