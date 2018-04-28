@@ -1,5 +1,6 @@
 import unittest
 import os
+import tempfile
 
 import numpy as np
 from numpy.testing import assert_array_equal, assert_array_almost_equal
@@ -265,15 +266,39 @@ class CorrectionTest(unittest.TestCase):
         self._substitutional = \
             SupercellDftResults.from_vasp_files(dirname_substitutional)
 
-    def test_json(self):
+    def test_dict(self):
         vacancy_correction = \
-            Correction.compute_correction(self._vacancy_entry,
-                                          self._vacancy,
-                                          self._perfect,
-                                          self._unitcell)
-        vacancy_correction.to_json_file("correction.json")
-        v = Correction.load_json("correction.json")
+            Correction(CorrectionMethod.extended_fnv, self._ewald,
+                       lattice_energy=expected_vacancy_lattice_energy,
+                       diff_ave_pot=expected_vacancy_potential_difference,
+                       alignment=expected_vacancy_alignment_like_term,
+                       symbols_without_defect=expected_vacancy_symbols,
+                       distances_from_defect=expected_vacancy_distances_list,
+                       difference_electrostatic_pot=
+                       expected_vacancy_difference_electrostatic_pot,
+                       model_pot=expected_vacancy_model_pot,
+                       manually_set_energy=None)
+        # object -> dict -> object
+        d = vacancy_correction.as_dict()
+        correction_from_dict = Correction.from_dict(d)
+        # self.assertTrue(correction_from_dict == vacancy_correction)
 
+    def test_json(self):
+        tmp_file = tempfile.NamedTemporaryFile()
+        vacancy_correction = \
+            Correction(CorrectionMethod.extended_fnv, self._ewald,
+                       lattice_energy=expected_vacancy_lattice_energy,
+                       diff_ave_pot=expected_vacancy_potential_difference,
+                       alignment=expected_vacancy_alignment_like_term,
+                       symbols_without_defect=expected_vacancy_symbols,
+                       distances_from_defect=expected_vacancy_distances_list,
+                       difference_electrostatic_pot=
+                       expected_vacancy_difference_electrostatic_pot,
+                       model_pot=expected_vacancy_model_pot,
+                       manually_set_energy=None)
+        vacancy_correction.to_json_file(tmp_file.name)
+        loaded = Correction.load_json(tmp_file.name)
+        # self.assertEqual(vacancy_correction == loaded)
 
     def test_compute_extended_fnv(self):
         # vacancy
