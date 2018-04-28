@@ -111,8 +111,8 @@ class Ewald:
         return self._num_reciprocal_lattice
 
     def as_dict(self):
-        d = {"lattice_matrix": self._lattice_matrix,
-             "dielectric_tensor": self._dielectric_tensor,
+        d = {"lattice_matrix": [list(v) for v in self._lattice_matrix],
+             "dielectric_tensor": [list(v) for v in self._dielectric_tensor],
              "ewald_param": self._ewald_param,
              "prod_cutoff_fwhm": self._prod_cutoff_fwhm,
              "num_real_lattice": self._num_real_lattice,
@@ -121,6 +121,8 @@ class Ewald:
 
     @classmethod
     def from_dict(cls, d):
+        print("dielectric tensor")
+        print(d["dielectric_tensor"])
         return cls(d["lattice_matrix"], d["dielectric_tensor"],
                    d["ewald_param"], d["prod_cutoff_fwhm"],
                    d["num_real_lattice"], d["num_reciprocal_lattice"])
@@ -267,7 +269,7 @@ class Ewald:
 class CorrectionMethod(Enum):
     extended_fnv = "Extended FNV"
 
-    def str(self):
+    def __str__(self):
         return str(self.value)
 
 
@@ -433,7 +435,6 @@ class Correction:
         Constructs a Correction class object from a dictionary.
         """
         method = CorrectionMethod(d["method"])
-
         return cls(method, d["ewald"], d["lattice_energy"], d["diff_ave_pot"],
                    d["alignment"], d["symbols_without_defect"],
                    d["distances_from_defect"],
