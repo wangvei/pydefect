@@ -170,7 +170,7 @@ class SupercellDftResults:
                    d["electrostatic_potential"])
 
     @classmethod
-    def json_load(cls, filename):
+    def load_json(cls, filename):
         """
         Constructs a class object from a json file.
         """

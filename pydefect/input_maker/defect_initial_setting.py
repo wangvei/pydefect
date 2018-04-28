@@ -171,7 +171,7 @@ class DefectInitialSetting:
                    d["electronegativity"])
 
     @classmethod
-    def json_load(cls, filename):
+    def load_json(cls, filename):
         """
         Constructs a DefectInitialSetting class object from a json file.
         """

@@ -256,12 +256,12 @@ class CorrectionTest(unittest.TestCase):
             num_reciprocal_lattice=expected_num_reciprocal_vector)
         # self._ewald = \
         #     Ewald.from_optimization(self._structure, self._dielectric_tensor)
-        self._vacancy_entry = DefectEntry.json_load(vac_defect_entry_json)
+        self._vacancy_entry = DefectEntry.load_json(vac_defect_entry_json)
         self._vacancy = SupercellDftResults.from_vasp_files(dirname_vacancy)
-        self._interstitial_entry = DefectEntry.json_load(int_defect_entry_json)
+        self._interstitial_entry = DefectEntry.load_json(int_defect_entry_json)
         self._interstitial = \
             SupercellDftResults.from_vasp_files(dirname_interstitial)
-        self._substitutional_entry = DefectEntry.json_load(sub_defect_entry_json)
+        self._substitutional_entry = DefectEntry.load_json(sub_defect_entry_json)
         self._substitutional = \
             SupercellDftResults.from_vasp_files(dirname_substitutional)
 

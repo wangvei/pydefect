@@ -32,7 +32,7 @@ class DefectEnergies:
             defects (list of namedtuple Defect):
                 [[Defect, ...]
                 Defect = namedtuple("Defect", "defect_entry", "dft_results",
-                                "correction")
+                                    "correction")
             chem_pot (ChemPot):
             chem_pot_label (str):
         """
@@ -49,7 +49,8 @@ class DefectEnergies:
 
         for d in defects:
             name = d.defect_entry.name
-            if filtering_words and is_name_selected(name, filtering_words) is False:
+            if filtering_words \
+                    and is_name_selected(name, filtering_words) is False:
                 continue
             charge = d.defect_entry.charge
             element_diff = d.defect_entry.element_diff
@@ -250,7 +251,7 @@ def main():
 
     opts = parser.parse_args()
 
-    perfect = SupercellDftResults.json_load(opts.perfect + "dft_results.json")
+    perfect = SupercellDftResults.load_json(opts.perfect + "dft_results.json")
 
     if not opts.defects:
         from glob import glob
@@ -262,7 +263,7 @@ def main():
     for d in defects_dirs:
         try:
             defect_dft_results = \
-                SupercellDftResults.json_load(d + "dft_results.json")
+                SupercellDftResults.load_json(d + "dft_results.json")
             defects.append(defect_dft_results)
         except:
             warnings.warn(message="Parsing data in " + d + " is failed.")

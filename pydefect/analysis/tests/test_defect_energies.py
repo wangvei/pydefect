@@ -10,6 +10,7 @@ from pymatgen.core.structure import Structure
 from pymatgen.electronic_structure.core import Spin
 
 from pydefect.analysis.defect_energies import DefectEnergies, Defect
+from pydefect.core.correction import Correction
 from pydefect.core.supercell_dft_results import SupercellDftResults
 from pydefect.core.unitcell_dft_results import UnitcellDftResults
 from pydefect.core.defect_entry import DefectEntry
@@ -40,10 +41,10 @@ class DefectEnergiesTest(unittest.TestCase):
     def setUp(self):
         """ """
         unitcell_file = os.path.join(test_dir, "MgO/defects/unitcell.json")
-        unitcell = UnitcellDftResults.json_load(unitcell_file)
+        unitcell = UnitcellDftResults.load_json(unitcell_file)
         perfect_file = os.path.join(test_dir,
                                     "MgO/defects/perfect/dft_results.json")
-        perfect = SupercellDftResults.json_load(perfect_file)
+        perfect = SupercellDftResults.load_json(perfect_file)
 
         # defect_dirs = ["Va_O1_1", "Va_O1_2", "Va_O1_0"]
         defect_dirs = ["Mg_O1_0", "Mg_O1_1", "Mg_O1_2", "Mg_O1_3", "Mg_O1_4",
@@ -53,10 +54,11 @@ class DefectEnergiesTest(unittest.TestCase):
         for dd in defect_dirs:
             d = os.path.join(test_dir, "MgO/defects", dd)
             defect_entry = DefectEntry.\
-                json_load(os.path.join(d, "defect_entry.json"))
+                load_json(os.path.join(d, "defect_entry.json"))
             dft_results = SupercellDftResults.\
-                json_load(os.path.join(d, "dft_results.json"))
-            correction = Correction()
+                load_json(os.path.join(d, "dft_results.json"))
+            correction = Correction.\
+                load_json(os.path.join(d, "correction.json"))
 
             defect = Defect(defect_entry=defect_entry,
                             dft_results=dft_results,

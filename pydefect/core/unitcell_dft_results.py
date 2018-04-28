@@ -71,7 +71,7 @@ class UnitcellDftResults:
                    d["ionic_dielectric_tensor"], d["total_dos"])
 
     @classmethod
-    def json_load(cls, filename):
+    def load_json(cls, filename):
         """
         Constructs a class object from a json file.
         """

@@ -203,7 +203,7 @@ class DefectEntry:
                    element_diff, charge)
 
     @classmethod
-    def json_load(cls, filename="defect_entry.json"):
+    def load_json(cls, filename="defect_entry.json"):
         """
         Constructs a DefectEntry class object from a json file.
         """

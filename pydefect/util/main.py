@@ -155,8 +155,7 @@ def main():
     # -- supercell_dft_results -------------------------------------------------
     parser_supercell_results = subparsers.add_parser(
         name="supercell_results",
-        description="Tools for configuring defect_entry files for post process"
-                    "of defect calculations.",
+        description="Tools for analyzing vasp supercell results",
         aliases=['supercell', 'sr'])
 
     parser_supercell_results.add_argument(
@@ -177,8 +176,7 @@ def main():
     # -- unitcell_dft_results -------------------------------------------------
     parser_unitcell_results = subparsers.add_parser(
         name="unitcell_results",
-        description="Tools for configuring defect_entry files for post process"
-                    "of defect calculations.",
+        description="Tools for analyzing vasp unitcell results",
         aliases=['unitcell', 'ur'])
 
     parser_unitcell_results.add_argument(
@@ -260,8 +258,7 @@ def main():
     # -- chempotdiag -----------------------------------------------------------
     parser_chempotdiag = subparsers.add_parser(
         name="chempotdiag",
-        description="Tools for configuring defect_entry files for post process"
-                    "of defect calculations.",
+        description="",
         aliases=['cp'])
 
     # get poscar from materials project
@@ -377,7 +374,7 @@ def defect_entry(args):
         defect_entry_from_yaml = DefectEntry.from_yaml(args.yaml)
         defect_entry_from_yaml.to_json_file("defect_entry.json")
     elif args.print:
-        print(DefectEntry.json_load(args.json))
+        print(DefectEntry.load_json(args.json))
 
 
 def supercell_results(args):
@@ -408,7 +405,7 @@ def supercell_results(args):
 def unitcell_results(args):
 
     try:
-        dft_results = UnitcellDftResults.json_load(filename=args.json_file)
+        dft_results = UnitcellDftResults.load_json(filename=args.json_file)
     except IOError:
         print(args.json_file, "does not exist.")
 
@@ -457,12 +454,12 @@ def correction(args):
     from glob import glob
 
     try:
-        unitcell_dft_data = UnitcellDftResults.json_load(args.unitcell_json)
+        unitcell_dft_data = UnitcellDftResults.load_json(args.unitcell_json)
     except IOError:
         raise FileNotFoundError("JSON of unitcell was not found.")
 
     try:
-        perfect_dft_data = SupercellDftResults.json_load(args.perfect_json)
+        perfect_dft_data = SupercellDftResults.load_json(args.perfect_json)
     except IOError:
         raise FileNotFoundError("JSON of perfect was not found.")
 
@@ -494,10 +491,10 @@ def correction(args):
     for directory in dirs:
         print("correcting {0} ...".format(directory))
         try:
-            entry = DefectEntry.json_load(
+            entry = DefectEntry.load_json(
                 os.path.join(directory, "defect_entry.json"))
             defect_dft_data = \
-                SupercellDftResults.json_load(
+                SupercellDftResults.load_json(
                     os.path.join(directory, "dft_results.json"))
             c = Correction.compute_alignment_by_extended_fnv(entry,
                                                              defect_dft_data,

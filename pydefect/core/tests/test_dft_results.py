@@ -202,7 +202,7 @@ class SupercellDftResultsTest(unittest.TestCase):
     def test_json(self):
         tmp_file = tempfile.NamedTemporaryFile()
         self._MgO_Va_O1_2.to_json_file(tmp_file.name)
-        MgO_Va_O1_2_from_json = SupercellDftResults.json_load(tmp_file.name)
+        MgO_Va_O1_2_from_json = SupercellDftResults.load_json(tmp_file.name)
         np.testing.assert_equal(MgO_Va_O1_2_from_json.eigenvalues[Spin.up],
                                 self._MgO_Va_O1_2.eigenvalues[Spin.up])
 
@@ -303,7 +303,7 @@ class UnitcellDftResultsTest(unittest.TestCase):
 
         tmp_file = tempfile.NamedTemporaryFile()
         self.unitcell.to_json_file(tmp_file.name)
-        unitcell_from_json = UnitcellDftResults.json_load(tmp_file.name)
+        unitcell_from_json = UnitcellDftResults.load_json(tmp_file.name)
         print(vars(unitcell_from_json))
 
     def test_print(self):

@@ -133,7 +133,7 @@ class DefectInitialSettingTest(unittest.TestCase):
         with tempfile.NamedTemporaryFile() as fp:
             tmp_json = fp.name
             self._mgo.to_json_file(tmp_json)
-            mgo_from_json = DefectInitialSetting.json_load(tmp_json)
+            mgo_from_json = DefectInitialSetting.load_json(tmp_json)
             print(vars(mgo_from_json))
             self.assertTrue(vars(mgo_from_json) == vars(self._mgo))
 
