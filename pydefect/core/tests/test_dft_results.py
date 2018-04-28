@@ -9,8 +9,8 @@ from pymatgen.core.structure import Structure
 from pymatgen.electronic_structure.core import Spin
 
 from pydefect.core.defect_entry import DefectEntry
-from pydefect.core.supercell_dft_results import defect_center, distances_from_point, \
-    SupercellDftResults
+from pydefect.core.supercell_dft_results import defect_center, \
+    distances_from_point, SupercellDftResults
 from pydefect.core.unitcell_dft_results import UnitcellDftResults
 
 __author__ = "Yu Kumagai"
@@ -84,7 +84,6 @@ class DefectCenterTest(unittest.TestCase):
         actual4 = defect_center(pbc_defect_entry)
         expected = [-0.125, -0.125, -0.125]
         self.assertEqual(actual4, expected)
-
 
 
 class DistancesFromPointTest(unittest.TestCase):
@@ -234,7 +233,6 @@ class UnitcellDftResultsTest(unittest.TestCase):
     def setUp(self):
         """ """
         self.unitcell = UnitcellDftResults(band_edge=None,
-                                           band_edge2=None,
                                            static_dielectric_tensor=None,
                                            ionic_dielectric_tensor=None,
                                            total_dos=None)
@@ -247,15 +245,6 @@ class UnitcellDftResultsTest(unittest.TestCase):
             directory_path=os.path.join(test_dir,
                                         "MgO/unitcell/structure_optimization"))
         print(self.unitcell.band_edge)
-
-    # def test_band_edge2(self):
-    #     print(self.unitcell.band_edge2)
-    #     self.unitcell.band_edge2 = [0.0, 2.0]
-    #     print(self.unitcell.band_edge2)
-    #     self.unitcell.set_band_edge2_from_vasp(
-    #         directory_path=os.path.join(test_dir,
-    #                                     "MgO/unitcell/structure_optimization"))
-    #     print(self.unitcell.band_edge2)
 
     def test_dielectric_constant(self):
         print(self.unitcell.static_dielectric_tensor)

@@ -25,11 +25,11 @@ __date__ = "December 4, 2017"
 
 def defect_center(defect_entry, structure=None):
     """
-    Returns a fractional coordinates of the defect center which is
-    calculated by averaging the coordinates of vacancies and interstitials.
-    If len(defect_coords) == 1, returns defect_coords[0].
-    First defect_coords is based when the periodic boundary condition is
-    considered.
+    Returns a fractional coordinates of the defect center that is calculated
+    by averaging the coordinates of vacancies and interstitials.
+    If len(defect_coords) == 1, simply returns defect_coords[0].
+    First defect_coords is used as a base point when the periodic boundary
+    condition is considered.
 
     Args:
         structure (Structure):
@@ -45,7 +45,9 @@ def defect_center(defect_entry, structure=None):
 
     defect_coords = inserted_atom_coords + removed_atom_coords
 
-    # First defect_coords is based when PBC is considered
+    # First defect_coords is used as a base point under periodic boundary
+    # condition. Here, we are aware of the case at which two defect positions
+    # are [0.01, 0.01, 0.01] and [0.99, 0.99, 0.99].
     base = defect_coords[0]
     shortest_defect_coords = []
 
@@ -69,10 +71,10 @@ def min_distance_under_pbc(frac1, frac2, lattice_vector_matrix):
        frac2 (1x3 np.array): fractional coordinates
        lattice_vector_matrix (3x3 numpy array): a, b, c lattice vectors
     """
-
     candidate = []
     diff = np.dot(lattice_vector_matrix, frac2 - frac1)
 
+    # (-1, -1, -1), (-1, -1, 0), ..., (1, 1, 1)
     for index in product((-1, 0, 1), repeat=3):
         index = np.array(index)
         delta_diff = np.dot(lattice_vector_matrix, index)
@@ -101,11 +103,11 @@ def distances_from_point(structure, defect_entry):
     """
     Returns a list of distances at atomic sites from a defect center defined
     by defect_entry. Note that in the case of an interstitial-type defect,
-    zero is also set.
+    zero is also set to the interstitial site.
 
     Args:
-        structure (Structure):
-        defect_entry (DefectEntry): related DefectEntry class object
+        structure (Structure): pmg structure class object
+        defect_entry (DefectEntry): DefectEntry class object considered
     """
     return distance_list(structure, defect_center(defect_entry, structure))
 
@@ -113,6 +115,12 @@ def distances_from_point(structure, defect_entry):
 class SupercellDftResults:
     """
     A class holding DFT results for supercell systems both w/ and w/o a defect.
+    Args:
+        final_structure (Structure):
+            pmg structure class object. Usually relaxed structures
+        total_energy (float):
+        eigenvalues (N_spin x N_kpoint x N_band np.array):
+        electrostatic_potential (list): Atomic site electrostatic potential.
     """
 
     def __init__(self, final_structure, total_energy, eigenvalues,
@@ -133,15 +141,11 @@ class SupercellDftResults:
     def from_vasp_files(cls, directory_path, contcar_name="CONTCAR",
                         outcar_name="OUTCAR", vasprun_name="vasprun.xml"):
         """
-        Although electrostatic_potential is not used for UnitcellDftResults,
-        this method is implemented in DftResults class because constructor is
-        easily written.
-
         Args:
-            directory_path (str): path of directory.
-            contcar_name (str): Name of converged CONTCAR file.
-            outcar_name (str): Name of OUTCAR file.
-            vasprun_name (str): Name of vasprun.xml file.
+            directory_path (str): path to the directory storing calc results.
+            contcar_name (str): Name of the converged CONTCAR file.
+            outcar_name (str): Name of the OUTCAR file.
+            vasprun_name (str): Name of the vasprun.xml file.
         """
         contcar = Poscar.from_file(os.path.join(directory_path, contcar_name))
         outcar = Outcar(os.path.join(directory_path, outcar_name))
@@ -217,7 +221,7 @@ class SupercellDftResults:
 
     def relative_total_energy(self, perfect_dft_results):
         """
-        Return relative total energy w.r.t. the perfect supercell.
+        Returns relative total energy w.r.t. the perfect supercell.
 
         Args:
             perfect_dft_results (SupercellDftResults):
@@ -227,7 +231,7 @@ class SupercellDftResults:
 
     def relative_potential(self, perfect_dft_results, defect_entry):
         """
-        Return a list of relative site potential w.r.t. the perfect supercell.
+        Returns a list of relative site potential w.r.t. the perfect supercell.
         Note that None is inserted for interstitial sites.
 
         Args:
