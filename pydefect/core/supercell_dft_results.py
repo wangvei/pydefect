@@ -119,19 +119,22 @@ class SupercellDftResults:
         final_structure (Structure):
             pmg structure class object. Usually relaxed structures
         total_energy (float):
+        magnetization (float): Total magnetization.
         eigenvalues (N_spin x N_kpoint x N_band np.array):
         electrostatic_potential (list): Atomic site electrostatic potential.
     """
 
-    def __init__(self, final_structure, total_energy, eigenvalues,
-                 electrostatic_potential):
+    def __init__(self, final_structure, total_energy, magnetization,
+                 eigenvalues, electrostatic_potential):
         self._final_structure = final_structure
         self._total_energy = total_energy
+        self._magnetization = magnetization
         self._eigenvalues = eigenvalues
         self._electrostatic_potential = electrostatic_potential
 
     def __str__(self):
         outs = ["total energy:" + str(self._total_energy),
+                "total magnetization:" + str(self._magnetization),
                 "electrostatic potential:" + str(self._electrostatic_potential),
                 "eigenvalues:" + str(self._eigenvalues),
                 "final structure: \n" + str(self._final_structure)]
@@ -154,10 +157,11 @@ class SupercellDftResults:
         # TODO: check if the structure optimization is finished or not
         final_structure = contcar.structure
         total_energy = outcar.final_energy
+        magnetization = outcar.total_mag
         eigenvalues = vasprun.eigenvalues
         electrostatic_potential = outcar.electrostatic_potential
 
-        return cls(final_structure, total_energy, eigenvalues,
+        return cls(final_structure, total_energy, magnetization, eigenvalues,
                    electrostatic_potential)
 
     @classmethod
@@ -170,8 +174,8 @@ class SupercellDftResults:
         for spin, v in d["eigenvalues"].items():
             eigenvalues[Spin(int(spin))] = np.array(v)
 
-        return cls(d["final_structure"], d["total_energy"], eigenvalues,
-                   d["electrostatic_potential"])
+        return cls(d["final_structure"], d["total_energy"], d["magnetization"],
+                   eigenvalues, d["electrostatic_potential"])
 
     @classmethod
     def load_json(cls, filename):
@@ -191,6 +195,7 @@ class SupercellDftResults:
 
         d = {"final_structure":         self._final_structure,
              "total_energy":            self._total_energy,
+             "magnetization":           self._magnetization,
              "eigenvalues":             eigenvalues,
              "electrostatic_potential": self._electrostatic_potential}
 
@@ -214,6 +219,10 @@ class SupercellDftResults:
     @property
     def total_energy(self):
         return self._total_energy
+
+    @property
+    def magnetization(self):
+        return self._magnetization
 
     @property
     def electrostatic_potential(self):

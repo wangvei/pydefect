@@ -114,52 +114,16 @@ class SupercellDftResultsTest(unittest.TestCase):
 
     def setUp(self):
         """ """
-        final_structure = Structure.from_file(
-            os.path.join(test_dir, "MgO/defects/Va_O1_2", "CONTCAR"))
-        total_energy = -93.76931583
-        magnetization = -1.6e-06
-        eigenvalues = {Spin.up: np.array(
 
-
-            [[[-14.2806, 1.], [-13.4696, 1.], [-13.1066, 1.], [-12.9398, 1.],
-              [-12.9398, 1.], [-12.7681, 1.], [-12.7681, 1.], [-1.4322, 1.],
-              [-1.4322, 1.], [-1.2961, 1.], [-0.9877, 1.], [-0.667, 1.],
-              [-0.3208, 1.], [-0.3208, 1.], [0.9452, 1.], [1.2223, 1.],
-              [1.2223, 1.], [1.4722, 1.], [1.4722, 1.], [1.6674, 1.],
-              [1.7079, 1.], [1.8786, 1.], [1.8786, 1.], [2.1577, 1.],
-              [2.3723, 1.], [2.3723, 1.], [2.5667, 1.], [2.5667, 1.],
-              [4.3061, 0.], [8.9622, 0.], [10.0048, 0.], [10.5871, 0.],
-              [10.5871, 0.], [11.374, 0.], [11.606, 0.], [11.606, 0.]],
-             [[-14.1444, 1.], [-13.4227, 1.], [-13.2385, 1.], [-12.9832, 1.],
-              [-12.9615, 1.], [-12.8634, 1.], [-12.7333, 1.], [-0.9824, 1.],
-              [-0.9814, 1.], [-0.8391, 1.], [-0.5031, 1.], [-0.3256, 1.],
-              [-0.1488, 1.], [0.1553, 1.], [0.408, 1.], [0.6119, 1.],
-              [0.6527, 1.], [1.0225, 1.], [1.2301, 1.], [1.288, 1.],
-              [1.5418, 1.], [1.5436, 1.], [1.7448, 1.], [1.9201, 1.],
-              [2.0783, 1.], [2.2655, 1.], [2.3217, 1.], [2.4294, 1.],
-              [5.3997, 0.], [8.5505, 0.], [9.4856, 0.], [9.9455, 0.],
-              [11.049, 0.], [11.9159, 0.], [12.5617, 0.], [12.8315, 0.]]])}
-        # electrostatic_potential is a property because it is used for
-        # test_relative_potential method.
-        self.electrostatic_potential = \
-            [-34.69, -35.5244, -35.5244, -35.5244, -35.5244, -35.5244, -35.5244,
-             -34.59, -70.0739, -70.0739, -70.0739, -70.0739, -70.0739, -70.0739,
-             -70.4981]
-
-        self._MgO_Va_O1_2 = SupercellDftResults(
-            final_structure, total_energy, magnetization, eigenvalues,
-            self.electrostatic_potential)
-
-        self._MgO_Va_O1_2_from_vasp_files = \
+        self._MgO_Va_O1_2 = \
             SupercellDftResults.from_vasp_files(
                 os.path.join(test_dir, "MgO/defects/Va_O1_2"))
 
-        self._MgO_perfect_from_vasp_files = \
+        self._MgO_perfect = \
             SupercellDftResults.from_vasp_files(
                 os.path.join(test_dir, "MgO/defects/perfect"))
 
-        self.d = self._MgO_Va_O1_2.as_dict()
-        self.d_from_vasp_files = self._MgO_Va_O1_2_from_vasp_files.as_dict()
+        self.d_from_vasp_files = self._MgO_Va_O1_2.as_dict()
 
         name = "Va_O1"
         initial_structure = Structure.from_file(
@@ -175,7 +139,6 @@ class SupercellDftResultsTest(unittest.TestCase):
 
     def test_print(self):
         print(self._MgO_Va_O1_2)
-        print(self._MgO_Va_O1_2_from_vasp_files)
 
     def test_from_vasp_files(self):
         # CAUTION: When constructing Structure object from Structure.from_file
@@ -183,23 +146,26 @@ class SupercellDftResultsTest(unittest.TestCase):
         #          Therefore, equality check of Structure objects returns False.
         #          If the structure is converted via poscar file format, it may
         #          be solved.
-        # contcar = Poscar.from_file(os.path.join(DIRNAME_UNITCELL, "CONTCAR"))
-        # final_structure = contcar.structure
 
-        # self.assertTrue(self.d["initial_structure"] ==
-        #                 self.d_from_vasp_files["initial_structure"])
-        # self.assertTrue(self.d["final_structure"] ==
-        #                 self.d_from_vasp_files["final_structure"])
-        self.assertEqual(self.d["total_energy"],
-                         self.d_from_vasp_files["total_energy"])
-        self.assertEqual(self.d["magnetization"],
-                         self.d_from_vasp_files["magnetization"])
-        print(self.d["eigenvalues"]["1"])
-        print(self.d_from_vasp_files["eigenvalues"]["1"])
-        self.assertTrue((self.d["eigenvalues"]["1"] ==
-                         self.d_from_vasp_files["eigenvalues"]["1"]))
-        self.assertTrue(self.d["electrostatic_potential"] ==
-                        self.d_from_vasp_files["electrostatic_potential"])
+        # energy
+        expected = -93.64519527
+        self.assertEqual(self.d_from_vasp_files["total_energy"], expected)
+
+        # magnetization
+        expected = 3.4e-06
+        self.assertEqual(self.d_from_vasp_files["magnetization"], expected)
+
+        # eigenvalue: test only a single point
+        expected = [-1.43572e+01, 1.0]
+        self.assertEqual(self.d_from_vasp_files["eigenvalues"]["1"][0][0],
+                         expected)
+
+        # electrostatic_potential
+        expected = [-34.5752, -35.5301, -35.5344, -35.5357, -35.5346, -35.5326,
+                    -35.5265, -34.5754, -70.027, -70.026, -70.0253, -70.0274,
+                    -70.0271, -70.0272, -70.4853]
+        self.assertEqual(self.d_from_vasp_files["electrostatic_potential"],
+                        expected)
 
     def test_dict(self):
         MgO_Va_O1_2_fd = SupercellDftResults.from_dict(self.d_from_vasp_files)
@@ -214,24 +180,26 @@ class SupercellDftResultsTest(unittest.TestCase):
                                 self._MgO_Va_O1_2.eigenvalues[Spin.up])
 
     def test_relative_total_energy(self):
-        actual = self._MgO_Va_O1_2_from_vasp_files.\
-            relative_total_energy(self._MgO_perfect_from_vasp_files)
+        actual = self._MgO_Va_O1_2.\
+            relative_total_energy(self._MgO_perfect)
 
-        expected = -93.76904720 - -95.46878101
+        expected = -93.64519527 - -95.36395670
 
         self.assertEqual(actual, expected)
 
     def test_relative_potential(self):
-        actual = self._MgO_Va_O1_2_from_vasp_files.\
-            relative_potential(self._MgO_perfect_from_vasp_files,
+        actual = self._MgO_Va_O1_2.\
+            relative_potential(self._MgO_perfect,
                                self._defect_entry_MgO_Va_O1_2)
 
-        perfect_potential = [-35.2923, -35.2923, -35.2923, -35.2923, -35.2923,
-                             -35.2923, -35.2923, -35.2923, -69.8160, -69.8160,
-                             -69.8160, -69.8160, -69.8160, -69.8160, -69.8160]
+        perfect_potential = \
+            [-35.2983, -35.2983, -35.2983, -35.2983, -35.2983, -35.2983,
+             -35.2983, -35.2983, -69.7919, -69.7919, -69.7919, -69.7919,
+             -69.7919, -69.7919, -69.7919]
 
         expected = [x - y for x, y in
-                    zip(self.electrostatic_potential, perfect_potential)]
+                    zip(self._MgO_Va_O1_2.electrostatic_potential,
+                        perfect_potential)]
 
         self.assertTrue(actual == expected)
 
