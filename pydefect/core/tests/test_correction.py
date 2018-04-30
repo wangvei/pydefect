@@ -271,7 +271,7 @@ class CorrectionTest(unittest.TestCase):
             Correction(CorrectionMethod.extended_fnv, self._ewald,
                        lattice_energy=expected_vacancy_lattice_energy,
                        diff_ave_pot=expected_vacancy_potential_difference,
-                       alignment_energy=expected_vacancy_alignment_like_term,
+                       alignment_correction_energy=expected_vacancy_alignment_like_term,
                        symbols_without_defect=expected_vacancy_symbols,
                        distances_from_defect=expected_vacancy_distances_list,
                        difference_electrostatic_pot=
@@ -289,7 +289,7 @@ class CorrectionTest(unittest.TestCase):
             Correction(CorrectionMethod.extended_fnv, self._ewald,
                        lattice_energy=expected_vacancy_lattice_energy,
                        diff_ave_pot=expected_vacancy_potential_difference,
-                       alignment_energy=expected_vacancy_alignment_like_term,
+                       alignment_correction_energy=expected_vacancy_alignment_like_term,
                        symbols_without_defect=expected_vacancy_symbols,
                        distances_from_defect=expected_vacancy_distances_list,
                        difference_electrostatic_pot=

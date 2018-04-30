@@ -274,7 +274,7 @@ class CorrectionMethod(Enum):
 class Correction:
 
     def __init__(self, method, ewald, lattice_energy, diff_ave_pot,
-                 alignment_energy, symbols_without_defect,
+                 alignment_correction_energy, symbols_without_defect,
                  distances_from_defect, difference_electrostatic_pot, model_pot,
                  manually_set_energy=0):
         """
@@ -283,7 +283,7 @@ class Correction:
             ewald (Ewald):
             lattice_energy (float):
             diff_ave_pot (float):
-            alignment_energy (float):
+            alignment_correction_energy (float):
             symbols_without_defect (list of str):
             distances_from_defect (list of float):
             model_pot (list of float):
@@ -303,7 +303,7 @@ class Correction:
         self._ewald = ewald
         self._lattice_energy = lattice_energy
         self._diff_ave_pot = diff_ave_pot
-        self._alignment_correction_energy = alignment_energy
+        self._alignment_correction_energy = alignment_correction_energy
         self._symbols_without_defect = symbols_without_defect
         self._distances_from_defect = list(distances_from_defect)
         self._difference_electrostatic_pot = list(difference_electrostatic_pot)
