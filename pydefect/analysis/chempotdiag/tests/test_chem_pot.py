@@ -281,7 +281,7 @@ class TestChemPot(unittest.TestCase):
         comment = "This is from test_output_yaml in test_chem_pot.py"
         cp.dump_vertices_yaml(dir_path, "MgO", comment=comment)
         filename = dir_path + "/vertices_MgO.yaml"
-        vertices, standard_energy = cp.load_vertices_yaml(filename)
+        vertices, standard_energy = ChemPotDiag.load_vertices_yaml(filename)
         vertices.set_elements(cp.elements)
         self.assertTrue(cp.get_neighbor_vertices("MgO").
                         almost_equal(vertices))
@@ -294,7 +294,7 @@ class TestChemPot(unittest.TestCase):
         comment = "This is from test_output_yaml in test_chem_pot.py"
         cp.dump_vertices_yaml(dir_path, "Ca11Al14O32", comment=comment)
         filename = dir_path + "/vertices_Ca11Al14O32.yaml"
-        vertices, standard_energy = cp.load_vertices_yaml(filename)
+        vertices, standard_energy = ChemPotDiag.load_vertices_yaml(filename)
         vertices.set_elements(cp.elements)
         self.assertTrue(cp.get_neighbor_vertices("Ca11Al14O32").
                         almost_equal(vertices))
