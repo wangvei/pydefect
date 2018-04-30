@@ -275,21 +275,33 @@ class TestChemPot(unittest.TestCase):
         print(d)
 
     def test_dump_yaml(self):
-        # TODO:complete round-trip test
-        dirpath = "./"
+        dir_path = "./"
 
         cp = ChemPotDiag.from_file(FILENAME_2D)  # Mg, O
         comment = "This is from test_output_yaml in test_chem_pot.py"
-        cp.dump_yaml(dirpath, "MgO", comment=comment)
+        cp.dump_vertices_yaml(dir_path, "MgO", comment=comment)
+        filename = dir_path + "/vertices_MgO.yaml"
+        vertices, standard_energy = cp.load_vertices_yaml(filename)
+        vertices.set_elements(cp.elements)
+        self.assertTrue(cp.get_neighbor_vertices("MgO").
+                        almost_equal(vertices))
+        # TODO: element_energy may be better to be represented by dict
+        for i, elem in enumerate(cp.elements):
+            self.assertAlmostEqual(cp.element_energy[i],
+                                   standard_energy[elem])
 
         cp = ChemPotDiag.from_file(FILENAME_3D)  # Ca, Al, O
         comment = "This is from test_output_yaml in test_chem_pot.py"
-        cp.dump_yaml(dirpath, "Ca11Al14O32", comment=comment)
-        filename = dirpath + "/vertices_Ca11Al14O32.yaml"
-        with open(filename, 'r') as fr:
-            for line in fr:
-                print(line)
-        d = cp.parse_yaml(filename)
+        cp.dump_vertices_yaml(dir_path, "Ca11Al14O32", comment=comment)
+        filename = dir_path + "/vertices_Ca11Al14O32.yaml"
+        vertices, standard_energy = cp.load_vertices_yaml(filename)
+        vertices.set_elements(cp.elements)
+        self.assertTrue(cp.get_neighbor_vertices("Ca11Al14O32").
+                        almost_equal(vertices))
+        # TODO: element_energy may be better to be represented by dict
+        for i, elem in enumerate(cp.elements):
+            self.assertAlmostEqual(cp.element_energy[i],
+                                   standard_energy[elem])
 
 
 if __name__ == "__main__":
