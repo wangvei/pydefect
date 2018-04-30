@@ -102,7 +102,7 @@ class TestChemPot(unittest.TestCase):
         title_str = "With_vertex_name test, remarked_compound = {0}".format(rc)
         cp.draw_diagram(title=title_str, remarked_compound=rc)
 
-        #  Maybe _label of previous plot remains if you forget to delete.
+        #  Maybe label of previous plot remains if you forget to delete.
         rc = "Mg2O"
         title_str = "With_vertex_name test, remarked_compound = {0}".format(rc)
         cp.draw_diagram(title=title_str, remarked_compound=rc)
@@ -156,7 +156,7 @@ class TestChemPot(unittest.TestCase):
         rc = "Ca"
         title_str = "With_vertex_name test, remarked_compound = {0}".format(rc)
         cp.draw_diagram(title=title_str, remarked_compound=rc)
-        #  Maybe _label of previous plot remains if you forget to delete.
+        #  Maybe label of previous plot remains if you forget to delete.
         rc = "Ca11Al14O32"
         title_str = "With_vertex_name test, remarked_compound = {0}".format(rc)
         cp.draw_diagram(title=title_str, remarked_compound=rc)
