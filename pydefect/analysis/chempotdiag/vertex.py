@@ -87,9 +87,10 @@ class Vertex:
 
     def __repr__(self):
         pretty_coords = np.round(self.coords, 5)
-        return ("Label: {0} , "
+        return ("Vertex("
+                "Label: {0} , "
                 "Elements: {1} , "
-                "Coordinates: {2} , "
+                "Coordinates: {2})"
                 .format(self.label, "-".join(self.elements), pretty_coords))
 
     def __eq__(self, other):
