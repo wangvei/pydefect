@@ -9,7 +9,7 @@ from pydefect.analysis.chempotdiag.compound import Compound, CompoundsList
 from pydefect.analysis.chempotdiag.vertex import Vertex, VerticesList
 from pydefect.analysis.chempotdiag.chem_pot_diag import ChemPotDiag
 
-EXAMPLE_DIR = "../../examples/"
+EXAMPLE_DIR = "../../../../test_files/analysis/chempotdiag/"
 
 FILENAME_1D = EXAMPLE_DIR + "energy_1d.txt"
 FILENAME_2D = EXAMPLE_DIR + "energy_2d.txt"
