@@ -1,7 +1,5 @@
 #!/usr/bin/env python
 
-#TODO: Devide file into unittest of each class.
-
 import tempfile
 import unittest
 
@@ -52,32 +50,6 @@ compounds_list_from_dft = \
 
 
 class TestChemPot(unittest.TestCase):
-
-    def test_set_elements_of_compound(self):
-        c = Compound(None, ["H", "He", "Li"], [0.0, 0.3, 0.7], -42)
-        #  Can method set_elements order?
-        c.set_elements(["He", "H", "Li"])
-        expected = Compound(None, ["He", "H", "Li"], [0.3, 0.0, 0.7], -42)
-        self.assertTrue(c.almost_equal(expected))
-        #  Can method remove element?
-        c.set_elements(["Li", "He"])
-        expected = Compound(None, ["Li", "He"], [0.7, 0.3], -42)
-        self.assertTrue(c.almost_equal(expected))
-        #  Can method add element?
-        c.set_elements(["He", "Li", "Be"])
-        expected = Compound(None, ["He", "Li", "Be"], [0.3, 0.7, 0.0], -42)
-        self.assertTrue(c.almost_equal(expected))
-        #  Can method raise exception if argument is invalid?
-        self.assertRaises(ValueError, lambda: c.set_elements(["U", "Pr"]))
-        #  Must be contain He, whose composition is non-zero.
-        self.assertRaises(ValueError, lambda: c.set_elements(["Li", "Be"]))
-
-    def test_vertex_dict(self):
-        v = Vertex("Label", ["Mg", "O"], [0.00000, -7.77345])
-        d = v.as_dict()
-        v2 = Vertex.from_dict(d)
-        self.assertEqual(v, v2)
-        # TODO: test for dummy vertex
 
     #  Simple test to generate class object from text file.
     def test_read_from_file(self):
