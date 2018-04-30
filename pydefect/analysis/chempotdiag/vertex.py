@@ -43,6 +43,10 @@ class Vertex:
         """
         return np.array([ec[1] for ec in self._elem_coords.items()])
 
+    @property
+    def elem_coords(self):
+        return self._elem_coords
+
     def as_dict(self):
         d = {"label": self.label,
              "elem_coords": self._elem_coords}
