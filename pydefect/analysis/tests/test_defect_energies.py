@@ -6,9 +6,6 @@ import os
 import tempfile
 import unittest
 
-from pymatgen.core.structure import Structure
-from pymatgen.electronic_structure.core import Spin
-
 from pydefect.analysis.defect_energies import DefectEnergies, Defect
 from pydefect.core.correction import Correction
 from pydefect.core.supercell_dft_results import SupercellDftResults
@@ -25,15 +22,6 @@ __date__ = "Feb. 25, 2018"
 
 test_dir = os.path.join(os.path.dirname(__file__), "..", "..", "..",
                         "test_files", "core")
-
-
-class Correction:
-    def __init__(self):
-        self._total_correction_energy = 0.0
-
-    @property
-    def total_correction_energy(self):
-        return self._total_correction_energy
 
 
 class DefectEnergiesTest(unittest.TestCase):
@@ -53,16 +41,18 @@ class DefectEnergiesTest(unittest.TestCase):
         defects = []
         for dd in defect_dirs:
             d = os.path.join(test_dir, "MgO/defects", dd)
-            defect_entry = DefectEntry.\
-                load_json(os.path.join(d, "defect_entry.json"))
-            dft_results = SupercellDftResults.\
-                load_json(os.path.join(d, "dft_results.json"))
-            correction = Correction.\
-                load_json(os.path.join(d, "correction.json"))
+            defect_entry = \
+                DefectEntry.load_json(os.path.join(d, "defect_entry.json"))
+            dft_results = \
+                SupercellDftResults.load_json(
+                    os.path.join(d, "dft_results.json"))
+            correction = \
+                Correction.load_json(os.path.join(d, "correction.json"))
 
             defect = Defect(defect_entry=defect_entry,
                             dft_results=dft_results,
                             correction=correction)
+
             defects.append(defect)
 
         # temporary insert values

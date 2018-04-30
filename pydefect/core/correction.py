@@ -274,7 +274,7 @@ class CorrectionMethod(Enum):
 class Correction:
 
     def __init__(self, method, ewald, lattice_energy, diff_ave_pot,
-                 alignment_energy, symbols_without_defect,
+                 alignment_correction_energy, symbols_without_defect,
                  distances_from_defect, difference_electrostatic_pot, model_pot,
                  manually_set_energy=0):
         """
@@ -283,7 +283,7 @@ class Correction:
             ewald (Ewald):
             lattice_energy (float):
             diff_ave_pot (float):
-            alignment_energy (float):
+            alignment_correction_energy (float):
             symbols_without_defect (list of str):
             distances_from_defect (list of float):
             model_pot (list of float):
@@ -303,12 +303,12 @@ class Correction:
         self._ewald = ewald
         self._lattice_energy = lattice_energy
         self._diff_ave_pot = diff_ave_pot
-        self._alignment_energy = alignment_energy
+        self._alignment_correction_energy = alignment_correction_energy
         self._symbols_without_defect = symbols_without_defect
         self._distances_from_defect = list(distances_from_defect)
         self._difference_electrostatic_pot = list(difference_electrostatic_pot)
         self._model_pot = list(model_pot)
-        self._manually_set_energy = manually_set_energy
+        self._manually_set_correction_energy = manually_set_energy
 
     @property
     def method(self):
@@ -319,29 +319,34 @@ class Correction:
         return self._ewald
 
     @property
-    def manually_set_energy(self):
-        return self._manually_set_energy
+    def manually_set_correction_energy(self):
+        return self._manually_set_correction_energy
 
-    @manually_set_energy.setter
-    def manually_set_energy(self, value):
-        self._manually_set_energy = value
+    @manually_set_correction_energy.setter
+    def manually_set_correction_energy(self, value):
+        self._manually_set_correction_energy = value
 
     @property
     def lattice_energy(self):
         return self._lattice_energy
 
     @property
+    def point_charge_correction_energy(self):
+        return - self._lattice_energy
+
+    @property
     def diff_ave_pot(self):
         return self._diff_ave_pot
 
     @property
-    def alignment_energy(self):
-        return self._alignment_energy
+    def alignment_correction_energy(self):
+        return self._alignment_correction_energy
 
     @property
     def total_correction_energy(self):
-        return -self._lattice_energy + self._alignment_energy \
-               + self._manually_set_energy
+        return self.point_charge_correction_energy \
+               + self.alignment_correction_energy \
+               + self._manually_set_correction_energy
 
     @property
     def symbols_without_defect(self):
@@ -419,13 +424,14 @@ class Correction:
              "ewald": self._ewald,
              "lattice_energy": self._lattice_energy,
              "diff_ave_pot": self._diff_ave_pot,
-             "alignment": self._alignment_energy,
+             "alignment": self._alignment_correction_energy,
              "symbols_without_defect": self._symbols_without_defect,
              "distances_from_defect": list(self._distances_from_defect),
              "difference_electrostatic_pot":
                  list(self._difference_electrostatic_pot),
              "model_pot": list(self._model_pot),
-             "manually_set_energy": self._manually_set_energy}
+             "manually_set_correction_energy":
+                 self._manually_set_correction_energy}
         return d
 
     @classmethod
@@ -438,7 +444,7 @@ class Correction:
                    d["alignment"], d["symbols_without_defect"],
                    d["distances_from_defect"],
                    d["difference_electrostatic_pot"], d["model_pot"],
-                   d["manually_set_energy"])
+                   d["manually_set_correction_energy"])
 
     def to_json_file(self, filename):
         """

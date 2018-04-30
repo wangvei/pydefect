@@ -1,50 +1,40 @@
 {
-  "method": "CorrectionMethod.extended_fnv",
+  "method": "Extended FNV",
   "ewald": {
-    "lattice_matrix": {
-      "@module": "numpy",
-      "@class": "array",
-      "dtype": "float64",
-      "data": [
-        [
-          0.0,
-          4.246893,
-          4.246893
-        ],
-        [
-          4.246893,
-          0.0,
-          4.246893
-        ],
-        [
-          4.246893,
-          4.246893,
-          0.0
-        ]
+    "lattice_matrix": [
+      [
+        0.0,
+        4.246893,
+        4.246893
+      ],
+      [
+        4.246893,
+        0.0,
+        4.246893
+      ],
+      [
+        4.246893,
+        4.246893,
+        0.0
       ]
-    },
-    "dielectric_tensor": {
-      "@module": "numpy",
-      "@class": "array",
-      "dtype": "float64",
-      "data": [
-        [
-          12.269128,
-          0.0,
-          0.0
-        ],
-        [
-          0.0,
-          12.269175,
-          0.0
-        ],
-        [
-          0.0,
-          0.0,
-          12.269269
-        ]
+    ],
+    "dielectric_tensor": [
+      [
+        12.269128,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        12.269175,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        12.269269
       ]
-    },
+    ],
     "ewald_param": 0.04126215261014065,
     "prod_cutoff_fwhm": 25.0,
     "num_real_lattice": 11051,
@@ -127,5 +117,5 @@
     -0.22769386718993379,
     -0.23100580753790614
   ],
-  "manually_set_energy": null
+  "manually_set_correction_energy": 0
 }
