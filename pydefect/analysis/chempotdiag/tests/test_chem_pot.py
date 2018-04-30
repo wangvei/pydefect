@@ -7,9 +7,9 @@ import unittest
 
 import ruamel.yaml
 
-from chempotdiag.compound import Compound, CompoundsList
-from chempotdiag.vertex import Vertex, VerticesList
-from chempotdiag.chem_pot_diag import ChemPotDiag
+from pydefect.analysis.chempotdiag.compound import Compound, CompoundsList
+from pydefect.analysis.chempotdiag.vertex import Vertex, VerticesList
+from pydefect.analysis.chempotdiag.chem_pot_diag import ChemPotDiag
 
 EXAMPLE_DIR = "../../examples/"
 
