@@ -593,7 +593,7 @@ def chempotdiag(args):
         if args.yaml:
             if args.remarked_compound is None:
                 raise ValueError("remarked_compound is needed to dump yaml")
-            cp.dump_yaml(os.getcwd(), args.remarked_compound)
+            cp.dump_vertices_yaml(os.getcwd(), args.remarked_compound)
 
 
 if __name__ == "__main__":
