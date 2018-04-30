@@ -257,6 +257,9 @@ def main():
     parser_correction.add_argument(
         "--dir_all", dest="dir_all", action="store_true",
         help="Make dft_results.json for *[0-9] and " "perfect directory.")
+    parser_correction.add_argument(
+        "--force_overwrite", dest="force_overwrite", action="store_true",
+        help="Overwrite already existing correction.json.")
 
     parser_correction.set_defaults(func=correction)
 
@@ -507,6 +510,10 @@ def correction(args):
         dirs = args.dirs
 
     for directory in dirs:
+        json_to_make = os.path.join(directory, "correction.json")
+        if os.path.exists(json_to_make) and not args.force_overwrite:
+            print("{} exists. Correction was not done.".format(json_to_make))
+            continue
         print("correcting {0} ...".format(directory))
         try:
             entry = DefectEntry.load_json(
