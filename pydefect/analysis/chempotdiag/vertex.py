@@ -1,6 +1,5 @@
 from __future__ import print_function
-from collections import OrderedDict, Iterable, UserList
-import json
+from collections import OrderedDict, Iterable
 import string
 
 import numpy as np
