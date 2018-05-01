@@ -236,7 +236,7 @@ class DefectInitialSetting:
                     if len(line) == 5:
                         interstitial_coords.append(
                             [float(line[i]) for i in range(2, len(line))])
-                    else:
+                    elif len(line) != 2:
                         print("The number of interstitial coordinates is not a "
                               "multiple of 3.")
                         interstitial_coords = []

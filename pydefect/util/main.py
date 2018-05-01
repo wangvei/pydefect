@@ -12,7 +12,7 @@ from pydefect.input_maker.vasp_input_maker \
     import make_incar, make_kpoints, VaspDefectInputSetMaker
 from pydefect.core.defect_entry import DefectEntry
 from pydefect.core.supercell_dft_results import SupercellDftResults, \
-    vasp_convergence_ionic, vasp_convergence_electronic
+    check_vasp_output, vasp_convergence_ionic, vasp_convergence_electronic
 from pydefect.core.unitcell_dft_results import UnitcellDftResults
 from pydefect.core.correction import Ewald, Correction
 from pydefect.analysis.chempotdiag.chem_pot_diag \
@@ -100,7 +100,7 @@ def main():
         description="Tools for configuring vasp input files for a set of "
                     "defect calculations. One needs to set .pydefect.yaml"
                     "for potcar setup.",
-        aliases=['vasp', 'vi'])
+        aliases=['vasp', 'vim'])
 
     parser_vasp_input.add_argument(
         "--defect_in", dest="defect_in", default="defect.in", type=str,
@@ -121,7 +121,7 @@ def main():
         "--add", dest="add", type=str, default=None, nargs="+",
         help="Particular defect names to be added.")
     parser_vasp_input.add_argument(
-        "--force_overwrite", dest="force_overwrite", default=False,
+        "--force_overwrite", dest="force_overwrite", action="store_true",
         help="Set if the existing folders are overwritten.")
     parser_vasp_input.add_argument(
         "--make_incar", dest="make_incar", action="store_true",
@@ -143,7 +143,7 @@ def main():
         "--make_defect_entry", dest="make_defect_entry", action="store_true",
         help="Make defect_entry.json from yaml file.")
     parser_defect_entry.add_argument(
-        "--yaml", dest="yaml", type=str,
+        "--yaml", dest="yaml", type=str, default="defect_entry.yaml",
         help="defect_entry.yaml-type file name to be read.")
     parser_defect_entry.add_argument(
         "--json", dest="json", type=str, default="defect_entry.json",
@@ -158,7 +158,7 @@ def main():
     parser_supercell_results = subparsers.add_parser(
         name="supercell_results",
         description="Tools for analyzing vasp supercell results",
-        aliases=['supercell', 'sr'])
+        aliases=['supercell', 'sdr'])
 
     parser_supercell_results.add_argument(
         "-c", "--convergence", dest="convergence", action="store_true",
@@ -175,6 +175,12 @@ def main():
         "-o", dest="outcar", type=str, default="OUTCAR")
     parser_supercell_results.add_argument(
         "-v", dest="vasprun", type=str, default="vasprun.xml")
+    parser_supercell_results.add_argument(
+        "--json", dest="json", type=str, default="dft_results.json",
+        help="dft_results.json type file name.")
+    parser_supercell_results.add_argument(
+        "--print", dest="print", action="store_true",
+        help="Print SupercellDftResults class object information.")
 
     parser_supercell_results.set_defaults(func=supercell_results)
 
@@ -182,13 +188,10 @@ def main():
     parser_unitcell_results = subparsers.add_parser(
         name="unitcell_results",
         description="Tools for analyzing vasp unitcell results",
-        aliases=['unitcell', 'ur'])
+        aliases=['unitcell', 'udr'])
 
     parser_unitcell_results.add_argument(
         "--json_file", dest="json_file", default="unitcell.json", type=str)
-    parser_unitcell_results.add_argument(
-        "--band_edge_dir", dest="band_edge_dir", default=None, type=str,
-        help="Set band edge from a vasprun.xml file")
 
     parser_unitcell_results.add_argument(
         "--static_diele", dest="static_diele", default=None, type=float,
@@ -200,14 +203,25 @@ def main():
         help="Set ionic dielectric constant")
 
     parser_unitcell_results.add_argument(
+        "--band_edge_dir", dest="band_edge_dir", default=None, type=str,
+        help="Set band edge from a vasprun.xml file")
+
+    parser_unitcell_results.add_argument(
         "--static_diele_dir", dest="static_diele_dir", default=None, type=str,
         help="Set static dielectric constant from an OUTCAR file")
     parser_unitcell_results.add_argument(
         "--ionic_diele_dir", dest="ionic_diele_dir", default=None, type=str,
         help="Set ionic dielectric constant from an OUTCAR file")
+
+    parser_unitcell_results.add_argument(
+        "--volume_dir", dest="volume_dir", default=None, type=str,
+        help="Set volume from a POSCAR file")
+
     parser_unitcell_results.add_argument(
         "--total_dos_dir", dest="total_dos_dir", default=None, type=str,
         help="Set total density of states from a vasprun.xml file")
+    parser_unitcell_results.add_argument(
+        "-p", dest="poscar", type=str, default="POSCAR")
     parser_unitcell_results.add_argument(
         "-o", dest="outcar", type=str, default="OUTCAR")
     parser_unitcell_results.add_argument(
@@ -339,6 +353,19 @@ def main():
 
     parser_chempotdiag.set_defaults(func=chempotdiag)
 
+    # -- plot_energy -----------------------------------------------------------
+    parser_plot_energy = subparsers.add_parser(
+        name="plot_energy",
+        description="Tools for plotting defect formation energies as a "
+                    "function of Fermi level",
+        aliases=['pe'])
+
+    parser_plot_energy.add_argument("--perfect", dest="perfect",
+                                    default="perfect", type=str)
+    parser_plot_energy.add_argument("--defects", dest="defects",
+                                    default="", type=str)
+
+
     args = parser.parse_args()
     args.func(args)
 
@@ -383,6 +410,10 @@ def defect_entry(args):
 
 
 def supercell_results(args):
+    if args.print:
+        print(SupercellDftResults.load_json(args.json))
+        return True
+
     if args.dir_all:
         dirs = glob('*[0-9]/')
         dirs.append("perfect/")
@@ -392,17 +423,44 @@ def supercell_results(args):
     for d in dirs:
         if os.path.isdir(d):
             if args.convergence:
-                if vasp_convergence_ionic(d, vasprun_name=args.vasprun):
-                    ionic = "Y"
+                check = check_vasp_output(d,
+                                          contcar_name=args.poscar,
+                                          outcar_name=args.outcar,
+                                          vasprun_name=args.vasprun)
+                if check["all"]:
+                    if vasp_convergence_ionic(d, args.vasprun):
+                        ionic = "Y"
+                    else:
+                        ionic = "N"
+                    if vasp_convergence_electronic(d, args.vasprun):
+                        electronic = "Y"
+                    else:
+                        electronic = "N"
+                    print("{:>20}  ionic:{:>3}  electronic:{:>3}".
+                          format(d, ionic, electronic))
                 else:
-                    ionic = "N"
-                if vasp_convergence_electronic(d, vasprun_name=args.vasprun):
-                    electronic = "Y"
-                else:
-                    electronic = "N"
+                    contcar = "Y"
+                    outcar = "Y"
+                    vasprun = "Y"
 
-                print("{:>20}  ionic:{:>3}  electronic:{:>3}".
-                      format(d, ionic, electronic))
+                    if check["contcar"] is None:
+                        contcar = "NA"
+                    elif check["contcar"] is False:
+                        contcar = "N"
+
+                    if check["outcar"] is None:
+                        outcar = "NA"
+                    elif check["outcar"] is False:
+                        outcar = "N"
+
+                    if check["vasprun"] is None:
+                        vasprun = "NA"
+                    elif check["vasprun"] is False:
+                        vasprun = "N"
+
+                    print("{:>20}  CONTCAR:{:>3}  OUTCAR:{:>3}, vasprun:{:>3}".
+                          format(d, contcar, outcar, vasprun))
+
             else:
                 print(d)
                 try:
@@ -458,6 +516,13 @@ def unitcell_results(args):
                                                       outcar_name=args.outcar)
         except IOError:
             print(args.ionic_diele_dir, "is not appropriate.")
+
+    if args.volume_dir:
+        try:
+            dft_results.set_volume_from_vasp(args.volume_dir,
+                                             contcar_name=args.poscar)
+        except IOError:
+            print(args.volume_dir, "is not appropriate.")
 
     if args.total_dos_dir:
         try:
@@ -587,6 +652,27 @@ def chempotdiag(args):
             if args.remarked_compound is None:
                 raise ValueError("remarked_compound is needed to dump yaml")
             cp.dump_yaml(os.getcwd(), args.remarked_compound)
+
+
+def plot_energy(args):
+    perfect = SupercellDftResults.load_json(args.perfect + "dft_results.json")
+
+    if not args.defects:
+        from glob import glob
+        defects_dirs = glob('*[0-9]/')
+    else:
+        defects_dirs = args.defects
+
+    defects = []
+    for d in defects_dirs:
+        try:
+            defect_dft_results = \
+                SupercellDftResults.load_json(d + "dft_results.json")
+            defects.append(defect_dft_results)
+        except:
+            warnings.warn(message="Parsing data in " + d + " is failed.")
+
+
 
 
 if __name__ == "__main__":

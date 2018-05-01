@@ -36,6 +36,8 @@ class UnitcellDftResults:
     def __init__(self, band_edge=None, static_dielectric_tensor=None,
                  ionic_dielectric_tensor=None, total_dos=None, volume=None):
         """ """
+        if band_edge is None:
+            band_edge = [None, None]
         self._band_edge = band_edge
         self._static_dielectric_tensor = static_dielectric_tensor
         self._ionic_dielectric_tensor = ionic_dielectric_tensor
@@ -48,22 +50,24 @@ class UnitcellDftResults:
         return self.__dict__ == other.__dict__
 
     def __str__(self):
-        outs = ["vbm (eV): " + str(self._band_edge[0]),
-                "cbm (eV): " + str(self._band_edge[1]),
+
+        def xstr(s):
+            return 'None' if s is None else str(s)
+
+        outs = ["vbm (eV): " + xstr(self._band_edge[0]),
+                "cbm (eV): " + xstr(self._band_edge[1]),
                 "static dielectric tensor:",
-                str(self._static_dielectric_tensor),
+                xstr(self._static_dielectric_tensor),
                 "ionic dielectric tensor:",
-                str(self._ionic_dielectric_tensor),
+                xstr(self._ionic_dielectric_tensor),
                 "total dielectric tensor:",
-                str(self.total_dielectric_tensor),
-                "total density of states:",
-                str(self._volume),
-                "volume (A^3):"]
+                xstr(self.total_dielectric_tensor),
+                "volume (A^3): " + xstr(self._volume)]
 
         if self._total_dos is None:
-            outs.append("Not set yet")
+            outs.append("Total density of states is not set yet")
         else:
-            outs.append("Already set")
+            outs.append("Total density of states is already set.")
 
         return "\n".join(outs)
 

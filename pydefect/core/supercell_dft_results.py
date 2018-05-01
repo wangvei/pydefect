@@ -179,10 +179,10 @@ class SupercellDftResults:
         self._electrostatic_potential = electrostatic_potential
 
     def __str__(self):
-        outs = ["total energy:" + str(self._total_energy),
-                "total magnetization:" + str(self._magnetization),
-                "electrostatic potential:" + str(self._electrostatic_potential),
-                "eigenvalues:" + str(self._eigenvalues),
+        outs = ["total energy: " + str(self._total_energy),
+                "total magnetization: " + str(self._magnetization),
+                "electrostatic potential: " + str(self._electrostatic_potential),
+                "eigenvalues: " + str(self._eigenvalues),
                 "final structure: \n" + str(self._final_structure)]
         return "\n".join(outs)
 
