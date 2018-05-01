@@ -57,10 +57,10 @@ class DefectEnergiesTest(unittest.TestCase):
             defects.append(defect)
 
         # temporary insert values
-        chem_pot = ChemPotDiag.load_vertices_yaml(os.path.join(d, "vertices_MgO.yaml"))
+        chem_pot = ChemPotDiag.load_vertices_yaml(
+            os.path.join(test_dir, "MgO/vertices_MgO.yaml"))
 
-#        chem_pot = {"A": {"Mg": -2.1, "O": 0}, "B": {"Mg": 0, "O": -2.1}}
-#        chem_pot_label = "A"
+        chem_pot_label = "A"
 
         self.defect_energies = DefectEnergies(unitcell=unitcell,
                                               perfect=perfect,

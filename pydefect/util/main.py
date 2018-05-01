@@ -385,12 +385,33 @@ def main():
                     "function of Fermi level",
         aliases=['pe'])
 
+    parser_plot_energy.add_argument("--name", dest="name", type=str, default="")
+#    parser_plot_energy.add_argument("--xrange", dest="xrange", type=str,
+#                                    nargs='+', default=None,
+#                                    help="X range for the plot.")
+#    parser_plot_energy.add_argument("--yrange", dest="yrange", type=str,
+#                                    nargs='+', default=None,
+#                                    help="Y range for the plot.")
+    parser_plot_energy.add_argument("-s", "--save_file", dest="save_file",
+                                    type=str, default=None,
+                                    help="File name to save the drawn plot.")
     parser_plot_energy.add_argument("--unitcell", dest="unitcell", type=str,
                                     default="unitcell.json")
     parser_plot_energy.add_argument("--perfect", dest="perfect", type=str,
                                     default="perfect/dft_results.json")
+    parser_plot_energy.add_argument("--chem_pot_yaml", dest="chem_pot_yaml",
+                                    type=str,
+                                    default="chem_pot.yaml")
+    parser_plot_energy.add_argument("--chem_pot_label", dest="chem_pot_label",
+                                    type=str,
+                                    default="A")
     parser_plot_energy.add_argument("--defect_dirs", dest="defect_dirs",
                                     default="", type=str)
+    parser_plot_energy.add_argument("--show_tls", dest="--show_tls",
+                                    action="store_true",
+                                    help="Show the transition levels.")
+
+    parser_plot_energy.set_defaults(func=plot_energy)
 
     args = parser.parse_args()
     args.func(args)
@@ -717,12 +738,18 @@ def plot_energy(args):
         except:
             warnings.warn(message="Parsing data in " + d + " is failed.")
 
+    chem_pot = ChemPotDiag.load_vertices_yaml(args.chem_pot_yaml)
+
     defect_energies = DefectEnergies(unitcell=unitcell,
                                      perfect=perfect,
                                      defects=defects,
                                      chem_pot=chem_pot,
-                                     chem_pot_label=chem_pot_label,
-                                     system_name="")
+                                     chem_pot_label=args.chem_pot_label,
+                                     system_name=args.name)
+
+    defect_energies.calc_transition_levels()
+    defect_energies.plot_energy()
+
 
 if __name__ == "__main__":
     main()
