@@ -252,6 +252,21 @@ class VerticesList(list):
     def __add__(self, vertices):
         return VerticesList(list.__add__(self, vertices))
 
+    # TODO: __setitem__("A") must be raise error
+    def __getitem__(self, item):
+        if isinstance(item, str):
+            found = [item == v.label for v in self]
+            if not any(found):
+                raise IndexError(
+                    "Vertex of label {} was not found.".format(item))
+            if found.count(True) >= 2:
+                raise IndexError(
+                    "More than one vertices of label {} was found."
+                )
+            return self[found.index(True)]
+        else:
+            return super().__getitem__(item)
+
     def __setitem__(self, key, vertex):
         if not isinstance(vertex, Vertex):
             raise TypeError(VerticesList._TYPE_ERROR_MESSAGE)
