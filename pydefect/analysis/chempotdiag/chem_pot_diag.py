@@ -1,8 +1,10 @@
 from __future__ import print_function
 import argparse
+from collections import OrderedDict
 import copy
 from itertools import combinations
 import os
+import string
 
 from pymatgen import MPRester
 from pymatgen.core.structure import Structure
@@ -374,8 +376,11 @@ class ChemPotDiag:
             d[k] = v
         return d
 
-    def dump_yaml(self, file_path, remarked_compound, **kwargs):
+    def dump_vertices_yaml(self, file_path, remarked_compound, **kwargs):
         """
+        For plot_defect_energy, dumps coordination of vertex, compound,
+        and standard_energy.
+        Labels of vertices must be one capital alphabet.
 
         Args:
             file_path(str):
@@ -386,9 +391,35 @@ class ChemPotDiag:
 
         """
         d = self.get_neighbor_vertices_as_dict(remarked_compound, **kwargs)
-        filename = file_path + "/vertices_" + remarked_compound + ".yaml"
-        with open(filename, 'w') as f:
-            ruamel.yaml.dump(d, f)
+        file_name = file_path + "/vertices_" + remarked_compound + ".yaml"
+        with open(file_name, 'w') as fw:
+            ruamel.yaml.dump(d, fw)
+
+    @staticmethod
+    def load_vertices_yaml(file_name):
+        """
+        Read yaml file for plot_defect_energy and return VerticesList and
+        standard_energy.
+        Labels of vertices must be one capital alphabet.
+        Args:
+            file_name(str):
+
+        Returns:
+            tuple of (VerticesList, standard_energy)
+        """
+        with open(file_name, 'r') as fr:
+            yaml_data = ruamel.yaml.safe_load(fr)
+        vl = VerticesList()
+        name_list = list(string.ascii_uppercase)
+        for name in name_list:
+            if name in yaml_data.keys():
+                if not isinstance(yaml_data[name], dict):
+                    raise TypeError("Failed to read yaml_data[{}]"
+                                    "as dict.".format(name))
+                vertex_dict = OrderedDict(yaml_data[name])
+                vertex = Vertex(name, vertex_dict.keys(), vertex_dict.values())
+                vl.append(vertex)
+        return vl, yaml_data["standard_energy"]
 
     def draw_diagram(self,
                      title=None,

@@ -1,6 +1,5 @@
 from __future__ import print_function
-from collections import OrderedDict, Iterable, UserList
-import json
+from collections import OrderedDict, Iterable
 import string
 
 import numpy as np
@@ -42,6 +41,10 @@ class Vertex:
             (numpy.array) Coordinates of vertex.
         """
         return np.array([ec[1] for ec in self._elem_coords.items()])
+
+    @property
+    def elem_coords(self):
+        return self._elem_coords
 
     def as_dict(self):
         d = {"label": self.label,
@@ -87,9 +90,10 @@ class Vertex:
 
     def __repr__(self):
         pretty_coords = np.round(self.coords, 5)
-        return ("Label: {0} , "
+        return ("Vertex("
+                "Label: {0} , "
                 "Elements: {1} , "
-                "Coordinates: {2} , "
+                "Coordinates: {2})"
                 .format(self.label, "-".join(self.elements), pretty_coords))
 
     def __eq__(self, other):

@@ -1,10 +1,13 @@
 import sys
 import math
+
 import numpy as np
 from pymatgen.io.vasp.inputs import Poscar as Poscar_pmg
 from ase.io.vasp import read_vasp
-from ase_cython import find_optimal_cell_shape
 from ase.build import get_deviation_from_optimal_cell_shape
+
+from pydefect.input_maker.recommend_supercell_ase_cythonized.ase_cython\
+    import find_optimal_cell_shape
 from ase.build import make_supercell
 
 
