@@ -88,7 +88,7 @@ class ChemPotDiag:
         """
         compounds_array = copy.deepcopy(input_compounds_array)
         # Temporary
-        compounds_array.set_elements(input_compounds_array.elements)
+        compounds_array.set_elements(sorted(input_compounds_array.elements))
         compounds_array.standardize_energies()
         element_energy = compounds_array.element_energies
         dim = len(compounds_array.elements)
