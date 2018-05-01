@@ -563,12 +563,12 @@ def correction(args):
                                                              ewald_data)
             c.plot_distance_vs_potential(
                 file_name=os.path.join(directory, "potential.eps"))
+            c.to_json_file(os.path.join(directory, "correction.json"))
         except Exception as e:
             warnings.warn("Correction for {0} is failed. "
                           "The calculation for {0} is skipped."
                           "Exception type and message is {1}, {2}".
                           format(directory, type(e), e.args))
-        c.to_json_file(os.path.join(directory, "correction.json"))
 
 
 def chempotdiag(args):
