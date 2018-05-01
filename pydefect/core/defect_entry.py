@@ -173,7 +173,7 @@ class DefectEntry:
         else:
             nions = get_num_atoms_for_elements(defect_structure)
             charge = get_defect_charge_from_vasp(nions=nions)
-            print("charge", charge, "is set from the initial files.")
+            print("charge", charge, "is set from vasp input files.")
 
         inserted_atoms = [i for i in range(defect_structure.num_sites)]
         removed_atoms = {}
