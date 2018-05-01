@@ -10,6 +10,8 @@ from pydefect.input_maker.defect_initial_setting \
     import print_dopant_info, DefectInitialSetting
 from pydefect.input_maker.vasp_input_maker \
     import make_incar, make_kpoints, VaspDefectInputSetMaker
+from pydefect.input_maker.recommend_supercell_ase_cythonized.\
+    ase_generation_supercell import recommend_supercell_ase
 from pydefect.core.defect_entry import DefectEntry
 from pydefect.core.supercell_dft_results import SupercellDftResults, \
     vasp_convergence_ionic, vasp_convergence_electronic
@@ -131,6 +133,26 @@ def main():
         help="Make KPOINTS file based on the lattice constants.")
 
     parser_vasp_input.set_defaults(func=vasp_input)
+
+    # -- recommend_supercell ---------------------------------------------------
+    parser_recommend_supercell = subparsers.add_parser(
+        name="recommend_supercell",
+        description="Tools for recommendation of optimal supercell",
+        aliases=['rs'])
+    parser_recommend_supercell.add_argument(
+        "--poscar_path", dest="poscar_path", type=str,
+        help="Path of poscar to make supercell")
+    parser_recommend_supercell.add_argument(
+        "--criterion", dest="criterion", type=float,
+        help="Criterion of ASE optimality measure (default is 0.5)")
+    parser_recommend_supercell.add_argument(
+        "--min_natom", dest="min_natom", type=int,
+        help="Minimum number of atom (default is 50)")
+    parser_recommend_supercell.add_argument(
+        "--max_natom", dest="max_natom", type=int,
+        help="Maximum number of atom (default is 400)")
+
+    parser_recommend_supercell.set_defaults(func=recommend_supercell)
 
     # -- defect_entry ----------------------------------------------------------
     parser_defect_entry = subparsers.add_parser(
@@ -374,6 +396,19 @@ def vasp_input(args):
                                 incar=args.incar,
                                 kpoints=args.kpoints,
                                 force_overwrite=args.force_overwrite)
+
+
+def recommend_supercell(args):
+    if not args.poscar_path:
+        raise ValueError("Specify path of poscar!")
+    kw_args = {}
+    if args.criterion:
+        kw_args["criterion"] = args.criterion
+    if args.min_natom:
+        kw_args["min_natom"] = args.min_natom
+    if args.max_natom:
+        kw_args["max_natom"] = args.max_natom
+    recommend_supercell_ase(args.poscar_path, **kw_args)
 
 
 def defect_entry(args):
