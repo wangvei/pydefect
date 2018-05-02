@@ -6,11 +6,12 @@ import warnings
 
 from glob import glob
 
+from pydefect.analysis.defect_energies import DefectEnergies, Defect
 from pydefect.input_maker.defect_initial_setting \
     import print_dopant_info, DefectInitialSetting
 from pydefect.input_maker.vasp_input_maker \
     import make_incar, make_kpoints, VaspDefectInputSetMaker
-from pydefect.input_maker.recommend_supercell_ase_cythonized.\
+from pydefect.input_maker.recommend_supercell_ase_cythonized. \
     ase_generation_supercell import recommend_supercell_ase
 from pydefect.core.defect_entry import DefectEntry
 from pydefect.core.supercell_dft_results import SupercellDftResults, \
@@ -19,7 +20,6 @@ from pydefect.core.unitcell_dft_results import UnitcellDftResults
 from pydefect.core.correction import Ewald, Correction
 from pydefect.analysis.chempotdiag.chem_pot_diag \
     import ChemPotDiag, make_vasp_inputs_from_mp
-
 
 __version__ = "0.0.1"
 __date__ = "19.4.2018"
@@ -46,7 +46,7 @@ def main():
     Version: {}                                                                 
     Last updated: {}""".format(__version__, __date__),
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-#        allow_abbrev=False)
+    #        allow_abbrev=False)
 
     subparsers = parser.add_subparsers()
 
@@ -389,18 +389,39 @@ def main():
                     "function of Fermi level",
         aliases=['pe'])
 
-    parser_plot_energy.add_argument("--perfect", dest="perfect",
-                                    default="perfect", type=str)
-    parser_plot_energy.add_argument("--defects", dest="defects",
+    parser_plot_energy.add_argument("--name", dest="name", type=str, default="")
+#    parser_plot_energy.add_argument("--xrange", dest="xrange", type=str,
+#                                    nargs='+', default=None,
+#                                    help="X range for the plot.")
+#    parser_plot_energy.add_argument("--yrange", dest="yrange", type=str,
+#                                    nargs='+', default=None,
+#                                    help="Y range for the plot.")
+    parser_plot_energy.add_argument("-s", "--save_file", dest="save_file",
+                                    type=str, default=None,
+                                    help="File name to save the drawn plot.")
+    parser_plot_energy.add_argument("--unitcell", dest="unitcell", type=str,
+                                    default="unitcell.json")
+    parser_plot_energy.add_argument("--perfect", dest="perfect", type=str,
+                                    default="perfect/dft_results.json")
+    parser_plot_energy.add_argument("--chem_pot_yaml", dest="chem_pot_yaml",
+                                    type=str,
+                                    default="chem_pot.yaml")
+    parser_plot_energy.add_argument("--chem_pot_label", dest="chem_pot_label",
+                                    type=str,
+                                    default="A")
+    parser_plot_energy.add_argument("--defect_dirs", dest="defect_dirs",
                                     default="", type=str)
+    parser_plot_energy.add_argument("--show_tls", dest="--show_tls",
+                                    action="store_true",
+                                    help="Show the transition levels.")
 
+    parser_plot_energy.set_defaults(func=plot_energy)
 
     args = parser.parse_args()
     args.func(args)
 
 
 def initial_setting(args):
-
     if args.print_dopant:
         print_dopant_info(args.print_dopant)
     else:
@@ -412,13 +433,12 @@ def initial_setting(args):
 
 
 def vasp_input(args):
-
     if args.make_incar:
         make_incar(defect_in=args.defect_in)
     elif args.make_kpoints:
         make_kpoints(poscar=args.dposcar)
     else:
-        defect_initial_setting = DefectInitialSetting.\
+        defect_initial_setting = DefectInitialSetting. \
             from_defect_in(poscar=args.dposcar, defect_in_file=args.defect_in)
 
         VaspDefectInputSetMaker(defect_initial_setting=defect_initial_setting,
@@ -443,7 +463,6 @@ def recommend_supercell(args):
 
 
 def defect_entry(args):
-
     if args.make_defect_entry:
         defect_entry_from_yaml = DefectEntry.from_yaml(args.yaml)
         defect_entry_from_yaml.to_json_file("defect_entry.json")
@@ -522,7 +541,6 @@ def supercell_results(args):
 
 
 def unitcell_results(args):
-
     try:
         dft_results = UnitcellDftResults.load_json(filename=args.json_file)
     except IOError:
@@ -543,7 +561,7 @@ def unitcell_results(args):
         dft_results.static_dielectric_tensor = args.static_diele
     elif args.static_diele_dir:
         try:
-            dft_results.\
+            dft_results. \
                 set_static_dielectric_tensor_from_vasp(args.static_diele_dir,
                                                        outcar_name=args.outcar)
         except IOError:
@@ -553,7 +571,7 @@ def unitcell_results(args):
         dft_results.ionic_dielectric_tensor = args.ionic_diele
     elif args.ionic_diele_dir:
         try:
-            dft_results.\
+            dft_results. \
                 set_ionic_dielectric_tensor_from_vasp(args.ionic_diele_dir,
                                                       outcar_name=args.outcar)
         except IOError:
@@ -577,7 +595,6 @@ def unitcell_results(args):
 
 
 def correction(args):
-
     try:
         unitcell_dft_data = UnitcellDftResults.load_json(args.unitcell_json)
     except IOError:
@@ -641,7 +658,6 @@ def correction(args):
 
 
 def chempotdiag(args):
-
     if args.mat_proj_poscar:
         kwargs_to_make_vasp_inputs = {}
         if args.dir_path:
@@ -702,9 +718,11 @@ def chempotdiag(args):
 
 
 def plot_energy(args):
-    perfect = SupercellDftResults.load_json(args.perfect + "dft_results.json")
 
-    if not args.defects:
+    unitcell = UnitcellDftResults.load_json(args.unitcell)
+    perfect = SupercellDftResults.load_json(args.perfect)
+
+    if not args.defect_dirs:
         from glob import glob
         defects_dirs = glob('*[0-9]/')
     else:
@@ -713,13 +731,29 @@ def plot_energy(args):
     defects = []
     for d in defects_dirs:
         try:
-            defect_dft_results = \
-                SupercellDftResults.load_json(d + "dft_results.json")
-            defects.append(defect_dft_results)
+
+            de = DefectEntry.load_json(os.path.join(d, "defect_entry.json"))
+            dr = SupercellDftResults.\
+                load_json(os.path.join(d, "dft_results.json"))
+            co = Correction.load_json(os.path.join(d, "correction.json"))
+
+            defects.append(Defect(defect_entry=de,
+                                  dft_results=dr,
+                                  correction=co))
         except:
             warnings.warn(message="Parsing data in " + d + " is failed.")
 
+    chem_pot = ChemPotDiag.load_vertices_yaml(args.chem_pot_yaml)
 
+    defect_energies = DefectEnergies(unitcell=unitcell,
+                                     perfect=perfect,
+                                     defects=defects,
+                                     chem_pot=chem_pot,
+                                     chem_pot_label=args.chem_pot_label,
+                                     system_name=args.name)
+
+    defect_energies.calc_transition_levels()
+    defect_energies.plot_energy()
 
 
 if __name__ == "__main__":

@@ -43,7 +43,8 @@ class DefectEnergies:
         # self._vbm2, self._cbm2 = unitcell.band_edge2
         self._transition_levels = {}
 
-        chem_pot = chem_pot[chem_pot_label]
+        rel_chem_pot, standard_energy = chem_pot
+        rel_chem_pot = rel_chem_pot[chem_pot_label]
 
         self._defect_energies = defaultdict(dict)
 
@@ -60,7 +61,8 @@ class DefectEnergies:
             correction_energy = d.correction.total_correction_energy
             electron_interchange_energy = self._vbm * charge
             element_interchange_energy = \
-                - sum([v * chem_pot[k] for k, v in element_diff.items()])
+                - sum([v * (rel_chem_pot.elem_coords[k] + standard_energy[k])
+                       for k, v in element_diff.items()])
 
             self._defect_energies[name][charge] = \
                 relative_energy + correction_energy + \

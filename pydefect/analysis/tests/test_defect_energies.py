@@ -7,6 +7,7 @@ import tempfile
 import unittest
 
 from pydefect.analysis.defect_energies import DefectEnergies, Defect
+from pydefect.analysis.chempotdiag.chem_pot_diag import ChemPotDiag
 from pydefect.core.correction import Correction
 from pydefect.core.supercell_dft_results import SupercellDftResults
 from pydefect.core.unitcell_dft_results import UnitcellDftResults
@@ -56,7 +57,9 @@ class DefectEnergiesTest(unittest.TestCase):
             defects.append(defect)
 
         # temporary insert values
-        chem_pot = {"A": {"Mg": -2.1, "O": 0}, "B": {"Mg": 0, "O": -2.1}}
+        chem_pot = ChemPotDiag.load_vertices_yaml(
+            os.path.join(test_dir, "MgO/vertices_MgO.yaml"))
+
         chem_pot_label = "A"
 
         self.defect_energies = DefectEnergies(unitcell=unitcell,
