@@ -324,6 +324,10 @@ def main():
     parser_chempotdiag.add_argument("-k", "--mp_api_key",
                                     help="",
                                     action="store_true")
+    parser_chempotdiag.add_argument("-gp", "--gets_poly",
+                                    help="",
+                                    action="store_true")
+
 
     # input
     parser_chempotdiag.add_argument("-e", "--energy", dest="energy_file",
@@ -646,8 +650,9 @@ def chempotdiag(args):
             kwargs_to_make_vasp_inputs["criterion_e_above_hull"] \
                 = args.criterion_hull
         if args.mp_api_key:
-            kwargs_to_make_vasp_inputs["api_key"] \
-                = args.mp_api_key
+            kwargs_to_make_vasp_inputs["api_key"] = args.mp_api_key
+        if args.gets_poly:
+            kwargs_to_make_vasp_inputs["gets_poly"] = True
         make_vasp_inputs_from_mp(args.elements, **kwargs_to_make_vasp_inputs)
     else:
         if args.energy_file and args.vasp_dirs:
