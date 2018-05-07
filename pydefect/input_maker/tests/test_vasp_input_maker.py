@@ -32,7 +32,15 @@ class MakeIncarTest(unittest.TestCase):
 class MakeKpointsTest(unittest.TestCase):
 
     def test_make_kpoints(self):
-        make_kpoints()
+        make_kpoints(task="defect")
+
+
+class MakeIncarTest(unittest.TestCase):
+
+    def test_make_incar(self):
+        make_incar(task="structure_opt", functional="hse06",
+                   defect_in="defect.in", is_magnetization=True)
+#        make_incar(task="defect", functional="hse06")
 
 
 class VaspDefectInputSetMakerTest(unittest.TestCase):

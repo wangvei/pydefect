@@ -89,7 +89,10 @@ def element_set(defect_initial_setting):
     for i in defect_initial_setting.irreducible_sites:
         e_set.add(i.element)
 
-    for d in defect_initial_setting.antisite_configs:
+    for a in defect_initial_setting.antisite_configs:
+        e_set.add(a[0])
+
+    for d in defect_initial_setting.dopant_configs:
         e_set.add(d[0])
 
     return e_set

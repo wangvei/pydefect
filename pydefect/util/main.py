@@ -100,8 +100,8 @@ def main():
     parser_vasp_input = subparsers.add_parser(
         name="vasp_input",
         description="Tools for configuring vasp input files for a set of "
-                    "defect calculations. One needs to set .pydefect.yaml"
-                    "for potcar setup.",
+                    "defect calculations. One needs to set "
+                    ".pydefect.yaml for potcar setup.",
         aliases=['vasp', 'vim'])
 
     parser_vasp_input.add_argument(
@@ -133,6 +133,20 @@ def main():
         help="Make KPOINTS file based on the lattice constants.")
 
     parser_vasp_input.set_defaults(func=vasp_input)
+
+    # -- vasp_INCAR_maker ------------------------------------------------------
+    parser_vasp_incar = subparsers.add_parser(
+        name="vasp_incar",
+        description="Tools for configuring vasp INCAR file",
+        aliases=['incar'])
+
+    parser_vasp_incar.add_argument(
+        "--make_kpoints", dest="make_kpoints", action="store_true",
+        help="Make KPOINTS file based on the lattice constants.")
+
+    parser_vasp_incar.set_defaults(func=vasp_incar)
+
+
 
     # -- recommend_supercell ---------------------------------------------------
     parser_recommend_supercell = subparsers.add_parser(

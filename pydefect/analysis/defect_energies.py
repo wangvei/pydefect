@@ -241,36 +241,3 @@ class DefectEnergies:
     def band_gap(self):
         return self._cbm - self._vbm
 
-
-def main():
-    import argparse
-    parser = argparse.ArgumentParser(
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument("--perfect", dest="perfect",
-                        default="perfect", type=str)
-    parser.add_argument("--defects", dest="defects",
-                        default="", type=str)
-
-    opts = parser.parse_args()
-
-    perfect = SupercellDftResults.load_json(opts.perfect + "dft_results.json")
-
-    if not opts.defects:
-        from glob import glob
-        defects_dirs = glob('*[0-9]/')
-    else:
-        defects_dirs = opts.defects
-
-    defects = []
-    for d in defects_dirs:
-        try:
-            defect_dft_results = \
-                SupercellDftResults.load_json(d + "dft_results.json")
-            defects.append(defect_dft_results)
-        except:
-            warnings.warn(message="Parsing data in " + d + " is failed.")
-
-
-
-if __name__ == "__main__":
-    main()

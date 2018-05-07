@@ -1,0 +1,153 @@
+structure_opt:
+  PREC: A  
+  LREAL: False
+  LASPH: True
+  ISIF: 3
+  EDIFF: 1.0e-07
+  EDIFFG: -0.005
+  IBRION: 2
+  NSW: 20
+  ISMEAR: 0
+  SIGMA: 0.05
+  NELM: 100
+  NELMIN: 4
+  ALGO: N
+  LWAVE: False
+  LCHARG: False
+  LORBIT: 12
+
+band:
+  PREC: A  
+  LREAL: False
+  LASPH: True
+  ISIF: 3
+  EDIFF: 1.0e-07
+  NSW: 1
+  ISMEAR: 0
+  SIGMA: 0.05
+  NELM: 100
+  NELMIN: 4
+  ALGO: N
+  LWAVE: False
+  LCHARG: False
+    
+dos:
+  PREC: A  
+  LREAL: False
+  LASPH: True
+  ISIF: 3
+  EDIFF: 1.0e-07
+  NSW: 1
+  ISMEAR: -5
+  SIGMA: 0.05
+  NELM: 100
+  NELMIN: 4
+  ALGO: N
+  LWAVE: False
+  LCHARG: False
+  LORBIT: 12
+
+dielectric:
+  PREC: A 
+  LREAL: False
+  LASPH: True
+  EDIFF: 1.0e-07
+  IBRION: 8
+  NSW: 1
+  ISMEAR: 0
+  SIGMA: 0.05
+  NELM: 100
+  NELMIN: 4
+  ALGO: N
+  LWAVE: False
+  LCHARG: False
+  LEPSILON: True
+  LRPA: False
+  
+dielectric_function:
+  PREC: A 
+  LREAL: False
+  LASPH: True
+  EDIFF: 1.0e-07 
+  NSW: 1
+  ISMEAR: 0
+  SIGMA: 0.01
+  NELM: 100
+  NELMIN: 4
+  LWAVE: False
+  LCHARG: False
+  LORBIT: 12
+  LCALCEPS: True
+  LRPA: False
+
+competing_phase:
+  PREC: N  
+  LREAL: A
+  LASPH: True
+  ISIF: 3
+  EDIFF: 1.0e-05
+  EDIFFG: -0.02
+  IBRION: 2
+  NSW: 20
+  ISMEAR: 0
+  SIGMA: 0.2
+  NELM: 100
+  NELMIN: 4
+  ALGO: N
+  LWAVE: False
+  LCHARG: False
+
+competing_phase_molecule:
+  PREC: N  
+  LREAL: A
+  LASPH: True
+  ISIF: 2
+  EDIFF: 1.0e-05
+  EDIFFG: -0.02
+  IBRION: 2
+  NSW: 20
+  ISMEAR: 0
+  SIGMA: 0.2
+  NELM: 100
+  NELMIN: 4
+  ALGO: N
+  LWAVE: False
+  LCHARG: False
+
+defect:
+  PREC: N 
+  LREAL: A
+  LASPH: True
+  ISIF: 2 
+  EDIFF: 1.0e-06 
+  EDIFFG: -0.04
+  IBRION: 2
+  NSW: 20
+  ISMEAR: 0 
+  SIGMA: 0.05
+  NELM: 100 
+  NELMIN: 4
+  ALGO: N
+  LWAVE: False
+  LCHARG: False
+  LORBIT: 12
+  
+pbe:
+  
+pbesol:
+  GGA: PS
+    
+pbe_d3:
+  IVDW: 12
+
+# LWAVE is overwritten.
+hse06:
+  LHFCALC: True
+  HFSCREEN: 0.208
+  PRECFOCK: F
+  ALGO: D
+  LWAVE: True
+  TIME: 0.2
+
+hse06_pre_gga:
+  LWAVE: True
