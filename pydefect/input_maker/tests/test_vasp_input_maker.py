@@ -6,8 +6,9 @@ import unittest
 
 from pymatgen.core.structure import Structure
 
-from pydefect.input_maker.vasp_input_maker import VaspDefectInputSetMaker, \
-    make_incar, make_kpoints
+from pydefect.input_maker.vasp_input_maker import ModIncar, \
+    VaspDefectInputSetMaker, make_incar, make_kpoints, structure2seekpath, \
+    spglib_cell, make_band_kpoints
 from pydefect.core.irreducible_site import IrreducibleSite
 from pydefect.input_maker.defect_initial_setting import DefectInitialSetting
 
@@ -23,10 +24,35 @@ test_dir = os.path.join(os.path.dirname(__file__), "..", "..", "..",
                         "test_files", "input_maker")
 
 
-class MakeIncarTest(unittest.TestCase):
+class ModIncarTest(unittest.TestCase):
 
-    def test_make_incar(self):
-        make_incar(dirname=".", defect_in="defect.in")
+    def test_ModIncar(self):
+        i = ModIncar.from_file("INCAR")
+        i.pretty_write_file("INCAR-test")
+
+
+class SpglibCellTest(unittest.TestCase):
+
+    def test(self):
+        structure = Structure.from_file("POSCAR")
+        self.cell = spglib_cell(structure)
+
+
+class Structure2SeekpathTest(unittest.TestCase):
+
+    def setUp(self):
+        self.structure = Structure.from_file("POSCAR")
+
+    def test_structure2seekpath(self):
+        print(structure2seekpath(self.structure))
+#        cell, positions, atomic_numbers = structure2seekpath(self.structure)
+#        print(cell, positions, atomic_numbers)
+
+
+class MakeBandKpointsTest(unittest.TestCase):
+
+    def test_make_band_kpoints(self):
+        make_band_kpoints(ibzkpt="IBZKPT", num_split_kpoints=2)
 
 
 class MakeKpointsTest(unittest.TestCase):
@@ -39,7 +65,9 @@ class MakeIncarTest(unittest.TestCase):
 
     def test_make_incar(self):
         make_incar(task="structure_opt", functional="hse06",
-                   defect_in="defect.in", is_magnetization=True)
+                   defect_in="defect.in", hfscreen=0.2, aexx=0.3,
+                   is_magnetization=True,
+                   my_incar_setting="my_INCAR_setting.yaml")
 #        make_incar(task="defect", functional="hse06")
 
 

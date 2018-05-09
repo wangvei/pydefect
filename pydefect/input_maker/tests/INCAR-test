@@ -1,7 +1,9 @@
+ALGO = D
+
 PREC = A
 LREAL = False
 LASPH = True
-ENCUT = 400.0
+ENCUT = 400
 NELM = 100
 NELMIN = 4
 EDIFF = 1e-07
@@ -18,6 +20,11 @@ LWAVE = True
 LCHARG = False
 
 LORBIT = 12
+
+LHFCALC = True
+HFSCREEN = 0.2
+PRECFOCK = F
+TIME = 0.2
 
 NPAR = 4
 KPAR = 4
