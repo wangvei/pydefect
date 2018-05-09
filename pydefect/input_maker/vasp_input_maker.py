@@ -3,30 +3,31 @@
 from collections import OrderedDict
 from copy import deepcopy
 from enum import Enum, auto, unique
+from math import ceil
 import numpy as np
 import os
 import re
+import ruamel.yaml as yaml
 import shutil
-from math import ceil
 
 from monty.serialization import loadfn
 from monty.io import zopen
-import ruamel.yaml as yaml
 
 from pymatgen.io.vasp import Potcar, Kpoints, Incar
 from pymatgen.core.structure import Structure
 from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
 from pymatgen.util.io_utils import clean_lines
 
-from pydefect.core.defect_entry import get_num_atoms_for_elements, \
-    get_num_electrons_from_potcar
+from pydefect.core.defect_entry \
+    import get_num_atoms_for_elements, get_num_electrons_from_potcar
 from pydefect.core.supercell_dft_results import defect_center
-from pydefect.input_maker.defect_initial_setting import DefectInitialSetting, \
-    element_set
+from pydefect.input_maker.defect_initial_setting \
+    import DefectInitialSetting, element_set
 from pydefect.input_maker.kpt_centering import kpt_centering
 from pydefect.input_maker.input_maker import \
-    DefectMaker, DefectInputSetMaker, print_is_being_removed, \
-    print_already_exist, print_is_being_constructed, perturb_neighbors
+    spglib_cell, structure2seekpath, DefectMaker, DefectInputSetMaker, \
+    print_is_being_removed, print_already_exist, print_is_being_constructed, \
+    perturb_neighbors
 
 from pydefect.core.atom import symbols_to_atom
 
@@ -44,8 +45,31 @@ INCAR_SETTINGS_FILE = os.path.join(MODULE_DIR, "default_INCAR_setting.yaml")
 DEFAULT_INCAR = os.path.join(MODULE_DIR, "default_INCAR")
 
 
-class ModIncar(Incar):
+incar_flags = OrderedDict()
+incar_flags["algo"] = ["ALGO"]
+incar_flags["accuracy"] = ["PREC", "LREAL", "LASPH", "ENCUT", "NELM", "NELMIN", "EDIFF"]
+incar_flags["symmetry"] = ["ISYM", "SYMPREC"]
+incar_flags["ionic"] = ["ISIF", "EDIFFG", "IBRION", "NSW"]
+incar_flags["occupation"] = ["ISMEAR", "SIGMA", "FERDO", "FERWE", "SMEARINGS"]
+incar_flags["magnetization"] = ["LNONCOLLINEAR", "MAGMOM", "LSORBIT", "GGA_COMPAT"]
+incar_flags["mixing"] = ["MIX", "INIMIX", "MAXMIX", "AMIX", "BMIX", "AMIX_MAG", "BMIX_MAG", "AMIN", "MIXPRE", "WC"]
+incar_flags["io_control"] = ["ISTART", "ICHARG", "LWAVE", "LCHARG"]
+incar_flags["analysis"] = ["NBANDS", "LORBIT", "NEDOS", "EMAX", "EMIN", "RWIGS"]
+incar_flags["dielectric"] = ["LEPSILON", "LRPA", "LOPTICS", "LCALCEPS", "EFIELD", "CSHIFT", "OMEGAMIN", "OMEGAMAX", "LNABLA"]
+incar_flags["dft"] = ["GGA", "IVDW", "VDW_S6", "VDW_A1", "VDW_S8", "VDW_A2", "METAGGA"]
+incar_flags["hybrid"] = ["LHFCALC", "AEXX", "HFSCREEN", "NKRED", "PRECFOCK", "TIME"]
+incar_flags["gw"] = ["NBANDSGW", "NOMEGA", "OMEGAMAX", "ANTIRES", "MAXMEM", "NMAXFOCKAE", "NBANDSLF", "ENCUTGW"]
+incar_flags["ldau"] = ["LDAU", "LDAUTYPE", "LMAXMIX", "LDAUPRINT", "LDAUL", "LDAUU", "LDAUJ"]
+incar_flags["electrostatic"] = ["NELECT", "EPSILON", "DIPOL", "IDIPOL", "LMONO", "LDIPOL"]
+incar_flags["parallel"] = ["NPAR", "KPAR"]
 
+
+class ModIncar(Incar):
+    """
+    Incar class modified for pretty writing of INCAR file.
+    Since from_file and from_string methods in Incar class use Incar class
+    constructor, we need to override them.
+    """
     @staticmethod
     def from_file(filename):
         """
@@ -55,7 +79,7 @@ class ModIncar(Incar):
             filename (str): Filename for file
 
         Returns:
-            Incar object
+            ModIncar object
         """
         with zopen(filename, "rt") as f:
             return ModIncar.from_string(f.read())
@@ -69,7 +93,7 @@ class ModIncar(Incar):
             string (str): Incar string
 
         Returns:
-            Incar object
+            ModIncar object
         """
         lines = list(clean_lines(string.splitlines()))
         params = {}
@@ -84,43 +108,14 @@ class ModIncar(Incar):
 
     def pretty_write_file(self, filename):
         """
-        Write Incar to a file.
+        Write Incar to a file in a prettier manner.
 
         Args:
             filename (str): filename to write to.
         """
 
-        flags = OrderedDict()
-        flags["algo"] = ["ALGO"]
-        flags["accuracy"] = ["PREC", "LREAL", "LASPH", "ENCUT", "NELM",
-                             "NELMIN", "EDIFF"]
-        flags["symmetry"] = ["ISYM", "SYMPREC"]
-        flags["ionic"] = ["ISIF", "EDIFFG", "IBRION", "NSW"]
-        flags["occupation"] = ["ISMEAR", "SIGMA", "FERDO", "FERWE", "SMEARINGS"]
-        flags["magnetization"] = ["LNONCOLLINEAR", "MAGMOM", "LSORBIT",
-                                  "GGA_COMPAT"]
-        flags["mixing"] = ["MIX", "INIMIX", "MAXMIX", "AMIX", "BMIX",
-                           "AMIX_MAG", "BMIX_MAG", "AMIN", "MIXPRE", "WC"]
-        flags["io_control"] = ["ISTART", "ICHARG", "LWAVE", "LCHARG"]
-        flags["analysis"] = ["NBANDS", "LORBIT", "NEDOS", "EMAX", "EMIN",
-                             "RWIGS"]
-        flags["dielectric"] = ["LEPSILON", "LRPA", "LOPTICS", "LCALCEPS",
-                               "EFIELD", "CSHIFT", "OMEGAMIN", "OMEGAMAX",
-                               "LNABLA"]
-        flags["dft"] = ["GGA", "IVDW", "VDW_S6", "VDW_A1", "VDW_S8", "VDW_A2",
-                        "METAGGA"]
-        flags["hybrid"] = ["LHFCALC", "AAEXX", "HFSCREEN", "NKRED", "PRECFOCK",
-                           "TIME"]
-        flags["gw"] = ["NBANDSGW", "NOMEGA", "OMEGAMAX", "ANTIRES", "MAXMEM",
-                       "NMAXFOCKAE", "NBANDSLF", "ENCUTGW"]
-        flags["ldau"] = ["LDAU", "LDAUTYPE", "LMAXMIX", "LDAUPRINT", "LDAUL",
-                         "LDAUU", "LDAUJ"]
-        flags["electrostatic"] = ["NELECT", "EPSILON", "DIPOL", "IDIPOL",
-                                  "LMONO", "LDIPOL"]
-        flags["parallel"] = ["NPAR", "KPAR"]
-
         with zopen(filename, "wt") as fw:
-            for key, val in flags.items():
+            for key, val in incar_flags.items():
                 blank_line = False
                 for v in val:
                     if v in self.keys():
@@ -141,9 +136,6 @@ def potcar_dir():
     try:
         with open(SETTINGS_FILE, "r") as f:
             pydefect_yaml = yaml.safe_load(f)
-    #    try:
-    #        with open(SETTINGS_FILE, "r") as fr:
-    #            pydefect_yaml = loadfn(fr)
     except IOError:
         print('.pydefect.yaml cannot be opened.')
 
@@ -170,6 +162,7 @@ def make_potcar(dirname, elements, default_potcar_dir):
             with open(potcar_file_name) as pot:
                 potcar.write(pot.read())
 
+
 @unique
 class SupportedTask(Enum):
     structure_opt = auto()
@@ -192,19 +185,11 @@ class SupportedTask(Enum):
                 return m
         raise ValueError("Can't interpret supported task %s" % s)
 
-    @staticmethod
-    def hasattr(s):
-        for m in SupportedTask:
-            if m.name == s:
-                return True
-        return False
-
 
 @unique
 class SupportedFunctional(Enum):
     pbe = auto()
     hse06 = auto()
-    hse06_pre_gga = auto()
     pbesol = auto()
     pbe_d3 = auto()
 
@@ -218,44 +203,13 @@ class SupportedFunctional(Enum):
                 return m
         raise ValueError("Can't interpret supported functional %s" % s)
 
-    @staticmethod
-    def hasattr(s):
-        for m in SupportedFunctional:
-            if m.name == s:
-                return True
-        return False
-
-
-def spglib_cell(s):
-    lattice = s.lattice.lll_matrix.tolist()
-    positions = s.frac_coords.tolist()
-    atomic_numbers = [i.specie.number for i in s.sites]
-    return lattice, positions, atomic_numbers
-
-
-# def standardize(s):
-#     cell = spglib_cell(s)
-#     from spglib import standardize_cell
-
-    # return standardize_cell(cell)
-
-
-def structure2seekpath(s, time_reversal=True, ref_distance=0.025):
-
-    import seekpath
-    cell = spglib_cell(s)
-    res = seekpath.get_explicit_k_path(cell,
-                                       with_time_reversal=time_reversal,
-                                       reference_distance=ref_distance,
-                                       recipe='hpkot',
-                                       threshold=1.e-7,
-                                       symprec=1e-05,
-                                       angle_tolerance=-1.0)
-    return res
-
 
 def make_band_kpoints(ibzkpt, dirname='.', poscar="POSCAR", pposcar="PPOSCAR",
                       num_split_kpoints=1):
+    """
+    Write the KPOINTS file for the band structure calculation.
+    Args:
+    """
 
     s = Structure.from_file(os.path.join(poscar))
     seekpath_full_info = structure2seekpath(s)
@@ -267,6 +221,7 @@ def make_band_kpoints(ibzkpt, dirname='.', poscar="POSCAR", pposcar="PPOSCAR",
     positions = seekpath_full_info["primitive_positions"]
     Structure(lattice, species, positions).to(filename=pposcar)
 
+    # k-path
     kpath = seekpath_full_info["explicit_kpoints_rel"]
     kpath_label = seekpath_full_info["explicit_kpoints_labels"]
     ibzkpt = Kpoints.from_file(ibzkpt)
@@ -307,13 +262,18 @@ def make_kpoints(task, dirname='.', poscar="POSCAR", pposcar="PPOSCAR",
                        a band structure calculation.
         num_split_kpoints (int): number of KPOINTS files used for a band
                                  structure calculation.
-        ibzkpt (str): IBZKPT-type file name
-        is_metal (bool):
-        kpts_shift (1x3 list): k-point shift vector
-        kpts_density_opt (float):
-        kpts_density_defect (float):
-        multiplier_factor (float):
-        multiplier_factor_metal (float):
+        ibzkpt (str): Name of theIBZKPT-type file, which is used to set the
+                      weighted k-points.
+        is_metal (bool): If the system to be calculated is metal or not. This
+                         has a meaning for the calculation of a competing phase
+        kpts_shift (1x3 list): Shift of k-point set based on vasp setting
+        kpts_density_opt (float): Density of k-point = (N_k / k_length) for
+                                  structure optimization
+        kpts_density_defect (float): Density of k-point = (N_k / k_length) for
+                                     point-defect calculations
+        multiplier_factor (float): Multiplier factor for dos and dielectric
+                                   constants
+        multiplier_factor_metal (float): Multiplier factor for metallic systems
     """
 
     s = Structure.from_file(os.path.join(poscar))
@@ -364,13 +324,12 @@ def make_kpoints(task, dirname='.', poscar="POSCAR", pposcar="PPOSCAR",
         else:
             # For primitive cell calculations
             sg = SpacegroupAnalyzer(structure=s).get_space_group_number()
-
+            # Check the c-axis for hexagonal phases.
             if 168 <= sg <= 194:
                 angles = reciprocal_lattice.angles
                 if angles[2] != 90:
                     raise ValueError("Axial in the hexagonal structure is not "
                                      "set properly.")
-
             kpts_shift = kpt_centering[sg]
 
     kpts = (tuple(kpt_mesh),)
@@ -411,15 +370,20 @@ def make_incar(task, functional, hfscreen=None, aexx=None,
 
     setting_file = loadfn(INCAR_SETTINGS_FILE)
 
-    if SupportedTask.hasattr(task) is False:
+    try:
+        task = SupportedTask.from_string(task)
+    except AttributeError:
         print("SupportedTask:", task, "is not a proper flag.")
-    if SupportedFunctional.hasattr(functional) is False:
+
+    try:
+        functional = SupportedFunctional.from_string(functional)
+    except AttributeError:
         print("SupportedFunctional:", functional, "is not a proper flag.")
 
     setting = {}
     for i in (task, functional):
         try:
-            setting.update(setting_file[i])
+            setting.update(setting_file[i.name])
         except IOError:
             print('default_INCAR_setting.yaml cannot be opened')
 
@@ -434,8 +398,7 @@ def make_incar(task, functional, hfscreen=None, aexx=None,
     else:
         setting["ENCUT"] = input("Input ENCUT:")
 
-    if SupportedFunctional.from_string(functional) in \
-            (SupportedFunctional.hse06, SupportedFunctional.hse06_pre_gga):
+    if functional is SupportedFunctional.hse06:
         if hfscreen:
             setting["HFSCREEN"] = hfscreen
         if aexx:
@@ -447,14 +410,13 @@ def make_incar(task, functional, hfscreen=None, aexx=None,
     incar = os.path.join(dirname, 'INCAR')
     ModIncar(setting).pretty_write_file(filename=incar)
 
-    if SupportedFunctional.hasattr(functional):
+    if functional is SupportedFunctional.hse06:
         incar_pre_gga = os.path.join(dirname, 'INCAR-pre_gga')
 
-        setting.pop("LHFCALC")
-        setting.pop("HFSCREEN")
-        setting.pop("PRECFOCK")
-        setting.pop("ALGO")
-        setting.pop("TIME")
+        # pop out hybrid related flags.
+        for i in incar_flags["hybrid"]:
+            if i in setting.keys():
+                setting.pop(i)
 
         ModIncar(setting).pretty_write_file(filename=incar_pre_gga)
 

@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+import filecmp
 import os
 import shutil
 import unittest
@@ -27,26 +28,10 @@ test_dir = os.path.join(os.path.dirname(__file__), "..", "..", "..",
 class ModIncarTest(unittest.TestCase):
 
     def test_ModIncar(self):
-        i = ModIncar.from_file("INCAR")
-        i.pretty_write_file("INCAR-test")
-
-
-class SpglibCellTest(unittest.TestCase):
-
-    def test(self):
-        structure = Structure.from_file("POSCAR")
-        self.cell = spglib_cell(structure)
-
-
-class Structure2SeekpathTest(unittest.TestCase):
-
-    def setUp(self):
-        self.structure = Structure.from_file("POSCAR")
-
-    def test_structure2seekpath(self):
-        print(structure2seekpath(self.structure))
-#        cell, positions, atomic_numbers = structure2seekpath(self.structure)
-#        print(cell, positions, atomic_numbers)
+        i = ModIncar.from_file("INCAR-ModIncar_before")
+        i.pretty_write_file("INCAR-ModIncar_actual")
+        self.assertTrue(
+            filecmp.cmp("INCAR-ModIncar_actual", "INCAR-ModIncar_expected"))
 
 
 class MakeBandKpointsTest(unittest.TestCase):

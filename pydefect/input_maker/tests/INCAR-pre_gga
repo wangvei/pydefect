@@ -1,3 +1,5 @@
+ALGO = D
+
 PREC = A
 LREAL = False
 LASPH = True

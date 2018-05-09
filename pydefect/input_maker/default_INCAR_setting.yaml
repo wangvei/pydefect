@@ -148,6 +148,3 @@ hse06:
   ALGO: D
   LWAVE: True
   TIME: 0.2
-
-hse06_pre_gga:
-  LWAVE: True

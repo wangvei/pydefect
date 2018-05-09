@@ -8,10 +8,11 @@ import unittest
 
 from pymatgen.core.structure import Structure
 
-from pydefect.input_maker.input_maker import normalized_random_3d_vector, \
-    random_vector, perturb_neighbors, get_int_from_string, \
-    parse_defect_name, print_already_exist, print_is_being_constructed, \
-    is_name_selected, select_defect_names, DefectMaker
+from pydefect.input_maker.input_maker import spglib_cell, structure2seekpath, \
+    normalized_random_3d_vector, random_vector, perturb_neighbors, \
+    get_int_from_string, parse_defect_name, print_already_exist, \
+    print_is_being_constructed, is_name_selected, select_defect_names, \
+    DefectMaker
 
 from pydefect.core.defect_entry import DefectEntry
 from pydefect.core.irreducible_site import IrreducibleSite
@@ -28,6 +29,25 @@ DEFAULT_POTCAR_DIR = "/home/common/default_POTCAR"
 
 test_dir = os.path.join(os.path.dirname(__file__), "..", "..", "..",
                         "test_files", "input_maker")
+
+# TODO: write better test
+class SpglibCellTest(unittest.TestCase):
+
+    def test(self):
+        structure = Structure.from_file("POSCAR")
+        self.cell = spglib_cell(structure)
+
+
+# TODO: write better test
+class Structure2SeekpathTest(unittest.TestCase):
+
+    def setUp(self):
+        self.structure = Structure.from_file("POSCAR")
+
+    def test_structure2seekpath(self):
+        print(structure2seekpath(self.structure))
+#        cell, positions, atomic_numbers = structure2seekpath(self.structure)
+#        print(cell, positions, atomic_numbers)
 
 
 class NormalizedRandom3dVectorTest(unittest.TestCase):
