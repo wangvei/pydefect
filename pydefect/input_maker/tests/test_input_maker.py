@@ -8,7 +8,8 @@ import unittest
 
 from pymatgen.core.structure import Structure
 
-from pydefect.input_maker.input_maker import spglib_cell, structure2seekpath, \
+from pydefect.input_maker.input_maker import structure_to_spglib_cell, \
+    spglib_cell_to_structure, find_primitive, structure2seekpath, \
     normalized_random_3d_vector, random_vector, perturb_neighbors, \
     get_int_from_string, parse_defect_name, print_already_exist, \
     print_is_being_constructed, is_name_selected, select_defect_names, \
@@ -30,24 +31,45 @@ DEFAULT_POTCAR_DIR = "/home/common/default_POTCAR"
 test_dir = os.path.join(os.path.dirname(__file__), "..", "..", "..",
                         "test_files", "input_maker")
 
+
 # TODO: write better test
-class SpglibCellTest(unittest.TestCase):
+class StructureToSpglibCellTest(unittest.TestCase):
 
     def test(self):
-        structure = Structure.from_file("POSCAR")
-        self.cell = spglib_cell(structure)
+        structure = Structure.from_file("BPOSCAR-MgO")
+        self.cell = structure_to_spglib_cell(structure)
+
+
+class SpglibCellToStructureTest(unittest.TestCase):
+    def setUp(self):
+        self.structure = Structure.from_file("BPOSCAR-MgO")
+        self.cell = structure_to_spglib_cell(self.structure)
+
+    def test(self):
+        s = spglib_cell_to_structure(self.cell)
+        self.assertTrue(s == self.structure)
+
+
+class FindPrimitiveTest(unittest.TestCase):
+    def test(self):
+        actual = find_primitive(Structure.from_file("BPOSCAR-MgO"))
+        print(actual)
+        expected = Structure.from_file("PPOSCAR-MgO")
+        print(expected)
+        self.assertTrue(actual == expected)
 
 
 # TODO: write better test
 class Structure2SeekpathTest(unittest.TestCase):
 
     def setUp(self):
-        self.structure = Structure.from_file("POSCAR")
+#        self.structure = Structure.from_file("PPOSCAR-YMnO3")
+        self.structure = Structure.from_file("PPOSCAR-YMnO3-bc_exchanged")
 
     def test_structure2seekpath(self):
-        print(structure2seekpath(self.structure))
-#        cell, positions, atomic_numbers = structure2seekpath(self.structure)
-#        print(cell, positions, atomic_numbers)
+#        structure2seekpath(self.structure)
+        res = structure2seekpath(self.structure)
+        print(res["primitive_lattice"])
 
 
 class NormalizedRandom3dVectorTest(unittest.TestCase):

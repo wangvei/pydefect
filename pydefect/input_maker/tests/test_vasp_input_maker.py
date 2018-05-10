@@ -7,9 +7,8 @@ import unittest
 
 from pymatgen.core.structure import Structure
 
-from pydefect.input_maker.vasp_input_maker import ModIncar, \
-    VaspDefectInputSetMaker, make_incar, make_kpoints, structure2seekpath, \
-    spglib_cell, make_band_kpoints
+from pydefect.input_maker.vasp_input_maker import ModIncar, make_band_kpoints, \
+    make_kpoints, make_incar, VaspDefectInputSetMaker
 from pydefect.core.irreducible_site import IrreducibleSite
 from pydefect.input_maker.defect_initial_setting import DefectInitialSetting
 
@@ -36,14 +35,32 @@ class ModIncarTest(unittest.TestCase):
 
 class MakeBandKpointsTest(unittest.TestCase):
 
-    def test_make_band_kpoints(self):
-        make_band_kpoints(ibzkpt="IBZKPT", num_split_kpoints=2)
+    def test_make_band_kpoints_mgo(self):
+        make_band_kpoints(ibzkpt="IBZKPT", poscar="PPOSCAR-MgO",
+                          pposcar="PPOSCAR-MgO", num_split_kpoints=2)
+        self.assertTrue(
+            filecmp.cmp("KPOINTS-0", "KPOINTS-make_band_kpoints_expected-0"))
+        self.assertTrue(
+            filecmp.cmp("KPOINTS-1", "KPOINTS-make_band_kpoints_expected-1"))
+
+        make_band_kpoints(ibzkpt="IBZKPT", poscar="PPOSCAR-YMnO3-bc_exchanged",
+                          pposcar="PPOSCAR-YMnO3", num_split_kpoints=1)
+
+#    def test_make_band_kpoints(self):
 
 
 class MakeKpointsTest(unittest.TestCase):
 
     def test_make_kpoints(self):
-        make_kpoints(task="defect")
+        make_kpoints(task="structure_opt", poscar="BPOSCAR-MgO",
+                     pposcar="PPOSCAR-MgO", num_split_kpoints=1)
+
+        make_kpoints(task="band", ibzkpt="IBZKPT", poscar="BPOSCAR-MgO",
+                     pposcar="PPOSCAR-MgO", num_split_kpoints=1)
+        self.assertTrue(
+            filecmp.cmp("KPOINTS", "KPOINTS-make_band_kpoints_expected"))
+
+#        make_kpoints(task="defect")
 
 
 class MakeIncarTest(unittest.TestCase):
