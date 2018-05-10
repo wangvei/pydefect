@@ -3,6 +3,7 @@ import argparse
 from collections import OrderedDict
 import copy
 from itertools import combinations
+import json
 import os
 import string
 
@@ -82,6 +83,13 @@ def make_vasp_inputs_from_mp(elements,
                     structure = Structure.from_str(material["cif"], "cif")
                     poscar = Poscar(structure)
                     poscar.write_file(os.path.join(dirname2, "POSCAR"))
+                    # dump json
+                    keys_to_get = ["energy_per_atom", "band_gap",
+                                   "total_magnetization"]
+                    d = {k: material[k] for k in keys_to_get}
+                    json_path = os.path.join(dirname2, "mp.json")
+                    with open(json_path, "w") as fw:
+                        json.dump(d, fw)
 
 
 class ChemPotDiag:
