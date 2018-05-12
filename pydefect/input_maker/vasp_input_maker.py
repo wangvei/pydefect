@@ -163,53 +163,6 @@ def make_potcar(dirname, elements, default_potcar_dir):
                 potcar.write(pot.read())
 
 
-@unique
-class SupportedTask(Enum):
-    """
-    Supported tasks in pydefect
-    """
-    structure_opt = auto()
-    band = auto()
-    dos = auto()
-    dielectric = auto()
-    dielectric_function = auto()
-    competing_phase = auto()
-    competing_phase_molecule = auto()
-    defect = auto()
-
-    def __str__(self):
-        return self.name
-
-    @staticmethod
-    def from_string(s):
-        for m in SupportedTask:
-            print(m.name)
-            if m.name == s:
-                return m
-        raise ValueError("Can't interpret supported task %s" % s)
-
-
-@unique
-class SupportedFunctional(Enum):
-    """
-    Supported functionals in pydefect
-    """
-    pbe = auto()
-    hse06 = auto()
-    pbesol = auto()
-    pbe_d3 = auto()
-
-    def __str__(self):
-        return self.name
-
-    @staticmethod
-    def from_string(s):
-        for m in SupportedFunctional:
-            if m.name == s:
-                return m
-        raise ValueError("Can't interpret supported functional %s" % s)
-
-
 def make_band_kpoints(ibzkpt, dirname='.', poscar="POSCAR", pposcar="PPOSCAR",
                       num_split_kpoints=1):
     """
@@ -271,9 +224,55 @@ def make_band_kpoints(ibzkpt, dirname='.', poscar="POSCAR", pposcar="PPOSCAR",
         kpoints.write_file(output_filename)
 
 
+@unique
+class SupportedTask(Enum):
+    """
+    Supported tasks in pydefect
+    """
+    structure_opt = auto()
+    band = auto()
+    dos = auto()
+    dielectric = auto()
+    dielectric_function = auto()
+    competing_phase = auto()
+    competing_phase_molecule = auto()
+    defect = auto()
+
+    def __str__(self):
+        return self.name
+
+    @staticmethod
+    def from_string(s):
+        for m in SupportedTask:
+            if m.name == s:
+                return m
+        raise ValueError("Can't interpret supported task %s" % s)
+
+
+@unique
+class SupportedFunctional(Enum):
+    """
+    Supported functionals in pydefect
+    """
+    pbe = auto()
+    hse06 = auto()
+    pbesol = auto()
+    pbe_d3 = auto()
+
+    def __str__(self):
+        return self.name
+
+    @staticmethod
+    def from_string(s):
+        for m in SupportedFunctional:
+            if m.name == s:
+                return m
+        raise ValueError("Can't interpret supported functional %s" % s)
+
+
 def make_kpoints(task, dirname='.', poscar="POSCAR", pposcar="PPOSCAR",
                  num_split_kpoints=1, ibzkpt="IBZKPT", is_metal=False,
-                 kpts_shift=None, kpts_density_opt=4, kpts_density_defect=1.5,
+                 kpts_shift=None, kpts_density_opt=3, kpts_density_defect=1.5,
                  multiplier_factor=2, multiplier_factor_metal=2):
     """
     Constructs a KPOINTS file based on default settings depending on the task.
@@ -285,7 +284,7 @@ def make_kpoints(task, dirname='.', poscar="POSCAR", pposcar="PPOSCAR",
                        a band structure calculation.
         num_split_kpoints (int): number of KPOINTS files used for a band
                                  structure calculation.
-        ibzkpt (str): Name of theIBZKPT-type file, which is used to set the
+        ibzkpt (str): Name of the IBZKPT-type file, which is used to set the
                       weighted k-points.
         is_metal (bool): If the system to be calculated is metal or not. This
                          has a meaning for the calculation of a competing phase
@@ -320,7 +319,7 @@ def make_kpoints(task, dirname='.', poscar="POSCAR", pposcar="PPOSCAR",
                       SupportedTask.dielectric,
                       SupportedTask.dielectric_function):
             kpt_mesh = \
-                [int(np.ceil(kpts_density_opt * r + multiplier_factor))
+                [np.ceil(kpts_density_opt * r) * multiplier_factor
                  for r in reciprocal_lattice.abc]
 
         elif task == SupportedTask.competing_phase_molecule:
@@ -331,7 +330,7 @@ def make_kpoints(task, dirname='.', poscar="POSCAR", pposcar="PPOSCAR",
 
     if kpts_shift is None:
         if task in (SupportedTask.structure_opt, SupportedTask.defect):
-            angles = reciprocal_lattice.angles
+            angles = s.lattice.angles
 
             if not kpts_shift:
                 kpts_shift = []
@@ -349,8 +348,8 @@ def make_kpoints(task, dirname='.', poscar="POSCAR", pposcar="PPOSCAR",
             sg = SpacegroupAnalyzer(structure=s).get_space_group_number()
             # Check the c-axis for hexagonal phases.
             if 168 <= sg <= 194:
-                angles = reciprocal_lattice.angles
-                if angles[2] != 90:
+                angles = s.lattice.angles
+                if angles[0] != 90 or angles[1] != 90:
                     raise ValueError("Axial in the hexagonal structure is not "
                                      "set properly.")
             kpts_shift = kpt_centering[sg]

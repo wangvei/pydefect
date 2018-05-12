@@ -52,13 +52,27 @@ class MakeBandKpointsTest(unittest.TestCase):
 class MakeKpointsTest(unittest.TestCase):
 
     def test_make_kpoints(self):
-        make_kpoints(task="structure_opt", poscar="BPOSCAR-MgO",
-                     pposcar="PPOSCAR-MgO", num_split_kpoints=1)
+        # make_kpoints(task="structure_opt", poscar="PPOSCAR-MgO")
+        # self.assertTrue(filecmp.cmp("KPOINTS",
+        #                             "KPOINTS-so_expected_MgO"))
+        # make_kpoints(task="structure_opt", poscar="PPOSCAR-YMnO3")
+        # self.assertTrue(filecmp.cmp("KPOINTS",
+        #                             "KPOINTS-so_expected_YMnO3"))
+        # make_kpoints(task="dos", poscar="PPOSCAR-YMnO3")
+        # self.assertTrue(filecmp.cmp("KPOINTS",
+        #                             "KPOINTS-dos_expected_YMnO3"))
+        #   make_kpoints(task="competing_phase", poscar="PPOSCAR-Ru",
+        #                is_metal=True)
+        #   self.assertTrue(filecmp.cmp("KPOINTS",
+        #                               "KPOINTS-cp_expected_Ru"))
+        make_kpoints(task="competing_phase_molecule", poscar="POSCAR-F2")
 
-        make_kpoints(task="band", ibzkpt="IBZKPT", poscar="BPOSCAR-MgO",
-                     pposcar="PPOSCAR-MgO", num_split_kpoints=1)
-        self.assertTrue(
-            filecmp.cmp("KPOINTS", "KPOINTS-make_band_kpoints_expected"))
+
+
+#       make_kpoints(task="band", ibzkpt="IBZKPT", poscar="BPOSCAR-MgO",
+#                    pposcar="PPOSCAR-MgO", num_split_kpoints=1)
+#       self.assertTrue(
+#           filecmp.cmp("KPOINTS", "KPOINTS-make_band_kpoints_expected"))
 
 #        make_kpoints(task="defect")
 
