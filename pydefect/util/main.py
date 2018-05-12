@@ -132,80 +132,82 @@ def main():
         "--make_kpoints", dest="make_kpoints", action="store_true",
         help="Make KPOINTS file based on the lattice constants.")
 
+    parser_vasp_defect_set.set_defaults(func=vasp_defect_set)
+
     # -- vasp_kpoints_maker ----------------------------------------------------
-    parser_vasp_kpoints = subparsers.add_parser(
+    parser_vasp_kpoints_maker = subparsers.add_parser(
         name="vasp_kpoints_maker",
         description="Tools for configuring vasp KPOINTS file depending on the "
                     "task",
         aliases=['vkm'])
 
-    parser_vasp_kpoints.add_argument(
-        "--task", "-t", dest="task", type=str,
+    parser_vasp_kpoints_maker.add_argument(
+        "--task", "-t", dest="task", type=str, required=True,
         choices=["structure_opt", "band", "dos", "dielectric",
                  "dielectric_function", "competing_phase",
                  "competing_phase_molecule", "defect"],
         help="Task.")
-    parser_vasp_kpoints.add_argument(
+    parser_vasp_kpoints_maker.add_argument(
         "-p", dest="poscar", type=str, default="POSCAR")
-    parser_vasp_kpoints.add_argument(
+    parser_vasp_kpoints_maker.add_argument(
         "-pp", dest="pposcar", type=str, default="PPOSCAR")
-    parser_vasp_kpoints.add_argument(
-        "--num_split_kpoints", dest="num_split_kpoints", type=int,
+    parser_vasp_kpoints_maker.add_argument(
+        "--num_split_kpoints", dest="num_split_kpoints", type=int, default=1,
         help="Number of the divided KPOINTS.")
-    parser_vasp_kpoints.add_argument(
-        "--is_metal", dest="is_metal", action="store_true",
+    parser_vasp_kpoints_maker.add_argument(
+        "--is_metal", dest="is_metal", action="store_true", default=False,
         help="Set if the system metal is metal, for which k-point density is "
              "increased.")
-    parser_vasp_kpoints.add_argument(
+    parser_vasp_kpoints_maker.add_argument(
         "--kpts_shift", dest="kpts_shift", default=None, nargs="+", type=int,
         help="Origin of the k-points.")
-    parser_vasp_kpoints.add_argument(
-        "--kpts_density_opt", dest="kpts_density_opt", type=float,
+    parser_vasp_kpoints_maker.add_argument(
+        "--kpts_density_opt", dest="kpts_density_opt", type=float, default=3,
         help="K-point density used for the structure optimization of systems "
              "with band gaps ")
-    parser_vasp_kpoints.add_argument(
+    parser_vasp_kpoints_maker.add_argument(
         "--kpts_density_defect", dest="kpts_density_defect", type=float,
+        default=1.5,
         help="K-point density used for the calculations of point defects.")
-    parser_vasp_kpoints.add_argument(
-        "--multiplier_factor", dest="multiplier_factor", type=float,
+    parser_vasp_kpoints_maker.add_argument(
+        "--multiplier_factor", dest="multiplier_factor", type=float, default=2,
         help="Multiplier_factor for the calculations of density of states, "
              "dielectric constants, and dielectric function.")
-    parser_vasp_kpoints.add_argument(
+    parser_vasp_kpoints_maker.add_argument(
         "--multiplier_factor_metal", dest="multiplier_factor_metal", type=float,
+        default=2,
         help="Multiplier factor the structure optimization of metallic systems")
 
-    parser_vasp_kpoints.set_defaults(func=vasp_kpoints)
+    parser_vasp_kpoints_maker.set_defaults(func=vasp_kpoints_maker)
 
     # -- vasp_incar_maker ----------------------------------------------------
-    parser_vasp_incar = subparsers.add_parser(
+    parser_vasp_incar_maker = subparsers.add_parser(
         name="vasp_incar_maker",
         description="Tools for configuring vasp INCAR file depending on the "
                     "task",
         aliases=['vim'])
 
-    parser_vasp_incar.add_argument(
-        "--task", "-t", dest="task", type=str,
+    parser_vasp_incar_maker.add_argument(
+        "--task", "-t", dest="task", type=str, required=True,
         choices=["structure_opt", "band", "dos", "dielectric",
                  "dielectric_function", "competing_phase",
                  "competing_phase_molecule", "defect"],
         help="Task.")
-    parser_vasp_incar.add_argument(
-        "--functional", "-f", dest="functional", type=str,
+    parser_vasp_incar_maker.add_argument(
+        "--functional", "-f", dest="functional", type=str, required=True,
         choices=["pbe", "hse06", "pbesol", "pbe_d3"],
         help="Functional.")
-    parser_vasp_incar.add_argument(
-        "--hfscreen", dest="hfscreen", default=0.208, type=float,
+    parser_vasp_incar_maker.add_argument(
+        "--hfscreen", dest="hfscreen", type=float,
         help="Screening distance for exchange interaction.")
-    parser_vasp_incar.add_argument(
-        "--aexx", dest="aexx", default=0.25, type=float,
+    parser_vasp_incar_maker.add_argument(
+        "--aexx", dest="aexx", type=float,
         help="Mixing parameter for exchange interaction.")
-    parser_vasp_incar.add_argument(
+    parser_vasp_incar_maker.add_argument(
         "--is_magnetization", dest="is_magnetization", action="store_true",
         help="Set if the system metal is spin polarized.")
 
-
-
-    parser_vasp_incar.set_defaults(func=vasp_incar)
+    parser_vasp_incar_maker.set_defaults(func=vasp_incar_maker)
 
     # -- recommend_supercell ---------------------------------------------------
     parser_recommend_supercell = subparsers.add_parser(
@@ -401,7 +403,6 @@ def main():
                                     help="",
                                     action="store_true")
 
-
     # input
     parser_chempotdiag.add_argument("-e", "--energy", dest="energy_file",
                                     type=str, default=None,
@@ -505,21 +506,42 @@ def initial_setting(args):
         defect_setting.to()
 
 
-def vasp_input(args):
-    if args.make_incar:
-        make_incar(defect_in=args.defect_in)
-    elif args.make_kpoints:
-        make_kpoints(poscar=args.dposcar)
-    else:
-        defect_initial_setting = DefectInitialSetting. \
-            from_defect_in(poscar=args.dposcar, defect_in_file=args.defect_in)
+def vasp_defect_set(args):
+    defect_initial_setting = DefectInitialSetting. \
+        from_defect_in(poscar=args.dposcar, defect_in_file=args.defect_in)
 
-        VaspDefectInputSetMaker(defect_initial_setting=defect_initial_setting,
-                                filtering_words=args.filtering,
-                                particular_defects=args.add,
-                                incar=args.incar,
-                                kpoints=args.kpoints,
-                                force_overwrite=args.force_overwrite)
+    VaspDefectInputSetMaker(defect_initial_setting=defect_initial_setting,
+                            filtering_words=args.filtering,
+                            particular_defects=args.add,
+                            incar=args.incar,
+                            kpoints=args.kpoints,
+                            force_overwrite=args.force_overwrite)
+
+
+def vasp_kpoints_maker(args):
+
+    make_kpoints(task=args.task,
+                 poscar=args.poscar,
+                 pposcar=args.pposcar,
+                 num_split_kpoints=args.num_split_kpoints,
+                 is_metal=args.is_metal,
+                 kpts_shift=args.kpts_shift,
+                 kpts_density_opt=args.kpts_density_opt,
+                 kpts_density_defect=args.kpts_density_defect,
+                 multiplier_factor=args.multiplier_factor,
+                 multiplier_factor_metal=args.multiplier_factor_metal)
+
+
+def vasp_incar_maker(args):
+
+    make_incar(task=args.task,
+               functional=args.functional,
+               hfscreen=args.hfscreen,
+               aexx=args.aexx,
+               is_magnetization=args.is_magnetization)
+#               defect_in=args.defect_in,
+#               poscar=args.poscar,
+#               my_incar_setting=args.my_incar_setting)
 
 
 def recommend_supercell(args):
