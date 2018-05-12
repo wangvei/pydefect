@@ -8,7 +8,7 @@ import unittest
 
 from pymatgen.core.structure import Structure
 
-from pydefect.input_maker.input_maker import structure_to_spglib_cell, \
+from pydefect.input_maker.defect_set_maker import structure_to_spglib_cell, \
     spglib_cell_to_structure, find_primitive, structure2seekpath, \
     normalized_random_3d_vector, random_vector, perturb_neighbors, \
     get_int_from_string, parse_defect_name, print_already_exist, \

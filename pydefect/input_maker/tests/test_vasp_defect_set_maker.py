@@ -7,7 +7,7 @@ import unittest
 
 from pymatgen.core.structure import Structure
 
-from pydefect.input_maker.vasp_input_maker import ModIncar, make_band_kpoints, \
+from pydefect.input_maker.vasp_defect_set_maker import ModIncar, make_band_kpoints, \
     make_kpoints, make_incar, VaspDefectInputSetMaker
 from pydefect.core.irreducible_site import IrreducibleSite
 from pydefect.input_maker.defect_initial_setting import DefectInitialSetting
