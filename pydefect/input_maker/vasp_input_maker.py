@@ -23,13 +23,13 @@ from pydefect.core.defect_entry \
 from pydefect.core.supercell_dft_results import defect_center
 from pydefect.input_maker.defect_initial_setting \
     import DefectInitialSetting, element_set
-from pydefect.input_maker.kpt_centering import kpt_centering
+from pydefect.database.kpt_centering import kpt_centering
 from pydefect.input_maker.input_maker import \
     structure2seekpath, DefectMaker, DefectInputSetMaker, \
     print_is_being_removed, print_already_exist, print_is_being_constructed, \
     perturb_neighbors
 
-from pydefect.core.atom import symbols_to_atom
+from pydefect.database.atom import symbols_to_atom
 
 __author__ = "Yu Kumagai"
 __copyright__ = "Copyright 2017, Oba group"

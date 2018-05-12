@@ -10,7 +10,7 @@ from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
 from monty.json import MontyEncoder
 from monty.serialization import loadfn
 
-import pydefect.core.atom as atom
+import pydefect.database.atom as atom
 from pydefect.core.irreducible_site import IrreducibleSite
 
 __author__ = "Yu Kumagai"

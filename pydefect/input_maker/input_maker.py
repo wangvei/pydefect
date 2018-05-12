@@ -9,7 +9,7 @@ from pymatgen.core.periodic_table import Element
 from pymatgen.core.structure import Structure
 
 from pydefect.core.defect_entry import DefectEntry
-from pydefect.core.atom import symbols_to_atom
+from pydefect.database.atom import symbols_to_atom
 
 __author__ = "Yu Kumagai"
 __copyright__ = "Copyright 2017, Oba group"
