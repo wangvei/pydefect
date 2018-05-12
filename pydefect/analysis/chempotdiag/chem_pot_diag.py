@@ -2,9 +2,13 @@ from __future__ import print_function
 import argparse
 from collections import OrderedDict
 import copy
+from glob import glob
 from itertools import combinations
+import json
 import os
+import shutil
 import string
+import sys
 
 from pymatgen import MPRester
 from pymatgen.core.structure import Structure
@@ -21,13 +25,18 @@ from pydefect.analysis.chempotdiag.compound \
 from pydefect.analysis.chempotdiag.vertex \
     import Vertex, VertexOnBoundary, VerticesList
 
+molecule_directory = os.path.dirname(__file__) + "/molecules"
+molecule_file_names = glob(molecule_directory + "/*/")
+molecules = [f.split("/")[-2] for f in molecule_file_names]
+
 
 # TODO: Need to write test
 def make_vasp_inputs_from_mp(elements,
                              dir_path=os.getcwd(),
                              criterion_e_above_hull=float("inf"),
                              api_key=None,
-                             gets_poly=False):
+                             gets_poly=False,
+                             adds_molecule=True):
     """
 
     Args:
@@ -36,10 +45,12 @@ def make_vasp_inputs_from_mp(elements,
         criterion_e_above_hull(float):
         api_key(str):
         gets_poly(bool):
+        adds_molecule(bool):
 
     Returns:
 
     """
+    molecule_dir_name = "molecule_pydefect"
     if not os.path.isdir(dir_path):
         raise NotADirectoryError(dir_path + " is not directory.")
     mp_rester = MPRester(api_key)
@@ -49,6 +60,22 @@ def make_vasp_inputs_from_mp(elements,
     if not os.path.exists(chem_sys_dir):
         os.mkdir(os.path.join(dir_path, chem_sys))
 
+    # get molecules
+    if adds_molecule:
+        molecules_elements = [Composition(m) for m in molecules]
+        for me, file_name in zip(molecules_elements, molecule_file_names):
+            if set([str(e) for e in me.elements]) < set(elements):
+                comp_name = str(me)
+                name_dict = {"N1 H3": "NH3", "N1 O2": "NO2"}
+                if comp_name in name_dict.keys():
+                    comp_name = name_dict[comp_name]
+                dirname = f"{comp_name}{molecule_dir_name}"
+                dirname2 = os.path.join(chem_sys_dir, dirname)
+                if not os.path.exists(dirname2):
+                    os.mkdir(dirname2)
+                    shutil.copyfile(file_name+"/POSCAR", dirname2+"/POSCAR")
+
+    # get from mp
     for i in range(len(elements)):
         for els in combinations(elements, i+1):
             els_str = "-".join(els)
@@ -72,8 +99,18 @@ def make_vasp_inputs_from_mp(elements,
                         else:
                             break
                 materials_to_output = comp_stable.values()
-
             for material in materials_to_output:
+                # remove solids when directroy of molecules exist
+                length = len(molecule_dir_name)
+                exist_molecules_reduced_formulas = \
+                    [Composition(path.split("/")[-1][:-length]).reduced_formula
+                     for path in glob(chem_sys_dir + f"/*{molecule_dir_name}")]
+                if adds_molecule:
+                    reduced_formula = \
+                        Composition(material["full_formula"]).reduced_formula
+                    if reduced_formula in exist_molecules_reduced_formulas:
+                        break
+                # make directory and files
                 mp_id = material["material_id"]
                 dirname = material["full_formula"] + "_" + mp_id
                 dirname2 = os.path.join(chem_sys_dir, dirname)
@@ -82,6 +119,13 @@ def make_vasp_inputs_from_mp(elements,
                     structure = Structure.from_str(material["cif"], "cif")
                     poscar = Poscar(structure)
                     poscar.write_file(os.path.join(dirname2, "POSCAR"))
+                    # dump json
+                    keys_to_get = ["energy_per_atom", "band_gap",
+                                   "total_magnetization"]
+                    d = {k: material[k] for k in keys_to_get}
+                    json_path = os.path.join(dirname2, "mp.json")
+                    with open(json_path, "w") as fw:
+                        json.dump(d, fw)
 
 
 class ChemPotDiag:
