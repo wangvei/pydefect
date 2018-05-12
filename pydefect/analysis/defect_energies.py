@@ -10,7 +10,7 @@ from itertools import combinations
 
 from pydefect.core.supercell_dft_results import SupercellDftResults
 from pydefect.core.unitcell_dft_results import UnitcellDftResults
-from pydefect.input_maker.input_maker import is_name_selected
+from pydefect.input_maker.defect_set_maker import is_name_selected
 
 
 Defect = namedtuple("Defect", ("defect_entry", "dft_results", "correction"))

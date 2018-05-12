@@ -9,7 +9,7 @@ from glob import glob
 from pydefect.analysis.defect_energies import DefectEnergies, Defect
 from pydefect.input_maker.defect_initial_setting \
     import print_dopant_info, DefectInitialSetting
-from pydefect.input_maker.vasp_input_maker \
+from pydefect.input_maker.vasp_defect_set_maker \
     import make_incar, make_kpoints, VaspDefectInputSetMaker
 from pydefect.input_maker.recommend_supercell_ase_cythonized. \
     ase_generation_supercell import recommend_supercell_ase

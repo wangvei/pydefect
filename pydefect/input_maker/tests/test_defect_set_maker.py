@@ -8,12 +8,13 @@ import unittest
 
 from pymatgen.core.structure import Structure
 
-from pydefect.input_maker.defect_set_maker import structure_to_spglib_cell, \
-    spglib_cell_to_structure, find_primitive, structure2seekpath, \
-    normalized_random_3d_vector, random_vector, perturb_neighbors, \
-    get_int_from_string, parse_defect_name, print_already_exist, \
+from pydefect.input_maker.defect_set_maker import get_int_from_string, parse_defect_name, print_already_exist, \
     print_is_being_constructed, is_name_selected, select_defect_names, \
     DefectMaker
+from pydefect.util.math import normalized_random_3d_vector, random_vector
+from pydefect.util.structure import structure_to_spglib_cell, \
+    spglib_cell_to_structure, find_primitive, structure2seekpath, \
+    perturb_neighbors
 
 from pydefect.core.defect_entry import DefectEntry
 from pydefect.core.irreducible_site import IrreducibleSite
