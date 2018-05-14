@@ -1,14 +1,12 @@
 # -*- coding: utf-8 -*-
 
-import filecmp
 import os
 import shutil
 import unittest
 
 from pymatgen.core.structure import Structure
 
-from pydefect.input_maker.vasp_defect_set_maker import ModIncar, make_band_kpoints, \
-    make_kpoints, make_incar, VaspDefectInputSetMaker
+from pydefect.input_maker.vasp_defect_set_maker import VaspDefectInputSetMaker
 from pydefect.core.irreducible_site import IrreducibleSite
 from pydefect.input_maker.defect_initial_setting import DefectInitialSetting
 
@@ -22,70 +20,6 @@ __date__ = "December 4, 2017"
 
 test_dir = os.path.join(os.path.dirname(__file__), "..", "..", "..",
                         "test_files", "input_maker")
-
-
-class ModIncarTest(unittest.TestCase):
-
-    def test_ModIncar(self):
-        i = ModIncar.from_file("INCAR-ModIncar_before")
-        i.pretty_write_file("INCAR-ModIncar_actual")
-        self.assertTrue(
-            filecmp.cmp("INCAR-ModIncar_actual", "INCAR-ModIncar_expected"))
-
-
-class MakeBandKpointsTest(unittest.TestCase):
-
-    def test_make_band_kpoints_mgo(self):
-        make_band_kpoints(ibzkpt="IBZKPT", poscar="PPOSCAR-MgO",
-                          pposcar="PPOSCAR-MgO", num_split_kpoints=2)
-        self.assertTrue(
-            filecmp.cmp("KPOINTS-0", "KPOINTS-make_band_kpoints_expected-0"))
-        self.assertTrue(
-            filecmp.cmp("KPOINTS-1", "KPOINTS-make_band_kpoints_expected-1"))
-
-        make_band_kpoints(ibzkpt="IBZKPT", poscar="PPOSCAR-YMnO3-bc_exchanged",
-                          pposcar="PPOSCAR-YMnO3", num_split_kpoints=1)
-
-#    def test_make_band_kpoints(self):
-
-
-class MakeKpointsTest(unittest.TestCase):
-
-    def test_make_kpoints(self):
-        # make_kpoints(task="structure_opt", poscar="PPOSCAR-MgO")
-        # self.assertTrue(filecmp.cmp("KPOINTS",
-        #                             "KPOINTS-so_expected_MgO"))
-        # make_kpoints(task="structure_opt", poscar="PPOSCAR-YMnO3")
-        # self.assertTrue(filecmp.cmp("KPOINTS",
-        #                             "KPOINTS-so_expected_YMnO3"))
-        # make_kpoints(task="dos", poscar="PPOSCAR-YMnO3")
-        # self.assertTrue(filecmp.cmp("KPOINTS",
-        #                             "KPOINTS-dos_expected_YMnO3"))
-        #   make_kpoints(task="competing_phase", poscar="PPOSCAR-Ru",
-        #                is_metal=True)
-        #   self.assertTrue(filecmp.cmp("KPOINTS",
-        #                               "KPOINTS-cp_expected_Ru"))
-        make_kpoints(task="competing_phase_molecule", poscar="POSCAR-F2")
-
-
-
-#       make_kpoints(task="band", ibzkpt="IBZKPT", poscar="BPOSCAR-MgO",
-#                    pposcar="PPOSCAR-MgO", num_split_kpoints=1)
-#       self.assertTrue(
-#           filecmp.cmp("KPOINTS", "KPOINTS-make_band_kpoints_expected"))
-
-#        make_kpoints(task="defect")
-
-
-class MakeIncarTest(unittest.TestCase):
-
-    def test_make_incar(self):
-        make_incar(task="structure_opt", functional="hse06",
-                   defect_in="defect.in", hfscreen=0.2, aexx=0.3,
-                   is_magnetization=True,
-                   my_incar_setting="my_INCAR_setting.yaml")
-#        make_incar(task="defect", functional="hse06")
-
 
 class VaspDefectInputSetMakerTest(unittest.TestCase):
 

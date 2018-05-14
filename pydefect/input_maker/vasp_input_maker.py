@@ -5,6 +5,7 @@ from copy import deepcopy
 from enum import Enum, auto, unique
 from math import ceil
 import numpy as np
+import os
 
 import re
 import ruamel.yaml as yaml
@@ -31,6 +32,7 @@ __email__ = "yuuukuma@gmail.com"
 __status__ = "Development"
 __date__ = "December 4, 2017"
 
+SETTINGS_FILE = os.path.join(os.path.expanduser("~"), ".pydefect.yaml")
 MODULE_DIR = os.path.dirname(os.path.abspath(__file__))
 INCAR_SETTINGS_FILE = os.path.join(MODULE_DIR, "default_INCAR_setting.yaml")
 DEFAULT_INCAR = os.path.join(MODULE_DIR, "default_INCAR")
