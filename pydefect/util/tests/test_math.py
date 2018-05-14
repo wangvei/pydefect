@@ -23,7 +23,7 @@ class NormalizedRandom3dVectorTest(unittest.TestCase):
     def setUp(self):
         self.v = normalized_random_3d_vector()
 
-    def test_norm(self):
+    def test(self):
         print("normalized_random_3d_vector: ", self.v)
         print("norm: ", np.linalg.norm(self.v))
         self.assertAlmostEqual(np.linalg.norm(self.v), 1.0)
@@ -36,7 +36,7 @@ class RandomVectorTest(unittest.TestCase):
         normalized_v = normalized_random_3d_vector()
         self.v = random_vector(normalized_v, self.distance)
 
-    def test_norm(self):
+    def test(self):
         print("random_3d_vector: ", self.v)
         print("distance: ", self.distance)
         print("norm: ", np.linalg.norm(self.v))

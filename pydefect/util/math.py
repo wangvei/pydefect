@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 import numpy as np
 
@@ -17,8 +16,8 @@ def normalized_random_3d_vector():
     stackoverflow.com/questions/5408276/python-uniform-spherical-distribution
     """
     phi = np.random.uniform(0, np.pi * 2)
-    costheta = np.random.uniform(-1, 1)
-    theta = np.arccos(costheta)
+    cos_theta = np.random.uniform(-1, 1)
+    theta = np.arccos(cos_theta)
     x = np.sin(theta) * np.cos(phi)
     y = np.sin(theta) * np.sin(phi)
     z = np.cos(theta)
