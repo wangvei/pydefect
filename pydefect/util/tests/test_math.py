@@ -1,9 +1,8 @@
-#!/usr/bin/env python
 # -*- coding: utf-8 -*-
+import numpy as np
 import os
 import unittest
 
-import numpy as np
 from pydefect.util.math import normalized_random_3d_vector, random_vector
 
 __author__ = "Yu Kumagai"
