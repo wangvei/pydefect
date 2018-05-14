@@ -14,8 +14,9 @@ from pydefect.input_maker.vasp_defect_set_maker \
 from pydefect.input_maker.recommend_supercell_ase_cythonized. \
     ase_generation_supercell import recommend_supercell_ase
 from pydefect.core.defect_entry import DefectEntry
-from pydefect.core.supercell_dft_results import SupercellDftResults, \
-    check_vasp_output, vasp_convergence_ionic, vasp_convergence_electronic
+from pydefect.core.supercell_dft_results import SupercellDftResults
+from pydefect.util.vasp_process_analyzer import check_vasp_output, \
+    vasp_convergence_ionic, vasp_convergence_electronic
 from pydefect.core.unitcell_dft_results import UnitcellDftResults
 from pydefect.core.correction import Ewald, Correction
 from pydefect.analysis.chempotdiag.chem_pot_diag \
