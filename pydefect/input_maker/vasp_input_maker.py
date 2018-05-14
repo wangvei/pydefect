@@ -18,11 +18,11 @@ from pymatgen.core.structure import Structure
 from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
 from pymatgen.util.io_utils import clean_lines
 
-from pydefect.input_maker.defect_initial_setting \
-    import DefectInitialSetting, element_set
+from pydefect.input_maker.defect_initial_setting import DefectInitialSetting, \
+    element_set
 from pydefect.database.kpt_centering import kpt_centering
-
 from pydefect.database.atom import symbols_to_atom
+from pydefect.util.structure import structure_to_seekpath, find_hpkot_primitive
 
 __author__ = "Yu Kumagai"
 __copyright__ = "Copyright 2017, Oba group"
@@ -155,7 +155,12 @@ def make_potcar(dirname, elements, default_potcar_dir):
                 potcar.write(pot.read())
 
 
-def make_band_kpoints(ibzkpt, dirname='.', poscar="POSCAR", pposcar="PPOSCAR",
+def make_hpkot_primitive_poscar(poscar="POSCAR", pposcar="PPOSCAR"):
+    s = Structure.from_file(os.path.join(poscar))
+    primitive_structure = find_hpkot_primitive(s)
+    primitive_structure.to(filename=pposcar)
+
+def make_band_kpoints(ibzkpt, dirname='.', poscar="POSCAR",
                       num_split_kpoints=1):
     """
     Write the KPOINTS file for the band structure calculation.
@@ -164,15 +169,13 @@ def make_band_kpoints(ibzkpt, dirname='.', poscar="POSCAR", pposcar="PPOSCAR",
                       weighted k-points.
         dirname (str): Director name at which INCAR is written.
         poscar (str): input POSCAR-type file name
-        pposcar (str): output POSCAR-type file name for primitive cell used for
-                       a band structure calculation.
         num_split_kpoints (int): number of KPOINTS files used for a band
                                  structure calculation.
     """
 
     s = Structure.from_file(os.path.join(poscar))
 
-    seekpath_full_info = structure2seekpath(s)
+    seekpath_full_info = structure_to_seekpath(s)
 
     # primitive structure
     lattice = seekpath_full_info["primitive_lattice"]
@@ -180,8 +183,10 @@ def make_band_kpoints(ibzkpt, dirname='.', poscar="POSCAR", pposcar="PPOSCAR",
     species = [symbols_to_atom[i] for i in element_types]
     positions = seekpath_full_info["primitive_positions"]
     primitive = Structure(lattice, species, positions)
-    primitive.to(filename=pposcar)
+
     # It would be great if sg is obtained from seekpath.
+    # Note: Parameters used for the symmetry search are different between
+    #       seekpath and pymatgen.
     sg = SpacegroupAnalyzer(structure=primitive).get_space_group_number()
 
     # k-path
@@ -262,9 +267,9 @@ class SupportedFunctional(Enum):
         raise ValueError("Can't interpret supported functional %s" % s)
 
 
-def make_kpoints(task, dirname='.', poscar="POSCAR", pposcar="PPOSCAR",
-                 num_split_kpoints=1, ibzkpt="IBZKPT", is_metal=False,
-                 kpts_shift=None, kpts_density_opt=3, kpts_density_defect=1.5,
+def make_kpoints(task, dirname='.', poscar="POSCAR", num_split_kpoints=1,
+                 ibzkpt="IBZKPT", is_metal=False, kpts_shift=None,
+                 kpts_density_opt=3, kpts_density_defect=1.5,
                  multiplier_factor=2, multiplier_factor_metal=2):
     """
     Constructs a KPOINTS file based on default settings depending on the task.
@@ -272,8 +277,6 @@ def make_kpoints(task, dirname='.', poscar="POSCAR", pposcar="PPOSCAR",
         task (SupportedTask Enum):
         dirname (str): Director name at which INCAR is written.
         poscar (str): input POSCAR-type file name
-        pposcar (str): output POSCAR-type file name for primitive cell used for
-                       a band structure calculation.
         num_split_kpoints (int): number of KPOINTS files used for a band
                                  structure calculation.
         ibzkpt (str): Name of the IBZKPT-type file, which is used to set the
@@ -294,28 +297,31 @@ def make_kpoints(task, dirname='.', poscar="POSCAR", pposcar="PPOSCAR",
     reciprocal_lattice = s.lattice.reciprocal_lattice
 
     task = SupportedTask.from_string(task)
+    # band
     if task == SupportedTask.band:
-        make_band_kpoints(ibzkpt, dirname, poscar, pposcar, num_split_kpoints)
+        make_band_kpoints(ibzkpt, dirname, poscar, num_split_kpoints)
         return True
-
+    # defect
     elif task == SupportedTask.defect:
         kpt_mesh = [int(np.ceil(kpts_density_defect * r))
                     for r in reciprocal_lattice.abc]
     else:
+        # metallic competing phase
         if task == SupportedTask.competing_phase and is_metal is True:
             kpt_mesh = \
                 [int(np.ceil(kpts_density_opt * r * multiplier_factor_metal))
                  for r in reciprocal_lattice.abc]
-
+        # dos, dielectric const, dielectric function
         elif task in (SupportedTask.dos,
                       SupportedTask.dielectric,
                       SupportedTask.dielectric_function):
             kpt_mesh = \
-                [np.ceil(kpts_density_opt * r) * multiplier_factor
+                [int(np.ceil(kpts_density_opt * r) * multiplier_factor)
                  for r in reciprocal_lattice.abc]
-
+        # molecule
         elif task == SupportedTask.competing_phase_molecule:
             kpt_mesh = [1, 1, 1]
+        # insulating competing phase
         else:
             kpt_mesh = [int(np.ceil(kpts_density_opt * r))
                         for r in reciprocal_lattice.abc]

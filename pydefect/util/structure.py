@@ -39,7 +39,7 @@ def spglib_cell_to_structure(cell):
     return Structure(cell[0], species, cell[1])
 
 
-def find_primitive(structure):
+def find_spglib_standard_primitive(structure):
     """
     Returns a primitive unit cell.
     Args:
@@ -48,6 +48,23 @@ def find_primitive(structure):
     import spglib
     cell = structure_to_spglib_cell(structure)
     return spglib_cell_to_structure(spglib.find_primitive(cell))
+
+
+def find_hpkot_primitive(structure):
+    """
+    Returns a hpkot primitive unit cell.
+    Args:
+        structure (Structure): Pymatgen Structure class object
+    """
+    import seekpath
+    cell = structure_to_spglib_cell(structure)
+    res = seekpath.get_explicit_k_path(cell,
+                                       recipe='hpkot',
+                                       threshold=1.e-7,
+                                       symprec=1e-05,
+                                       angle_tolerance=-1.0)
+
+    return seekpath_to_hpkot_structure(res)
 
 
 def structure_to_seekpath(structure, time_reversal=True, ref_distance=0.025):
@@ -71,14 +88,14 @@ def structure_to_seekpath(structure, time_reversal=True, ref_distance=0.025):
 
     # If numpy.allclose is too strict in pymatgen.core.lattice __eq__,
     # make almost_equal
-    if structure.lattice == seekpath_to_structure(res).lattice:
+    if structure.lattice == seekpath_to_hpkot_structure(res).lattice:
         return res
     else:
         raise NotStandardizedPrimitiveError(
             "The given structure is not standardized primitive cell.")
 
 
-def seekpath_to_structure(res):
+def seekpath_to_hpkot_structure(res):
     """
     Returns a pymatgen Structure class object from seekpath res dictionary.
     Args:

@@ -5,8 +5,8 @@ import os
 import unittest
 
 from pydefect.util.structure import structure_to_spglib_cell, \
-    spglib_cell_to_structure, find_primitive, structure_to_seekpath, \
-    perturb_neighbors, NotStandardizedPrimitiveError
+    spglib_cell_to_structure, find_spglib_standard_primitive, \
+    structure_to_seekpath, perturb_neighbors, NotStandardizedPrimitiveError
 from pymatgen import Structure
 
 __author__ = "Yu Kumagai"
