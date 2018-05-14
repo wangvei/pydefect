@@ -53,21 +53,30 @@ class MakeBandKpointsTest(unittest.TestCase):
 
 class MakeKpointsTest(unittest.TestCase):
 
+    def test_structure_opt1(self):
+        make_kpoints(task="structure_opt", poscar="PPOSCAR-MgO")
+        self.assertTrue(filecmp.cmp("KPOINTS-so_expected_MgO", "KPOINTS"))
+
+    def test_structure_opt2(self):
+        make_kpoints(task="structure_opt", poscar="PPOSCAR-YMnO3")
+        self.assertTrue(filecmp.cmp("KPOINTS-so_expected_YMnO3", "KPOINTS"))
+
     def test_band(self):
         make_kpoints(task="band", poscar="PPOSCAR-YMnO3-hpkot")
         self.assertTrue(filecmp.cmp("KPOINTS-make_band-YMnO3", "KPOINTS"))
 
-    def test_structure_optimization1(self):
-        make_kpoints(task="structure_opt", poscar="PPOSCAR-MgO")
-        self.assertTrue(filecmp.cmp("KPOINTS-so_expected_MgO", "KPOINTS"))
-
-    def test_structure_optimization2(self):
-        make_kpoints(task="structure_opt", poscar="PPOSCAR-YMnO3")
-        self.assertTrue(filecmp.cmp("KPOINTS-so_expected_YMnO3", "KPOINTS"))
-
     def test_dos(self):
         make_kpoints(task="dos", poscar="PPOSCAR-YMnO3")
         self.assertTrue(filecmp.cmp("KPOINTS-dos_expected_YMnO3", "KPOINTS"))
+
+    def test_dielectric(self):
+        make_kpoints(task="dielectric", poscar="PPOSCAR-YMnO3-hpkot")
+        self.assertTrue(filecmp.cmp("KPOINTS-dielectric-YMnO3", "KPOINTS"))
+
+    def test_dielectric_function(self):
+        make_kpoints(task="dielectric_function", poscar="PPOSCAR-YMnO3-hpkot")
+        self.assertTrue(filecmp.cmp("KPOINTS-dielectric_function-YMnO3",
+                                    "KPOINTS"))
 
     def test_competing_phase_metal(self):
         make_kpoints(task="competing_phase", poscar="PPOSCAR-Ru", is_metal=True)
@@ -80,9 +89,10 @@ class MakeKpointsTest(unittest.TestCase):
 
 class MakeIncarTest(unittest.TestCase):
 
-    def test_make_incar(self):
+    def test_structure_opt(self):
         make_incar(task="structure_opt", functional="hse06",
                    defect_in="defect.in", hfscreen=0.2, aexx=0.3,
                    is_magnetization=True,
                    my_incar_setting="my_INCAR_setting.yaml")
+
 

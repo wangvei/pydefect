@@ -160,6 +160,7 @@ def make_hpkot_primitive_poscar(poscar="POSCAR", pposcar="PPOSCAR"):
     primitive_structure = find_hpkot_primitive(s)
     primitive_structure.to(filename=pposcar)
 
+
 def make_band_kpoints(ibzkpt, dirname='.', poscar="POSCAR",
                       num_split_kpoints=1):
     """

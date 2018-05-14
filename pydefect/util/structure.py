@@ -22,7 +22,7 @@ def structure_to_spglib_cell(structure):
     Args:
         structure (Structure): Pymatgen Structure class object
     """
-    lattice = structure.lattice.lll_matrix.tolist()
+    lattice = list(structure.lattice.matrix)
     positions = structure.frac_coords.tolist()
     atomic_numbers = [i.specie.number for i in structure.sites]
     return lattice, positions, atomic_numbers
@@ -60,9 +60,9 @@ def find_hpkot_primitive(structure):
     cell = structure_to_spglib_cell(structure)
     res = seekpath.get_explicit_k_path(cell,
                                        recipe='hpkot',
-                                       threshold=1.e-7,
-                                       symprec=1e-05,
-                                       angle_tolerance=-1.0)
+                                       threshold=1.e-2,
+                                       symprec=1e-02,
+                                       angle_tolerance=-2.0)
 
     return seekpath_to_hpkot_structure(res)
 
@@ -82,9 +82,9 @@ def structure_to_seekpath(structure, time_reversal=True, ref_distance=0.025):
                                        with_time_reversal=time_reversal,
                                        reference_distance=ref_distance,
                                        recipe='hpkot',
-                                       threshold=1.e-7,
-                                       symprec=1e-05,
-                                       angle_tolerance=-1.0)
+                                       threshold=1.e-2,
+                                       symprec=1e-02,
+                                       angle_tolerance=-2.0)
 
     # If numpy.allclose is too strict in pymatgen.core.lattice __eq__,
     # make almost_equal
