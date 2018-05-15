@@ -597,8 +597,6 @@ def vasp_potcar_maker(args):
     elif args.poscar:
         elements = Structure.from_file(args.poscar).symbol_set
         make_potcar(args.path, elements)
-    else:
-        print("Element names or POSCAR name is required.")
 
 
 def recommend_supercell(args):
