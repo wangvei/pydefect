@@ -230,10 +230,11 @@ class Gas(Enum):
     def __init__(self, formula):
         self._formula = "%s" % formula
 
+        dirname = os.path.dirname(__file__) + "/molecules/" + formula
+
         # Read property.json
         try:
-            path = os.path.dirname(__file__) + "/molecules/" + \
-                   formula + "/property.json"
+            path = dirname + "/property.json"
             with open(path, "r") as fr:
                 self._properties = json.load(fr)
         except FileNotFoundError:
@@ -242,8 +243,7 @@ class Gas(Enum):
 
         # Read data of thermodynamics function
         try:
-            path = os.path.dirname(__file__) + "/molecules/" + \
-                   formula + "/shomate_nist.dat"
+            path = dirname + "/shomate_nist.dat"
             # TODO: Implement flexibly with abstract class
             self._thermodynamics_function = \
                 ShomateThermodynamicsFunction.from_nist_table(path)
