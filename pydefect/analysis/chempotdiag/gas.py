@@ -279,7 +279,3 @@ class Gas(Enum):
 
         """
         return self._thermodynamics_function.standard_entropy(temperature)
-
-
-
-
