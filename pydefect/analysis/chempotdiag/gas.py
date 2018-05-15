@@ -4,9 +4,7 @@ import json
 import math
 import os
 import re
-import sys
 
-from monty.re import regrep
 from pymatgen.core.composition import Composition
 
 """
