@@ -1,26 +1,27 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+from glob import glob
 import os
 import warnings
-
-from glob import glob
 
 from pymatgen.core.structure import Structure
 
 from pydefect.analysis.defect_energies import DefectEnergies, Defect
-from pydefect.input_maker.defect_initial_setting \
+from pydefect.input_maker.defect_initial_setting
     import print_dopant_info, DefectInitialSetting
 from pydefect.input_maker.vasp_input_maker \
     import make_hpkot_primitive_poscar, make_supercell_poscar, make_incar, \
     make_kpoints, make_potcar
 from pydefect.input_maker.vasp_defect_set_maker import VaspDefectInputSetMaker
-from pydefect.input_maker.recommend_supercell_ase_cythonized. \
-    ase_generation_supercell import recommend_supercell_ase
+from pydefect.input_maker.recommend_supercell_ase_cythonized.\
+    ase_generation_supercell \
+    import recommend_supercell_ase
 from pydefect.core.defect_entry import DefectEntry
 from pydefect.core.supercell_dft_results import SupercellDftResults
-from pydefect.util.vasp_process_analyzer import check_vasp_output, \
-    vasp_convergence_ionic, vasp_convergence_electronic
+from pydefect.util.vasp_process_analyzer \
+    import check_vasp_output, vasp_convergence_ionic, \
+    vasp_convergence_electronic
 from pydefect.core.unitcell_dft_results import UnitcellDftResults
 from pydefect.core.correction import Ewald, Correction
 from pydefect.analysis.chempotdiag.chem_pot_diag \
@@ -221,9 +222,9 @@ def main():
                     "standardized primitive cell is generated.",
         aliases=['vpsm'])
 
-    parser_vasp_kpoints_maker.add_argument(
+    parser_vasp_poscar_maker.add_argument(
         "-p", dest="poscar", type=str, default="POSCAR")
-    parser_vasp_kpoints_maker.add_argument(
+    parser_vasp_poscar_maker.add_argument(
         "-pp", dest="pposcar", type=str, default="PPOSCAR")
     parser_vasp_poscar_maker.add_argument(
         "--supercell", "-s", dest="supercell", type=float, nargs="+",
@@ -237,16 +238,15 @@ def main():
         description="Tools for configuring vasp POTCAR file.",
         aliases=['vptm'])
 
-    parser_vasp_kpoints_maker.add_argument(
+    parser_vasp_potcar_maker.add_argument(
         "--path", dest="path", type=str, default=".")
 
-    parser_vasp_potcar_maker.add_mutually_exclusive_group(required=True)
-
-    parser_vasp_poscar_maker.add_argument(
+    parser_vasp_potcar_maker.add_argument(
         "--elements", "-e", dest="elements", type=str, nargs="+",
         help="Element names.")
-    parser_vasp_kpoints_maker.add_argument(
-        "-p", dest="poscar", type=str, default="POSCAR")
+    parser_vasp_potcar_maker.add_argument(
+        "-p", dest="poscar", type=str, default="POSCAR",
+        help="Element names are also obtained from a POSCAR file.")
 
     parser_vasp_potcar_maker.set_defaults(func=vasp_potcar_maker)
 
