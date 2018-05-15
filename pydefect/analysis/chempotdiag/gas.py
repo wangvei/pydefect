@@ -243,8 +243,8 @@ class Gas(Enum):
         return Composition(str(self))
 
     @property
-    def data(self):
-        return self._data
+    def properties(self):
+        return self._properties
 
     def heat_capacity(self, temperature):
         """
