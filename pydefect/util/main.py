@@ -6,8 +6,7 @@ import warnings
 
 from glob import glob
 
-from pymatgen import Structure
-#from pymatgen.core.structure import Structure
+from pymatgen.core.structure import Structure
 
 from pydefect.analysis.defect_energies import DefectEnergies, Defect
 from pydefect.input_maker.defect_initial_setting \
