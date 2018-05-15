@@ -6,11 +6,16 @@ import warnings
 
 from glob import glob
 
+from pymatgen import Structure
+#from pymatgen.core.structure import Structure
+
 from pydefect.analysis.defect_energies import DefectEnergies, Defect
 from pydefect.input_maker.defect_initial_setting \
     import print_dopant_info, DefectInitialSetting
-from pydefect.input_maker.vasp_defect_set_maker \
-    import make_incar, make_kpoints, VaspDefectInputSetMaker
+from pydefect.input_maker.vasp_input_maker \
+    import make_hpkot_primitive_poscar, make_supercell_poscar, make_incar, \
+    make_kpoints, make_potcar
+from pydefect.input_maker.vasp_defect_set_maker import VaspDefectInputSetMaker
 from pydefect.input_maker.recommend_supercell_ase_cythonized. \
     ase_generation_supercell import recommend_supercell_ase
 from pydefect.core.defect_entry import DefectEntry
@@ -39,9 +44,9 @@ def main():
     import argparse
     parser = argparse.ArgumentParser(
         description="""                            
-    pydefect is a package to perform various things related to 
-    first-principles point defect calculations. It allows us to construct input
-    files, parse first-principles calculation results, and analyze data.""",
+    pydefect is a package for first-principles point defect calculations. It 
+    allows us to construct input files, parse first-principles calculation 
+    results, and analyze data.""",
         epilog="""                                 
     Author: Yu Kumagai, Akira Takahashi
     Version: {}                                                                 
@@ -209,6 +214,42 @@ def main():
         help="Set if the system metal is spin polarized.")
 
     parser_vasp_incar_maker.set_defaults(func=vasp_incar_maker)
+
+    # -- vasp_poscar_maker ----------------------------------------------------
+    parser_vasp_poscar_maker = subparsers.add_parser(
+        name="vasp_poscar_maker",
+        description="Tools for configuring vasp POSCAR file. By default, "
+                    "standardized primitive cell is generated.",
+        aliases=['vpsm'])
+
+    parser_vasp_kpoints_maker.add_argument(
+        "-p", dest="poscar", type=str, default="POSCAR")
+    parser_vasp_kpoints_maker.add_argument(
+        "-pp", dest="pposcar", type=str, default="PPOSCAR")
+    parser_vasp_poscar_maker.add_argument(
+        "--supercell", "-s", dest="supercell", type=float, nargs="+",
+        help="Construct a supercell.")
+
+    parser_vasp_poscar_maker.set_defaults(func=vasp_poscar_maker)
+
+    # -- vasp_potcar_maker ----------------------------------------------------
+    parser_vasp_potcar_maker = subparsers.add_parser(
+        name="vasp_potcar_maker",
+        description="Tools for configuring vasp POTCAR file.",
+        aliases=['vptm'])
+
+    parser_vasp_kpoints_maker.add_argument(
+        "--path", dest="path", type=str, default=".")
+
+    parser_vasp_potcar_maker.add_mutually_exclusive_group(required=True)
+
+    parser_vasp_poscar_maker.add_argument(
+        "--elements", "-e", dest="elements", type=str, nargs="+",
+        help="Element names.")
+    parser_vasp_kpoints_maker.add_argument(
+        "-p", dest="poscar", type=str, default="POSCAR")
+
+    parser_vasp_potcar_maker.set_defaults(func=vasp_potcar_maker)
 
     # -- recommend_supercell ---------------------------------------------------
     parser_recommend_supercell = subparsers.add_parser(
@@ -540,9 +581,24 @@ def vasp_incar_maker(args):
                hfscreen=args.hfscreen,
                aexx=args.aexx,
                is_magnetization=args.is_magnetization)
-#               defect_in=args.defect_in,
-#               poscar=args.poscar,
-#               my_incar_setting=args.my_incar_setting)
+
+
+def vasp_poscar_maker(args):
+
+    if args.supercell:
+        make_supercell_poscar(args.supercell, args.poscar, args.sposcar)
+    else:
+        make_hpkot_primitive_poscar(args.poscar, args.pposcar)
+
+
+def vasp_potcar_maker(args):
+    if args.elements:
+        make_potcar(args.path, args.elements)
+    elif args.poscar:
+        elements = Structure.from_file(args.poscar).symbol_set
+        make_potcar(args.path, elements)
+    else:
+        print("Element names or POSCAR name is required.")
 
 
 def recommend_supercell(args):

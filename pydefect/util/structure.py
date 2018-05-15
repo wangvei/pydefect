@@ -58,11 +58,7 @@ def find_hpkot_primitive(structure):
     """
     import seekpath
     cell = structure_to_spglib_cell(structure)
-    res = seekpath.get_explicit_k_path(cell,
-                                       recipe='hpkot',
-                                       threshold=1.e-2,
-                                       symprec=1e-02,
-                                       angle_tolerance=-2.0)
+    res = seekpath.get_explicit_k_path(cell)
 
     return seekpath_to_hpkot_structure(res)
 
@@ -78,13 +74,8 @@ def structure_to_seekpath(structure, time_reversal=True, ref_distance=0.025):
     """
     import seekpath
     cell = structure_to_spglib_cell(structure)
-    res = seekpath.get_explicit_k_path(cell,
-                                       with_time_reversal=time_reversal,
-                                       reference_distance=ref_distance,
-                                       recipe='hpkot',
-                                       threshold=1.e-2,
-                                       symprec=1e-02,
-                                       angle_tolerance=-2.0)
+    res = seekpath.get_explicit_k_path(cell, with_time_reversal=time_reversal,
+                                       reference_distance=ref_distance)
 
     # If numpy.allclose is too strict in pymatgen.core.lattice __eq__,
     # make almost_equal

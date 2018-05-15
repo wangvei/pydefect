@@ -161,6 +161,12 @@ def make_hpkot_primitive_poscar(poscar="POSCAR", pposcar="PPOSCAR"):
     primitive_structure.to(filename=pposcar)
 
 
+def make_supercell_poscar(scaling_matrix, poscar="POSCAR", sposcar="SPOSCAR"):
+    s = Structure.from_file(os.path.join(poscar))
+    supercell_structure = s.make_supercell(scaling_matrix)
+    supercell_structure.to(filename=sposcar)
+
+
 def make_band_kpoints(ibzkpt, dirname='.', poscar="POSCAR",
                       num_split_kpoints=1):
     """
