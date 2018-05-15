@@ -6,6 +6,8 @@ import os
 import re
 
 from pymatgen.core.composition import Composition
+from pymatgen.core.structure import Structure
+from pymatgen.io.vasp.inputs import Poscar
 
 """
 Data is from NIST Chemistry WebBook, SRD 69
@@ -252,6 +254,15 @@ class Gas(Enum):
                 "Thermodynamic data of {} molecule"
                 " is not found.".format(formula))
 
+        # Read POSCAR
+        try:
+            path = dirname + "/POSCAR"
+            self._structure = Poscar.from_file(path).structure
+        except FileNotFoundError:
+            raise ValueError(
+                "POSCAR of {} molecule"
+                " is not found.".format(formula))
+
     def __str__(self):
         return self.value
 
@@ -262,6 +273,10 @@ class Gas(Enum):
     @property
     def properties(self):
         return self._properties
+
+    @property
+    def structure(self):
+        return self._structure
 
     def heat_capacity(self, temperature):
         """
