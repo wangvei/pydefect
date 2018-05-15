@@ -29,10 +29,27 @@ class AbstractThermodynamicsFunction(metaclass=ABCMeta):
 
 
 class _ShomateParameters:
+    """
+        Parameters of Shomate Equations.
+        Contains range of temperature like (100, 700).
+    """
 
     def __init__(self, temperature_range,
                  a=None, b=None, c=None, d=None,
                  e=None, f=None, g=None, h=None):
+        """
+
+        Args:
+            temperature_range (tuple): Unit is (K).
+            a (float): parameter A.
+            b (float): parameter B.
+            c (float): parameter C.
+            d (float): parameter D.
+            e (float): parameter E.
+            f (float): parameter F.
+            g (float): parameter G.
+            h (float): parameter H.
+        """
         self._temperature_range = temperature_range
         self._a = a
         self._b = b
@@ -105,7 +122,7 @@ class ShomateThermodynamicsFunction(AbstractThermodynamicsFunction):
     def __init__(self, func_param_list):
         """
         Args:
-            **func_param_list (list):parameters of functions.
+            func_param_list (list):parameters of functions.
             Must contain _Shomate_parameters.
         """
         self._params = func_param_list
@@ -248,34 +265,32 @@ class Gas(Enum):
 
     def heat_capacity(self, temperature):
         """
-        Data is from NIST Chemistry WebBook, SRD 69
         Args:
-            temperature:
+            temperature(float): Unit is (K)
 
-        Returns:
+        Returns(float): Heat capacity C_p (J/mol*K).
 
         """
         return self._thermodynamics_function.heat_capacity(temperature)
 
     def standard_enthalpy(self, temperature):
         """
-        From room temperature.
-        Data is from NIST Chemistry WebBook, SRD 69
+        Standard enthalpy from room temperature.
         Args:
-            temperature:
+            temperature(float): Unit is (K)
 
-        Returns:
+        Returns(float): Standard enthalpy (kJ/mol)
+                        from room temperature (T=298.15(K))
 
         """
         return self._thermodynamics_function.standard_enthalpy(temperature)
 
     def standard_entropy(self, temperature):
         """
-        Data is from NIST Chemistry WebBook, SRD 69
         Args:
-            temperature:
+            temperature(float): Unit is (K)
 
-        Returns:
+        Returns(float): Standard entropy (J/mol*K).
 
         """
         return self._thermodynamics_function.standard_entropy(temperature)
