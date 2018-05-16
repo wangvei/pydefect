@@ -69,7 +69,7 @@ def make_vasp_inputs_from_mp(elements,
                 name_dict = {"N1 H3": "NH3", "N1 O2": "NO2"}
                 if comp_name in name_dict.keys():
                     comp_name = name_dict[comp_name]
-                dirname = f"{comp_name}{molecule_dir_name}"
+                dirname = comp_name + molecule_dir_name
                 dirname2 = os.path.join(chem_sys_dir, dirname)
                 if not os.path.exists(dirname2):
                     os.mkdir(dirname2)
@@ -104,7 +104,7 @@ def make_vasp_inputs_from_mp(elements,
                 length = len(molecule_dir_name)
                 exist_molecules_reduced_formulas = \
                     [Composition(path.split("/")[-1][:-length]).reduced_formula
-                     for path in glob(chem_sys_dir + f"/*{molecule_dir_name}")]
+                     for path in glob(chem_sys_dir + r"/*" + molecule_dir_name)]
                 if adds_molecule:
                     reduced_formula = \
                         Composition(material["full_formula"]).reduced_formula
@@ -123,7 +123,7 @@ def make_vasp_inputs_from_mp(elements,
                     keys_to_get = ["energy_per_atom", "band_gap",
                                    "total_magnetization"]
                     d = {k: material[k] for k in keys_to_get}
-                    json_path = os.path.join(dirname2, "mp.json")
+                    json_path = os.path.join(dirname2, "property.json")
                     with open(json_path, "w") as fw:
                         json.dump(d, fw)
 
