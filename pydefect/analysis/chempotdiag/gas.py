@@ -105,15 +105,17 @@ class _ShomateParameters:
             return False
 
     def __str__(self):
-        return f"Temperature_range: {self._temperature_range}\n"\
-               f"A: {self._a}\n"\
-               f"B: {self._b}\n"\
-               f"C: {self._c}\n"\
-               f"D: {self._d}\n"\
-               f"E: {self._e}\n"\
-               f"F: {self._f}\n"\
-               f"G: {self._g}\n"\
-               f"H: {self._h}\n"
+        return "Temperature_range: {}\n"\
+               "A: {}\n"\
+               "B: {}\n"\
+               "C: {}\n"\
+               "D: {}\n"\
+               "E: {}\n"\
+               "F: {}\n"\
+               "G: {}\n"\
+               "H: {}\n".format(self._temperature_range,
+                                self._a, self._b, self._c, self._d,
+                                self._e, self._f, self._g, self._h)
 
 
 class ShomateThermodynamicsFunction(AbstractThermodynamicsFunction):
@@ -152,10 +154,12 @@ class ShomateThermodynamicsFunction(AbstractThermodynamicsFunction):
                         symbol = symbol_match.groups()[0].lower()
                         values = re.findall(r"[\-\d\.]+", line)
                         if len(values) != len(temperature_ranges):
-                            raise ValueError(f"Number of temperature_ranges"
-                                             f"({len(temperature_ranges)})"
-                                             f"and parameters ({line})"
-                                             f"is not consistent.")
+                            raise ValueError("Number of temperature_ranges"
+                                             "({})"
+                                             "and parameters ({})"
+                                             "is not consistent.".
+                                             format(len(temperature_ranges),
+                                                    line))
                         for i in range(len(values)):
                             param_dicts[i][symbol] = float(values[i])
         return cls([_ShomateParameters(tr, **pd)
