@@ -136,6 +136,18 @@ class ChemPotDiag:
     def __init__(self, element_energy, stable_compounds, unstable_compounds,
                  vertices,
                  compounds_to_vertex_list, vertex_to_compounds_list):
+        """
+
+        # TODO: element_energy should be ordered_dict
+        Args:
+            element_energy:
+            stable_compounds:
+            unstable_compounds:
+            vertices:
+            compounds_to_vertex_list:
+            vertex_to_compounds_list:
+        """
+        print(type(element_energy))
         self._element_energy = element_energy
         self._stable_compounds = stable_compounds
         self._unstable_compounds = unstable_compounds
@@ -337,6 +349,7 @@ class ChemPotDiag:
         return self.stable_compounds + self.unstable_compounds
 
     def set_elements(self, elements):
+        # TODO: how is standard_energy?
         """
         Change elements of elements. Internal composition data will be rearranged.
         Args:
