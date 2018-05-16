@@ -61,7 +61,7 @@ def main():
         name="initial_setting",
         description="Tools for configuring initial settings for a set of "
                     "defect calculations.",
-        aliases=['initial', 'in'])
+        aliases=['is'])
 
     parser_initial.add_argument(
         "--poscar", dest="poscar", default="POSCAR", type=str,
@@ -108,7 +108,7 @@ def main():
         description="Tools for configuring vasp defect_set files for a set of "
                     "defect calculations. One needs to set "
                     ".pydefect.yaml for potcar setup.",
-        aliases=['vasp', 'vds'])
+        aliases=['vds'])
 
     parser_vasp_defect_set.add_argument(
         "--defect_in", dest="defect_in", default="defect.in", type=str,
@@ -275,7 +275,7 @@ def main():
         name="defect_entry",
         description="Tools for configuring defect_entry files for post process"
                     "of defect calculations.",
-        aliases=['entry', 'de'])
+        aliases=['de'])
 
     parser_defect_entry.add_argument(
         "--make_defect_entry", dest="make_defect_entry", action="store_true",
@@ -296,7 +296,7 @@ def main():
     parser_supercell_results = subparsers.add_parser(
         name="supercell_results",
         description="Tools for analyzing vasp supercell results",
-        aliases=['supercell', 'sdr'])
+        aliases=['sr'])
 
     parser_supercell_results.add_argument(
         "-c", "--convergence", dest="convergence", action="store_true",
@@ -326,7 +326,7 @@ def main():
     parser_unitcell_results = subparsers.add_parser(
         name="unitcell_results",
         description="Tools for analyzing vasp unitcell results",
-        aliases=['unitcell', 'udr'])
+        aliases=['ur'])
 
     parser_unitcell_results.add_argument(
         "--json_file", dest="json_file", default="unitcell.json", type=str)
@@ -419,7 +419,7 @@ def main():
     parser_chempotdiag = subparsers.add_parser(
         name="chempotdiag",
         description="",
-        aliases=['cp'])
+        aliases=['cpd'])
 
     # get poscar from materials project
     parser_chempotdiag.add_argument("-m", "--mat_proj_poscar",
