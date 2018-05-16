@@ -2,7 +2,7 @@
 
 from collections import OrderedDict
 from copy import deepcopy
-from enum import Enum, auto, unique
+from enum import Enum, unique
 from math import ceil
 import numpy as np
 import os
