@@ -7,7 +7,7 @@ import unittest
 from pymatgen.core.structure import Structure
 
 from pydefect.core.defect_entry import get_num_atoms_for_elements, \
-    element_diff_from_poscar_files, DefectEntry
+    DefectEntry
 
 __author__ = "Yu Kumagai"
 __copyright__ = "Copyright 2017, Oba group"
@@ -21,22 +21,14 @@ test_dir = os.path.join(os.path.dirname(__file__), "..", "..", "..",
                         "test_files", "core")
 
 
-class FunctionTest(unittest.TestCase):
+class GetNumAtomsForElementsTest(unittest.TestCase):
 
-    def test_get_num_atoms_for_elements(self):
+    def test(self):
         structure = Structure.from_file(
             os.path.join(test_dir, "POSCAR-MgO64atoms-Al_doped"))
 
         expected = [1, 31, 32]
         actual = get_num_atoms_for_elements(structure)
-        self.assertEqual(actual, expected)
-
-    def test_element_diff_from_poscar_files(self):
-        poscar1 = os.path.join(test_dir, "POSCAR-MgO8atoms")
-        poscar2 = os.path.join(test_dir, "POSCAR-MgO8atoms-Va_O1+N_O")
-
-        actual = element_diff_from_poscar_files(poscar1, poscar2)
-        expected = {"O": 2, "N": -1}
         self.assertEqual(actual, expected)
 
 

@@ -4,11 +4,10 @@ import itertools
 import json
 import os
 import ruamel.yaml as yaml
+from pydefect.vasp_util.util import element_diff_from_poscar_files, \
+    get_defect_charge_from_vasp
 
 from pymatgen.core.structure import Structure
-from pymatgen.core.composition import Composition
-from pymatgen.io.vasp import Incar
-from pymatgen.io.vasp.inputs import Potcar
 
 from monty.json import MontyEncoder
 from monty.serialization import loadfn
@@ -31,45 +30,6 @@ def get_num_atoms_for_elements(structure):
     symbol_list = [site.specie.symbol for site in structure]
 
     return [len(tuple(a[1])) for a in itertools.groupby(symbol_list)]
-
-
-def element_diff_from_poscar_files(poscar1, poscar2):
-    """
-    Returns a dict of change of numbers of elements from poscar2 to poscar1
-    For defect calculations, poscar2 should be "perfect".
-    """
-    c1 = Composition(
-        Structure.from_file(poscar1).composition, allow_negative=True)
-    c2 = Composition(
-        Structure.from_file(poscar2).composition, allow_negative=True)
-    c_diff = c1 - c2
-
-    return {str(e): int(c_diff[e]) for e in c_diff}
-
-
-def get_num_electrons_from_potcar(potcar, nions, charge=0):
-    """
-    Returns the number of electrons from POTCAR, number of ions, and charge
-    state.
-    """
-    p = Potcar.from_file(potcar)
-    # check only the number of ions written in potcar and nions.
-    if not len(p) == len(nions):
-        raise ValueError("Size of elements in POTCAR file is different")
-
-    return sum([v.nelectrons * nions[i] for i, v in enumerate(p)]) - charge
-
-
-def get_defect_charge_from_vasp(nions, potcar="POTCAR", incar="INCAR"):
-    """
-    Returns the defect charge by comparing nion, number of electrons in POTCAR,
-    and NELECT in INCAR.
-    """
-    num_elect_neutral = get_num_electrons_from_potcar(potcar, nions)
-    num_elect_incar = Incar.from_file(incar)["NELECT"]
-
-    # charge is minus of difference of the electrons
-    return int(num_elect_neutral - num_elect_incar)
 
 
 class DefectEntry:

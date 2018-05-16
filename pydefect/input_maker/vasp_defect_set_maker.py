@@ -3,8 +3,8 @@
 import os
 import shutil
 
-from pydefect.core.defect_entry import get_num_atoms_for_elements, \
-    get_num_electrons_from_potcar
+from pydefect.core.defect_entry import get_num_atoms_for_elements
+from pydefect.util import get_num_electrons_from_potcar
 from pydefect.core.supercell_dft_results import defect_center
 from pydefect.input_maker.defect_set_maker import DefectMaker, \
     DefectInputSetMaker, print_is_being_removed, print_already_exist, \

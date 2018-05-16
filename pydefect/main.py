@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+import argparse
 from glob import glob
 import os
 import warnings
@@ -8,7 +9,7 @@ import warnings
 from pymatgen.core.structure import Structure
 
 from pydefect.analysis.defect_energies import DefectEnergies, Defect
-from pydefect.input_maker.defect_initial_setting
+from pydefect.input_maker.defect_initial_setting \
     import print_dopant_info, DefectInitialSetting
 from pydefect.input_maker.vasp_input_maker \
     import make_hpkot_primitive_poscar, make_supercell_poscar, make_incar, \
@@ -41,7 +42,6 @@ _SYMPREC = 0.01
 
 
 def main():
-    import argparse
     parser = argparse.ArgumentParser(
         description="""                            
     pydefect is a package for first-principles point defect calculations. It 
