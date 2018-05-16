@@ -2,7 +2,7 @@
 
 from collections import OrderedDict
 from copy import deepcopy
-from enum import Enum, auto, unique
+from enum import Enum, unique
 from math import ceil
 import numpy as np
 import os
@@ -235,14 +235,14 @@ class SupportedTask(Enum):
     """
     Supported tasks in pydefect
     """
-    structure_opt = auto()
-    band = auto()
-    dos = auto()
-    dielectric = auto()
-    dielectric_function = auto()
-    competing_phase = auto()
-    competing_phase_molecule = auto()
-    defect = auto()
+    structure_opt = "structure_opt"
+    band = "band"
+    dos = "dos"
+    dielectric = "dielectric"
+    dielectric_function = "dielectric_function"
+    competing_phase = "competing_phase"
+    competing_phase_molecule = "competing_phase_molecule"
+    defect = "defect"
 
     def __str__(self):
         return self.name
@@ -260,10 +260,10 @@ class SupportedFunctional(Enum):
     """
     Supported functionals in pydefect
     """
-    pbe = auto()
-    hse06 = auto()
-    pbesol = auto()
-    pbe_d3 = auto()
+    pbe = "pbe"
+    hse06 = "hse06"
+    pbesol = "pbesol"
+    pbe_d3 = "pbe_d3"
 
     def __str__(self):
         return self.name
