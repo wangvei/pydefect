@@ -35,7 +35,7 @@ setup(
         'Programming Language :: Python :: 3.6',
     ],
     install_requires=['numpy', 'pymatgen', 'monty', 'matplotlib', 'argcomplete',
-                      'seekpath', 'spglib'],
+                      'seekpath', 'spglib', 'scipy'],
     cmdclass = cmdclass,
     ext_modules=ext_modules,
 )

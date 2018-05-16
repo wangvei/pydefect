@@ -155,9 +155,11 @@ def make_potcar(dirname, elements, default_potcar_dir):
                 potcar.write(pot.read())
 
 
-def make_hpkot_primitive_poscar(poscar="POSCAR", pposcar="PPOSCAR"):
+def make_hpkot_primitive_poscar(poscar="POSCAR", pposcar="PPOSCAR",
+                                symprec=1e-05, angle_tolerance=-1.0):
     s = Structure.from_file(os.path.join(poscar))
-    primitive_structure = find_hpkot_primitive(s)
+    primitive_structure = find_hpkot_primitive(s, symprec=symprec,
+                                               angle_tolerance=angle_tolerance)
     primitive_structure.to(filename=pposcar)
 
 

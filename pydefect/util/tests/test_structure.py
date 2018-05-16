@@ -128,3 +128,7 @@ class PerturbNeighborsTest(unittest.TestCase):
             perturb_neighbors(structure, center, cutoff, distance)
         true_perturbed_sites = [0, 40, 44, 48, 50, 56, 57]
         self.assertEqual(perturbed_sites, true_perturbed_sites)
+
+
+if __name__ == "__main__":
+    unittest.main()

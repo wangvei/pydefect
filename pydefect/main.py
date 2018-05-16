@@ -39,6 +39,7 @@ _DISTANCE = 0.2
 # Cutoff radius in which atoms are perturbed.
 _CUTOFF = 3.0
 _SYMPREC = 0.01
+_ANGLE_TOLERANCE = -1.0
 
 
 def main():
@@ -229,6 +230,13 @@ def main():
     parser_vasp_poscar_maker.add_argument(
         "--supercell", "-s", dest="supercell", type=float, nargs="+",
         help="Construct a supercell.")
+    parser_vasp_poscar_maker.add_argument(
+        "--symprec", dest="symprec", type=float, default=_SYMPREC,
+        help="Set precision used for symmetry analysis [A].")
+    parser_vasp_poscar_maker.add_argument(
+        "--angle_tolerance", dest="angle_tolerance", type=float,
+        default=_ANGLE_TOLERANCE,
+        help="Set the angle_tolerance used for symmetry analysis.")
 
     parser_vasp_poscar_maker.set_defaults(func=vasp_poscar_maker)
 
@@ -587,7 +595,10 @@ def vasp_poscar_maker(args):
     if args.supercell:
         make_supercell_poscar(args.supercell, args.poscar, args.sposcar)
     else:
-        make_hpkot_primitive_poscar(args.poscar, args.pposcar)
+        make_hpkot_primitive_poscar(poscar=args.poscar,
+                                    pposcar=args.pposcar,
+                                    symprec=args.symprec,
+                                    angle_tolerance=args.angle_tolerance)
 
 
 def vasp_potcar_maker(args):
