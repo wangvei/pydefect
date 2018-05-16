@@ -43,7 +43,7 @@ class MakeBandKpointsTest(unittest.TestCase):
 
     def test_make_band_kpoints_ymo3_fail(self):
         with self.assertRaises(NotStandardizedPrimitiveError):
-            make_band_kpoints(ibzkpt="IBZKPT", poscar="PPOSCAR-YMnO3")
+            make_band_kpoints(ibzkpt="IBZKPT", poscar="BPOSCAR-MgO")
 
     def test_make_band_kpoints_ymo3_succeed(self):
         make_band_kpoints(ibzkpt="IBZKPT", poscar="PPOSCAR-YMnO3-hpkot")
@@ -88,6 +88,7 @@ class MakeKpointsTest(unittest.TestCase):
 
 class MakeIncarTest(unittest.TestCase):
 
+    # TODO: write better tests
     def test_structure_opt(self):
         make_incar(task="structure_opt", functional="hse06",
                    defect_in="defect.in", hfscreen=0.2, aexx=0.3,
@@ -95,3 +96,11 @@ class MakeIncarTest(unittest.TestCase):
                    my_incar_setting="my_INCAR_setting.yaml")
 
 
+    def test_band(self):
+        make_incar(task="band", functional="pbe", poscar="POSCAR-YMnO3",
+                   my_incar_setting="my_INCAR_setting.yaml")
+
+
+
+if __name__ == "__main__":
+    unittest.main()
