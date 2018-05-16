@@ -66,7 +66,7 @@ def make_vasp_inputs_from_mp(elements,
         for me, file_name in zip(molecules_elements, molecule_file_names):
             if set([str(e) for e in me.elements]) < set(elements):
                 comp_name = str(me)
-                name_dict = {"N1 H3": "NH3", "N1 O2": "NO2"}
+                name_dict = {"N1 H3": "NH3", "N1 O2": "NO2", "O1 H2": "H2O"}
                 if comp_name in name_dict.keys():
                     comp_name = name_dict[comp_name]
                 dirname = comp_name + molecule_dir_name
