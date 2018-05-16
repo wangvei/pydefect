@@ -100,7 +100,7 @@ def make_vasp_inputs_from_mp(elements,
                             break
                 materials_to_output = comp_stable.values()
             for material in materials_to_output:
-                # remove solids when directroy of molecules exist
+                # remove solids when directory of molecules exist
                 length = len(molecule_dir_name)
                 exist_molecules_reduced_formulas = \
                     [Composition(path.split("/")[-1][:-length]).reduced_formula
