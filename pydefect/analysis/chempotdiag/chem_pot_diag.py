@@ -22,6 +22,7 @@ from scipy.spatial import HalfspaceIntersection
 
 from pydefect.analysis.chempotdiag.compound \
     import Compound, DummyCompoundForDiagram, CompoundsList
+from pydefect.analysis.chempotdiag.gas import Gas
 from pydefect.analysis.chempotdiag.vertex \
     import Vertex, VertexOnBoundary, VerticesList
 
@@ -62,7 +63,7 @@ def make_vasp_inputs_from_mp(elements,
 
     # get molecules
     if adds_molecule:
-        molecules_elements = [Composition(m) for m in molecules]
+        molecules_elements = [m.composition for m in Gas]
         for me, file_name in zip(molecules_elements, molecule_file_names):
             if set([str(e) for e in me.elements]) < set(elements):
                 comp_name = str(me)
