@@ -22,6 +22,7 @@ from scipy.spatial import HalfspaceIntersection
 
 from pydefect.analysis.chempotdiag.compound \
     import Compound, DummyCompoundForDiagram, CompoundsList
+from pydefect.analysis.chempotdiag.gas import Gas
 from pydefect.analysis.chempotdiag.vertex \
     import Vertex, VertexOnBoundary, VerticesList
 
@@ -62,14 +63,14 @@ def make_vasp_inputs_from_mp(elements,
 
     # get molecules
     if adds_molecule:
-        molecules_elements = [Composition(m) for m in molecules]
+        molecules_elements = [m.composition for m in Gas]
         for me, file_name in zip(molecules_elements, molecule_file_names):
             if set([str(e) for e in me.elements]) < set(elements):
                 comp_name = str(me)
-                name_dict = {"N1 H3": "NH3", "N1 O2": "NO2"}
+                name_dict = {"N1 H3": "NH3", "N1 O2": "NO2", "O1 H2": "H2O"}
                 if comp_name in name_dict.keys():
                     comp_name = name_dict[comp_name]
-                dirname = f"{comp_name}{molecule_dir_name}"
+                dirname = comp_name + molecule_dir_name
                 dirname2 = os.path.join(chem_sys_dir, dirname)
                 if not os.path.exists(dirname2):
                     os.mkdir(dirname2)
@@ -100,11 +101,11 @@ def make_vasp_inputs_from_mp(elements,
                             break
                 materials_to_output = comp_stable.values()
             for material in materials_to_output:
-                # remove solids when directroy of molecules exist
+                # remove solids when directory of molecules exist
                 length = len(molecule_dir_name)
                 exist_molecules_reduced_formulas = \
                     [Composition(path.split("/")[-1][:-length]).reduced_formula
-                     for path in glob(chem_sys_dir + f"/*{molecule_dir_name}")]
+                     for path in glob(chem_sys_dir + r"/*" + molecule_dir_name)]
                 if adds_molecule:
                     reduced_formula = \
                         Composition(material["full_formula"]).reduced_formula
@@ -123,7 +124,7 @@ def make_vasp_inputs_from_mp(elements,
                     keys_to_get = ["energy_per_atom", "band_gap",
                                    "total_magnetization"]
                     d = {k: material[k] for k in keys_to_get}
-                    json_path = os.path.join(dirname2, "mp.json")
+                    json_path = os.path.join(dirname2, "property.json")
                     with open(json_path, "w") as fw:
                         json.dump(d, fw)
 
@@ -136,6 +137,18 @@ class ChemPotDiag:
     def __init__(self, element_energy, stable_compounds, unstable_compounds,
                  vertices,
                  compounds_to_vertex_list, vertex_to_compounds_list):
+        """
+
+        # TODO: element_energy should be ordered_dict
+        Args:
+            element_energy:
+            stable_compounds:
+            unstable_compounds:
+            vertices:
+            compounds_to_vertex_list:
+            vertex_to_compounds_list:
+        """
+        print(type(element_energy))
         self._element_energy = element_energy
         self._stable_compounds = stable_compounds
         self._unstable_compounds = unstable_compounds
@@ -337,6 +350,7 @@ class ChemPotDiag:
         return self.stable_compounds + self.unstable_compounds
 
     def set_elements(self, elements):
+        # TODO: how is standard_energy?
         """
         Change elements of elements. Internal composition data will be rearranged.
         Args:
