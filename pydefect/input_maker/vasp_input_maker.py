@@ -412,7 +412,9 @@ def make_incar(task, functional, hfscreen=None, aexx=None,
     setting = {}
     for i in (task, functional):
         try:
-            setting.update(setting_file[i.name])
+            s = setting_file[i.name]
+            if s:
+                setting.update(s)
         except IOError:
             print('default_INCAR_setting.yaml cannot be opened')
 
@@ -424,6 +426,11 @@ def make_incar(task, functional, hfscreen=None, aexx=None,
             DefectInitialSetting.from_defect_in(poscar, defect_in)
         setting["ENCUT"] = \
             str(get_max_enmax(element_set(defect_initial_setting)))
+    elif poscar:
+        s = Structure.from_file(poscar)
+        elements = s.symbol_set
+        setting["ENCUT"] = str(get_max_enmax(elements))
+
     else:
         setting["ENCUT"] = input("Input ENCUT:")
 
