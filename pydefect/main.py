@@ -213,6 +213,8 @@ def main():
     parser_vasp_incar_maker.add_argument(
         "--is_magnetization", dest="is_magnetization", action="store_true",
         help="Set if the system metal is spin polarized.")
+    parser_vasp_incar_maker.add_argument(
+        "-p", dest="poscar", type=str, default="POSCAR")
 
     parser_vasp_incar_maker.set_defaults(func=vasp_incar_maker)
 
@@ -571,7 +573,6 @@ def vasp_kpoints_maker(args):
 
     make_kpoints(task=args.task,
                  poscar=args.poscar,
-                 pposcar=args.pposcar,
                  num_split_kpoints=args.num_split_kpoints,
                  is_metal=args.is_metal,
                  kpts_shift=args.kpts_shift,
@@ -587,7 +588,8 @@ def vasp_incar_maker(args):
                functional=args.functional,
                hfscreen=args.hfscreen,
                aexx=args.aexx,
-               is_magnetization=args.is_magnetization)
+               is_magnetization=args.is_magnetization,
+               poscar=args.poscar)
 
 
 def vasp_poscar_maker(args):
