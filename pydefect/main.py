@@ -27,7 +27,7 @@ from pydefect.core.unitcell_dft_results import UnitcellDftResults
 from pydefect.core.correction import Ewald, Correction
 from pydefect.analysis.chempotdiag.chem_pot_diag \
     import ChemPotDiag
-from pydefect.analysis.chempotdiag.mpdata import make_vasp_inputs_from_mp
+from pydefect.analysis.chempotdiag.make_inputs import make_vasp_inputs_from_mp
 
 __version__ = "0.0.1"
 __date__ = "19.4.2018"
