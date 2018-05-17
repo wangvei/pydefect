@@ -54,8 +54,12 @@ class mp_data:
     def is_magnetic(self):
         if self._total_magnetization > self._mag_threshold:
             return True
+        else:
+            return False
 
     @property
-    def is_band_gap(self):
-        if self._band_gap > self._band_gap_threshold:
+    def is_metal(self):
+        if self._band_gap < self._band_gap_threshold:
             return True
+        else:
+            return False
