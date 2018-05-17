@@ -110,9 +110,9 @@ def make_vasp_inputs_from_mp(elements,
     mp_rester = MPRester(api_key)
     # make directory
     chem_sys = "-".join(elements)
-    chem_sys_dir = os.path.join(dir_path, chem_sys)
-    if not os.path.exists(chem_sys_dir):
-        os.mkdir(os.path.join(dir_path, chem_sys))
+    # chem_sys_dir = os.path.join(dir_path, chem_sys)
+    # if not os.path.exists(chem_sys_dir):
+    #    os.mkdir(os.path.join(dir_path, chem_sys))
 
     # get molecules
     if adds_molecule:
@@ -124,10 +124,9 @@ def make_vasp_inputs_from_mp(elements,
                 if comp_name in name_dict.keys():
                     comp_name = name_dict[comp_name]
                 dirname = comp_name + molecule_dir_name
-                dirname2 = os.path.join(chem_sys_dir, dirname)
-                if not os.path.exists(dirname2):
-                    os.mkdir(dirname2)
-                    shutil.copyfile(file_name+"/POSCAR", dirname2+"/POSCAR")
+                if not os.path.exists(dirname):
+                    os.mkdir(dirname)
+                    shutil.copyfile(file_name+"/POSCAR", dirname+"/POSCAR")
 
     # get from mp
     for i in range(len(elements)):
@@ -158,7 +157,7 @@ def make_vasp_inputs_from_mp(elements,
                 length = len(molecule_dir_name)
                 exist_molecules_reduced_formulas = \
                     [Composition(path.split("/")[-1][:-length]).reduced_formula
-                     for path in glob(chem_sys_dir + r"/*" + molecule_dir_name)]
+                     for path in glob(r"/*" + molecule_dir_name)]
                 if adds_molecule:
                     reduced_formula = \
                         Composition(material["full_formula"]).reduced_formula
@@ -167,17 +166,16 @@ def make_vasp_inputs_from_mp(elements,
                 # make directory and files
                 mp_id = material["material_id"]
                 dirname = material["full_formula"] + "_" + mp_id
-                dirname2 = os.path.join(chem_sys_dir, dirname)
-                if not os.path.exists(dirname2):
-                    os.mkdir(dirname2)
+                if not os.path.exists(dirname):
+                    os.mkdir(dirname)
                     structure = Structure.from_str(material["cif"], "cif")
                     poscar = Poscar(structure)
-                    poscar.write_file(os.path.join(dirname2, "POSCAR"))
+                    poscar.write_file(os.path.join(dirname, "POSCAR"))
                     # dump json
                     keys_to_get = ["energy_per_atom", "band_gap",
                                    "total_magnetization"]
                     d = {k: material[k] for k in keys_to_get}
-                    json_path = os.path.join(dirname2, "prior_info.json")
+                    json_path = os.path.join(dirname, "prior_info.json")
                     with open(json_path, "w") as fw:
                         json.dump(d, fw)
 
