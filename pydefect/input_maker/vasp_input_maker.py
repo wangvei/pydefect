@@ -6,6 +6,7 @@ from enum import Enum, unique
 from math import ceil
 import numpy as np
 import os
+import warnings
 
 import re
 import ruamel.yaml as yaml
@@ -18,6 +19,7 @@ from pymatgen.core.structure import Structure
 from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
 from pymatgen.util.io_utils import clean_lines
 
+from pydefect.analysis.chempotdiag.mp_json_parser import mp_data
 from pydefect.input_maker.defect_initial_setting import DefectInitialSetting, \
     element_set
 from pydefect.database.kpt_centering import kpt_centering
@@ -54,6 +56,52 @@ incar_flags["gw"] = ["NBANDSGW", "NOMEGA", "OMEGAMAX", "ANTIRES", "MAXMEM", "NMA
 incar_flags["ldau"] = ["LDAU", "LDAUTYPE", "LMAXMIX", "LDAUPRINT", "LDAUL", "LDAUU", "LDAUJ"]
 incar_flags["electrostatic"] = ["NELECT", "EPSILON", "DIPOL", "IDIPOL", "LMONO", "LDIPOL"]
 incar_flags["parallel"] = ["NPAR", "KPAR"]
+
+
+@unique
+class Task(Enum):
+    """
+    Supported tasks in pydefect
+    """
+    structure_opt = "structure_opt"
+    band = "band"
+    dos = "dos"
+    dielectric = "dielectric"
+    dielectric_function = "dielectric_function"
+    competing_phase = "competing_phase"
+    competing_phase_molecule = "competing_phase_molecule"
+    defect = "defect"
+
+    def __str__(self):
+        return self.name
+
+    @staticmethod
+    def from_string(s):
+        for m in Task:
+            if m.name == s:
+                return m
+        raise ValueError("Can't interpret supported task %s" % s)
+
+
+@unique
+class Functional(Enum):
+    """
+    Supported functionals in pydefect
+    """
+    pbe = "pbe"
+    hse06 = "hse06"
+    pbesol = "pbesol"
+    pbe_d3 = "pbe_d3"
+
+    def __str__(self):
+        return self.name
+
+    @staticmethod
+    def from_string(s):
+        for m in Functional:
+            if m.name == s:
+                return m
+        raise ValueError("Can't interpret supported functional %s" % s)
 
 
 class ModIncar(Incar):
@@ -141,7 +189,7 @@ def potcar_dir():
         print('DEFAULT_POTCAR is not set in .pydefect.yaml')
 
 
-def make_potcar(dirname, elements, default_potcar_dir):
+def make_potcar(dirname, elements, default_potcar_dir=potcar_dir()):
     """
     Writes POTCAR with a list of the given elements names.
     Now, only default POTCAR files are supported.
@@ -230,60 +278,14 @@ def make_band_kpoints(ibzkpt, dirname='.', poscar="POSCAR",
         kpoints.write_file(output_filename)
 
 
-@unique
-class SupportedTask(Enum):
-    """
-    Supported tasks in pydefect
-    """
-    structure_opt = "structure_opt"
-    band = "band"
-    dos = "dos"
-    dielectric = "dielectric"
-    dielectric_function = "dielectric_function"
-    competing_phase = "competing_phase"
-    competing_phase_molecule = "competing_phase_molecule"
-    defect = "defect"
-
-    def __str__(self):
-        return self.name
-
-    @staticmethod
-    def from_string(s):
-        for m in SupportedTask:
-            if m.name == s:
-                return m
-        raise ValueError("Can't interpret supported task %s" % s)
-
-
-@unique
-class SupportedFunctional(Enum):
-    """
-    Supported functionals in pydefect
-    """
-    pbe = "pbe"
-    hse06 = "hse06"
-    pbesol = "pbesol"
-    pbe_d3 = "pbe_d3"
-
-    def __str__(self):
-        return self.name
-
-    @staticmethod
-    def from_string(s):
-        for m in SupportedFunctional:
-            if m.name == s:
-                return m
-        raise ValueError("Can't interpret supported functional %s" % s)
-
-
 def make_kpoints(task, dirname='.', poscar="POSCAR", num_split_kpoints=1,
                  ibzkpt="IBZKPT", is_metal=False, kpts_shift=None,
                  kpts_density_opt=3, kpts_density_defect=1.5,
-                 multiplier_factor=2, multiplier_factor_metal=2):
+                 multiplier_factor=2, multiplier_factor_metal=2, prior_info=None):
     """
     Constructs a KPOINTS file based on default settings depending on the task.
     Args:
-        task (SupportedTask Enum):
+        task (Task Enum):
         dirname (str): Director name at which INCAR is written.
         poscar (str): input POSCAR-type file name
         num_split_kpoints (int): number of KPOINTS files used for a band
@@ -299,36 +301,45 @@ def make_kpoints(task, dirname='.', poscar="POSCAR", num_split_kpoints=1,
                                      point-defect calculations
         multiplier_factor (float): Multiplier factor for dos and dielectric
                                    constants
-        multiplier_factor_metal (float): Multiplier factor for metallic systems
+        multiplier_factor_metal (int): Multiplier factor for metallic systems
+            This is integer to make k-points even numbers. Then, we can use
+            NKRED = 2 for hybrid functional calculations.
+        prior_info (str): mp.json file name
     """
 
     s = Structure.from_file(os.path.join(poscar))
     reciprocal_lattice = s.lattice.reciprocal_lattice
 
-    task = SupportedTask.from_string(task)
+    task = Task.from_string(task)
+
+    if prior_info:
+        mp = mp_data.load_json(filename=prior_info)
+        if mp.is_metal:
+            is_metal = True
+
     # band
-    if task == SupportedTask.band:
+    if task == Task.band:
         make_band_kpoints(ibzkpt, dirname, poscar, num_split_kpoints)
         return True
     # defect
-    elif task == SupportedTask.defect:
+    elif task == Task.defect:
         kpt_mesh = [int(np.ceil(kpts_density_defect * r))
                     for r in reciprocal_lattice.abc]
     else:
         # metallic competing phase
-        if task == SupportedTask.competing_phase and is_metal is True:
+        if task == Task.competing_phase and is_metal is True:
             kpt_mesh = \
-                [int(np.ceil(kpts_density_opt * r * multiplier_factor_metal))
+                [int(np.ceil(kpts_density_opt * r)) * multiplier_factor_metal
                  for r in reciprocal_lattice.abc]
         # dos, dielectric const, dielectric function
-        elif task in (SupportedTask.dos,
-                      SupportedTask.dielectric,
-                      SupportedTask.dielectric_function):
+        elif task in (Task.dos,
+                      Task.dielectric,
+                      Task.dielectric_function):
             kpt_mesh = \
                 [int(np.ceil(kpts_density_opt * r) * multiplier_factor)
                  for r in reciprocal_lattice.abc]
         # molecule
-        elif task == SupportedTask.competing_phase_molecule:
+        elif task == Task.competing_phase_molecule:
             kpt_mesh = [1, 1, 1]
         # insulating competing phase
         else:
@@ -336,7 +347,7 @@ def make_kpoints(task, dirname='.', poscar="POSCAR", num_split_kpoints=1,
                         for r in reciprocal_lattice.abc]
 
     if kpts_shift is None:
-        if task in (SupportedTask.structure_opt, SupportedTask.defect):
+        if task in (Task.structure_opt, Task.defect):
             angles = s.lattice.angles
 
             if not kpts_shift:
@@ -347,7 +358,7 @@ def make_kpoints(task, dirname='.', poscar="POSCAR", num_split_kpoints=1,
                     else:
                         kpts_shift.append(0.0)
 
-        elif task == SupportedTask.competing_phase_molecule:
+        elif task == Task.competing_phase_molecule:
             kpts_shift = [0, 0, 0]
 
         else:
@@ -379,19 +390,20 @@ def get_max_enmax(element_names, dirname=potcar_dir()):
 
 def make_incar(task, functional, hfscreen=None, aexx=None,
                is_magnetization=False, dirname='.', defect_in=None,
-               poscar="POSCAR", my_incar_setting=None):
+               poscar="POSCAR", prior_info=None, my_incar_setting=None):
     """
     Constructs an INCAR file based on default settings depending on the task.
     ENCUT can be determined from max(ENMAX).
     Args:
-        task (SupportedTask Enum):
-        functional (SupportedFunctional Enum):
+        task (Task Enum):
+        functional (Functional Enum):
         hfscreen (float): VASP parameter of screening distance HFSCREEN
         aexx (float): VASP parameter of the Fock exchange AEXX
         is_magnetization (bool):
         dirname (str): Director name at which INCAR is written.
         defect_in (str): defect.in file name parsed for checking elements
         poscar (str): POSCAR-type file name parsed for checking elements
+        prior_info (str): mp.json file name
         my_incar_setting (str): user setting yaml file name
 
     defect.in file is parsed when exists, otherwise DPOSCAR file is.
@@ -400,14 +412,14 @@ def make_incar(task, functional, hfscreen=None, aexx=None,
     setting_file = loadfn(INCAR_SETTINGS_FILE)
 
     try:
-        task = SupportedTask.from_string(task)
+        task = Task.from_string(task)
     except AttributeError:
-        print("SupportedTask:", task, "is not a proper flag.")
+        print("Task:", task, "is not a proper flag.")
 
     try:
-        functional = SupportedFunctional.from_string(functional)
+        functional = Functional.from_string(functional)
     except AttributeError:
-        print("SupportedFunctional:", functional, "is not a proper flag.")
+        print("Functional:", functional, "is not a proper flag.")
 
     setting = {}
     for i in (task, functional):
@@ -421,24 +433,43 @@ def make_incar(task, functional, hfscreen=None, aexx=None,
     if is_magnetization:
         setting["ISPIN"] = 2
 
+    # ENCUT is determined from three ways.
+    # 1. Parse defect.in file, determine relevant elements including dopants
+    #    and determine the max ENMAX value.
+    # 2. Parse POSCAR file, and determine relevant elements. Note that dopants
+    #    are not considered in this case.
     if defect_in:
         defect_initial_setting = \
             DefectInitialSetting.from_defect_in(poscar, defect_in)
-        setting["ENCUT"] = \
-            str(get_max_enmax(element_set(defect_initial_setting)))
+        max_enmax = get_max_enmax(element_set(defect_initial_setting))
     elif poscar:
         s = Structure.from_file(poscar)
         elements = s.symbol_set
-        setting["ENCUT"] = str(get_max_enmax(elements))
+        max_enmax = get_max_enmax(elements)
 
+    if max_enmax:
+        if setting["ISIF"] > 2:
+            setting["ENCUT"] = str(max_enmax * 1.3)
+        else:
+            setting["ENCUT"] = str(max_enmax)
     else:
-        setting["ENCUT"] = input("Input ENCUT:")
+        warnings.warn("ENCUT is not set. Add it manually if needed.")
 
-    if functional is SupportedFunctional.hse06:
+    if functional is Functional.hse06:
         if hfscreen:
             setting["HFSCREEN"] = hfscreen
         if aexx:
             setting["AEXX"] = aexx
+
+    if prior_info:
+        mp = mp_data.load_json(filename=prior_info)
+        if mp.is_magnetic:
+            setting["ISPIN"] = 2
+            if functional is Functional.hse06:
+                # TODO:
+                # 2 should be a variable as it should be the same as
+                # multiplier_factor_metal in make_kpoints
+                setting["NKRED"] = 2
 
     if my_incar_setting:
         setting.update(loadfn(my_incar_setting))
@@ -446,7 +477,7 @@ def make_incar(task, functional, hfscreen=None, aexx=None,
     incar = os.path.join(dirname, 'INCAR')
     ModIncar(setting).pretty_write_file(filename=incar)
 
-    if functional is SupportedFunctional.hse06:
+    if functional is Functional.hse06:
         incar_pre_gga = os.path.join(dirname, 'INCAR-pre_gga')
 
         # pop out hybrid related flags.
