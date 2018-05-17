@@ -101,6 +101,5 @@ class MakeIncarTest(unittest.TestCase):
                    my_incar_setting="my_INCAR_setting.yaml")
 
 
-
 if __name__ == "__main__":
     unittest.main()

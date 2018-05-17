@@ -19,7 +19,7 @@ from pymatgen.core.structure import Structure
 from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
 from pymatgen.util.io_utils import clean_lines
 
-from pydefect.analysis.chempotdiag.mp_json_parser import mp_data
+from pydefect.core.prior_info import PriorInfo
 from pydefect.input_maker.defect_initial_setting import DefectInitialSetting, \
     element_set
 from pydefect.database.kpt_centering import kpt_centering
@@ -37,6 +37,7 @@ __date__ = "December 4, 2017"
 SETTINGS_FILE = os.path.join(os.path.expanduser("~"), ".pydefect.yaml")
 MODULE_DIR = os.path.dirname(os.path.abspath(__file__))
 INCAR_SETTINGS_FILE = os.path.join(MODULE_DIR, "default_INCAR_setting.yaml")
+POTCAR_LIST_FILE = os.path.join(MODULE_DIR, "default_POTCAR_list.yaml")
 DEFAULT_INCAR = os.path.join(MODULE_DIR, "default_INCAR")
 
 incar_flags = OrderedDict()
@@ -75,12 +76,17 @@ class Task(Enum):
     def __str__(self):
         return self.name
 
-    @staticmethod
-    def from_string(s):
+    @classmethod
+    def from_string(cls, s):
         for m in Task:
             if m.name == s:
                 return m
-        raise ValueError("Can't interpret supported task %s" % s)
+        raise AttributeError("Task: " + str(s) + " is not proper.\n" +
+                             "Supported Task:\n" + cls.name_list())
+
+    @classmethod
+    def name_list(cls):
+        return ', '.join([e.value for e in cls])
 
 
 @unique
@@ -89,19 +95,25 @@ class Functional(Enum):
     Supported functionals in pydefect
     """
     pbe = "pbe"
-    hse06 = "hse06"
     pbesol = "pbesol"
     pbe_d3 = "pbe_d3"
+    hse06 = "hse06"
+    pbe0 = "pbe0"
 
     def __str__(self):
         return self.name
 
-    @staticmethod
-    def from_string(s):
+    @classmethod
+    def from_string(cls, s):
         for m in Functional:
             if m.name == s:
                 return m
-        raise ValueError("Can't interpret supported functional %s" % s)
+        raise AttributeError("Functional: " + str(s) + " is not proper.\n" +
+                             "Supported Functional:\n" + cls.name_list())
+
+    @classmethod
+    def name_list(cls):
+        return ', '.join([e.value for e in cls])
 
 
 class ModIncar(Incar):
@@ -180,27 +192,30 @@ def potcar_dir():
         print('.pydefect.yaml cannot be opened.')
 
     for k, v in pydefect_yaml.items():
-        if k == "DEFAULT_POTCAR":
+        if k == "DEFAULT_POTCAR_DIR":
             potcar_director_path = v
 
     try:
         return potcar_director_path
     except ValueError:
-        print('DEFAULT_POTCAR is not set in .pydefect.yaml')
+        print('DEFAULT_POTCAR_DIR must be set in .pydefect.yaml')
 
 
-def make_potcar(dirname, elements, default_potcar_dir=potcar_dir()):
+def make_potcar(elements):
     """
-    Writes POTCAR with a list of the given elements names.
+    Writes POTCAR with a list of the given element names.
     Now, only default POTCAR files are supported.
     """
-    with open(os.path.join(dirname, "POTCAR"), 'w') as potcar:
-        for e in elements:
-            potcar_e = "POTCAR_" + e
-            potcar_file_name = os.path.join(default_potcar_dir, potcar_e)
 
-            with open(potcar_file_name) as pot:
-                potcar.write(pot.read())
+    list_file = loadfn(POTCAR_LIST_FILE)
+
+    with open("POTCAR", 'w') as pot:
+        for e in elements:
+            potcar_file_name = \
+                os.path.join(potcar_dir(), list_file[e], "POTCAR")
+
+            with open(potcar_file_name) as each_pot:
+                pot.write(each_pot.read())
 
 
 def make_hpkot_primitive_poscar(poscar="POSCAR", pposcar="PPOSCAR",
@@ -278,10 +293,12 @@ def make_band_kpoints(ibzkpt, dirname='.', poscar="POSCAR",
         kpoints.write_file(output_filename)
 
 
+# TODO: WRITE KPTS DENSITY AND MULTIPLIER FACTOR IN THE 1ST LINE
 def make_kpoints(task, dirname='.', poscar="POSCAR", num_split_kpoints=1,
                  ibzkpt="IBZKPT", is_metal=False, kpts_shift=None,
                  kpts_density_opt=3, kpts_density_defect=1.5,
-                 multiplier_factor=2, multiplier_factor_metal=2, prior_info=None):
+                 multiplier_factor=2, multiplier_factor_metal=2,
+                 prior_info=None):
     """
     Constructs a KPOINTS file based on default settings depending on the task.
     Args:
@@ -299,8 +316,10 @@ def make_kpoints(task, dirname='.', poscar="POSCAR", num_split_kpoints=1,
                                   structure optimization
         kpts_density_defect (float): Density of k-point = (N_k / k_length) for
                                      point-defect calculations
-        multiplier_factor (float): Multiplier factor for dos and dielectric
-                                   constants
+        multiplier_factor (int): Multiplier factor for dos and dielectric
+            constants.
+            This is integer to make k-points even numbers. Then, we can use
+            NKRED = 2 for hybrid functional calculations.
         multiplier_factor_metal (int): Multiplier factor for metallic systems
             This is integer to make k-points even numbers. Then, we can use
             NKRED = 2 for hybrid functional calculations.
@@ -313,7 +332,7 @@ def make_kpoints(task, dirname='.', poscar="POSCAR", num_split_kpoints=1,
     task = Task.from_string(task)
 
     if prior_info:
-        mp = mp_data.load_json(filename=prior_info)
+        mp = PriorInfo.load_json(filename=prior_info)
         if mp.is_metal:
             is_metal = True
 
@@ -336,7 +355,7 @@ def make_kpoints(task, dirname='.', poscar="POSCAR", num_split_kpoints=1,
                       Task.dielectric,
                       Task.dielectric_function):
             kpt_mesh = \
-                [int(np.ceil(kpts_density_opt * r) * multiplier_factor)
+                [int(np.ceil(kpts_density_opt * r)) * multiplier_factor
                  for r in reciprocal_lattice.abc]
         # molecule
         elif task == Task.competing_phase_molecule:
@@ -379,15 +398,20 @@ def make_kpoints(task, dirname='.', poscar="POSCAR", num_split_kpoints=1,
         write_file(os.path.join(dirname, 'KPOINTS'))
 
 
-def get_max_enmax(element_names, dirname=potcar_dir()):
+def get_max_enmax(element_names):
+
+    list_file = loadfn(POTCAR_LIST_FILE)
     enmax = []
+
     for e in element_names:
-        potcar_file_name = os.path.join(dirname, "POTCAR_" + e)
+        potcar_file_name = \
+            os.path.join(potcar_dir(), list_file[e], "POTCAR")
         enmax.append(Potcar.from_file(potcar_file_name)[0].enmax)
 
     return max(enmax)
 
 
+# TODO: READ MY INCAR SETTING FILE
 def make_incar(task, functional, hfscreen=None, aexx=None,
                is_magnetization=False, dirname='.', defect_in=None,
                poscar="POSCAR", prior_info=None, my_incar_setting=None):
@@ -411,15 +435,8 @@ def make_incar(task, functional, hfscreen=None, aexx=None,
 
     setting_file = loadfn(INCAR_SETTINGS_FILE)
 
-    try:
-        task = Task.from_string(task)
-    except AttributeError:
-        print("Task:", task, "is not a proper flag.")
-
-    try:
-        functional = Functional.from_string(functional)
-    except AttributeError:
-        print("Functional:", functional, "is not a proper flag.")
+    task = Task.from_string(task)
+    functional = Functional.from_string(functional)
 
     setting = {}
     for i in (task, functional):
@@ -462,7 +479,7 @@ def make_incar(task, functional, hfscreen=None, aexx=None,
             setting["AEXX"] = aexx
 
     if prior_info:
-        mp = mp_data.load_json(filename=prior_info)
+        mp = PriorInfo.load_json(filename=prior_info)
         if mp.is_magnetic:
             setting["ISPIN"] = 2
             if functional is Functional.hse06:

@@ -148,3 +148,10 @@ hse06:
   ALGO: D
   LWAVE: True
   TIME: 0.2
+
+pbe0:
+  LHFCALC: True
+  PRECFOCK: F
+  ALGO: D
+  LWAVE: True
+  TIME: 0.2
