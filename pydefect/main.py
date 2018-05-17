@@ -26,7 +26,8 @@ from pydefect.util.vasp_process_analyzer \
 from pydefect.core.unitcell_dft_results import UnitcellDftResults
 from pydefect.core.correction import Ewald, Correction
 from pydefect.analysis.chempotdiag.chem_pot_diag \
-    import ChemPotDiag, make_vasp_inputs_from_mp
+    import ChemPotDiag
+from pydefect.analysis.chempotdiag.mpdata import make_vasp_inputs_from_mp
 
 __version__ = "0.0.1"
 __date__ = "19.4.2018"
