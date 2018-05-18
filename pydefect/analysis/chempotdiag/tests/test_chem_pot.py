@@ -244,7 +244,8 @@ class TestChemPot(unittest.TestCase):
     def test_rearrange(self):
         _ = Compound("rearrange_test", ["A", "B", "C"], [1/6, 2/6, 3/6], 42)
         cp = ChemPotDiag.from_file(FILENAME_3D)
-        self.assertListEqual(cp.elements, ["Ca", "Al", "O"])  # original order
+        # initially alphabetical
+        self.assertListEqual(cp.elements, ["Al", "Ca", "O"])
         cp.set_elements(["Al", "O", "Ca"])
         self.assertEquals(cp.elements, ["Al", "O", "Ca"])
         cp.set_elements(["O", "Ca", "Al"])
