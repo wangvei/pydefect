@@ -150,11 +150,7 @@ def main():
         aliases=['vkm'])
 
     parser_vasp_kpoints_maker.add_argument(
-        "--task", "-t", dest="task", type=str, required=True,
-        choices=["structure_opt", "band", "dos", "dielectric",
-                 "dielectric_function", "competing_phase",
-                 "competing_phase_molecule", "defect"],
-        help="Task.")
+        "--task", "-t", dest="task", type=str, help="Task.")
     parser_vasp_kpoints_maker.add_argument(
         "-p", dest="poscar", type=str, default="POSCAR")
     parser_vasp_kpoints_maker.add_argument(
@@ -196,15 +192,9 @@ def main():
         aliases=['vim'])
 
     parser_vasp_incar_maker.add_argument(
-        "--task", "-t", dest="task", type=str, required=True,
-        choices=["structure_opt", "band", "dos", "dielectric",
-                 "dielectric_function", "competing_phase",
-                 "competing_phase_molecule", "defect"],
-        help="Task.")
+        "--task", "-t", dest="task", type=str, help="Task.")
     parser_vasp_incar_maker.add_argument(
-        "--functional", "-f", dest="functional", type=str, required=True,
-        choices=["pbe", "hse06", "pbesol", "pbe_d3"],
-        help="Functional.")
+        "--functional", "-f", dest="functional", type=str, help="Functional.")
     parser_vasp_incar_maker.add_argument(
         "--hfscreen", dest="hfscreen", type=float,
         help="Screening distance for exchange interaction.")
@@ -250,9 +240,6 @@ def main():
         aliases=['vptm'])
 
     parser_vasp_potcar_maker.add_argument(
-        "--path", dest="path", type=str, default=".")
-
-    parser_vasp_potcar_maker.add_argument(
         "--elements", "-e", dest="elements", type=str, nargs="+",
         help="Element names.")
     parser_vasp_potcar_maker.add_argument(
@@ -260,6 +247,59 @@ def main():
         help="Element names are also obtained from a POSCAR file.")
 
     parser_vasp_potcar_maker.set_defaults(func=vasp_potcar_maker)
+
+    # -- vasp_input_maker ----------------------------------------------------
+    parser_vasp_input_maker = subparsers.add_parser(
+        name="vasp_input_maker",
+        description="Tools for configuring vasp INCAR, KPOINTS, POTCAR files.",
+        aliases=['vm'])
+
+    parser_vasp_input_maker.add_argument(
+        "--task", "-t", dest="task", type=str, help="Task.")
+    parser_vasp_input_maker.add_argument(
+        "--functional", "-f", dest="functional", type=str, help="Functional.")
+    parser_vasp_input_maker.add_argument(
+        "-p", dest="poscar", type=str, default="POSCAR")
+    # KPOINTS part
+    parser_vasp_input_maker.add_argument(
+        "--num_split_kpoints", dest="num_split_kpoints", type=int, default=1,
+        help="Number of the divided KPOINTS.")
+    parser_vasp_input_maker.add_argument(
+        "--is_metal", dest="is_metal", action="store_true", default=False,
+        help="Set if the system metal is metal, for which k-point density is "
+             "increased.")
+    parser_vasp_input_maker.add_argument(
+        "--kpts_shift", dest="kpts_shift", default=None, nargs="+", type=int,
+        help="Origin of the k-points.")
+    parser_vasp_input_maker.add_argument(
+        "--kpts_density_opt", dest="kpts_density_opt", type=float, default=3,
+        help="K-point density used for the structure optimization of systems "
+             "with band gaps ")
+    parser_vasp_input_maker.add_argument(
+        "--kpts_density_defect", dest="kpts_density_defect", type=float,
+        default=1.5,
+        help="K-point density used for the calculations of point defects.")
+    parser_vasp_input_maker.add_argument(
+        "--multiplier_factor", dest="multiplier_factor", type=int, default=2,
+        help="Multiplier_factor for the calculations of density of states, "
+             "dielectric constants, and dielectric function.")
+    parser_vasp_input_maker.add_argument(
+        "--multiplier_factor_metal", dest="multiplier_factor_metal", type=int,
+        default=2,
+        help="Multiplier factor the structure optimization of metallic systems")
+    # INCAR part
+    parser_vasp_input_maker.add_argument(
+        "--hfscreen", dest="hfscreen", type=float,
+        help="Screening distance for exchange interaction.")
+    parser_vasp_input_maker.add_argument(
+        "--aexx", dest="aexx", type=float,
+        help="Mixing parameter for exchange interaction.")
+    parser_vasp_input_maker.add_argument(
+        "--is_magnetization", dest="is_magnetization", action="store_true",
+        help="Set if the system metal is spin polarized.")
+
+    # POTCAR is generated from POSCAR only.
+    parser_vasp_input_maker.set_defaults(func=vasp_input_maker)
 
     # -- recommend_supercell ---------------------------------------------------
     parser_recommend_supercell = subparsers.add_parser(
@@ -606,10 +646,33 @@ def vasp_poscar_maker(args):
 
 def vasp_potcar_maker(args):
     if args.elements:
-        make_potcar(args.path, args.elements)
+        make_potcar(args.elements)
     elif args.poscar:
         elements = Structure.from_file(args.poscar).symbol_set
-        make_potcar(args.path, elements)
+        make_potcar(elements)
+
+
+def vasp_input_maker(args):
+
+    make_kpoints(task=args.task,
+                 poscar=args.poscar,
+                 num_split_kpoints=args.num_split_kpoints,
+                 is_metal=args.is_metal,
+                 kpts_shift=args.kpts_shift,
+                 kpts_density_opt=args.kpts_density_opt,
+                 kpts_density_defect=args.kpts_density_defect,
+                 multiplier_factor=args.multiplier_factor,
+                 multiplier_factor_metal=args.multiplier_factor_metal)
+
+    make_incar(task=args.task,
+               functional=args.functional,
+               hfscreen=args.hfscreen,
+               aexx=args.aexx,
+               is_magnetization=args.is_magnetization,
+               poscar=args.poscar)
+
+    elements = Structure.from_file(args.poscar).symbol_set
+    make_potcar(elements)
 
 
 def recommend_supercell(args):
