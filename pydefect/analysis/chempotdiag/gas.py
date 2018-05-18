@@ -67,6 +67,14 @@ class _ShomateParameters:
         return self._temperature_range
 
     @property
+    def min_temperature(self):
+        return self._temperature_range[0]
+
+    @property
+    def max_temperature(self):
+        return self._temperature_range[1]
+
+    @property
     def a(self):
         return self._a
 
@@ -99,7 +107,7 @@ class _ShomateParameters:
         return self._h
 
     def can_apply(self, temp):
-        if self._temperature_range[0] <= temp <= self._temperature_range[1]:
+        if self.min_temperature <= temp <= self.max_temperature:
             return True
         else:
             return False
@@ -183,21 +191,35 @@ class ShomateThermodynamicsFunction(AbstractThermodynamicsFunction):
                 raise ValueError("Temperature {} is out of temperature "
                                  "range to apply".format(temperature))
             else:
-                max_index, max_t = \
+                max_index, max_data = \
                     max(enumerate(self._params),
-                        key=lambda x: x[1]["temperature_range"][1])
-                min_index, min_t = \
+                        key=lambda x: x[1].max_temperature)
+                min_index, min_data = \
                     min(enumerate(self._params),
-                        key=lambda x: x[1]["temperature_range"][0])
-                if temperature < max_t:
+                        key=lambda x: x[1].min_temperature)
+                if temperature < max_data.max_temperature:
                     params = self._params[max_index]
-                elif temperature > min_t:
+                elif temperature > min_data.min_temperature:
                     params = self._params[min_index]
                 else:
                     raise ValueError("Temperature {} is strange. "
                                      "Parameters to apply were not found.".
                                      format(temperature))
         return params
+
+    @property
+    def temperature_range(self):
+        return self.min_temperature, self.max_temperature
+
+    @property
+    def max_temperature(self):
+        max_data = max(self._params, key=lambda x: x.max_temperature)
+        return max_data.max_temperature
+
+    @property
+    def min_temperature(self):
+        min_data = min(self._params, key=lambda x: x.min_temperature)
+        return min_data.min_temperature
 
     def heat_capacity(self, temperature):
         params = self.params(temperature)
@@ -283,6 +305,18 @@ class Gas(Enum):
     @property
     def structure(self):
         return self._structure
+
+    @property
+    def temperature_range(self):
+        return self._thermodynamics_function.temperature_range
+
+    @property
+    def min_temperature(self):
+        return self._thermodynamics_function.min_temperature
+
+    @property
+    def max_temperature(self):
+        return self._thermodynamics_function.max_temperature
 
     def heat_capacity(self, temperature):
         """
