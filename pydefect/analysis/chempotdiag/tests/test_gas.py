@@ -51,7 +51,11 @@ class TestGas(unittest.TestCase):
                          o2_shomate.standard_enthalpy(400))
         self.assertEqual(self._o2.standard_entropy(400),
                          o2_shomate.standard_entropy(400))
-        print(Gas.N2.heat_capacity(300))
+
+    def test_temperature_range(self):
+        self.assertEqual(self._o2.min_temperature, 100)
+        self.assertEqual(self._o2.max_temperature, 6000)
+        self.assertEqual(self._o2.temperature_range, (100, 6000))
 
 
 if __name__ == "__main__":
