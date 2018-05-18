@@ -239,9 +239,9 @@ class Gas(Enum):
 
         dirname = os.path.dirname(__file__) + "/molecules/" + formula
 
-        # Read property.json
+        # Read prior_info.json
         try:
-            path = dirname + "/property.json"
+            path = dirname + "/prior_info.json"
             with open(path, "r") as fr:
                 self._properties = json.load(fr)
         except FileNotFoundError:
