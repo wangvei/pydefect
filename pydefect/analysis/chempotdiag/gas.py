@@ -252,6 +252,7 @@ class Gas(Enum):
     N2 = "N2"
     O2 = "O2"
     F2 = "F2"
+    P2 = "P2"
     P4 = "P4"
     H2O = "H2O"
     NH3 = "NH3"
