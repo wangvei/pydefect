@@ -95,7 +95,6 @@ class MakeIncarTest(unittest.TestCase):
                    is_magnetization=True,
                    my_incar_setting="my_INCAR_setting.yaml")
 
-
     def test_band(self):
         make_incar(task="band", functional="pbe", poscar="POSCAR-YMnO3",
                    my_incar_setting="my_INCAR_setting.yaml")
