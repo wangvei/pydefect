@@ -1,6 +1,7 @@
 import tempfile
 import unittest
 
+import numpy as np
 import ruamel.yaml
 
 from pydefect.analysis.chempotdiag.compound import Compound, CompoundsList
@@ -54,6 +55,36 @@ class TestVertex(unittest.TestCase):
         v2 = Vertex.from_dict(d)
         self.assertEqual(v, v2)
         # TODO: test for dummy vertex
+
+    def test_getitem(self):
+        vl = vertex_near_mgo_2d
+        print(vl)
+        print(vl[0])
+        vl[0].label = "A"
+        vl[1].label = "B"
+        print(vl)
+        print(vl["A"])
+        print(vl["B"])
+
+    # TODO: implement this test
+    @unittest.skip("Not implemented yet")
+    def test_3d_loop(self):
+        center = np.array([-1, -1, -1])
+        diff = np.array([[1, 0, 0],
+                         [0, 1, 0],
+                         [-1, 0, 0],
+                         [0, -1, 0]
+                         ])
+        scale = 0.2
+        coords = [center + scale * v for v in diff]
+        vl = VerticesList([Vertex(None, ["B", "C", "F"], c) for c in coords])
+        print(vl)
+        vl.sorted_to_loop_in_3d()
+        vl.set_alphabetical_label()
+        print(vl)
+        vl.set_elements(["C", "F", "B"])
+        vl.sorted_to_loop_in_3d()
+        print(vl)
 
 
 if __name__ == "__main__":
