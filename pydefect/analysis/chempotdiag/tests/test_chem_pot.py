@@ -155,11 +155,24 @@ class TestChemPot(unittest.TestCase):
         cp = ChemPotDiag.from_file(FILENAME_3D)
         rc = "Ca"
         title_str = "With_vertex_name test, remarked_compound = {0}".format(rc)
-        cp.draw_diagram(title=title_str, remarked_compound=rc)
+        cp.draw_diagram(title=title_str, remarked_compound=rc) # For debug
         #  Maybe label of previous plot remains if you forget to delete.
         rc = "Ca11Al14O32"
         title_str = "With_vertex_name test, remarked_compound = {0}".format(rc)
         cp.draw_diagram(title=title_str, remarked_compound=rc)
+        got_vl = cp.get_neighbor_vertices(rc)
+        self.assertTrue(
+            got_vl[0].almost_equal(
+                Vertex("A", ["Al", "Ca", "O"], [-0.25935, -1.19373, -5.64654])))
+        self.assertTrue(
+            got_vl[1].almost_equal(
+                Vertex("B", ["Al", "Ca", "O"], [-0.70214, -1.19373, -5.45282])))
+        self.assertTrue(
+            got_vl[2].almost_equal(
+                Vertex("C", ["Al", "Ca", "O"], [-8.88137, -6.64655, 0])))
+        self.assertTrue(
+            got_vl[3].almost_equal(
+                Vertex("D", ["Al", "Ca", "O"], [-8.72916, -6.84027,  0])))
 
     def test_draw_diagram_3d_without_label(self):
         cp = ChemPotDiag.from_file(FILENAME_3D)
@@ -266,7 +279,8 @@ class TestChemPot(unittest.TestCase):
             for s2 in ("Ca-Al-O", "Mg-Ca-O", "Sr-Bi-N", "Sr-Fe-O", "Sr-Ti-O"):
                 path = EXAMPLE_DIR + "energy_" + s1 + "-" + s2 + ".txt"
                 cp = ChemPotDiag.from_file(path)
-                cp.draw_diagram()
+                rc = cp.stable_compounds[1].name
+                cp.draw_diagram(remarked_compound=rc)
 
     def test_neighbor_vertices_as_dict(self):
         cp = ChemPotDiag.from_file(FILENAME_3D)  # Ca,Al,O
