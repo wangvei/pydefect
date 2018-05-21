@@ -81,7 +81,7 @@ def recommend_supercell_ase(poscar_path, criterion=0.5,
     print(screened_p)
     poscar_str = screened_supercell.to(fmt="poscar").splitlines(True)
     poscar_str[0] = label_str + "\n"
-    with open(poscar_path+"-supercell", 'w') as fw:
+    with open("SPOSCAR", 'w') as fw:
         for line in poscar_str:
             fw.write(line)
 
