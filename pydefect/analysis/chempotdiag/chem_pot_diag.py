@@ -44,7 +44,6 @@ class ChemPotDiag:
             compounds_to_vertex_list:
             vertex_to_compounds_list:
         """
-        print(type(element_energy))
         self._element_energy = element_energy
         self._stable_compounds = stable_compounds
         self._unstable_compounds = unstable_compounds
@@ -300,8 +299,12 @@ class ChemPotDiag:
         if index is None:
             raise ValueError\
                 ("{0} did not found in stable_compounds.".format(compound))
-        return VerticesList([self._vertices[i]
-                             for i in self._compounds_to_vertex_list[index]])
+        to_return = \
+            VerticesList([self._vertices[i]
+                          for i in self._compounds_to_vertex_list[index]])
+        if self.dim == 3:
+            to_return = to_return.sorted_to_loop_in_3d()
+        return to_return
 
     def get_neighbor_compounds(self, vertex):
         """
@@ -510,8 +513,9 @@ class ChemPotDiag:
                             ha='center',
                             va='center')
                     if compound.name == remarked_compound:
-                        vertices_coords.set_alphabetical_label()
-                        for j, v in enumerate(vertices_coords):
+                        sorted_vertices.set_alphabetical_label()
+                        # vertices_coords.set_alphabetical_label()
+                        for j, v in enumerate(sorted_vertices):
                             if v.label:
                                 ax.text(v.coords[0],
                                         v.coords[1],
