@@ -22,7 +22,7 @@ band:
   LASPH: True
   ISIF: 3
   EDIFF: 1.0e-07
-  NSW: 1
+  NSW: 0
   ISMEAR: 0
   SIGMA: 0.05
   NELM: 100
@@ -37,7 +37,7 @@ dos:
   LASPH: True
   ISIF: 3
   EDIFF: 1.0e-07
-  NSW: 1
+  NSW: 0
   ISMEAR: -5
   SIGMA: 0.05
   NELM: 100
@@ -53,7 +53,7 @@ dielectric:
   LASPH: True
   EDIFF: 1.0e-07
   IBRION: 8
-  NSW: 1
+  NSW: 0
   ISMEAR: 0
   SIGMA: 0.05
   NELM: 100
@@ -69,7 +69,7 @@ dielectric_function:
   LREAL: False
   LASPH: True
   EDIFF: 1.0e-07 
-  NSW: 1
+  NSW: 0
   ISMEAR: 0
   SIGMA: 0.01
   NELM: 100
@@ -148,6 +148,7 @@ hse06:
   ALGO: D
   LWAVE: True
   TIME: 0.2
+  AEXX: 0.25
 
 pbe0:
   LHFCALC: True

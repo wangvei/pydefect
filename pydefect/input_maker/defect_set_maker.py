@@ -220,6 +220,8 @@ class DefectInputSetMaker(metaclass=ABCMeta):
         out_pattern (str): pattern for screening out_name
     """
 
+    # TODO: keywords here and filtering_words in vasp_defect_set_maker must be
+    #       unified.
     def __init__(self, defect_initial_setting, keywords=None,
                  particular_defects=None, force_overwrite=False):
 
@@ -235,6 +237,8 @@ class DefectInputSetMaker(metaclass=ABCMeta):
             if keywords:
                 self._defect_name_set = \
                     select_defect_names(defect_all_name_set, keywords)
+                if "perfect" in keywords:
+                    self._defect_name_set.append("perfect")
             else:
                 defect_all_name_set.append("perfect")
                 self._defect_name_set = defect_all_name_set

@@ -63,11 +63,12 @@ def main():
         name="initial_setting",
         description="Tools for configuring initial settings for a set of "
                     "defect calculations.",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
         aliases=['is'])
 
     parser_initial.add_argument(
-        "--poscar", dest="poscar", default="POSCAR", type=str,
-        help="POSCAR-type file name for the unitcell.")
+        "-p", "--poscar", dest="poscar", default="SPOSCAR", type=str,
+        help="POSCAR-type file name for the supercell.")
     parser_initial.add_argument(
         "-d", "--dopants", dest="dopants", default="", nargs="+", type=str,
         help="Dopant elements, e.g., Ga In.")
@@ -110,6 +111,7 @@ def main():
         description="Tools for configuring vasp defect_set files for a set of "
                     "defect calculations. One needs to set "
                     ".pydefect.yaml for potcar setup.",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
         aliases=['vds'])
 
     parser_vasp_defect_set.add_argument(
@@ -125,20 +127,14 @@ def main():
         "--kpoints", dest="kpoints", default="KPOINTS", type=str,
         help="KPOINTS-type file name.")
     parser_vasp_defect_set.add_argument(
-        "--filtering", dest="filtering", type=str, default=None, nargs="+",
-        help="Filtering kwargs.")
+        "-f", "--filtering", dest="filtering", type=str, default=None,
+        nargs="+", help="Filtering kwargs.")
     parser_vasp_defect_set.add_argument(
         "--add", dest="add", type=str, default=None, nargs="+",
         help="Particular defect names to be added.")
     parser_vasp_defect_set.add_argument(
         "--force_overwrite", dest="force_overwrite", action="store_true",
         help="Set if the existing folders are overwritten.")
-    parser_vasp_defect_set.add_argument(
-        "--make_incar", dest="make_incar", action="store_true",
-        help="Make INCAR file using several default setting.")
-    parser_vasp_defect_set.add_argument(
-        "--make_kpoints", dest="make_kpoints", action="store_true",
-        help="Make KPOINTS file based on the lattice constants.")
 
     parser_vasp_defect_set.set_defaults(func=vasp_defect_set)
 
@@ -147,6 +143,7 @@ def main():
         name="vasp_kpoints_maker",
         description="Tools for configuring vasp KPOINTS file depending on the "
                     "task",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
         aliases=['vkm'])
 
     parser_vasp_kpoints_maker.add_argument(
@@ -160,26 +157,25 @@ def main():
         help="Number of the divided KPOINTS.")
     parser_vasp_kpoints_maker.add_argument(
         "--is_metal", dest="is_metal", action="store_true", default=False,
-        help="Set if the system metal is metal, for which k-point density is "
+        help="Set if the system is metal, for which k-point density is "
              "increased.")
     parser_vasp_kpoints_maker.add_argument(
         "--kpts_shift", dest="kpts_shift", default=None, nargs="+", type=int,
         help="Origin of the k-points.")
     parser_vasp_kpoints_maker.add_argument(
-        "--kpts_density_opt", dest="kpts_density_opt", type=float, default=3,
+        "--kpts_density_opt", dest="kpts_density_opt", type=float, default=4,
         help="K-point density used for the structure optimization of systems "
              "with band gaps ")
     parser_vasp_kpoints_maker.add_argument(
         "--kpts_density_defect", dest="kpts_density_defect", type=float,
-        default=1.5,
+        default=2.2,
         help="K-point density used for the calculations of point defects.")
     parser_vasp_kpoints_maker.add_argument(
-        "--multiplier_factor", dest="multiplier_factor", type=float, default=2,
+        "--factor_dos", dest="factor_dos", type=float, default=2,
         help="Multiplier_factor for the calculations of density of states, "
              "dielectric constants, and dielectric function.")
     parser_vasp_kpoints_maker.add_argument(
-        "--multiplier_factor_metal", dest="multiplier_factor_metal", type=float,
-        default=2,
+        "--factor_metal", dest="factor_metal", type=float, default=2,
         help="Multiplier factor the structure optimization of metallic systems")
 
     parser_vasp_kpoints_maker.set_defaults(func=vasp_kpoints_maker)
@@ -189,6 +185,7 @@ def main():
         name="vasp_incar_maker",
         description="Tools for configuring vasp INCAR file depending on the "
                     "task",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
         aliases=['vim'])
 
     parser_vasp_incar_maker.add_argument(
@@ -203,9 +200,11 @@ def main():
         help="Mixing parameter for exchange interaction.")
     parser_vasp_incar_maker.add_argument(
         "--is_magnetization", dest="is_magnetization", action="store_true",
-        help="Set if the system metal is spin polarized.")
+        help="Set if the system is spin polarized.")
     parser_vasp_incar_maker.add_argument(
         "-p", dest="poscar", type=str, default="POSCAR")
+    parser_vasp_incar_maker.add_argument(
+        "-m", dest="my_setting_file", type=str)
 
     parser_vasp_incar_maker.set_defaults(func=vasp_incar_maker)
 
@@ -214,6 +213,7 @@ def main():
         name="vasp_poscar_maker",
         description="Tools for configuring vasp POSCAR file. By default, "
                     "standardized primitive cell is generated.",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
         aliases=['vpsm'])
 
     parser_vasp_poscar_maker.add_argument(
@@ -237,6 +237,7 @@ def main():
     parser_vasp_potcar_maker = subparsers.add_parser(
         name="vasp_potcar_maker",
         description="Tools for configuring vasp POTCAR file.",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
         aliases=['vptm'])
 
     parser_vasp_potcar_maker.add_argument(
@@ -252,6 +253,7 @@ def main():
     parser_vasp_input_maker = subparsers.add_parser(
         name="vasp_input_maker",
         description="Tools for configuring vasp INCAR, KPOINTS, POTCAR files.",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
         aliases=['vm'])
 
     parser_vasp_input_maker.add_argument(
@@ -266,7 +268,7 @@ def main():
         help="Number of the divided KPOINTS.")
     parser_vasp_input_maker.add_argument(
         "--is_metal", dest="is_metal", action="store_true", default=False,
-        help="Set if the system metal is metal, for which k-point density is "
+        help="Set if the system is metal, for which k-point density is "
              "increased.")
     parser_vasp_input_maker.add_argument(
         "--kpts_shift", dest="kpts_shift", default=None, nargs="+", type=int,
@@ -280,12 +282,11 @@ def main():
         default=1.5,
         help="K-point density used for the calculations of point defects.")
     parser_vasp_input_maker.add_argument(
-        "--multiplier_factor", dest="multiplier_factor", type=int, default=2,
+        "--factor_dos", dest="factor_dos", type=int, default=2,
         help="Multiplier_factor for the calculations of density of states, "
              "dielectric constants, and dielectric function.")
     parser_vasp_input_maker.add_argument(
-        "--multiplier_factor_metal", dest="multiplier_factor_metal", type=int,
-        default=2,
+        "--factor_metal", dest="factor_metal", type=int, default=2,
         help="Multiplier factor the structure optimization of metallic systems")
     # INCAR part
     parser_vasp_input_maker.add_argument(
@@ -296,7 +297,9 @@ def main():
         help="Mixing parameter for exchange interaction.")
     parser_vasp_input_maker.add_argument(
         "--is_magnetization", dest="is_magnetization", action="store_true",
-        help="Set if the system metal is spin polarized.")
+        help="Set if the system is spin polarized.")
+    parser_vasp_input_maker.add_argument(
+        "-m", dest="my_setting_file", type=str)
 
     # POTCAR is generated from POSCAR only.
     parser_vasp_input_maker.set_defaults(func=vasp_input_maker)
@@ -305,6 +308,7 @@ def main():
     parser_recommend_supercell = subparsers.add_parser(
         name="recommend_supercell",
         description="Tools for recommendation of optimal supercell",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
         aliases=['rs'])
     parser_recommend_supercell.add_argument(
         "--poscar_path", dest="poscar_path", type=str,
@@ -326,6 +330,7 @@ def main():
         name="defect_entry",
         description="Tools for configuring defect_entry files for post process"
                     "of defect calculations.",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
         aliases=['de'])
 
     parser_defect_entry.add_argument(
@@ -347,6 +352,7 @@ def main():
     parser_supercell_results = subparsers.add_parser(
         name="supercell_results",
         description="Tools for analyzing vasp supercell results",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
         aliases=['sr'])
 
     parser_supercell_results.add_argument(
@@ -359,11 +365,11 @@ def main():
         "--dir_all", dest="dir_all", action="store_true",
         help="Make dft_results.json for *[0-9] and " "perfect directory.")
     parser_supercell_results.add_argument(
-        "-p", dest="poscar", type=str, default="POSCAR")
+        "-p", dest="poscar", type=str, default="POSCAR-finish")
     parser_supercell_results.add_argument(
-        "-o", dest="outcar", type=str, default="OUTCAR")
+        "-o", dest="outcar", type=str, default="OUTCAR-finish")
     parser_supercell_results.add_argument(
-        "-v", dest="vasprun", type=str, default="vasprun.xml")
+        "-v", dest="vasprun", type=str, default="vasprun-finish.xml")
     parser_supercell_results.add_argument(
         "--json", dest="json", type=str, default="dft_results.json",
         help="dft_results.json type file name.")
@@ -377,6 +383,7 @@ def main():
     parser_unitcell_results = subparsers.add_parser(
         name="unitcell_results",
         description="Tools for analyzing vasp unitcell results",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
         aliases=['ur'])
 
     parser_unitcell_results.add_argument(
@@ -426,6 +433,7 @@ def main():
         name="correction",
         description="Tools for correction of error of defect formation energy"
                     " due to finite cell size.",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
         aliases=['c'])
 
     # needed files
@@ -470,6 +478,7 @@ def main():
     parser_chempotdiag = subparsers.add_parser(
         name="chempotdiag",
         description="",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
         aliases=['cpd'])
 
     # get poscar from materials project
@@ -553,6 +562,7 @@ def main():
         name="plot_energy",
         description="Tools for plotting defect formation energies as a "
                     "function of Fermi level",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
         aliases=['pe'])
 
     parser_plot_energy.add_argument("--name", dest="name", type=str, default="")
@@ -619,8 +629,8 @@ def vasp_kpoints_maker(args):
                  kpts_shift=args.kpts_shift,
                  kpts_density_opt=args.kpts_density_opt,
                  kpts_density_defect=args.kpts_density_defect,
-                 multiplier_factor=args.multiplier_factor,
-                 multiplier_factor_metal=args.multiplier_factor_metal)
+                 factor_dos=args.factor_dos,
+                 factor_metal=args.factor_metal)
 
 
 def vasp_incar_maker(args):
@@ -630,7 +640,8 @@ def vasp_incar_maker(args):
                hfscreen=args.hfscreen,
                aexx=args.aexx,
                is_magnetization=args.is_magnetization,
-               poscar=args.poscar)
+               poscar=args.poscar,
+               my_incar_setting=args.my_setting_file)
 
 
 def vasp_poscar_maker(args):
@@ -661,15 +672,16 @@ def vasp_input_maker(args):
                  kpts_shift=args.kpts_shift,
                  kpts_density_opt=args.kpts_density_opt,
                  kpts_density_defect=args.kpts_density_defect,
-                 multiplier_factor=args.multiplier_factor,
-                 multiplier_factor_metal=args.multiplier_factor_metal)
+                 factor_dos=args.factor_dos,
+                 factor_metal=args.factor_metal)
 
     make_incar(task=args.task,
                functional=args.functional,
                hfscreen=args.hfscreen,
                aexx=args.aexx,
                is_magnetization=args.is_magnetization,
-               poscar=args.poscar)
+               poscar=args.poscar,
+               my_incar_setting=args.my_setting_file)
 
     elements = Structure.from_file(args.poscar).symbol_set
     make_potcar(elements)

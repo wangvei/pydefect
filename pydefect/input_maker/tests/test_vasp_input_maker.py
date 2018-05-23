@@ -2,7 +2,7 @@
 import filecmp
 import unittest
 
-from pydefect.input_maker.vasp_input_maker import ModIncar, \
+from pydefect.input_maker.vasp_input_maker import ModIncar, make_potcar, \
     make_hpkot_primitive_poscar, make_band_kpoints, make_kpoints, make_incar
 from pydefect.util.structure import NotStandardizedPrimitiveError
 
@@ -23,6 +23,15 @@ class ModIncarTest(unittest.TestCase):
         i.pretty_write_file("INCAR-ModIncar_actual")
         self.assertTrue(
             filecmp.cmp("INCAR-ModIncar_expected", "INCAR-ModIncar_actual"))
+
+
+class MakePotcarTest(unittest.TestCase):
+
+    def test(self):
+        elements = ("Mg", "O")
+        make_potcar(elements=elements)
+        self.assertTrue(
+            filecmp.cmp("POTCAR-MgO", "POTCAR"))
 
 
 class MakeHpkotPrimitiveTest(unittest.TestCase):
