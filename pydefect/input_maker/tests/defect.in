@@ -10,14 +10,23 @@ Fractional coordinates: 0.2500000  0.2500000  0.2500000
      Electronegativity: 3.44
        Oxidation state: -2
 
-Interstitial coordinates: 
-Antisite defects: 
+Interstitial coordinates: 0.1000  0.1000  0.1000
+Interstitial coordinates: 0.2000  0.2000  0.2000
+Antisite defects: Mg_O O_Mg
 
-Substituted defects: 
+   Dopant element: Al
+Electronegativity: 1.61
+  Oxidation state: 3
 
-Maximum Displacement: 0.2
+   Dopant element: N
+Electronegativity: 3.04
+  Oxidation state: -3
 
-Exceptionally included: 
-Exceptionally excluded: 
-Cutoff region of atoms perturbed: 3.0
-Symprec: 0.01
+Substituted defects: Al_Mg Al_O N_Mg N_O
+
+Maximum Displacement: 0.15
+
+Exceptionally included: Va_O1_-1 Va_O1_-2
+Exceptionally excluded: Va_O1_1 Va_O1_2
+Cutoff region of atoms perturbed: 2.0
+Symprec: 0.001

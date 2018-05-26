@@ -1,5 +1,9 @@
 # -*- coding: utf-8 -*-
 
+from collections import OrderedDict
+
+import seekpath
+import spglib
 from pymatgen import Structure
 
 from pydefect.database.atom import symbols_to_atom
@@ -39,6 +43,64 @@ def spglib_cell_to_structure(cell):
     return Structure(cell[0], species, cell[1])
 
 
+def find_equivalent_sites(structure, symprec=0.01, angle_tolerance=5):
+    """
+    Returns an ordered structure and equivalent atom indices.
+    Args:
+        structure (Structure): Pymatgen Structure class object
+        atom indices (list):
+    """
+    cell = structure_to_spglib_cell(structure)
+    symmetry_dataset = \
+        spglib.get_symmetry_dataset(cell=cell, symprec=symprec,
+                                    angle_tolerance=angle_tolerance)
+    # simple list, e.g., [0, 0, 1, 1, 2, 2,..]
+#    mapping_to_primitive = symmetry_dataset["std_mapping_to_primitive"]
+    mapping_to_primitive = symmetry_dataset["mapping_to_primitive"]
+    print(mapping_to_primitive)
+
+    primitive_cell = spglib.find_primitive(cell=cell, symprec=symprec,
+                                           angle_tolerance=angle_tolerance)
+    # simple list, e.g., [0, 0, 1, 1, 2, 2,..]
+    primitive_equivalent_sites = \
+        spglib.get_symmetry_dataset(cell=primitive_cell, symprec=symprec,
+                                    angle_tolerance=angle_tolerance)["equivalent_atoms"]
+
+    # {0:[0, 1], 1:[2, 3], 3:[4, 5], ..}
+    print(primitive_equivalent_sites)
+    mapping_to_primitive_dict = OrderedDict()
+    for s_atom_index, p_atom_index in enumerate(mapping_to_primitive):
+        if p_atom_index not in mapping_to_primitive_dict.keys():
+            mapping_to_primitive_dict[p_atom_index] = [s_atom_index]
+        else:
+            mapping_to_primitive_dict[p_atom_index].append(s_atom_index)
+
+    print(primitive_equivalent_sites)
+    # {0:[0, 1], 1:[2, 3], 2:[4, 5], ..}
+    equivalent_atoms = OrderedDict()
+    for p_atom_index, inequiv_atom_index in enumerate(primitive_equivalent_sites.tolist()):
+
+        if inequiv_atom_index not in equivalent_atoms.keys():
+            equivalent_atoms[inequiv_atom_index] = []
+
+        if p_atom_index in mapping_to_primitive_dict.keys():
+            equivalent_atoms[inequiv_atom_index].\
+                    extend(mapping_to_primitive_dict[p_atom_index])
+
+    sites = []
+    repr_sites_indices = []
+    print(equivalent_atoms)
+    for v in equivalent_atoms.values():
+        repr_sites_indices.append(v[0])
+        for i in v:
+#            print(i)
+            sites.append(structure.sites[i])
+
+    ordered_structure = structure.from_sites(sites)
+
+    return ordered_structure, equivalent_atoms, repr_sites_indices
+
+
 def find_spglib_standard_primitive(structure, symprec=1e-05):
     """
     Returns a primitive unit cell.
@@ -47,7 +109,6 @@ def find_spglib_standard_primitive(structure, symprec=1e-05):
         symprec (float): distance tolerance in cartesian coordinates
                          Unit is compatible with the cell.
     """
-    import spglib
     cell = structure_to_spglib_cell(structure)
     return spglib_cell_to_structure(spglib.find_primitive(cell, symprec))
 
@@ -61,7 +122,6 @@ def find_hpkot_primitive(structure, symprec=1e-05, angle_tolerance=-1.0):
                          Unit is compatible with the cell.
         angle_tolerance (float): angle tolerance used for symmetry analysis.
     """
-    import seekpath
     cell = structure_to_spglib_cell(structure)
     res = seekpath.get_explicit_k_path(structure=cell, symprec=symprec,
                                        angle_tolerance=angle_tolerance)
@@ -85,7 +145,6 @@ def structure_to_seekpath(structure, time_reversal=True, ref_distance=0.025,
                          Unit is compatible with the cell.
         angle_tolerance (float): angle tolerance used for symmetry analysis.
     """
-    import seekpath
     cell = structure_to_spglib_cell(structure)
     res = seekpath.get_explicit_k_path(cell,
                                        with_time_reversal=time_reversal,
