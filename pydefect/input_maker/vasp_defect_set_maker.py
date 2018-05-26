@@ -56,7 +56,8 @@ class VaspDefectInputSetMaker(DefectInputSetMaker):
             shutil.copyfile(self._incar, os.path.join("perfect", "INCAR"))
             shutil.copyfile(self._kpoints, os.path.join("perfect", "KPOINTS"))
             elements = self._defect_initial_setting.structure.symbol_set
-            make_potcar("perfect", elements, potcar_dir())
+            potcar = os.path.join("perfect", "POTCAR")
+            make_potcar(elements=elements, potcar=potcar)
 
     def _make_defect_input(self, defect_name):
 
@@ -106,7 +107,8 @@ class VaspDefectInputSetMaker(DefectInputSetMaker):
 
             # Construct POTCAR file
             elements = d.initial_structure.symbol_set
-            make_potcar(defect_name, elements, potcar_dir())
+            potcar = os.path.join(defect_name, "POTCAR")
+            make_potcar(elements, potcar=potcar)
 
             # Construct INCAR file
             shutil.copyfile(self._incar, os.path.join(defect_name, "INCAR"))

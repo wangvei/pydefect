@@ -16,11 +16,12 @@ class PriorInfo:
 
     def __init__(self, energy_per_atom=None, band_gap=None,
                  total_magnetization=None, data_source=None,
-                 mag_threshold=0.001, band_gap_threshold=0.1):
+                 is_molecule=None, mag_threshold=0.001, band_gap_threshold=0.1):
         self._energy_per_atom = energy_per_atom
         self._band_gap = band_gap
         self._total_magnetization = total_magnetization
         self._data_source = data_source
+        self._is_molecule = is_molecule
         self._mag_threshold = mag_threshold
         self._band_gap_threshold = band_gap_threshold
 
@@ -65,6 +66,10 @@ class PriorInfo:
         return self._total_magnetization
 
     @property
+    def is_molecule(self):
+        return self._molecule
+
+    @property
     def is_magnetic(self):
         if self._total_magnetization > self._mag_threshold:
             return True
@@ -73,3 +78,4 @@ class PriorInfo:
     def is_band_gap(self):
         if self._band_gap > self._band_gap_threshold:
             return True
+
