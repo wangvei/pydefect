@@ -35,9 +35,9 @@ class TestShomateThermodynamicsFunction(unittest.TestCase):
 
     def test_standard_enthalpy(self):
         self.assertAlmostEqual(self._o2.standard_enthalpy(298.15), 0, 1)
-        self.assertAlmostEqual(self._o2.standard_enthalpy(400), 3.03, 1)
-        self.assertAlmostEqual(self._o2.standard_enthalpy(1500), 40.60, 1)
-        self.assertAlmostEqual(self._o2.standard_enthalpy(5500), 202.3, 1)
+        self.assertAlmostEqual(self._o2.standard_enthalpy(400), 3.03/1000, 1)
+        self.assertAlmostEqual(self._o2.standard_enthalpy(1500), 40.60/1000, 1)
+        self.assertAlmostEqual(self._o2.standard_enthalpy(5500), 202.3/1000, 1)
 
     def test_standard_entropy(self):
         self.assertAlmostEqual(self._o2.standard_entropy(400), 213.9, 1)
@@ -45,7 +45,7 @@ class TestShomateThermodynamicsFunction(unittest.TestCase):
         self.assertAlmostEqual(self._o2.standard_entropy(5500), 309.6, 1)
 
     def test_pressure_term(self):
-        self.assertAlmostEqual(self._o2.r_ln_p0_p(1e+5), 0)
+        self.assertAlmostEqual(self._o2.r_ln_p_p0(1e+5), 0)
 
     def test_zero_point(self):
         self.assertAlmostEqual(self._o2.enthalpy_zero, 8.683)
@@ -83,7 +83,21 @@ class TestGas(unittest.TestCase):
         self.assertAlmostEqual(Gas.N2.zero_point_vibrational_energy, 0.146/2, 2)
 
     def test_energy_shift(self):
-        print(self._o2.energy_shift(pressure=1, temperature=293.15))
+        kumagai_script_o2_chemical_potential = \
+            {100: -0.052,
+             200: -0.243,
+             300: -0.450,
+             400: -0.667,
+             500: -0.892,
+             600: -1.124,
+             700: -1.361,
+             800: -1.604,
+             900: -1.850,
+             1000: -2.100}
+        for t in range(100, 1001, 100):
+            this = self._o2.energy_shift(pressure=1e+5, temperature=t)
+            pre = kumagai_script_o2_chemical_potential[int(t)] / 2
+            print(t, this, pre, (this-pre)/pre)
 
 
 if __name__ == "__main__":
