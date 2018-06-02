@@ -524,6 +524,19 @@ def main():
                                     default="OUTCAR",
                                     help="Name of OUTCAR, like OUTCAR-finish")
 
+    # thermodynamic status (P and T) input
+    parser_chempotdiag.add_argument("-pp", "--partial_pressures",
+                                    dest="partial_pressures", type=str,
+                                    nargs='+', default=None,
+                                    help="partial pressure of system."
+                                         "e.g. -pp O2 1e+5 N2 20000"
+                                         "-> O2: 1e+5(Pa), N2: 20000(Pa)")
+    parser_chempotdiag.add_argument("-t", "--temperature",
+                                    dest="temperature", type=float,
+                                    default=293.15,
+                                    help="temperature of system (unit: K)"
+                                         "e.g. -t 3000 -> 3000(K)")
+
     # drawing diagram
     parser_chempotdiag.add_argument("-w", "--without_label",
                                     help="Draw diagram without label.",
@@ -896,6 +909,7 @@ def correction(args):
 
 
 def chempotdiag(args):
+
     if args.mat_proj_poscar:
         kwargs_to_make_vasp_inputs = {}
         if args.dir_path:
@@ -913,12 +927,28 @@ def chempotdiag(args):
             raise ValueError("You can not specify energy_file and vasp_dirs "
                              "simultaneously.")
         if args.energy_file:
+            if args.temperature or args.partial_pressures:
+                warnings.warn("Now temperature and pressures can not apply when"
+                              " reading data from energy_file")
             cp = ChemPotDiag.from_file(args.energy_file)
         if args.vasp_dirs:
             poscar_paths = [d + args.poscar_name for d in args.vasp_dirs]
             outcar_paths = [d + args.outcar_name for d in args.vasp_dirs]
-            cp = ChemPotDiag.from_vasp_calculations_files(poscar_paths,
-                                                          outcar_paths)
+            partial_pressure_dict = {}
+            if args.partial_pressures:
+                if len(args.partial_pressures) % 2 != 0:
+                    raise ValueError("Invalid partial pressures input {}".
+                                     format(args.partial_pressures))
+                for i in range(int(len(args.partial_pressures)/2)):
+                    formula = args.partial_pressures[2 * i]
+                    pressure = args.partial_pressures[2 * i + 1]
+                    partial_pressure_dict[formula] = float(pressure)
+
+            cp = ChemPotDiag.\
+                from_vasp_calculations_files(poscar_paths,
+                                             outcar_paths,
+                                             temperature=args.temperature,
+                                             pressure=partial_pressure_dict)
         print("Energies of elements ({0}) : {1}"
               .format(cp.elements, cp.element_energy))
         #  Read args of drawing diagram from parser
