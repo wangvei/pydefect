@@ -479,7 +479,7 @@ Space group operators:
 
 
  Dipole corrections
-   LMONO  =      F    monopole corrections only (constant potential shift)
+   LMONO  =      F    monopole corrections only (constant potential energy_shift)
    LDIPOL =      F    correct potential (dipole corrections)
    IDIPOL =      0    1-x, 2-y, 3-z, 4-all directions 
    EPSILON=  1.0000000 bulk dielectric constant
@@ -499,7 +499,7 @@ Space group operators:
    LVEL    =     F    velocity operator in full k-point grid
    LINTERFAST=   F  fast interpolation
    KINTER  =     0    interpolate to denser k-point grid
-   CSHIFT  =0.1000    complex shift for real part using Kramers Kronig
+   CSHIFT  =0.1000    complex energy_shift for real part using Kramers Kronig
    OMEGAMAX=  -1.0    maximum frequency
    DEG_THRESHOLD= 0.2000000E-02 threshold for treating states as degnerate
    RTIME   =   -0.100 relaxation time in fs
