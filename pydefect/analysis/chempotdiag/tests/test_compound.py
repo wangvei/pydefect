@@ -1,11 +1,7 @@
-import tempfile
 import unittest
-
-import ruamel.yaml
 
 from pydefect.analysis.chempotdiag.compound import Compound, CompoundsList
 from pydefect.analysis.chempotdiag.vertex import Vertex, VerticesList
-from pydefect.analysis.chempotdiag.chem_pot_diag import ChemPotDiag
 
 EXAMPLE_DIR = "../../../../test_files/analysis/chempotdiag/"
 
@@ -33,7 +29,7 @@ vertex_near_mgo_2d \
 FILENAME_3D = EXAMPLE_DIR + "energy_MP-Ca-Al-O.txt"
 FILENAME_4D = EXAMPLE_DIR + "energy_4d.txt"
 # For read DFT test. We don't check these files are physically proper.
-DFT_DIRECTORIES = [EXAMPLE_DIR + "/dft_data/O2/",
+DFT_DIRECTORIES = [EXAMPLE_DIR + "/dft_data/O2molecule/",
                    EXAMPLE_DIR + "/dft_data/Mg/",
                    EXAMPLE_DIR + "/dft_data/MgO/"]
 POSCAR_NAME = "POSCAR-finish"
@@ -67,6 +63,46 @@ class TestCompound(unittest.TestCase):
         self.assertRaises(ValueError, lambda: c.set_elements(["U", "Pr"]))
         #  Must be contain He, whose composition is non-zero.
         self.assertRaises(ValueError, lambda: c.set_elements(["Li", "Be"]))
+
+    def test_from_vasp_files(self):
+        poscar_paths = [d+POSCAR_NAME for d in DFT_DIRECTORIES]
+        outcar_paths = [d+OUTCAR_NAME for d in DFT_DIRECTORIES]
+        vasprun_paths = [d+VASPRUN_NAME for d in DFT_DIRECTORIES]
+        #  from outcar
+        cl = CompoundsList.from_vasp_calculations_files(poscar_paths,
+                                                        outcar_paths)
+        print(cl)
+
+        #  from vasprun.xml
+        cl = CompoundsList.from_vasp_calculations_files(poscar_paths,
+                                                        vasprun_paths,
+                                                        fmt="vasprun")
+
+        # When calculation of any simple substance is not found,
+        # program should be raise error.
+        # TODO: This doesn't raise error
+        # self.assertRaises(ValueError,
+        #                   lambda: CompoundsList.from_vasp_calculations_files(
+        #                       poscar_paths[1:], outcar_paths[1:]))
+
+    def test_gas_shift(self):
+        poscar_paths = [d+POSCAR_NAME for d in DFT_DIRECTORIES]
+        outcar_paths = [d+OUTCAR_NAME for d in DFT_DIRECTORIES]
+        cl = CompoundsList.from_vasp_calculations_files(poscar_paths,
+                                                        outcar_paths)
+        print(cl[0].gas_energy_shift(293.15, 1))
+        print(cl)
+        print(cl.gas_energy_shifts(293.15, {"O2": 1}))
+        print("at T=293.15, O2 pressure = 1")
+        print(cl.free_energies(293.15, {"O2": 1}))
+        print("at T=293.15, O2 pressure = 1e+4")
+        print(cl.free_energies(293.15, {"O2": 1e+4}))
+        print("at T=293.15, O2 pressure = 1e+5")
+        print(cl.free_energies(293.15, {"O2": 1e+5}))
+        print("at T=6000, O2 pressure = 1e+5")
+        print(cl.free_energies(6000, {"O2": 1e+5}))
+        print("at T=6000, O2 pressure = 1e+100")
+        print(cl.free_energies(6000, {"O2": 1e+100}))
 
 
 if __name__ == "__main__":

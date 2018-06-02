@@ -1,7 +1,21 @@
 import unittest
 
 from pydefect.analysis.chempotdiag.gas \
-    import Gas, ShomateThermodynamicsFunction
+    import FundamentalFrequencies, ShomateThermodynamicsFunction, Gas
+
+
+class TestFundamentalFrequencies(unittest.TestCase):
+
+    def test_from_yaml(self):
+        file_path_nh3 = "../molecules/NH3/fundamental_frequencies.yaml"
+        # FundamentalFrequencies.from_yaml(self.file_path_o2)
+        nh3 = FundamentalFrequencies.from_yaml(file_path_nh3)
+        expected = [{'Frequency': 3506, 'Degeneration': 1},
+                    {'Frequency': 1022, 'Degeneration': 1},
+                    {'Frequency': 3577, 'Degeneration': 2},
+                    {'Frequency': 1691, 'Degeneration': 2}]
+        actual = [f.as_dict() for f in nh3]
+        self.assertListEqual(expected, actual)
 
 
 class TestShomateThermodynamicsFunction(unittest.TestCase):
@@ -30,6 +44,12 @@ class TestShomateThermodynamicsFunction(unittest.TestCase):
         self.assertAlmostEqual(self._o2.standard_entropy(1500), 258.1, 1)
         self.assertAlmostEqual(self._o2.standard_entropy(5500), 309.6, 1)
 
+    def test_pressure_term(self):
+        self.assertAlmostEqual(self._o2.r_ln_p0_p(1e+5), 0)
+
+    def test_zero_point(self):
+        self.assertAlmostEqual(self._o2.enthalpy_zero, 8.683)
+
 
 class TestGas(unittest.TestCase):
 
@@ -56,6 +76,14 @@ class TestGas(unittest.TestCase):
         self.assertEqual(self._o2.min_temperature, 100)
         self.assertEqual(self._o2.max_temperature, 6000)
         self.assertEqual(self._o2.temperature_range, (100, 6000))
+
+    def test_zero_point(self):
+        # Expected value is script of Prof. Kumagai
+        self.assertAlmostEqual(Gas.O2.zero_point_vibrational_energy, 0.098/2, 2)
+        self.assertAlmostEqual(Gas.N2.zero_point_vibrational_energy, 0.146/2, 2)
+
+    def test_energy_shift(self):
+        print(self._o2.energy_shift(pressure=1, temperature=293.15))
 
 
 if __name__ == "__main__":

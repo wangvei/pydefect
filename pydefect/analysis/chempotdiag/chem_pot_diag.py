@@ -30,26 +30,29 @@ class ChemPotDiag:
         Object for chemical potentials diagram.
     """
 
-    def __init__(self, element_energy, stable_compounds, unstable_compounds,
-                 vertices,
-                 compounds_to_vertex_list, vertex_to_compounds_list):
+    def __init__(self, element_free_energy, stable_compounds,
+                 unstable_compounds, vertices,
+                 compounds_to_vertex_list, vertex_to_compounds_list,
+                 temperature=0, pressure=None):
         """
 
         # TODO: element_energy should be ordered_dict
         Args:
-            element_energy:
+            element_free_energy:
             stable_compounds:
             unstable_compounds:
             vertices:
             compounds_to_vertex_list:
             vertex_to_compounds_list:
         """
-        self._element_energy = element_energy
+        self._element_free_energy = element_free_energy
         self._stable_compounds = stable_compounds
         self._unstable_compounds = unstable_compounds
         self._vertices = vertices
         self._compounds_to_vertex_list = compounds_to_vertex_list
         self._vertex_to_compounds_list = vertex_to_compounds_list
+        self._temperature = temperature
+        self._pressure = pressure
 
     @classmethod
     def from_calculation(cls, input_compounds_array):
@@ -59,11 +62,19 @@ class ChemPotDiag:
             input_compounds_array (CompoundsList): Considered compounds array
         """
         compounds_array = copy.deepcopy(input_compounds_array)
-        # Temporary
+        print("compounds array")
+        print(compounds_array)
+
+        # Alphabetically sort elements' names
         compounds_array.set_elements(sorted(input_compounds_array.elements))
+
+        # Standardize energies
         compounds_array.standardize_energies()
         element_energy = compounds_array.element_energies
+
         dim = len(compounds_array.elements)
+
+        #  unary system
         if dim == 1:
             min_energy = min(compounds_array, key=lambda x: x.energy).energy
             stable_compounds \
@@ -81,15 +92,19 @@ class ChemPotDiag:
             return cls(element_energy, stable_compounds, unstable_compounds,
                        vertices,
                        compounds_to_vertex_list, vertex_to_compounds_list)
+
         # set boundary range
         boundary_rate = 1.1  # can be arbitrary number > 1.0
         intersections = np.zeros((len(compounds_array), dim))
+        free_energies = compounds_array.free_energies()
         for i, comp_dat in enumerate(compounds_array):
-            e = comp_dat.energy
+            # e = comp_dat.energy
+            # e = comp_dat.free_energy(temperature=temperature,
+            #                          pressure=pressure)
             c = comp_dat.composition
             for j in range(dim):
                 if c[j] != 0:
-                    intersections[i][j] = e / c[j]
+                    intersections[i][j] = free_energies[i] / c[j]
                 else:  # This case does not related to search_vertices_range.
                     intersections[i][j] = float("inf")
         search_vertices_range = np.min(intersections) * boundary_rate
@@ -101,13 +116,18 @@ class ChemPotDiag:
                                                              e,
                                                              -energy)
             compounds_array.append(boundary)
+            free_energies.append(-energy)
+
         # Calculate HalfspaceIntersection
         eps = 1e-2
         interior_point \
             = np.array([search_vertices_range + eps] * dim)
         halfspaces = []
-        for comp_dat in compounds_array:
-            h = np.append(comp_dat.composition, -comp_dat.energy)
+        for i, comp_dat in enumerate(compounds_array):
+            # h = np.append(comp_dat.composition,
+            #               -comp_dat.free_energy(temperature=temperature,
+            #                                     pressure=pressure))
+            h = np.append(comp_dat.composition, -free_energies[i])
             halfspaces.append(h)
         halfspaces = np.array(halfspaces)
         # TODO: Probably there is a more simple way to make 2D np.array.
@@ -121,13 +141,12 @@ class ChemPotDiag:
                 if i in hi.dual_facets[j]:
                     indices.append(j)
             facets_by_halfspace.append(indices)
+
         # classify all compounds into dummy, stable, and unstable.
         stable_compounds = CompoundsList([])
         unstable_compounds = CompoundsList([])
         stable_original_index_list = []
         unstable_original_index_list = []
-        # (un)stable_compounds_list[i] =
-        # compounds_array[(un)stable_original_index_list[i]]
         which_vertex_on_boundary = set()
         for i, compound in enumerate(compounds_array):
             if isinstance(compound, DummyCompoundForDiagram):
@@ -140,6 +159,7 @@ class ChemPotDiag:
                 unstable_original_index_list.append(i)
         stable_compounds.set_elements(compounds_array.elements)
         unstable_compounds.set_elements(compounds_array.elements)
+
         # make vertices_array
         draw_criterion = min([item for item in hi.intersections.flatten()
                               if abs(item - search_vertices_range) > 1e-6])
@@ -178,28 +198,58 @@ class ChemPotDiag:
                    compounds_to_vertex_list, vertex_to_compounds_list)
 
     @classmethod
-    def from_file(cls, filename):
-        compounds_array = CompoundsList.from_file(filename)
+    def from_file(cls, filename, temperature=None, pressure=None):
+        """
+        Args:
+            filename (str):
+            temperature (float): (K)
+            pressure (dict): e.g. {"O2": 1e+3} (Pa)
+
+        Returns:
+        """
+        compounds_array = CompoundsList.from_file(filename,
+                                                  temperature,
+                                                  pressure)
         return cls.from_calculation(compounds_array)
 
     @classmethod
     def from_vasp_calculations_files(cls,
                                      poscar_paths,
                                      output_paths,
-                                     fmt="outcar"):
+                                     fmt="outcar",
+                                     temperature=None,
+                                     pressure=None):
         """
         Args:
             poscar_paths (list of str):
             output_paths (list of str):
             fmt (str): "outcar" or "vasprun".
+            temperature (float): (K)
+            pressure (dict): (Pa)
         Returns:
             (ChemPotDiag) ChemPotDiag object from vasp files.
         """
         compounds_list = \
             CompoundsList.from_vasp_calculations_files(poscar_paths,
                                                        output_paths,
-                                                       fmt=fmt)
+                                                       fmt=fmt,
+                                                       temperature=temperature,
+                                                       pressure=pressure)
         return cls.from_calculation(compounds_list)
+
+    @property
+    def temperature(self):
+        """
+            (float) temperature (K)
+        """
+        return self._temperature
+
+    @property
+    def pressure(self):
+        """
+            (dict) pressure (GPa) like {"O": 2, "N": 10}
+        """
+        return self._pressure
 
     @property
     def dim(self):
@@ -221,7 +271,7 @@ class ChemPotDiag:
         """
             (list of float) Element energy.
         """
-        return self._element_energy
+        return self._element_free_energy
 
     @property
     def stable_compounds(self):
@@ -368,6 +418,8 @@ class ChemPotDiag:
 
         """
         d = self.get_neighbor_vertices_as_dict(remarked_compound, **kwargs)
+        d["temperature"] = self._temperature
+        d["pressure"] = self._pressure
         file_name = file_path + "/vertices_" + remarked_compound + ".yaml"
         with open(file_name, 'w') as fw:
             ruamel.yaml.dump(d, fw)
