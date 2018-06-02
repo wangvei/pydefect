@@ -429,8 +429,6 @@ class CompoundsList(list):
             self._pressure = defaultdict(lambda: default_pressure, {})
         else:
             self._pressure = defaultdict(lambda: default_pressure, pressure)
-        print(f"__init__, {type(self)}, pressure, self._pressure")
-        print(pressure, self._pressure)
         self._temperature = temperature
 
     def __str__(self):
@@ -594,8 +592,6 @@ class CompoundsList(list):
         return energy_shifts
 
     def free_energies(self):
-        print("free_energies")
-        print(self._pressure)
         return [c.energy + es
                 for c, es in zip(self, self.gas_energy_shifts())]
 
