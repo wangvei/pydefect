@@ -1,10 +1,12 @@
 from __future__ import print_function
 import copy
-from collections import OrderedDict
+from collections import OrderedDict, defaultdict
 
 import numpy as np
 from pymatgen.io.vasp.inputs import Poscar
 from pymatgen.io.vasp.outputs import Vasprun
+
+from pydefect.analysis.chempotdiag.gas import Gas
 
 # TODO: Once __eq__ is implemented, __hash__ have to be implemented?
 # TODO: Now probably we should use pymatgen.composition.
@@ -19,7 +21,7 @@ class Compound:
         Object for compound
     """
 
-    def __init__(self, name, elements, composition, energy):
+    def __init__(self, name, elements, composition, energy, gas=None):
         """
         Create a Compound object.
 
@@ -31,6 +33,8 @@ class Compound:
                 Composition of compound.
                 Order of elements is ruled by self.elements.
             energy (float): Energy of compound.
+            gas (Gas): If compound is gas, related gas data (like Gas.O2)
+                will be used when temperature and pressure are considered.
         """
         self._name = name
         self._elem_comp = OrderedDict()
@@ -39,17 +43,23 @@ class Compound:
         for elem, comp in zip(elements, standardized_composition):
             self._elem_comp[elem] = comp
         self._energy = energy / number_of_atoms
+        self._gas = gas
 
     @classmethod
     def from_vasp_calculation_files(cls, poscar_path, output_path,
-                                    fmt="outcar", elements=None,
-                                    name=None):
+                                    fmt="outcar", is_molecule_gas=True,
+                                    elements=None, name=None):
         """
         Args:
             poscar_path (str):
             output_path (str):
             fmt (str): Format of output file.
                        Now "outcar" or "vasprun" modes are implemented.
+            is_molecule_gas (bool): Read molecule data as gas.
+                                    If path of directory contains "molecule",
+                                    gas data are added.
+                                    Then zero-point energy and
+                                    free energy are considered.
             elements (None/list/str): Considered elements,
                                             like ["Mg", "O"].
                                             If not provided, automatically
@@ -62,6 +72,15 @@ class Compound:
         # HACK: energy type is energy(sigma->0),
         # then we cannot use pymatgen in natural way.
         # TODO: consistent with pydefect?
+        gas = None
+        if is_molecule_gas and "molecule" in poscar_path:
+            for g in Gas:
+                if str(g) == pmg_composition.reduced_formula:
+                    gas = g
+                    break
+            if gas is None:
+                raise ValueError("{} molecule was not found in database".
+                                 format(poscar_path))
         if fmt == "outcar":
             with open(output_path) as fr:
                 for line in reversed(fr.readlines()):
@@ -81,7 +100,7 @@ class Compound:
         for i, element in enumerate(elements):
             composition_vector[i] = pmg_composition.as_dict()[element]
         energy = float(energy)
-        return cls(name, elements, composition_vector, energy)
+        return cls(name, elements, composition_vector, energy, gas=gas)
 
     @property
     def name(self):
@@ -117,6 +136,57 @@ class Compound:
             (float) Energy of compound.
         """
         return self._energy
+
+    @property
+    def gas(self):
+        """
+            (Gas) If compound is gas, return related gas data, otherwise None.
+        """
+        return self._gas
+
+    @gas.setter
+    def gas(self, gas):
+        """
+
+        Args:
+            gas (Gas):
+
+        """
+        if not isinstance(gas, Gas):
+            raise TypeError("gas must be Gas class, but actually {}".
+                            format(type(gas)))
+        self._gas = gas
+
+    def gas_energy_shift(self, temperature, pressure):
+        """
+
+        Args:
+            temperature(float): (K)
+            pressure(float): (Pa)
+
+        Returns: (eV/atom)
+
+        """
+        if self._gas is None:
+            return 0
+        else:
+            return self._gas.energy_shift(temperature, pressure)
+
+    def free_energy(self, temperature=None, pressure=None):
+        """
+
+        Args:
+            temperature(float): (K)
+            pressure(float): (Pa)
+
+        Returns: (eV/atom)
+
+        """
+        if temperature or pressure:
+            gas_energy_shift = self.gas_energy_shift(temperature, pressure)
+        else:
+            gas_energy_shift = 0
+        return self.energy + gas_energy_shift
 
     def standardize_energy(self, standard_energy):
         self._energy = self._energy - standard_energy
@@ -156,8 +226,9 @@ class Compound:
                 "Elements: {1} , "
                 "Composition: {2} , "
                 "Energy: {3} , "
+                "Gas: {4}"
                 .format(self.name, "-".join(self.elements), self.composition,
-                        self.energy))
+                        self.energy, self.gas))
 
     def __eq__(self, other):
         """
@@ -303,6 +374,7 @@ class DummyCompoundForDiagram(Compound):
         for elem, comp in zip(elements, composition):
             self._elem_comp[elem] = comp
         self._energy = energy
+        self._gas = None
 
     @classmethod
     def construct_boundary(cls, elements, element, energy):
@@ -323,7 +395,15 @@ class CompoundsList(list):
     _STR_NOT_STANDARDIZED = "Not yet standardized"
     _TYPE_ERROR_MESSAGE = "CompoundsArray must be contains only Compound."
 
-    def __init__(self, *args, **kw):
+    def __init__(self, *args, pressure=None, temperature=None, **kw):
+        """
+
+        Args:
+            *args:
+            pressure (dict): e.g. {O2: 1} (Pa)
+            temperature (float): (K)
+            **kw:
+        """
         list.__init__(self, *args, **kw)
         is_different_elements = False
         for c in self:
@@ -343,12 +423,19 @@ class CompoundsList(list):
             if not isinstance(c, Compound):
                 raise TypeError(CompoundsList._TYPE_ERROR_MESSAGE)
         self._element_energies = CompoundsList._STR_NOT_STANDARDIZED
+        self._pressure = pressure
+        self._temperature = temperature
+
+    def __str__(self):
+        return super(CompoundsList, self).__str__() + \
+               " at T={}, P={}".format(self._temperature, self._pressure)
 
     # HACK: If there is not this method, order of elements will change
     #       when deep copied.
     # TODO: Implement the code of (not-deep)copy.
     def __deepcopy__(self, memodict={}):
-        return_list = CompoundsList([])
+        return_list = CompoundsList([], temperature=self._temperature,
+                                    pressure=self._pressure)
         for c in self:
             return_list.append(c)
         return_list.set_elements(self.elements)
@@ -408,6 +495,14 @@ class CompoundsList(list):
             return []
         return self[0].elements
 
+    @property
+    def pressure(self):
+        return self._pressure
+
+    @property
+    def temperature(self):
+        return self._temperature
+
     def set_elements(self, elements):
         for i, _ in enumerate(self):
             self[i].set_elements(elements)
@@ -429,8 +524,10 @@ class CompoundsList(list):
         Standardize (let energies of stable simple substance = 0) energy_list.
         """
         comp_list = np.array([c.composition for c in self])
-        energy_list = np.array([c.energy for c in self])
+        # energy_list = np.array([c.energy for c in self]) # temporary
+        energy_list = np.array(self.free_energies())
         num_composition = len(comp_list[0])
+
         # TODO: remove are_standard_energies.
         # TODO: If calculations of any simple elements are missed,
         # should be raise error.
@@ -440,9 +537,9 @@ class CompoundsList(list):
         for c, e in zip(comp_list, energy_list):
             index = np.where(abs(c - 1) < 1e-8)[0]
             # if index is not empty, c is a simple substance
-            if len(index) == 0: # not simple substance
+            if len(index) == 0:  # not simple substance
                 continue
-            if len(index) >= 2: # composition is like [1.0, 1.0, 1.0]
+            if len(index) >= 2:  # composition is like [1.0, 1.0, 1.0]
                 raise ValueError("Composition is {}, it is strange because "
                                  "more than one composition are 1.0. "
                                  "Maybe standardization of composition "
@@ -467,6 +564,32 @@ class CompoundsList(list):
             self[i].standardize_energy(standard_energy_list[i])
         self._element_energies = element_energies
 
+    def gas_energy_shifts(self, default_pressure=1e+5):
+        """
+        Free energy energy_shift of compounds if the compound is gas,
+        otherwise the shifts are zero.
+        Args:
+            default_pressure (float):
+
+        Returns (list):
+        """
+        if self._pressure is None and self._temperature is None:
+            return [0] * len(self)
+        p_with_default = defaultdict(lambda: default_pressure, self._pressure)
+        energy_shifts = []
+        for c in self:
+            if c.gas:
+                pressure = p_with_default[c.gas.formula]
+                energy_shift = c.gas_energy_shift(self._temperature, pressure)
+            else:
+                energy_shift = 0
+            energy_shifts.append(energy_shift)
+        return energy_shifts
+
+    def free_energies(self):
+        return [c.energy + es
+                for c, es in zip(self, self.gas_energy_shifts())]
+
     def get_indices_and_compounds(self, compound_name):
         """
         Find object of Compound from self by name(str) of compound.
@@ -483,7 +606,7 @@ class CompoundsList(list):
             return matched_list
 
     @classmethod
-    def from_file(cls, file_name):
+    def from_file(cls, file_name, temperature=None, pressure=None):
         """
         Create a object of CompDat from file.
         Args:
@@ -495,6 +618,8 @@ class CompoundsList(list):
                        O  0  1   -2.46256238
                     Mg2O  2  1  -14.46256238 ...
                 Note that the energies of element substances are essential.
+            temperature (float):
+            pressure (dict):
         """
         with open(file_name) as f:
             lines = f.readlines()
@@ -511,7 +636,7 @@ class CompoundsList(list):
             compounds_list.append(Compound(name, elements, composition, energy))
         compounds_list = CompoundsList(compounds_list)
         compounds_list.set_elements(elements)
-        return cls(compounds_list)
+        return cls(compounds_list, temperature=temperature, pressure=pressure)
 
     # TODO: make unittest
     def to(self, file_name=None):
@@ -541,12 +666,15 @@ class CompoundsList(list):
 
     @classmethod
     def from_vasp_calculations_files(
-            cls, poscar_paths, output_paths, fmt="outcar"):
+            cls, poscar_paths, output_paths, fmt="outcar",
+            temperature=None, pressure=None):
         """
         Args:
             poscar_paths (list of str):
             output_paths (list of str):
             fmt (str): "outcar" or "vasprun".
+            temperature (float): (K)
+            pressure (dict): (Pa)
         Returns:
             (CompoundsList) CompoundsList object from vasp files.
         """
@@ -555,13 +683,14 @@ class CompoundsList(list):
                              "number of paths of output ({}) differs"
                              .format(len(poscar_paths), len(output_paths)))
         # considered_element = set()
-        compounds_list = cls([])
+        compounds_list = cls([], temperature=temperature, pressure=pressure)
         for poscar_path, output_path in zip(poscar_paths, output_paths):
             compound = Compound.from_vasp_calculation_files(poscar_path,
                                                             output_path,
                                                             fmt=fmt)
             compounds_list.append(compound)
-        return cls(compounds_list)
+        # return cls(compounds_list, temperature=temperature, pressure=pressure)
+        return compounds_list
 
     # TODO: document, unittest
     def almost_equal(self, other, tol=1e-5):
