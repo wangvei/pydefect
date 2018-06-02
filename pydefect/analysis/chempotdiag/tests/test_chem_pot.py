@@ -283,12 +283,12 @@ class TestChemPot(unittest.TestCase):
                 cp.draw_diagram(remarked_compound=rc)
 
     def test_draw_diagram_2d_with_temperature_pressure(self):
-        for t in [298.15, 500, 1000]:
-            for o2_p in [1e-10, 1e+5, 1e+100]:
+        poscar_paths = [d+POSCAR_NAME for d in DFT_DIRECTORIES]
+        outcar_paths = [d+OUTCAR_NAME for d in DFT_DIRECTORIES]
+        for t in [293.15, 500, 1000]:
+            for o2_p in [1e+5, 1e+100]:
                 title_str = "T = {0} (K), P_O2 = {1} (Pa)".format(t, o2_p)
                 p = {"O2": o2_p}
-                poscar_paths = [d+POSCAR_NAME for d in DFT_DIRECTORIES]
-                outcar_paths = [d+OUTCAR_NAME for d in DFT_DIRECTORIES]
                 cp = ChemPotDiag.from_vasp_calculations_files(poscar_paths,
                                                               outcar_paths,
                                                               temperature=t,
@@ -298,6 +298,17 @@ class TestChemPot(unittest.TestCase):
                 cp.draw_diagram(
                     title=title_str,
                     remarked_compound=rc)
+
+        title_str = "temperature = 293.15, pressure = None"
+        cp = ChemPotDiag.from_vasp_calculations_files(poscar_paths,
+                                                      outcar_paths,
+                                                      temperature=293.15,
+                                                      pressure=None)
+        rc = cp.stable_compounds[1].name
+        # print(cp.stable_compounds)
+        cp.draw_diagram(
+            title=title_str,
+            remarked_compound=rc)
 
     def test_draw_diagram_3d_with_temperature_pressure(self):
         # TODO

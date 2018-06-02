@@ -400,7 +400,8 @@ class CompoundsList(list):
 
         Args:
             *args:
-            pressure (dict): e.g. {O2: 1} (Pa)
+            pressure (dict): e.g. {O2: 1} (Pa) When None,
+                             default pressure (1e+5 Pa) will be applied.
             temperature (float): (K)
             **kw:
         """
@@ -423,7 +424,13 @@ class CompoundsList(list):
             if not isinstance(c, Compound):
                 raise TypeError(CompoundsList._TYPE_ERROR_MESSAGE)
         self._element_energies = CompoundsList._STR_NOT_STANDARDIZED
-        self._pressure = pressure
+        default_pressure = 1e+5
+        if pressure is None:
+            self._pressure = defaultdict(lambda: default_pressure, {})
+        else:
+            self._pressure = defaultdict(lambda: default_pressure, pressure)
+        print(f"__init__, {type(self)}, pressure, self._pressure")
+        print(pressure, self._pressure)
         self._temperature = temperature
 
     def __str__(self):
@@ -564,7 +571,7 @@ class CompoundsList(list):
             self[i].standardize_energy(standard_energy_list[i])
         self._element_energies = element_energies
 
-    def gas_energy_shifts(self, default_pressure=1e+5):
+    def gas_energy_shifts(self):
         """
         Free energy energy_shift of compounds if the compound is gas,
         otherwise the shifts are zero.
@@ -575,18 +582,20 @@ class CompoundsList(list):
         """
         if self._pressure is None and self._temperature is None:
             return [0] * len(self)
-        p_with_default = defaultdict(lambda: default_pressure, self._pressure)
         energy_shifts = []
         for c in self:
             if c.gas:
-                pressure = p_with_default[c.gas.formula]
-                energy_shift = c.gas_energy_shift(self._temperature, pressure)
+                energy_shift = \
+                    c.gas_energy_shift(self._temperature,
+                                       self._pressure[c.gas.formula])
             else:
                 energy_shift = 0
             energy_shifts.append(energy_shift)
         return energy_shifts
 
     def free_energies(self):
+        print("free_energies")
+        print(self._pressure)
         return [c.energy + es
                 for c, es in zip(self, self.gas_energy_shifts())]
 
