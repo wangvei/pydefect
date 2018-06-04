@@ -5,4 +5,4 @@ import numpy
 
 setup(name="ase_cython",
       ext_modules=cythonize("ase_cython.pyx"),
-      include_dirs = [numpy.get_include()])
+      include_dirs=[numpy.get_include()])

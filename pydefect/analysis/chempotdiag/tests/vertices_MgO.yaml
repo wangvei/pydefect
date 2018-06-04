@@ -1,0 +1,7 @@
+A: {Mg: -6.16355592, O: 0.0}
+B: {Mg: -1.6098923399999983, O: -4.553663580000004}
+comment: This is from test_output_yaml in test_chem_pot.py
+compound: MgO
+pressure: null
+standard_energy: {Mg: -2.11327587, O: -2.46256238}
+temperature: 0

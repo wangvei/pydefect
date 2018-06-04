@@ -35,7 +35,7 @@ vertex_near_mgo_2d \
 FILENAME_3D = EXAMPLE_DIR + "energy_MP-Ca-Al-O.txt"
 FILENAME_4D = EXAMPLE_DIR + "energy_4d.txt"
 # For read DFT test. We don't check these files are physically proper.
-DFT_DIRECTORIES = [EXAMPLE_DIR + "/dft_data/O2/",
+DFT_DIRECTORIES = [EXAMPLE_DIR + "/dft_data/O2molecule/",
                    EXAMPLE_DIR + "/dft_data/Mg/",
                    EXAMPLE_DIR + "/dft_data/MgO/"]
 POSCAR_NAME = "POSCAR-finish"
@@ -281,6 +281,49 @@ class TestChemPot(unittest.TestCase):
                 cp = ChemPotDiag.from_file(path)
                 rc = cp.stable_compounds[1].name
                 cp.draw_diagram(remarked_compound=rc)
+
+    def test_draw_diagram_2d_with_temperature_pressure(self):
+        poscar_paths = [d+POSCAR_NAME for d in DFT_DIRECTORIES]
+        outcar_paths = [d+OUTCAR_NAME for d in DFT_DIRECTORIES]
+        for t in [293.15, 500, 1000]:
+            for o2_p in [1e+5, 1e+100]:
+                title_str = "T = {0} (K), P_O2 = {1} (Pa)".format(t, o2_p)
+                p = {"O2": o2_p}
+                cp = ChemPotDiag.from_vasp_calculations_files(poscar_paths,
+                                                              outcar_paths,
+                                                              temperature=t,
+                                                              pressure=p)
+                rc = cp.stable_compounds[1].name
+                # print(cp.stable_compounds)
+                cp.draw_diagram(
+                    title=title_str,
+                    remarked_compound=rc)
+
+        title_str = "temperature = 293.15, pressure = None"
+        cp = ChemPotDiag.from_vasp_calculations_files(poscar_paths,
+                                                      outcar_paths,
+                                                      temperature=293.15,
+                                                      pressure=None)
+        rc = cp.stable_compounds[1].name
+        # print(cp.stable_compounds)
+        cp.draw_diagram(
+            title=title_str,
+            remarked_compound=rc)
+
+    def test_draw_diagram_3d_with_temperature_pressure(self):
+        # TODO
+        for t in [298.15, 3000, 6000]:
+            for o2_p in [1e-10, 1e+5, 1e+20]:
+                title_str = "T = {0} (K), P_O2 = {1} (Pa)".format(t, o2_p)
+                p = {"O2": o2_p}
+                cp = ChemPotDiag.from_file(FILENAME_3D,
+                                           temperature=t,
+                                           pressure=p)
+                rc = cp.stable_compounds[1].name
+                # print(cp.stable_compounds)
+                cp.draw_diagram(
+                    title=title_str,
+                    remarked_compound=rc)
 
     def test_neighbor_vertices_as_dict(self):
         cp = ChemPotDiag.from_file(FILENAME_3D)  # Ca,Al,O
