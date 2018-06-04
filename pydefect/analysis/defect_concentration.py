@@ -136,7 +136,7 @@ defect_energy = []
 defect_num_site = []
 
 defect = open(opts.defect_list, "r")
-defect.readline() # skip first comment line
+defect.readline() # skip first supercell_comment line
 for i, d in enumerate(defect):
     d_each = d.split()
     if d_each == []: continue
@@ -149,7 +149,7 @@ for i, d in enumerate(defect):
 if opts.quench:
     fixed_defect_concentration = []
     quench_file = open(opts.quench, "r")
-    quench_file.readline() # skip first comment line
+    quench_file.readline() # skip first supercell_comment line
     for i in range(len(defect_name)):
         each_concentration = quench_file.readline().split()[2]
         fixed_defect_concentration.append(

@@ -11,13 +11,10 @@ from pymatgen.core.structure import Structure
 from pydefect.analysis.defect_energies import DefectEnergies, Defect
 from pydefect.input_maker.defect_initial_setting \
     import print_dopant_info, DefectInitialSetting
+from pydefect.input_maker.supercell_maker import Supercell
 from pydefect.input_maker.vasp_input_maker \
-    import make_hpkot_primitive_poscar, make_supercell_poscar, make_incar, \
-    make_kpoints, make_potcar
+    import make_hpkot_primitive_poscar, make_incar, make_kpoints, make_potcar
 from pydefect.input_maker.vasp_defect_set_maker import VaspDefectInputSetMaker
-from pydefect.input_maker.recommend_supercell_ase_cythonized.\
-    ase_generation_supercell \
-    import recommend_supercell_ase
 from pydefect.core.defect_entry import DefectEntry
 from pydefect.core.supercell_dft_results import SupercellDftResults
 from pydefect.util.vasp_process_analyzer \
@@ -221,7 +218,9 @@ def main():
     parser_vasp_poscar_maker.add_argument(
         "-pp", dest="pposcar", type=str, default="PPOSCAR")
     parser_vasp_poscar_maker.add_argument(
-        "--supercell", "-s", dest="supercell", type=float, nargs="+",
+        "-sp", dest="sposcar", type=str, default="SPOSCAR")
+    parser_vasp_poscar_maker.add_argument(
+        "--supercell", "-s", dest="supercell", type=int, nargs="+",
         help="Construct a supercell.")
     parser_vasp_poscar_maker.add_argument(
         "--symprec", dest="symprec", type=float, default=_SYMPREC,
@@ -307,21 +306,29 @@ def main():
     # -- recommend_supercell ---------------------------------------------------
     parser_recommend_supercell = subparsers.add_parser(
         name="recommend_supercell",
-        description="Tools for recommendation of optimal supercell",
+        description="Tools for recommendation of an optimal supercell for "
+                    "defect calculations",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
         aliases=['rs'])
     parser_recommend_supercell.add_argument(
-        "--poscar_path", dest="poscar_path", type=str,
-        help="Path of poscar to make supercell")
+        "-p", dest="poscar", type=str, default="POSCAR")
     parser_recommend_supercell.add_argument(
-        "--criterion", dest="criterion", type=float,
-        help="Criterion of ASE optimality measure (default is 0.5)")
+        "-sp", dest="sposcar", type=str, default="SPOSCAR")
     parser_recommend_supercell.add_argument(
-        "--min_natom", dest="min_natom", type=int,
-        help="Minimum number of atom (default is 50)")
+        "--criterion", dest="criterion", type=float, default=0.12,
+        help="Isotropy criterion.")
     parser_recommend_supercell.add_argument(
-        "--max_natom", dest="max_natom", type=int,
-        help="Maximum number of atom (default is 400)")
+        "--min_num_atoms", dest="min_num_atoms", type=int, default=50,
+        help="Minimum number of atoms")
+    parser_recommend_supercell.add_argument(
+        "--max_num_atoms", dest="max_num_atoms", type=int, default=400,
+        help="Maximum number of atoms")
+    parser_recommend_supercell.add_argument(
+        "--no_conventional", dest="no_conventional", action="store_false",
+        help="Set if the supercell is not based on the conventional cell.")
+    parser_recommend_supercell.add_argument(
+        "--make_forcibly", dest="make_forcibly", action="store_true",
+        help="If output best supercell when the criterion is not satisfied.")
 
     parser_recommend_supercell.set_defaults(func=recommend_supercell)
 
@@ -647,7 +654,9 @@ def vasp_incar_maker(args):
 def vasp_poscar_maker(args):
 
     if args.supercell:
-        make_supercell_poscar(args.supercell, args.poscar, args.sposcar)
+        structure = Structure.from_file(args.poscar)
+        Supercell(structure=structure, multi=args.supercell).\
+            to_poscar(filename=args.sposcar)
     else:
         make_hpkot_primitive_poscar(poscar=args.poscar,
                                     pposcar=args.pposcar,
@@ -688,16 +697,15 @@ def vasp_input_maker(args):
 
 
 def recommend_supercell(args):
-    if not args.poscar_path:
-        raise ValueError("Specify path of poscar!")
-    kw_args = {}
-    if args.criterion:
-        kw_args["criterion"] = args.criterion
-    if args.min_natom:
-        kw_args["min_natom"] = args.min_natom
-    if args.max_natom:
-        kw_args["max_natom"] = args.max_natom
-    recommend_supercell_ase(args.poscar_path, **kw_args)
+    structure = Structure.from_file(args.poscar)
+    s = Supercell.recommended_supercell(structure=structure,
+                                        to_conventional=args.no_conventional,
+                                        max_num_atoms=args.max_num_atoms,
+                                        min_num_atoms=args.min_num_atoms,
+                                        isotropy_criterion=args.criterion,
+                                        make_forcibly=args.make_forcibly)
+
+    s.to_poscar(filename=args.sposcar)
 
 
 def defect_entry(args):

@@ -51,20 +51,13 @@ class SpglibCellToStructureTest(unittest.TestCase):
         self.assertTrue(self.structure == self.returned_structure)
 
 
-class SpglibCellToStructureTest(unittest.TestCase):
+class FindSpglibStandardConventionalTest(unittest.TestCase):
     def setUp(self):
-        self.structure = Structure.from_file("SPOSCAR")
-#        self.structure = Structure.from_file("POSCAR-SiPO")
-
-    def test(self):
-        s, r, e = find_equivalent_sites(self.structure)
-        # print(s)
-        # print(r)
-        # print(e)
+        self.structure = Structure.from_file("PPOSCAR-MgO")
+        self.cell = structure_to_spglib_cell(self.structure)
 
 
-
-class FindPrimitiveTest(unittest.TestCase):
+class FindHPKOTPrimitiveTest(unittest.TestCase):
     def test(self):
         expected = Structure.from_file("PPOSCAR-MgO")
         actual = find_hpkot_primitive(Structure.from_file("BPOSCAR-MgO"))

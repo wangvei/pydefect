@@ -12,7 +12,6 @@ from monty.serialization import loadfn
 
 import pydefect.database.atom as atom
 from pydefect.core.irreducible_site import IrreducibleSite
-from pydefect.util.structure import find_equivalent_sites
 
 __author__ = "Yu Kumagai"
 __copyright__ = "Copyright 2017, Oba group"
@@ -312,10 +311,9 @@ class DefectInitialSetting:
 
         if dopants is None:
             dopants = []
-        # sites are sorted by the electronegativity of the species.
         s = Structure.from_file(poscar).get_sorted_structure()
-
-        symmetrized_structure, _, repr_sites_indices = find_equivalent_sites(s)
+        symmetrized_structure = \
+            SpacegroupAnalyzer(s, symprec=symprec).get_symmetrized_structure()
 
         # Electronegativity and oxidation states for constituents and dopants
         electronegativity = {}
@@ -335,21 +333,23 @@ class DefectInitialSetting:
         # irreducible_sites (list): a set of IrreducibleSite class objects
         irreducible_sites = []
 
-        for i in range(len(repr_sites_indices)):
-            # increment number of inequivalent sites for element
-            element = \
-                str(symmetrized_structure.sites[repr_sites_indices[i]].specie)
+        # equivalent_sites: Equivalent site indices from SpacegroupAnalyzer.
+        equiv_sites = symmetrized_structure.equivalent_sites
+        last_index = 0
 
+        for i, equiv_site in enumerate(equiv_sites):
+            # set element name of equivalent site
+            element = equiv_site[0].species_string
+
+            # increment number of inequivalent sites for element
             num_irreducible_sites[element] += 1
 
+            first_index = last_index + 1
+            last_index = last_index + len(equiv_site)
+            # the following np.array type must be converted to list
+            # to keep the consistency of the IrreducibleSite object.
+            repr_coords = list(equiv_site[0].frac_coords)
             irreducible_name = element + str(num_irreducible_sites[element])
-            first_index = repr_sites_indices[i] + 1
-            if i == len(repr_sites_indices) - 1:
-                last_index = len(s.sites)
-            else:
-                last_index = repr_sites_indices[i + 1]
-            repr_coords = symmetrized_structure.\
-                sites[repr_sites_indices[i]].frac_coords.tolist()
 
             irreducible_sites.append(IrreducibleSite(irreducible_name,
                                                      element,

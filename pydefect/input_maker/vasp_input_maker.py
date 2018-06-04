@@ -56,7 +56,7 @@ incar_flags["hybrid"] = ["LHFCALC", "AEXX", "HFSCREEN", "NKRED", "PRECFOCK", "TI
 incar_flags["gw"] = ["NBANDSGW", "NOMEGA", "OMEGAMAX", "ANTIRES", "MAXMEM", "NMAXFOCKAE", "NBANDSLF", "ENCUTGW"]
 incar_flags["ldau"] = ["LDAU", "LDAUTYPE", "LMAXMIX", "LDAUPRINT", "LDAUL", "LDAUU", "LDAUJ"]
 incar_flags["electrostatic"] = ["NELECT", "EPSILON", "DIPOL", "IDIPOL", "LMONO", "LDIPOL"]
-incar_flags["parallel"] = ["NPAR", "KPAR"]
+incar_flags["parallel"] = ["NPAR", "NCORE", "KPAR"]
 
 
 @unique
@@ -224,12 +224,6 @@ def make_hpkot_primitive_poscar(poscar="POSCAR", pposcar="PPOSCAR",
     primitive_structure = find_hpkot_primitive(s, symprec=symprec,
                                                angle_tolerance=angle_tolerance)
     primitive_structure.to(filename=pposcar)
-
-
-def make_supercell_poscar(scaling_matrix, poscar="POSCAR", sposcar="SPOSCAR"):
-    s = Structure.from_file(os.path.join(poscar))
-    supercell_structure = s.make_supercell(scaling_matrix)
-    supercell_structure.to(filename=sposcar)
 
 
 def make_band_kpoints(ibzkpt, dirname='.', poscar="POSCAR",

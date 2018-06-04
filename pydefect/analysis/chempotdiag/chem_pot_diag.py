@@ -362,7 +362,7 @@ class ChemPotDiag:
         Args:
             file_path(str):
             remarked_compound(str):
-            **kwargs(dict): other property, like {"comment" : "foo,var"}
+            **kwargs(dict): other property, like {"supercell_comment" : "foo,var"}
 
         Returns:
 

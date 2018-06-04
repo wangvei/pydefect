@@ -284,9 +284,9 @@ class TestChemPot(unittest.TestCase):
 
     def test_neighbor_vertices_as_dict(self):
         cp = ChemPotDiag.from_file(FILENAME_3D)  # Ca,Al,O
-        d = cp.get_neighbor_vertices_as_dict("Ca11Al14O32", comment="comment")
+        d = cp.get_neighbor_vertices_as_dict("Ca11Al14O32", comment="supercell_comment")
         print(d)
-        d = cp.get_neighbor_vertices_as_dict("Ca", comment="comment")
+        d = cp.get_neighbor_vertices_as_dict("Ca", comment="supercell_comment")
         print(d)
 
     def test_dump_yaml(self):
