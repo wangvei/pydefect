@@ -94,9 +94,16 @@ class VaspDefectInputSetMaker(DefectInputSetMaker):
                                       center,
                                       self._defect_initial_setting.cutoff,
                                       self._defect_initial_setting.distance)
-                perturbed_defect_structure. \
-                    to(filename=os.path.join(defect_name,
-                                             "POSCAR-DisplacedInitial"))
+
+                poscar_str = perturbed_defect_structure.\
+                    to(fmt="poscar").splitlines(True)
+                for i in perturbed_sites:
+                    poscar_str[i + 8] = poscar_str[i + 8][:-2] + "  Disp\n"
+                filename = os.path.join(defect_name, "POSCAR-DisplacedInitial")
+                with open(filename, 'w') as fw:
+                    for line in poscar_str:
+                        fw.write(line)
+
                 shutil.copyfile(
                     os.path.join(defect_name, "POSCAR-DisplacedInitial"),
                     os.path.join(defect_name, "POSCAR"))

@@ -39,8 +39,7 @@ class ModBSPlotter(BSPlotter):
         """
         COPIED FROM PYMATGEN.2018.5.22
         Get a matplotlib object for the bandstructure plot.
-        Blue lines are up spin, red lines are down
-        spin.
+        Blue lines are up spin, red lines are down spin.
 
         Args:
             zero_to_efermi: Automatically subtract off the Fermi energy from

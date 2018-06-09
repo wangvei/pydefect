@@ -7,7 +7,6 @@ from pymatgen.electronic_structure.bandstructure \
 
 from pydefect.vasp_util.script.plot_band_structure import ModBSPlotter, \
     VaspBandStructureSymmLine
-#    plot_band_structure, plot_projected_band_structure
 
 __author__ = "Yu Kumagai"
 __copyright__ = "Copyright 2018, Oba group"

@@ -7,6 +7,8 @@ import os
 import warnings
 
 from pymatgen.core.structure import Structure
+from pymatgen.electronic_structure.bandstructure \
+    import get_reconstructed_band_structure
 
 from pydefect.analysis.defect_energies import DefectEnergies, Defect
 from pydefect.input_maker.defect_initial_setting \
@@ -25,6 +27,8 @@ from pydefect.core.correction import Ewald, Correction
 from pydefect.analysis.chempotdiag.chem_pot_diag \
     import ChemPotDiag
 from pydefect.analysis.chempotdiag.make_inputs import make_vasp_inputs_from_mp
+from pydefect.vasp_util.script.plot_band_structure import ModBSPlotter, \
+    VaspBandStructureSymmLine
 
 __version__ = "0.0.1"
 __date__ = "19.4.2018"
@@ -577,6 +581,25 @@ def main():
 
     parser_chempotdiag.set_defaults(func=chempotdiag)
 
+    # -- plot_band -----------------------------------------------------------
+    parser_plot_band = subparsers.add_parser(
+        name="plot_band",
+        description="Tools for plotting band structures",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+        aliases=['pb'])
+    parser_plot_band.add_argument(
+        "-v", dest="vasprun", nargs="+", type=str)
+    parser_plot_band.add_argument(
+        "-v2", dest="vasprun2", nargs="+", type=str)
+    parser_plot_band.add_argument(
+        "-k", dest="kpoints", nargs="+", type=str)
+    parser_plot_band.add_argument(
+        "-y", dest="yrange", nargs="+", type=float)
+    parser_plot_band.add_argument(
+        "-f", dest="filename", type=str)
+
+    parser_plot_band.set_defaults(func=plot_band)
+
     # -- plot_energy -----------------------------------------------------------
     parser_plot_energy = subparsers.add_parser(
         name="plot_energy",
@@ -991,6 +1014,35 @@ def chempotdiag(args):
             if args.remarked_compound is None:
                 raise ValueError("remarked_compound is needed to dump yaml")
             cp.dump_vertices_yaml(os.getcwd(), args.remarked_compound)
+
+
+def plot_band(args):
+    bands = []
+    for k, v in zip(args.kpoints, args.vasprun):
+        bands.append(VaspBandStructureSymmLine(k, v))
+
+    band = get_reconstructed_band_structure(bands)
+
+    bs_plotter = ModBSPlotter(band)
+
+    if not args.vasprun2:
+        p = bs_plotter.get_plot(zero_to_efermi=False, ylim=args.yrange)
+    else:
+        bands2 = []
+        for k, v in zip(args.kpoints, args.vasprun2):
+            bands2.append(VaspBandStructureSymmLine(k, v))
+
+        band2 = get_reconstructed_band_structure(bands)
+        bs_plotter2 = ModBSPlotter(band2)
+        bs_plotter2.save_plot(filename=args.filename)
+
+        p = bs_plotter2.plot_compare(bs_plotter, zero_to_efermi=False)
+
+    if args.filename:
+#        p.save_plot(filename=args.filename)
+        p.savefig(args.filename, format="eps")
+    else:
+        p.show()
 
 
 def plot_energy(args):

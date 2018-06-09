@@ -412,7 +412,6 @@ def get_max_enmax(element_names):
 
 
 # TODO: READ prior_info
-# TODO: READ MY INCAR SETTING FILE
 def make_incar(task, functional, hfscreen=None, aexx=None,
                is_magnetization=False, dirname='.', defect_in=None,
                poscar="POSCAR", prior_info=None, my_incar_setting=None):
@@ -467,7 +466,7 @@ def make_incar(task, functional, hfscreen=None, aexx=None,
         max_enmax = get_max_enmax(elements)
 
     if max_enmax:
-        if setting["ISIF"] > 2:
+        if "ISIF" in setting and setting["ISIF"] > 2:
             setting["ENCUT"] = str(max_enmax * 1.3)
         else:
             setting["ENCUT"] = str(max_enmax)
@@ -492,6 +491,10 @@ def make_incar(task, functional, hfscreen=None, aexx=None,
 
     if my_incar_setting:
         setting.update(loadfn(my_incar_setting))
+
+    # remove NPAR for the calculations of dielectrics as it is not allowed.
+    if task is Task.dielectric or Task.dielectric_function:
+        setting.pop("NPAR")
 
     incar = os.path.join(dirname, 'INCAR')
     ModIncar(setting).pretty_write_file(filename=incar)
