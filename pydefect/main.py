@@ -333,9 +333,9 @@ def main():
         "--no_conventional", dest="no_conventional", action="store_false",
         help="Set if the supercell is not based on the conventional cell.")
     parser_recommend_supercell.add_argument(
-        "--make_forcibly", dest="make_forcibly", action="store_true",
-        help="Whether to output best supercell when the criterion is not "
-             "satisfied.")
+        "--smallest_criterion", dest="smallest_criterion", action="store_true",
+        help="Output the smallest criterion supercell instead of the smallest "
+             "supercell.")
 
     parser_recommend_supercell.set_defaults(func=recommend_supercell)
 
@@ -737,16 +737,18 @@ def vasp_input_maker(args):
 
 def recommend_supercell(args):
     structure = Structure.from_file(args.poscar)
-    s, structure, multi, isotropy = \
-        Supercell.recommended_supercell(uc_structure=structure,
-                                        to_conventional=args.no_conventional,
-                                        max_num_atoms=args.max_num_atoms,
-                                        min_num_atoms=args.min_num_atoms,
-                                        isotropy_criterion=args.criterion,
-                                        make_forcibly=args.make_forcibly)
+    s, uc_structure, multi, isotropy, criterion = \
+        Supercell.recommended_supercell(
+            structure=structure,
+            to_conventional=args.no_conventional,
+            max_num_atoms=args.max_num_atoms,
+            min_num_atoms=args.min_num_atoms,
+            isotropy_criterion=args.criterion,
+            smallest_criterion=args.smallest_criterion,
+            show_candidate=False)
     if s:
         s.to_poscar(filename=args.sposcar)
-        structure.to(filename=args.ucposcar)
+        uc_structure.to(filename=args.ucposcar)
     else:
         print("Supercell is not constructed properly.")
         print("Multi: {0} {1} {2}, Isotropy: {3:.3}".
