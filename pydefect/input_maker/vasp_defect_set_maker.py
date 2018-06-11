@@ -98,7 +98,7 @@ class VaspDefectInputSetMaker(DefectInputSetMaker):
                 poscar_str = perturbed_defect_structure.\
                     to(fmt="poscar").splitlines(True)
                 for i in perturbed_sites:
-                    poscar_str[i + 8] = poscar_str[i + 8][:-2] + "  Disp\n"
+                    poscar_str[i + 8] = poscar_str[i + 8][:-1] + "  Disp\n"
                 filename = os.path.join(defect_name, "POSCAR-DisplacedInitial")
                 with open(filename, 'w') as fw:
                     for line in poscar_str:
