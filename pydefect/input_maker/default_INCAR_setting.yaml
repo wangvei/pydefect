@@ -133,7 +133,8 @@ defect:
   LWAVE: False
   LCHARG: False
   LORBIT: 12
-  
+  ISPIN: 2
+
 pbe:
   
 pbesol:

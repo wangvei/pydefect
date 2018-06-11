@@ -2,6 +2,8 @@
 
 import numpy as np
 
+from collections import OrderedDict
+
 from pymatgen.core.structure import Structure
 from pydefect.util.structure import find_spglib_standard_conventional, \
     find_spglib_standard_primitive
@@ -44,33 +46,41 @@ class Supercell:
         return cls(structure, multi)
 
     @classmethod
-    def recommended_supercell(cls, uc_structure, to_conventional, max_num_atoms,
-                              min_num_atoms, isotropy_criterion, make_forcibly):
+    def recommended_supercell(cls, structure, to_conventional, max_num_atoms,
+                              min_num_atoms, isotropy_criterion,
+                              smallest_cell=True):
         """
         Constructs a recommended supercell.
         Note:
         The supercell indices for the axes of which lengths are within 1.05a,
         where a is the shortest supercell lattice length, are incremented.
         Args:
-            uc_structure (pmg structure class object):
+            structure (pmg structure class object):
             to_conventional (bool):
             max_num_atoms (int):
             min_num_atoms (int):
             isotropy_criterion (float):
-            make_forcibly (bool):
+            smallest_cell (bool):
+        Return:
+            supercell structure (pmg structure class object):
+            unitcell structure (pmg structure class object):
+            multi (3x3 numpy array):
+            isotropy (float):
         """
 
         if to_conventional:
-            uc_structure = find_spglib_standard_conventional(uc_structure)
+            uc_structure = find_spglib_standard_conventional(structure)
         else:
-            uc_structure = find_spglib_standard_primitive(uc_structure)
+            uc_structure = find_spglib_standard_primitive(structure)
 
         multi = np.ones(3, dtype="int8")
         abc = np.array(uc_structure.lattice.abc)
         num_atoms_in_unitcell = uc_structure.num_sites
 
-        lowest_isotropy = float(cls.supercell_isotropy(uc_structure, multi))
-        candidate_multi = np.copy(multi)
+        isotropy = []
+        multi = []
+        # lowest_isotropy = float(cls.supercell_isotropy(uc_structure, multi))
+        # candidate_multi = np.copy(multi)
 
         for i in range(int(max_num_atoms / num_atoms_in_unitcell)):
 
@@ -80,29 +90,32 @@ class Supercell:
 
             super_abc = multi * abc
             normalized_abc = super_abc / min(super_abc)
-            isotropy = cls.isotropy(super_abc)
 
-            if num_atoms > min_num_atoms and isotropy < isotropy_criterion:
-                comment = \
-                    cls.supercell_comment(multi, isotropy, is_converged=True)
-                return cls(uc_structure, multi, comment), uc_structure, multi, \
-                       isotropy
+            for j in range(3):
+                if normalized_abc[j] < 1.05:
+                    multi[j] += 1
 
-            else:
-                for j in range(3):
-                    if normalized_abc[j] < 1.05:
-                        multi[j] += 1
-                if isotropy < lowest_isotropy:
-                    lowest_isotropy = isotropy
-                    candidate_multi = np.copy(multi)
+            if num_atoms > min_num_atoms:
+                isotropy.append(cls.supercell_isotropy(structure, multi))
+                multi.append(ucture, multi)
 
-        if make_forcibly is True:
-            comment = cls.supercell_comment(candidate_multi, lowest_isotropy,
-                                            is_converged=False)
-            return cls(uc_structure, candidate_multi, comment), uc_structure, \
-                   candidate_multi, lowest_isotropy
-        else:
-            return None, uc_structure, candidate_multi, lowest_isotropy
+        #        if num_atoms > min_num_atoms and isotropy < isotropy_criterion:
+
+
+        # if smallest_cell:
+
+        # sorted_isotropy = \
+        #     OrderedDict(sorted(isotropy.items(), key=lambda x: x[1]))
+
+
+        # comment = cls.supercell_comment(candidate_multi, lowest_isotropy,
+        #                                 is_converged=False)
+        # return cls(uc_structure, candidate_multi, comment), uc_structure, \
+        #        candidate_multi, lowest_isotropy
+
+
+        # else:
+        #     return None, uc_structure, candidate_multi, lowest_isotropy
 
     def to_poscar(self, filename):
         poscar_str = self.structure.to(fmt="poscar").splitlines(True)
