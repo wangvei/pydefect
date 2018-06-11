@@ -332,7 +332,8 @@ def main():
         help="Set if the supercell is not based on the conventional cell.")
     parser_recommend_supercell.add_argument(
         "--make_forcibly", dest="make_forcibly", action="store_true",
-        help="If output best supercell when the criterion is not satisfied.")
+        help="Whether to output best supercell when the criterion is not "
+             "satisfied.")
 
     parser_recommend_supercell.set_defaults(func=recommend_supercell)
 
@@ -740,8 +741,10 @@ def recommend_supercell(args):
                                         min_num_atoms=args.min_num_atoms,
                                         isotropy_criterion=args.criterion,
                                         make_forcibly=args.make_forcibly)
-
-    s.to_poscar(filename=args.sposcar)
+    if s:
+        s.to_poscar(filename=args.sposcar)
+    else:
+        print("Supercell is not constructed properly.")
 
 
 def defect_entry(args):
