@@ -494,7 +494,8 @@ def make_incar(task, functional, hfscreen=None, aexx=None,
 
     # remove NPAR for the calculations of dielectrics as it is not allowed.
     if task is Task.dielectric or Task.dielectric_function:
-        setting.pop("NPAR")
+        if "NPAR" in setting:
+            setting.pop("NPAR")
 
     incar = os.path.join(dirname, 'INCAR')
     ModIncar(setting).pretty_write_file(filename=incar)
@@ -504,7 +505,7 @@ def make_incar(task, functional, hfscreen=None, aexx=None,
 
         # pop out hybrid related flags.
         for i in incar_flags["hybrid"]:
-            if i in setting.keys():
+            if i in setting:
                 setting.pop(i)
 
         ModIncar(setting).pretty_write_file(filename=incar_pre_gga)
