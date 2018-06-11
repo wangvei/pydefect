@@ -53,16 +53,18 @@ def get_electronegativity(element):
     try:
         return atom.electronegativity[element]
     except KeyError:
-        warnings.warn("Electronegativity of " + element + " is unavailable.")
-        return None
+        warnings.warn("Electronegativity of " + element + " is unavailable. " +
+                      "Therefore, 0 is set.")
+        return 0
 
 
 def get_oxidation_state(element):
     try:
         return atom.charge[element]
     except KeyError:
-        warnings.warn("Oxidation state of " + element + " is unavailable.")
-        return None
+        warnings.warn("Oxidation state of " + element + " is unavailable." +
+                      "Therefore, 0 is set.")
+        return 0
 
 
 def print_dopant_info(dopant):
