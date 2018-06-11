@@ -44,7 +44,7 @@ def spglib_cell_to_structure(cell):
     return Structure(cell[0], species, cell[1])
 
 
-def find_spglib_standard_conventional(structure, symprec=1e-05):
+def find_spglib_standard_conventional(structure, symprec=1e-02):
     """
     Returns a standard conventional unit cell.
     Args:
@@ -59,7 +59,7 @@ def find_spglib_standard_conventional(structure, symprec=1e-05):
                                                             symprec=symprec))
 
 
-def find_spglib_standard_primitive(structure, symprec=1e-05):
+def find_spglib_standard_primitive(structure, symprec=1e-02):
     """
     Returns a primitive unit cell.
     Args:
@@ -71,7 +71,7 @@ def find_spglib_standard_primitive(structure, symprec=1e-05):
     return spglib_cell_to_structure(spglib.find_primitive(cell, symprec))
 
 
-def find_hpkot_primitive(structure, symprec=1e-05, angle_tolerance=-1.0):
+def find_hpkot_primitive(structure, symprec=1e-02, angle_tolerance=-1.0):
     """
     Returns a hpkot primitive unit cell.
     Args:
@@ -88,7 +88,7 @@ def find_hpkot_primitive(structure, symprec=1e-05, angle_tolerance=-1.0):
 
 
 def structure_to_seekpath(structure, time_reversal=True, ref_distance=0.025,
-                          recipe='hpkot', threshold=1.e-7, symprec=1e-05,
+                          recipe='hpkot', threshold=1.e-7, symprec=1e-02,
                           angle_tolerance=-1.0):
     """
     Returns the full information for the band path of the given Structure class

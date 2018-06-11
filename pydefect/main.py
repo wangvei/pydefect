@@ -317,6 +317,8 @@ def main():
     parser_recommend_supercell.add_argument(
         "-p", dest="poscar", type=str, default="POSCAR")
     parser_recommend_supercell.add_argument(
+        "-ucp", dest="ucposcar", type=str, default="UCPOSCAR")
+    parser_recommend_supercell.add_argument(
         "-sp", dest="sposcar", type=str, default="SPOSCAR")
     parser_recommend_supercell.add_argument(
         "--criterion", dest="criterion", type=float, default=0.12,
@@ -735,7 +737,8 @@ def vasp_input_maker(args):
 
 def recommend_supercell(args):
     structure = Structure.from_file(args.poscar)
-    s = Supercell.recommended_supercell(structure=structure,
+    s, structure, multi, isotropy = \
+        Supercell.recommended_supercell(uc_structure=structure,
                                         to_conventional=args.no_conventional,
                                         max_num_atoms=args.max_num_atoms,
                                         min_num_atoms=args.min_num_atoms,
@@ -743,8 +746,11 @@ def recommend_supercell(args):
                                         make_forcibly=args.make_forcibly)
     if s:
         s.to_poscar(filename=args.sposcar)
+        structure.to(filename=args.ucposcar)
     else:
         print("Supercell is not constructed properly.")
+        print("Multi: {0} {1} {2}, Isotropy: {3:.3}".
+              format(multi[0], multi[1], multi[2], isotropy))
 
 
 def defect_entry(args):
