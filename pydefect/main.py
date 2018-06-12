@@ -745,7 +745,7 @@ def recommend_supercell(args):
             min_num_atoms=args.min_num_atoms,
             isotropy_criterion=args.criterion,
             smallest_criterion=args.smallest_criterion)
-    if s:
+    if criterion:
         s.to_poscar(filename=args.sposcar)
         uc_structure.to(filename=args.ucposcar)
     else:
