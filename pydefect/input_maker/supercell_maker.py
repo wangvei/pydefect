@@ -74,6 +74,7 @@ class Supercell:
             uc_structure = find_spglib_standard_primitive(structure)
 
         uc_structure = uc_structure.get_sorted_structure()
+        print(uc_structure)
         multi = np.ones(3, dtype="int8")
         abc = np.array(uc_structure.lattice.abc)
         num_atoms_in_unitcell = uc_structure.num_sites
@@ -87,8 +88,10 @@ class Supercell:
             if num_atoms > max_num_atoms:
                 break
 
-            isotropy = cls.supercell_isotropy(structure, multi)
+            isotropy = cls.supercell_isotropy(uc_structure, multi)
             if num_atoms >= min_num_atoms:
+                # print(isotropy)
+                # print(multi)
                 if isotropy < final_isotropy:
                     final_isotropy = isotropy
                     final_multi = copy.deepcopy(multi)
@@ -98,6 +101,7 @@ class Supercell:
                     break
 
             super_abc = multi * abc
+            # print(super_abc)
             for j in range(3):
                 if super_abc[j] / min(super_abc) < 1.05:
                     multi[j] += 1
@@ -109,6 +113,7 @@ class Supercell:
 
         comment = cls.supercell_comment(final_multi, final_isotropy,
                                         is_converged=is_converged)
+
         return cls(uc_structure, final_multi, comment), uc_structure, \
                final_multi, isotropy, is_converged
 
