@@ -750,6 +750,7 @@ def recommend_supercell(args):
         uc_structure.to(filename=args.ucposcar)
     else:
         print("Supercell is not constructed properly.")
+        print("Best candidate")
         print("Multi: {0} {1} {2}, Isotropy: {3:.3}".
               format(multi[0], multi[1], multi[2], isotropy))
 

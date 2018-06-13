@@ -46,8 +46,8 @@ parser.add_option("-d", "--defect_list",
                   dest="defect_list", 
                   type="string", 
                   default=False, 
-                  help="List of defect enegies at the VBM. \
-                  First line is commnt. \
+                  help="List of defect energies at the VBM. \
+                  First line is comment. \
                   Example: \
                   name charge formation_energy@VBM  number_of_site \
                   VZn    2     1.411                   1",

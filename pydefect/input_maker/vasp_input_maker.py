@@ -38,7 +38,6 @@ SETTINGS_FILE = os.path.join(os.path.expanduser("~"), ".pydefect.yaml")
 MODULE_DIR = os.path.dirname(os.path.abspath(__file__))
 INCAR_SETTINGS_FILE = os.path.join(MODULE_DIR, "default_INCAR_setting.yaml")
 POTCAR_LIST_FILE = os.path.join(MODULE_DIR, "default_POTCAR_list.yaml")
-DEFAULT_INCAR = os.path.join(MODULE_DIR, "default_INCAR")
 
 incar_flags = OrderedDict()
 incar_flags["algo"] = ["ALGO"]
@@ -204,7 +203,6 @@ def potcar_dir():
 def make_potcar(elements, potcar="POTCAR"):
     """
     Writes POTCAR with a list of the given element names.
-    Now, only default POTCAR files are supported.
     """
 
     list_file = loadfn(POTCAR_LIST_FILE)
@@ -335,35 +333,35 @@ def make_kpoints(task, dirname='.', poscar="POSCAR", num_split_kpoints=1,
     if task == Task.band:
         make_band_kpoints(ibzkpt, dirname, poscar, num_split_kpoints)
         return True
+    # molecule: task is competing_phase_molecule or is_molecule = .True.
+    elif task == Task.competing_phase_molecule:
+        kpt_mesh = [1, 1, 1]
+        comment += "Gamma-only for a cluster."
     # defect
     elif task == Task.defect:
         kpt_mesh = [int(np.ceil(kpts_density_defect * r))
                     for r in reciprocal_lattice.abc]
         comment += "kpt density: " + str(kpts_density_defect)
+    # insulating phase
+    elif task in (Task.competing_phase, Task.structure_opt) \
+            and is_metal is False:
+        kpt_mesh = [int(np.ceil(kpts_density_opt * r))
+                    for r in reciprocal_lattice.abc]
+        comment += "kpt density: " + str(kpts_density_defect)
+    # metallic phase
+    elif task == Task.competing_phase and is_metal is True:
+        kpt_mesh = [int(np.ceil(kpts_density_opt * r)) * factor_metal
+                    for r in reciprocal_lattice.abc]
+        comment += "kpt density: " + str(kpts_density_defect) + ", " + \
+                   "factor: " + str(factor_metal)
+    # dos, dielectric const, dielectric function
+    elif task in (Task.dos, Task.dielectric, Task.dielectric_function):
+        kpt_mesh = [int(np.ceil(kpts_density_opt * r)) * factor_dos
+                    for r in reciprocal_lattice.abc]
+        comment += "kpt density: " + str(kpts_density_defect) + ", " + \
+                   "factor: " + str(factor_dos)
     else:
-        # molecule: task is competing_phase_molecule or is_molecule = .True.
-        if task == Task.competing_phase_molecule:
-            kpt_mesh = [1, 1, 1]
-        # insulating phase
-        elif task in (Task.competing_phase, Task.structure_opt) \
-                and is_metal is False:
-            kpt_mesh = [int(np.ceil(kpts_density_opt * r))
-                        for r in reciprocal_lattice.abc]
-            comment += "kpt density: " + str(kpts_density_defect)
-        # metallic phase
-        elif task == Task.competing_phase and is_metal is True:
-            kpt_mesh = [int(np.ceil(kpts_density_opt * r)) * factor_metal
-                        for r in reciprocal_lattice.abc]
-            comment += "kpt density: " + str(kpts_density_defect) + ", " + \
-                       "factor: " + str(factor_metal)
-        # dos, dielectric const, dielectric function
-        elif task in (Task.dos, Task.dielectric, Task.dielectric_function):
-            kpt_mesh = [int(np.ceil(kpts_density_opt * r)) * factor_dos
-                        for r in reciprocal_lattice.abc]
-            comment += "kpt density: " + str(kpts_density_defect) + ", " + \
-                       "factor: " + str(factor_dos)
-        else:
-            raise AttributeError("Task: " + str(task) + " is not supported.\n")
+        raise AttributeError("Task: " + str(task) + " is not supported.\n")
 
     kpts = (tuple(kpt_mesh),)
 
@@ -371,19 +369,22 @@ def make_kpoints(task, dirname='.', poscar="POSCAR", num_split_kpoints=1,
         if task in (Task.structure_opt, Task.defect):
             angles = s.lattice.angles
 
-            if not kpts_shift:
-                kpts_shift = []
-                for i in range(3):
-                    if angles[i - 2] == 90 and angles[i - 1] == 90:
-                        kpts_shift.append(0.5)
-                    else:
-                        kpts_shift.append(0.0)
+            # if not kpts_shift:
+            kpts_shift = []
+            for i in range(3):
+                # shift centering only for the lattice vector being normal
+                # to a lattice plane and even number of k-points.
+                if angles[i - 2] == 90 and angles[i - 1] == 90 \
+                        and kpts[0][i] % 2 == 0:
+                    kpts_shift.append(0.5)
+                else:
+                    kpts_shift.append(0.0)
 
         elif task in (Task.competing_phase_molecule, Task.dos,
                       Task.dielectric, Task.dielectric_function):
             kpts_shift = [0, 0, 0]
 
-        else:
+        elif task is Task.competing_phase:
             # For primitive cell calculations
             sg = SpacegroupAnalyzer(structure=s).get_space_group_number()
             # Check the c-axis for hexagonal phases.
