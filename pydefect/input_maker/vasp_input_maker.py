@@ -342,26 +342,40 @@ def make_kpoints(task, dirname='.', poscar="POSCAR", num_split_kpoints=1,
         kpt_mesh = [int(np.ceil(kpts_density_defect * r))
                     for r in reciprocal_lattice.abc]
         comment += "kpt density: " + str(kpts_density_defect)
-    # insulating phase
-    elif task in (Task.competing_phase, Task.structure_opt) \
-            and is_metal is False:
-        kpt_mesh = [int(np.ceil(kpts_density_opt * r))
-                    for r in reciprocal_lattice.abc]
-        comment += "kpt density: " + str(kpts_density_defect)
-    # metallic phase
-    elif task == Task.competing_phase and is_metal is True:
-        kpt_mesh = [int(np.ceil(kpts_density_opt * r)) * factor_metal
-                    for r in reciprocal_lattice.abc]
-        comment += "kpt density: " + str(kpts_density_defect) + ", " + \
-                   "factor: " + str(factor_metal)
-    # dos, dielectric const, dielectric function
-    elif task in (Task.dos, Task.dielectric, Task.dielectric_function):
-        kpt_mesh = [int(np.ceil(kpts_density_opt * r)) * factor_dos
-                    for r in reciprocal_lattice.abc]
-        comment += "kpt density: " + str(kpts_density_defect) + ", " + \
-                   "factor: " + str(factor_dos)
     else:
-        raise AttributeError("Task: " + str(task) + " is not supported.\n")
+
+        # For primitive cell calculations
+        sg = SpacegroupAnalyzer(structure=s).get_space_group_number()
+        body_centered_orthorhombic = (23, 24, 44, 45, 46, 71, 72, 73, 74)
+        body_centered_tetragonal = (79, 80, 81, 82, 87, 88, 97, 98, 107, 108,
+                                    109, 110, 119, 120, 121, 122, 139, 140, 141,
+                                    142)
+        if sg in body_centered_orthorhombic or body_centered_tetragonal:
+            average_abc = np.prod(reciprocal_lattice.abc) ** (1.0 / 3.0)
+            revised_reciprocal_abc = (average_abc, average_abc, average_abc)
+        else:
+            revised_reciprocal_abc = reciprocal_lattice.abc
+
+        # insulating phase
+        if task in (Task.competing_phase, Task.structure_opt) \
+                and is_metal is False:
+            kpt_mesh = [int(np.ceil(kpts_density_opt * r))
+                        for r in revised_reciprocal_abc]
+            comment += "kpt density: " + str(kpts_density_defect)
+        # metallic phase
+        elif task == Task.competing_phase and is_metal is True:
+            kpt_mesh = [int(np.ceil(kpts_density_opt * r)) * factor_metal
+                        for r in revised_reciprocal_abc]
+            comment += "kpt density: " + str(kpts_density_defect) + ", " + \
+                       "factor: " + str(factor_metal)
+        # dos, dielectric const, dielectric function
+        elif task in (Task.dos, Task.dielectric, Task.dielectric_function):
+            kpt_mesh = [int(np.ceil(kpts_density_opt * r)) * factor_dos
+                        for r in revised_reciprocal_abc]
+            comment += "kpt density: " + str(kpts_density_defect) + ", " + \
+                       "factor: " + str(factor_dos)
+        else:
+            raise AttributeError("Task: " + str(task) + " is not supported.\n")
 
     kpts = (tuple(kpt_mesh),)
 
@@ -385,8 +399,6 @@ def make_kpoints(task, dirname='.', poscar="POSCAR", num_split_kpoints=1,
             kpts_shift = [0, 0, 0]
 
         elif task is Task.competing_phase:
-            # For primitive cell calculations
-            sg = SpacegroupAnalyzer(structure=s).get_space_group_number()
             # Check the c-axis for hexagonal phases.
             if 168 <= sg <= 194:
                 angles = s.lattice.angles
@@ -394,6 +406,9 @@ def make_kpoints(task, dirname='.', poscar="POSCAR", num_split_kpoints=1,
                     raise ValueError("Axial in the hexagonal structure is not "
                                      "set properly.")
             kpts_shift = kpt_centering[sg]
+            for i in range(3):
+                if kpts[0][i] % 2 == 1:
+                    kpts_shift[i] = 0
 
     Kpoints(comment=comment, kpts=kpts, kpts_shift=kpts_shift). \
         write_file(os.path.join(dirname, 'KPOINTS'))
