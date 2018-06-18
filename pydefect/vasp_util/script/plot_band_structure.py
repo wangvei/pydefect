@@ -18,28 +18,11 @@ __date__ = "May 15, 2018"
 
 class ModBSPlotter(BSPlotter):
 
-    # def get_plot(self, zero_to_efermi=True, ylim=None, smooth=False,
-    #              vbm_cbm_marker=True, smooth_tol=None):
-
-        # plt = super().get_plot(zero_to_efermi, ylim, smooth, vbm_cbm_marker,
-        #                        smooth_tol)
-
-        # plt.ylabel(r'$\mathrm{Energy\ (eV)}$', fontsize=30)
-
-        # if self._bs.is_metal() is False:
-        #     band_gap = self._bs.get_band_gap()["energy"]
-        #     x = (plt.xlim()[0] + plt.xlim()[1]) / 2
-        #     vbm = self.bs_plot_data(zero_to_efermi=zero_to_efermi)["vbm"][0][1]
-        #     plt = self.add_band_gap(plt, vbm, band_gap, x)
-
-        # return plt
-
     def get_plot(self, zero_to_efermi=True, ylim=None, smooth=False,
                  vbm_cbm_marker=True, smooth_tol=None):
         """
-        COPIED FROM PYMATGEN.2018.5.22
-        Get a matplotlib object for the bandstructure plot.
-        Blue lines are up spin, red lines are down spin.
+        Original function is copied from PYMATGEN.2018.5.22.
+        Get a matplotlib object for the band structure plot.
 
         Args:
             zero_to_efermi: Automatically subtract off the Fermi energy from
@@ -62,8 +45,11 @@ class ModBSPlotter(BSPlotter):
         if self._bs.is_metal():
             e_min = -10
             e_max = 10
+        # band structure line width
         band_linewidth = 1
 
+        # Ref:
+        # http://pymatgen.org/modules/pymatgen/electronic_structure/plotter.html
         data = self.bs_plot_data(zero_to_efermi)
         if not smooth:
             for d in range(len(data['distances'])):
@@ -94,6 +80,7 @@ class ModBSPlotter(BSPlotter):
 
             for d in range(len(data['distances'])):
                 for i in range(self._nb_bands):
+                    # construct splines for each branch, e.g., Gamma-K
                     tck = scint.splrep(
                         data['distances'][d],
                         [data['energy'][d][str(Spin.up)][i][j]

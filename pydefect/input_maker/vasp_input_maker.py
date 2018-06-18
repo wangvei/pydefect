@@ -346,6 +346,10 @@ def make_kpoints(task, dirname='.', poscar="POSCAR", num_split_kpoints=1,
 
         # For primitive cell calculations
         sg = SpacegroupAnalyzer(structure=s).get_space_group_number()
+
+        # Note that the numbers of k-points along all the directions must be the
+        # same for body centered orthorhombic and body centered tetragonal to
+        # keep the symmetry.
         body_centered_orthorhombic = (23, 24, 44, 45, 46, 71, 72, 73, 74)
         body_centered_tetragonal = (79, 80, 81, 82, 87, 88, 97, 98, 107, 108,
                                     109, 110, 119, 120, 121, 122, 139, 140, 141,

@@ -28,7 +28,7 @@ _EN_DIFF = 1.0
 _DISTANCE = 0.2
 # Cutoff radius in which atoms are perturbed.
 _CUTOFF = 3.0
-_SYMPREC = 0.01
+SYMPREC = 0.01
 
 
 def extended_range(i):
@@ -284,7 +284,7 @@ class DefectInitialSetting:
                             flattened_interstitial_coords=None,
                             is_antisite=True, en_diff=_EN_DIFF, included="",
                             excluded="", distance=_DISTANCE, cutoff=_CUTOFF,
-                            symprec=_SYMPREC):
+                            symprec=SYMPREC):
         """
         Generates DefectInitialSetting object with default settings.
 
