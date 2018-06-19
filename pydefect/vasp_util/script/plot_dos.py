@@ -6,7 +6,7 @@ from pymatgen.electronic_structure.plotter import DosPlotter
 from collections import OrderedDict
 from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
 from pymatgen import Structure
-from pymatgen.electronic_structure.core import Spin
+from pymatgen.electronic_structure.core import Spin, OrbitalType
 from pymatgen.electronic_structure.plotter import DosPlotter
 from pymatgen.io.vasp import Vasprun
 
@@ -23,14 +23,14 @@ __date__ = "May 15, 2018"
 
 class ModDosPlotter(DosPlotter):
 
-    def get_plot(self, xlim=None, ylim=None):
+    def get_plot(self, xlim=None, ylims=None):
         """
         Get a matplotlib plot showing the DOS.
 
         Args:
             xlim: Specifies the x-axis limits. Set to None for automatic
                 determination.
-            ylim: Specifies the y-axis limits.
+            ylims: Specifies the y-axes limits.
         """
 
         ncolors = max(3, len(self._doses))
@@ -52,60 +52,81 @@ class ModDosPlotter(DosPlotter):
             all_energies.append(energies)
             all_densities.append(densities)
 
-
-        from pymatgen.util.plotting import pretty_plot
-        plt = pretty_plot(12, 8)
-
         keys = list(self._doses.keys())
-        all_pts = []
-        for i, key in enumerate(keys):
-            x = []
-            y = []
-            for spin in [Spin.up, Spin.down]:
-                if spin in all_densities[i]:
-                    densities = list(int(spin) * all_densities[i][spin])
-                    energies = list(all_energies[i])
-                    x.extend(energies)
-                    y.extend(densities)
-            all_pts.extend(list(zip(x, y)))
-            plt.plot(x, y, color=colors[i % ncolors],
-                     label=str(key), linewidth=3)
+        grouped_keys = {}
+        for k in keys:
+            first_word = k.split()[0]
+            if first_word in grouped_keys:
+                grouped_keys[first_word].append(k)
+            else:
+                grouped_keys[first_word] = [k]
+
+        import matplotlib.pyplot as plt
+        num_figs = len(grouped_keys)
+        fig, axs = plt.subplots(num_figs, 1, sharex=True)
+        fig.subplots_adjust(hspace=0)
+
+        if ylims and num_figs != len(ylims):
+            assert ValueError("The number of y-ranges is not proper.")
+
+        n = 0
+        for i, gk in enumerate(grouped_keys):
+            all_pts = []
+            for j, key in enumerate(grouped_keys[gk]):
+                x = []
+                y = []
+                for spin in [Spin.up, Spin.down]:
+                    if spin in all_densities[n]:
+                        densities = list(int(spin) * all_densities[n][spin])
+                        energies = list(all_energies[n])
+                        x.extend(energies)
+                        y.extend(densities)
+                all_pts.extend(list(zip(x, y)))
+                axs[i].plot(x, y, color=colors[j % ncolors], label=str(key),
+                            linewidth=2)
+                n += 1
+
             # plot zeros for all the DOS
-            if not self.zero_at_efermi:
-                ylim = plt.ylim()
-                plt.plot([self._doses[key]['efermi'],
-                          self._doses[key]['efermi']], ylim,
-                         color=colors[i % ncolors],
-                         linestyle='--', linewidth=2)
+            if self.zero_at_efermi:
+                # plot a line
+                axs[i].axvline(0, color="black", linestyle="--", linewidth=0.5)
+            else:
+                axs[i].axvline(self._doses[key]['efermi'],
+                               color="black", linestyle="--", linewidth=0.5)
+                # ylim = axs[i].get_ylim()
+                # axs[i].plot([self._doses[key]['efermi'],
+                #              self._doses[key]['efermi']], ylim,
+                #             color=colors[j % ncolors], linestyle='--',
+                #             linewidth=2)
 
-        if xlim:
-            plt.xlim(xlim)
-        if ylim:
-            plt.ylim(ylim)
-        else:
-            xlim = plt.xlim()
-            relevanty = [p[1] for p in all_pts
-                         if xlim[0] < p[0] < xlim[1]]
-            plt.ylim((min(relevanty), max(relevanty)))
+            # if xlim:
+            #     axs[i].set_xlim(xlim)
+            # if ylim:
+            #     axs[i].set_ylim(ylim)
+            # else:
+            #     xlim = axs[i].get_ylim()
+            #     relevanty = [p[1] for p in all_pts
+            #                  if xlim[0] < p[0] < xlim[1]]
+            #     axs[i].set_ylim((min(relevanty), max(relevanty)))
 
-        plt.axhline(0, color="black", linewidth=0.5)
-        if self.zero_at_efermi:
-            # plot a line
-            plt.axvline(0, color="black", linewidth=0.5)
+            axs[i].axhline(0, color="black", linewidth=0.5)
 
-        plt.xlabel('Energy (eV)')
-        plt.ylabel('Density of states')
+    #        axs[i].set_title(key)
 
-        plt.legend()
-        leg = plt.gca().get_legend()
-        ltext = leg.get_texts()  # all the text. Text instance in the legend
-        plt.setp(ltext, fontsize=20)
-        plt.tight_layout()
+            axs[i].legend()
+#            axs[i].legend(bbox_to_anchor=(1.1, 0.8), loc="left")
+    #            leg = axs[i].get_legend()
+    #            ltext = leg.get_texts()  # all the text. Text instance in the legend
+    #            axs[i].setp(ltext, fontsize=20)
+
+        axs[-1].set_xlabel('Energy (eV)')
+        # plt.tight_layout()
+#        plt.subplots_adjust(right=0.8)
 
         return plt
 
 
-def get_dos_plot(vasprun_file, sites=False, element=False, orbital=True,
+def get_dos_plot(vasprun_file, sites=False, orbital=True, forbital=False,
                  symprec=SYMPREC):
     v = Vasprun(vasprun_file)
     complete_dos = v.complete_dos
@@ -118,14 +139,29 @@ def get_dos_plot(vasprun_file, sites=False, element=False, orbital=True,
     if sites:
         for s in sites:
             site = structure[s]
-            dos["Site " + str(s) +" " + site.specie.symbol] = \
-                complete_dos.get_site_dos(site)
+            print(complete_dos.get_site_spd_dos(site)[OrbitalType.s])
+
+            if orbital:
+                if forbital:
+                    orbital_set = ["s", "p", "d", "f"]
+                else:
+                    orbital_set = ["s", "p", "d"]
+
+                for o in orbital_set:
+                    name = "Site:" + str(s) + " " + site.specie.symbol + "-" + o
+                    try:
+                        dos[name] = \
+                            complete_dos.get_site_spd_dos(site)[OrbitalType[o]]
+                    except:
+                        print("{} does not exist.".format(name))
+            else:
+                dos["Site:" + str(s) + " " + site.specie.symbol] = \
+                    complete_dos.get_site_dos(site)
 
     plotter = ModDosPlotter(zero_at_efermi=False)
     plotter.add_dos_dict(dos)
 
     return plotter.get_plot()
-
 
 
     # if site:
