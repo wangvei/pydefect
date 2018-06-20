@@ -616,7 +616,7 @@ def main():
     parser_plot_dos.add_argument(
         "-v", dest="vasprun", type=str)
     parser_plot_dos.add_argument(
-        "-s", dest="sites", default=None,
+        "-s", dest="sites", nargs="+", type=int, default=None,
         help="The site index that starts from 1.")
     parser_plot_dos.add_argument(
         "-o", dest="orbital", action="store_false",
