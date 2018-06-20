@@ -29,6 +29,7 @@ from pydefect.analysis.chempotdiag.chem_pot_diag \
 from pydefect.analysis.chempotdiag.make_inputs import make_vasp_inputs_from_mp
 from pydefect.vasp_util.script.plot_band_structure import ModBSPlotter, \
     VaspBandStructureSymmLine
+from pydefect.vasp_util.script.plot_dos import ModDosPlotter, get_dos_plot
 
 __version__ = "0.0.1"
 __date__ = "19.4.2018"
@@ -600,8 +601,38 @@ def main():
         "-y", dest="yrange", nargs="+", type=float)
     parser_plot_band.add_argument(
         "-f", dest="filename", type=str, help="pdf file name.")
+    parser_plot_band.add_argument(
+        "-a", dest="absolute", action="store_false",
+        help="Show in the absolute energy scale.")
 
     parser_plot_band.set_defaults(func=plot_band)
+
+    # -- plot_dos -----------------------------------------------------------
+    parser_plot_dos = subparsers.add_parser(
+        name="plot_dos",
+        description="Tools for plotting density of states",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+        aliases=['pd'])
+    parser_plot_dos.add_argument(
+        "-v", dest="vasprun", type=str)
+    parser_plot_dos.add_argument(
+        "-s", dest="sites", default=None,
+        help="The site index that starts from 1.")
+    parser_plot_dos.add_argument(
+        "-o", dest="orbital", action="store_false",
+        help="Switch off the orbital decomposition.")
+    parser_plot_dos.add_argument(
+        "-y", dest="yrange", nargs="+", type=float)
+    parser_plot_dos.add_argument(
+        "-f", dest="filename", type=str, help="pdf file name.")
+    parser_plot_dos.add_argument(
+        "-a", dest="absolute", action="store_false",
+        help="Show in the absolute energy scale.")
+    parser_plot_dos.add_argument(
+        "--symprec", dest="symprec", type=float, default=_SYMPREC,
+        help="Set precision used for symmetry analysis [A].")
+
+    parser_plot_dos.set_defaults(func=plot_dos)
 
     # -- plot_energy -----------------------------------------------------------
     parser_plot_energy = subparsers.add_parser(
@@ -1033,26 +1064,34 @@ def plot_band(args):
         bands.append(VaspBandStructureSymmLine(k, v))
 
     band = get_reconstructed_band_structure(bands)
-
     bs_plotter = ModBSPlotter(band)
 
     if not args.vasprun2:
-        p = bs_plotter.get_plot(zero_to_efermi=False, ylim=args.yrange)
+        p = bs_plotter.get_plot(zero_to_efermi=args.absolute, ylim=args.yrange)
     else:
         bands2 = []
         for k, v in zip(args.kpoints, args.vasprun2):
             bands2.append(VaspBandStructureSymmLine(k, v))
 
-        band2 = get_reconstructed_band_structure(bands)
+        band2 = get_reconstructed_band_structure(bands2)
         bs_plotter2 = ModBSPlotter(band2)
-        bs_plotter2.save_plot(filename=args.filename)
-
-        p = bs_plotter2.plot_compare(bs_plotter, zero_to_efermi=False)
+        p = bs_plotter2.plot_compare(bs_plotter, zero_to_efermi=args.absolute)
 
     if args.filename:
         p.savefig(args.filename, format="pdf")
     else:
         p.show()
+
+
+def plot_dos(args):
+    dos = get_dos_plot(vasprun_file=args.vasprun, sites=args.sites,
+                       orbital=args.orbital, zero_at_efermi=args.absolute,
+                       symprec=args.symprec)
+
+    if args.filename:
+        dos.savefig(args.filename, format="pdf")
+    else:
+        dos.show()
 
 
 def plot_energy(args):

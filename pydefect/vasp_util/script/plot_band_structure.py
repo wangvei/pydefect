@@ -170,8 +170,8 @@ class ModBSPlotter(BSPlotter):
                                      shrinkA=0, shrinkB=0))
         # TODO: When adding the following annotation, the Gamma notation
         # TODO: disappears at x=0.
-        plt.annotate(str(round(vbm + band_gap, 2)) + " eV",
-                     (annotate_x * 1.03, (vbm + band_gap) / 2), fontsize=15)
+        plt.annotate(str(round(band_gap, 3)) + " eV",
+                     (annotate_x * 1.03, vbm + band_gap * 0.4), fontsize=15)
 
         return plt
 

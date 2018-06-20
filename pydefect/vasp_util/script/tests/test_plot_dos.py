@@ -19,9 +19,9 @@ __date__ = "May 15, 2018"
 class PlotDosTest(unittest.TestCase):
 
     def test(self):
-        dos = get_dos_plot(vasprun_file="vasprun.xml", orbital=True)
-#        dos = get_dos_plot(vasprun_file="vasprun.xml", sites=[1, 2, 3, 55], orbital=True, forbital=True)
-#        dos.show()
+#        dos = get_dos_plot(vasprun_file="vasprun.xml", orbital=True)
+        dos = get_dos_plot(vasprun_file="vasprun.xml", sites=[1, 2, 3, 55], orbital=True)
+        dos.show()
 
 #         band0 = VaspBandStructureSymmLine("/Users/kuma/my_programs/pydefect_test_MgSe/unitcell/band2/0/KPOINTS", "/Users/kuma/my_programs/pydefect_test_MgSe/unitcell/band2/0/vasprun-finish.xml")
 #         band1 = VaspBandStructureSymmLine("/Users/kuma/my_programs/pydefect_test_MgSe/unitcell/band2/1/KPOINTS", "/Users/kuma/my_programs/pydefect_test_MgSe/unitcell/band2/1/vasprun-finish.xml")

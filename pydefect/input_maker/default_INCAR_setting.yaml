@@ -3,7 +3,7 @@ structure_opt:
   LREAL: False
   LASPH: True
   ISIF: 3
-  EDIFF: 1.0e-07
+  EDIFF: 1.0e-06
   EDIFFG: -0.005
   IBRION: 2
   NSW: 20
@@ -21,8 +21,9 @@ band:
   LREAL: False
   LASPH: True
   ISIF: 0
-  EDIFF: 1.0e-07
+  EDIFF: 1.0e-06
   NSW: 0
+  IBRION: -1
   ISMEAR: 0
   SIGMA: 0.05
   NELM: 100
@@ -36,8 +37,9 @@ dos:
   LREAL: False
   LASPH: True
   ISIF: 0
-  EDIFF: 1.0e-07
+  EDIFF: 1.0e-06
   NSW: 0
+  IBRION: -1
   ISMEAR: -5
   SIGMA: 0.05
   NELM: 100
@@ -72,6 +74,7 @@ dielectric_function:
   ISIF: 0
   EDIFF: 1.0e-07
   NSW: 0
+  IBRION: -1
   ISMEAR: 0
   SIGMA: 0.01
   NELM: 100
@@ -144,7 +147,7 @@ pbe_d3:
   IVDW: 12
 
 # LWAVE is overwritten.
-hse06:
+hse:
   LHFCALC: True
   HFSCREEN: 0.208
   PRECFOCK: F
@@ -153,9 +156,28 @@ hse06:
   TIME: 0.2
   AEXX: 0.25
 
+# LWAVE, NSW, NELM are overwritten.
+nhse:
+  LHFCALC: True
+  HFSCREEN: 0.208
+  PRECFOCK: F
+  ALGO: Subrot
+  LWAVE: False
+  TIME: 0.2
+  AEXX: 0.25
+  NELM: 1
+  NSW: 0
+
 pbe0:
   LHFCALC: True
   PRECFOCK: F
   ALGO: D
   LWAVE: True
   TIME: 0.2
+
+# This is used for constructing INCAR-pre_gga
+hse_pre:
+  NSW: 1
+  NELM: 100
+  LWAVE: True
+  ALGO: N

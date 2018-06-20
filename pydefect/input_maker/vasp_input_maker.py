@@ -96,7 +96,8 @@ class Functional(Enum):
     pbe = "pbe"
     pbesol = "pbesol"
     pbe_d3 = "pbe_d3"
-    hse06 = "hse06"
+    hse = "hse"
+    nhse = "nhse"
     pbe0 = "pbe0"
 
     def __str__(self):
@@ -431,6 +432,7 @@ def get_max_enmax(element_names):
     return max(enmax)
 
 
+# TODO: Implement pbe+u
 # TODO: READ prior_info
 def make_incar(task, functional, hfscreen=None, aexx=None,
                is_magnetization=False, dirname='.', defect_in=None,
@@ -457,6 +459,11 @@ def make_incar(task, functional, hfscreen=None, aexx=None,
 
     task = Task.from_string(task)
     functional = Functional.from_string(functional)
+
+    # assert error when incompatible combinations are given.
+    if functional == Functional.nhse and task not in (Task.band, Task.dos):
+        raise IncarIncompatibleError(
+            "nHSE is not compatible with Task: {}.".format(str(task)))
 
     setting = {}
     for i in (task, functional):
@@ -494,7 +501,7 @@ def make_incar(task, functional, hfscreen=None, aexx=None,
         warnings.warn("ENCUT is not set. Add it manually if needed or write it"
                       "in my_incar_setting file.")
 
-    if functional is Functional.hse06:
+    if functional in (Functional.hse, Functional.nhse):
         if hfscreen:
             setting["HFSCREEN"] = hfscreen
         if aexx:
@@ -504,7 +511,8 @@ def make_incar(task, functional, hfscreen=None, aexx=None,
         mp = PriorInfo.load_json(filename=prior_info)
         if mp.is_magnetic:
             setting["ISPIN"] = 2
-            if functional is Functional.hse06:
+        if mp.is_metal:
+            if functional in Functional.hse:
                 # the following number should be the same as factor_metal in
                 # make_kpoints
                 setting["NKRED"] = 2
@@ -517,10 +525,14 @@ def make_incar(task, functional, hfscreen=None, aexx=None,
         if "NPAR" in setting:
             setting.pop("NPAR")
 
+    if task is (Task.band,):
+        if "KPAR" in setting:
+            setting.pop("NPAR")
+
     incar = os.path.join(dirname, 'INCAR')
     ModIncar(setting).pretty_write_file(filename=incar)
 
-    if functional is Functional.hse06:
+    if functional in (Functional.hse, Functional.nhse):
         incar_pre_gga = os.path.join(dirname, 'INCAR-pre_gga')
 
         # pop out hybrid related flags.
@@ -528,5 +540,11 @@ def make_incar(task, functional, hfscreen=None, aexx=None,
             if i in setting:
                 setting.pop(i)
 
+        # insert some flags.
+        setting.update(setting_file["hse_pre"])
+
         ModIncar(setting).pretty_write_file(filename=incar_pre_gga)
 
+
+class IncarIncompatibleError(Exception):
+    pass

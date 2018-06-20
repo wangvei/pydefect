@@ -126,7 +126,8 @@ class ModDosPlotter(DosPlotter):
         return plt
 
 
-def get_dos_plot(vasprun_file, sites=False, orbital=True, symprec=SYMPREC):
+def get_dos_plot(vasprun_file, sites=None, orbital=True, zero_at_efermi=True,
+                 symprec=SYMPREC):
     v = Vasprun(vasprun_file)
     complete_dos = v.complete_dos
 
@@ -135,92 +136,40 @@ def get_dos_plot(vasprun_file, sites=False, orbital=True, symprec=SYMPREC):
     dos = OrderedDict()
     dos["Total"] = complete_dos
 
-    if sites:
-       pass
-    else:
+    if sites is None:
         s = v.final_structure
         # equivalent_sites: Equivalent site indices from SpacegroupAnalyzer.
         symmetrized_structure = \
             SpacegroupAnalyzer(s, symprec=symprec).get_symmetrized_structure()
 
-        print(symmetrized_structure.site_labels)
-        print(symmetrized_structure.equivalent_sites)
-        print(symmetrized_structure.equivalent_indices)
-        print(symmetrized_structure.wyckoff_symbols)
+        equiv_indices = symmetrized_structure.equivalent_indices
+        sites = [indices[0] for indices in equiv_indices]
+    else:
+        # increment site index
+        sites = [i - 1 for i in sites]
 
-        equiv_indices = symmetrized_structure.equivalent_sites
-        equiv_sites = symmetrized_structure.equivalent_sites
+    if True:
+        orbital_set = ["s", "p", "d", "f"]
+        for s in sites:
+            site = structure[s]
+            if orbital:
+                for i, o in enumerate(orbital_set):
+                    name = "Site:" + str(s + 1) + " " + site.specie.symbol \
+                           + "-" + o
+                    try:
+                        dos[name] = \
+                            complete_dos.get_site_spd_dos(site)[OrbitalType[o]]
+                    except:
+                        print("{} orbital does not exist.".format(o))
+                        del orbital_set[i]
+            else:
+                dos["Site:" + str(s + 1) + " " + site.specie.symbol] = \
+                    complete_dos.get_site_dos(site)
 
-        # num_irreducible_sites["Mg"] = 2 means Mg has 2 inequivalent sites
-        from collections import defaultdict
-        num_irreducible_sites = defaultdict(int)
+    plotter = ModDosPlotter(zero_at_efermi=zero_at_efermi)
+    plotter.add_dos_dict(dos)
 
-        # irreducible_sites (list): a set of IrreducibleSite class objects
-        last_index = 0
-
-        for i, (index, site) in enumerate(zip(equiv_indices, equiv_sites)):
-            # set element name of equivalent site
-            element = site.species_string
-
-            # increment number of inequivalent sites for element
-            num_irreducible_sites[element] += 1
-
-            # the following np.array type must be converted to list
-            # to keep the consistency of the IrreducibleSite object.
-            irreducible_name = element + str(num_irreducible_sites[element])
-
-            dos =
-
-
-        all_dos["Site " + str(i) + " " + site.specie.symbol] = \
-            complete_dos.get_site_dos(site)
-
-
-        # for i in range(len(s)):
-        #     site = s[i]
-
-        # if element:
-        #     syms = [tok.strip() for tok in element[0].split(",")]
-        #     all_dos = {}
-        #     for el, dos in complete_dos.get_element_dos().items():
-        #         if el.symbol in syms:
-        #             all_dos[el] = dos
-        # if orbital:
-        #     all_dos = complete_dos.get_spd_dos()
-
-
-
-
-
-
-
-    # if True:
-    #     for s in sites:
-    #         site = structure[s]
-    #         print(complete_dos.get_site_spd_dos(site)[OrbitalType.s])
-
-#             if orbital:
-#                 orbital_set = ["s", "p", "d", "f"]
-# #                if forbital:
-# #                    orbital_set = ["s", "p", "d", "f"]
-# #                else:
-# #                    orbital_set = ["s", "p", "d"]
-
-            #     for o in orbital_set:
-            #         name = "Site:" + str(s) + " " + site.specie.symbol + "-" + o
-            #         try:
-            #             dos[name] = \
-            #                 complete_dos.get_site_spd_dos(site)[OrbitalType[o]]
-            #         except:
-            #             print("{} does not exist.".format(name))
-            # else:
-            #     dos["Site:" + str(s) + " " + site.specie.symbol] = \
-            #         complete_dos.get_site_dos(site)
-
-    # plotter = ModDosPlotter(zero_at_efermi=False)
-    # plotter.add_dos_dict(dos)
-
-    # return plotter.get_plot()
+    return plotter.get_plot()
 
 
 
