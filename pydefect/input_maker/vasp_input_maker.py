@@ -513,7 +513,7 @@ def make_incar(task, functional, hfscreen=None, aexx=None,
         setting.update(loadfn(my_incar_setting))
 
     # remove NPAR for the calculations of dielectrics as it is not allowed.
-    if task is Task.dielectric or Task.dielectric_function:
+    if task in (Task.dielectric, Task.dielectric_function):
         if "NPAR" in setting:
             setting.pop("NPAR")
 

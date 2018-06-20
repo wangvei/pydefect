@@ -599,7 +599,7 @@ def main():
     parser_plot_band.add_argument(
         "-y", dest="yrange", nargs="+", type=float)
     parser_plot_band.add_argument(
-        "-f", dest="filename", type=str)
+        "-f", dest="filename", type=str, help="pdf file name.")
 
     parser_plot_band.set_defaults(func=plot_band)
 
@@ -1050,8 +1050,7 @@ def plot_band(args):
         p = bs_plotter2.plot_compare(bs_plotter, zero_to_efermi=False)
 
     if args.filename:
-#        p.save_plot(filename=args.filename)
-        p.savefig(args.filename, format="eps")
+        p.savefig(args.filename, format="pdf")
     else:
         p.show()
 

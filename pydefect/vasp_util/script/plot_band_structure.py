@@ -39,14 +39,15 @@ class ModBSPlotter(BSPlotter):
         plt = pretty_plot(12, 8)
         import scipy.interpolate as scint
 
-        # main internal config options
-        e_min = -4
-        e_max = 4
-        if self._bs.is_metal():
-            e_min = -10
-            e_max = 10
         # band structure line width
-        band_linewidth = 1
+        band_line_width = 1
+
+        if self._bs.is_spin_polarized:
+            spin = [Spin.up, Spin.down]
+        else:
+            spin = [Spin.up]
+
+        line_style = {Spin.up: 'b-', Spin.down: 'r--'}
 
         # Ref:
         # http://pymatgen.org/modules/pymatgen/electronic_structure/plotter.html
@@ -54,15 +55,12 @@ class ModBSPlotter(BSPlotter):
         if not smooth:
             for d in range(len(data['distances'])):
                 for i in range(self._nb_bands):
-                    plt.plot(data['distances'][d],
-                             [data['energy'][d][str(Spin.up)][i][j]
-                              for j in range(len(data['distances'][d]))], 'b-',
-                             linewidth=band_linewidth)
-                    if self._bs.is_spin_polarized:
-                        plt.plot(data['distances'][d],
-                                 [data['energy'][d][str(Spin.down)][i][j]
-                                  for j in range(len(data['distances'][d]))],
-                                 'r--', linewidth=band_linewidth)
+                    for s in spin:
+                        data_x = data['distances'][d]
+                        data_y = [data['energy'][d][str(Spin.up)][i][j]
+                                  for j in range(len(data['distances'][d]))]
+                        plt.plot(data_x, data_y, line_style[s],
+                                 linewidth=band_line_width)
         else:
             # Interpolation failure can be caused by trying to fit an entire
             # band with one spline rather than fitting with piecewise splines
@@ -79,55 +77,31 @@ class ModBSPlotter(BSPlotter):
                       "smooth_tol.\nCurrent smooth_tol is {s}."
 
             for d in range(len(data['distances'])):
+                # self._nb_bands means the number of bands.
                 for i in range(self._nb_bands):
-                    # construct splines for each branch, e.g., Gamma-K
-                    tck = scint.splrep(
-                        data['distances'][d],
-                        [data['energy'][d][str(Spin.up)][i][j]
-                         for j in range(len(data['distances'][d]))],
-                        s=smooth_tol)
-                    step = (data['distances'][d][-1]
-                            - data['distances'][d][0]) / 1000
-
-                    xs = [x * step + data['distances'][d][0]
-                          for x in range(1000)]
-
-                    ys = [scint.splev(x * step + data['distances'][d][0],
-                                      tck, der=0)
-                          for x in range(1000)]
-
-                    for y in ys:
-                        if np.isnan(y):
-                            print(warning.format(d=str(d), i=str(i),
-                                                 s=str(smooth_tol)))
-                            break
-
-                    plt.plot(xs, ys, 'b-', linewidth=band_linewidth)
-
-                    if self._bs.is_spin_polarized:
+                    for s in spin:
+                        # construct splines for each branch, e.g., Gamma-K
                         tck = scint.splrep(
                             data['distances'][d],
-                            [data['energy'][d][str(Spin.down)][i][j]
+                            [data['energy'][d][str(s)][i][j]
                              for j in range(len(data['distances'][d]))],
                             s=smooth_tol)
                         step = (data['distances'][d][-1]
                                 - data['distances'][d][0]) / 1000
-
                         xs = [x * step + data['distances'][d][0]
                               for x in range(1000)]
-
                         ys = [scint.splev(
-                            x * step + data['distances'][d][0],
-                            tck, der=0)
+                            x * step + data['distances'][d][0], tck, der=0)
                             for x in range(1000)]
 
                         for y in ys:
                             if np.isnan(y):
                                 print(warning.format(d=str(d), i=str(i),
                                                      s=str(smooth_tol)))
-                                break
+                            break
 
-                        plt.plot(xs, ys, 'r--', linewidth=band_linewidth)
+                        plt.plot(xs, ys, line_style[s],
+                                 linewidth=band_line_width)
 
         self._maketicks(plt)
 
@@ -140,49 +114,52 @@ class ModBSPlotter(BSPlotter):
             ef = self._bs.efermi
             plt.axhline(ef, linewidth=0.5, color='k')
 
-        # X range (K)
-        # last distance point
+        # X max range = last distance point
         x_max = data['distances'][-1][-1]
         plt.xlim(0, x_max)
 
-        if ylim is None:
-            if self._bs.is_metal():
-                # Plot A Metal
-                if zero_to_efermi:
-                    plt.ylim(e_min, e_max)
-                else:
-                    plt.ylim(self._bs.efermi + e_min, self._bs.efermi + e_max)
-            else:
-                if vbm_cbm_marker:
-                    for cbm in data['cbm']:
-                        plt.scatter(cbm[0], cbm[1], color='r', marker='o',
-                                    s=100)
-                    for vbm in data['vbm']:
-                        plt.scatter(vbm[0], vbm[1], color='g', marker='o',
-                                    s=100)
-                plt.ylim(data['vbm'][0][1] + e_min,
-                         data['cbm'][0][1] + e_max)
-        else:
+        if ylim:
             plt.ylim(ylim)
-            if not self._bs.is_metal() and vbm_cbm_marker:
-                for cbm in data['cbm']:
-                        plt.scatter(cbm[0], cbm[1], color='r', marker='o',
-                                    s=100)
-                for vbm in data['vbm']:
-                        plt.scatter(vbm[0], vbm[1], color='g', marker='o',
-                                    s=100)
+        else:
+            # default energy range
+            if self._bs.is_metal():
+                e_range = [-10, 10]
+            else:
+                e_range = [-4, 4]
+
+            # metal case
+            if self._bs.is_metal():
+                if zero_to_efermi:
+                    plt.ylim(e_range)
+                else:
+                    plt.ylim(self._bs.efermi + e_range[0],
+                             self._bs.efermi + e_range[1])
+            # insulator case
+            else:
+                plt.ylim(data['vbm'][0][1] + e_range[0],
+                         data['cbm'][0][1] + e_range[1])
+
+        if not self._bs.is_metal() and vbm_cbm_marker:
+            for cbm in data['cbm']:
+                plt.scatter(cbm[0], cbm[1], color='r', marker='o',
+                            s=100)
+            for vbm in data['vbm']:
+                plt.scatter(vbm[0], vbm[1], color='g', marker='o',
+                            s=100)
 
         plt.tight_layout()
 
+        # plot the band gap with an arrow.
         if self._bs.is_metal() is False:
             band_gap = self._bs.get_band_gap()["energy"]
-            x = (plt.xlim()[0] + plt.xlim()[1]) / 2
+            x_position = (plt.xlim()[0] + plt.xlim()[1]) / 2
             vbm = self.bs_plot_data(zero_to_efermi=zero_to_efermi)["vbm"][0][1]
-            plt = self.add_band_gap(plt, vbm, band_gap, x)
+            plt = self.add_band_gap(plt, vbm, band_gap, x_position)
 
         return plt
 
-    def add_band_gap(self, plt, vbm, band_gap, annotate_x, line_color="purple"):
+    @staticmethod
+    def add_band_gap(plt, vbm, band_gap, annotate_x, line_color="purple"):
         plt.hlines([vbm, vbm + band_gap], plt.xlim()[0], plt.xlim()[1],
                    line_color, linestyles='dashed')
 
@@ -198,34 +175,42 @@ class ModBSPlotter(BSPlotter):
 
         return plt
 
-    def plot_compare(self, other_plotter, ylim=None, legend=True,
+    def plot_compare(self, another_plotter, ylim=None, legend=True,
                      zero_to_efermi=True):
         """
+        The x- and y-ranges are determined based on the original data.
         Args:
-            other_plotter: another BSPlotter class object.
-            legend: If show figure legend or not
-            zero_to_efermi: If the energy is aligned or not.
+            another_plotter: another BSPlotter class object.
+            legend: If the figure legend is shown or not.
+            zero_to_efermi: If the energy is aligned to the Fermi level or not.
         """
 
         plt = self.get_plot(ylim=ylim, zero_to_efermi=zero_to_efermi)
         data_orig = self.bs_plot_data(zero_to_efermi=zero_to_efermi)
-        data = other_plotter.bs_plot_data(zero_to_efermi=zero_to_efermi)
+        data = another_plotter.bs_plot_data(zero_to_efermi=zero_to_efermi)
 
-        second_band_linewidth = 2
-        for i in range(other_plotter._nb_bands):
+        if self._bs.is_spin_polarized:
+            spin = [Spin.up, Spin.down]
+        else:
+            spin = [Spin.up]
+
+        second_line_style = {Spin.up: 'c-', Spin.down: 'm--'}
+
+        # plot second band
+        second_band_line_width = 2
+        for i in range(another_plotter._nb_bands):
             for d in range(len(data_orig['distances'])):
-                plt.plot(data_orig['distances'][d],
-                         [e[str(Spin.up)][i] for e in data['energy']][d],
-                         'c-', linewidth=second_band_linewidth)
-                if other_plotter._bs.is_spin_polarized:
-                    plt.plot(data_orig['distances'][d],
-                             [e[str(Spin.down)][i] for e in data['energy']][d],
-                             'm--', linewidth=second_band_linewidth)
+                for s in spin:
+                    data_x = data_orig['distances'][d]
+                    data_y = [e[str(s)][i] for e in data['energy']][d]
+                    plt.plot(data_x, data_y, second_line_style[s],
+                             linewidth=second_band_line_width)
 
-        if other_plotter._bs.is_metal() is False:
-            band_gap = other_plotter._bs.get_band_gap()["energy"]
-            x = (plt.xlim()[0] * 0.4  + plt.xlim()[1] * 0.6)
-            vbm = other_plotter.bs_plot_data(
+        # add second band gap and its arrow.
+        if another_plotter._bs.is_metal() is False:
+            band_gap = another_plotter._bs.get_band_gap()["energy"]
+            x = (plt.xlim()[0] * 0.4 + plt.xlim()[1] * 0.6)
+            vbm = another_plotter.bs_plot_data(
                 zero_to_efermi=zero_to_efermi)["vbm"][0][1]
             plt = self.add_band_gap(plt, vbm, band_gap, x)
 
@@ -239,7 +224,7 @@ class ModBSPlotter(BSPlotter):
             else:
                 handles = [mlines.Line2D([], [], linewidth=2, color='b',
                                          label='bs 1')]
-            if other_plotter._bs.is_spin_polarized:
+            if another_plotter._bs.is_spin_polarized:
                 handles.extend([mlines.Line2D([], [], linewidth=2, color='c',
                                               label='bs 2 up'),
                                 mlines.Line2D([], [], linewidth=2, color='m',
@@ -308,8 +293,8 @@ class VaspBandStructureSymmLine(BandStructureSymmLine):
                 #                               [atom index][orbital_index]
                 # For BSPlotter
                 # projections: dict of orbital projections as {spin: ndarray}.
-                # The indices of the ndarrayare [band_index, kpoint_index,
-                #                                orbital_index, ion_index].
+                # The indices of the ndarray are [band_index, kpoint_index,
+                #                                 orbital_index, ion_index].
 
                 projections[Spin(s)] = v[Spin(s)].swapaxes(0, 1).swapaxes(2, 3)
                 print(projections)
