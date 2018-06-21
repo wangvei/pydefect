@@ -529,6 +529,9 @@ def make_incar(task, functional, hfscreen=None, aexx=None,
         if "KPAR" in setting:
             setting.pop("NPAR")
 
+    if task in (Task.dos, Task.dielectric_function):
+        pass
+
     incar = os.path.join(dirname, 'INCAR')
     ModIncar(setting).pretty_write_file(filename=incar)
 

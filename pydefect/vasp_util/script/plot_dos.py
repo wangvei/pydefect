@@ -23,19 +23,20 @@ __date__ = "May 15, 2018"
 
 class ModDosPlotter(DosPlotter):
 
-    def get_plot(self, xlim=None, ylims=None):
+    def get_plot(self, xlim=None, ylims=None, cbm_vbm=None, legend=True):
         """
         Get a matplotlib plot showing the DOS.
 
         Args:
             xlim: Specifies the x-axis limits. Set to None for automatic
                 determination.
-            ylims: Specifies the y-axes limits.
+            ylims: Specifies the y-axes limits. Two types of input.
+                [[y1min, y1max], [y2min, y2max], ..]
+            legend:
         """
 
         ncolors = max(3, len(self._doses))
         ncolors = min(9, ncolors)
-
         import palettable
         colors = palettable.colorbrewer.qualitative.Set1_9.mpl_colors
 
@@ -52,6 +53,7 @@ class ModDosPlotter(DosPlotter):
             all_energies.append(energies)
             all_densities.append(densities)
 
+        # Make groups to be shown in the same figure.
         keys = list(self._doses.keys())
         grouped_keys = {}
         for k in keys:
@@ -64,10 +66,9 @@ class ModDosPlotter(DosPlotter):
         import matplotlib.pyplot as plt
         num_figs = len(grouped_keys)
         fig, axs = plt.subplots(num_figs, 1, sharex=True)
-        fig.subplots_adjust(hspace=0)
 
-        if ylims and num_figs != len(ylims):
-            assert ValueError("The number of y-ranges is not proper.")
+        if xlim:
+            axs[0].set_xlim(xlim)
 
         n = 0
         for i, gk in enumerate(grouped_keys):
@@ -86,50 +87,71 @@ class ModDosPlotter(DosPlotter):
                             linewidth=2)
                 n += 1
 
-            # plot zeros for all the DOS
+            # plot vertical lines for band edges or Fermi level
             if self.zero_at_efermi:
                 # plot a line
                 axs[i].axvline(0, color="black", linestyle="--", linewidth=0.5)
+                if cbm_vbm:
+                    axs[i].axvline(cbm_vbm[0] - cbm_vbm[1], color="black",
+                                   linestyle="--", linewidth=0.5)
             else:
                 axs[i].axvline(self._doses[key]['efermi'],
                                color="black", linestyle="--", linewidth=0.5)
-                # ylim = axs[i].get_ylim()
-                # axs[i].plot([self._doses[key]['efermi'],
-                #              self._doses[key]['efermi']], ylim,
-                #             color=colors[j % ncolors], linestyle='--',
-                #             linewidth=2)
+                if cbm_vbm:
+                    axs[i].axvline(cbm_vbm[0], color="black", linestyle="--",
+                                   linewidth=0.5)
 
-            # if xlim:
-            #     axs[i].set_xlim(xlim)
-            # if ylim:
-            #     axs[i].set_ylim(ylim)
-            # else:
-            #     xlim = axs[i].get_ylim()
-            #     relevanty = [p[1] for p in all_pts
-            #                  if xlim[0] < p[0] < xlim[1]]
-            #     axs[i].set_ylim((min(relevanty), max(relevanty)))
+            if legend:
+                axs[i].legend(loc="best", markerscale=0.1)
+#                axs[i].legend(bbox_to_anchor=(1.1, 0.8), loc="best")
+                leg = axs[i].get_legend()
+                for legobj in leg.legendHandles:
+                    legobj.set_linewidth(1.2)
+                ltext = leg.get_texts()
+                plt.setp(ltext, fontsize=7)
+            else:
+                axs[i].set_title(key, fontsize=7)
 
             axs[i].axhline(0, color="black", linewidth=0.5)
 
-    #        axs[i].set_title(key)
+        if ylims and len(ylims) not in (num_figs, 2):
+            raise ValueError("The number of y-ranges is not proper.")
 
-            axs[i].legend()
-#            axs[i].legend(bbox_to_anchor=(1.1, 0.8), loc="left")
-    #            leg = axs[i].get_legend()
-    #            ltext = leg.get_texts()  # all the text. Text instance in the legend
-    #            axs[i].setp(ltext, fontsize=20)
+        if ylims and len(ylims) == 2:
+            axs[0].set_ylim(ylims[0])
+            for i in range(1, len(axs)):
+                axs[i].set_ylim(ylims[1])
+        elif ylims:
+            for i in range(len(axs)):
+                axs[i].set_ylim(ylims[i])
+        # else:
+        #     for i in range(len(axs)):
+        #         ylim = axs[i].get_ylim()
+        #         print(ylim)
+        #         relevanty = [p[1] for p in all_pts
+        #                      if ylim[0] < p[0] < ylim[1]]
+        #         axs[i].set_ylim((min(relevanty), max(relevanty)))
 
         axs[-1].set_xlabel('Energy (eV)')
-        # plt.tight_layout()
-#        plt.subplots_adjust(right=0.8)
+        plt.tight_layout()
+
+        plt.subplots_adjust(left=None, bottom=None, right=None, top=None,
+                            wspace=0.2, hspace=0.2)
 
         return plt
 
 
-def get_dos_plot(vasprun_file, sites=None, orbital=True, zero_at_efermi=True,
-                 symprec=SYMPREC):
-    v = Vasprun(vasprun_file)
+def get_dos_plot(vasprun_file, sites=None, orbital=True, xlim=None, ymaxs=None,
+                 zero_at_efermi=True, legend=True, symprec=SYMPREC):
+    v = Vasprun(vasprun_file, ionic_step_skip=True, parse_eigen=False)
     complete_dos = v.complete_dos
+
+    # check cbm
+
+    if complete_dos.get_gap() > 0.1:
+        cbm_vbm = complete_dos.get_cbm_vbm()
+    else:
+        cbm_vbm = None
 
     structure = v.final_structure
 
@@ -169,7 +191,18 @@ def get_dos_plot(vasprun_file, sites=None, orbital=True, zero_at_efermi=True,
     plotter = ModDosPlotter(zero_at_efermi=zero_at_efermi)
     plotter.add_dos_dict(dos)
 
-    return plotter.get_plot()
+    if "ISPIN" in v.incar and v.incar["ISPIN"] == 2:
+        spin = True
+    else:
+        spin = False
 
+    if ymaxs:
+        if spin:
+            ylims = [[-y, y] for y in ymaxs]
+        else:
+            ylims = [[0, y] for y in ymaxs]
+    else:
+        ylims = None
 
-
+    return plotter.get_plot(xlim=xlim, ylims=ylims, cbm_vbm=cbm_vbm,
+                            legend=legend)

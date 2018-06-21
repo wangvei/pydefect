@@ -622,12 +622,21 @@ def main():
         "-o", dest="orbital", action="store_false",
         help="Switch off the orbital decomposition.")
     parser_plot_dos.add_argument(
-        "-y", dest="yrange", nargs="+", type=float)
+        "-x", dest="xrange", nargs="+", type=float, default=None,
+        help="Set energy minimum and maximum.")
+    parser_plot_dos.add_argument(
+        "-y", dest="ymaxs", nargs="+", type=float, default=None,
+        help="Set max values of y ranges. Support two ways." +
+             "1st: total_max, each_atom" +
+             "2nd: total_max, 1st_atom, 2nd_atom, ...")
     parser_plot_dos.add_argument(
         "-f", dest="filename", type=str, help="pdf file name.")
     parser_plot_dos.add_argument(
         "-a", dest="absolute", action="store_false",
         help="Show in the absolute energy scale.")
+    parser_plot_dos.add_argument(
+        "-l", dest="legend", action="store_false",
+        help="Not show the legend.")
     parser_plot_dos.add_argument(
         "--symprec", dest="symprec", type=float, default=_SYMPREC,
         help="Set precision used for symmetry analysis [A].")
@@ -1085,8 +1094,9 @@ def plot_band(args):
 
 def plot_dos(args):
     dos = get_dos_plot(vasprun_file=args.vasprun, sites=args.sites,
-                       orbital=args.orbital, zero_at_efermi=args.absolute,
-                       symprec=args.symprec)
+                       orbital=args.orbital, xlim=args.xrange,
+                       ymaxs=args.ymaxs, zero_at_efermi=args.absolute,
+                       legend=args.legend, symprec=args.symprec)
 
     if args.filename:
         dos.savefig(args.filename, format="pdf")

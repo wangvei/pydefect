@@ -20,7 +20,15 @@ class PlotDosTest(unittest.TestCase):
 
     def test(self):
 #        dos = get_dos_plot(vasprun_file="vasprun.xml", orbital=True)
-        dos = get_dos_plot(vasprun_file="vasprun.xml", sites=[1, 2, 3, 55], orbital=True)
+        dos = get_dos_plot(vasprun_file="vasprun.xml",
+#                           sites=[1, 2, 3, 55, 56],
+                           orbital=True,
+                           xlim=[-20, 5],
+#                           ymaxs=[500, 5, 5, 5, 1, 1],
+                           ymaxs=[500, 5],
+                           zero_at_efermi=False,
+                           legend=True)
+#                           zero_at_efermi=True)
         dos.show()
 
 #         band0 = VaspBandStructureSymmLine("/Users/kuma/my_programs/pydefect_test_MgSe/unitcell/band2/0/KPOINTS", "/Users/kuma/my_programs/pydefect_test_MgSe/unitcell/band2/0/vasprun-finish.xml")
