@@ -55,7 +55,7 @@ class ModDosPlotter(DosPlotter):
 
         # Make groups to be shown in the same figure.
         keys = list(self._doses.keys())
-        grouped_keys = {}
+        grouped_keys = OrderedDict()
         for k in keys:
             first_word = k.split()[0]
             if first_word in grouped_keys:
