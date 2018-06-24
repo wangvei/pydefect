@@ -1,4 +1,4 @@
-ALGO = D
+ALGO = N
 
 PREC = A
 LREAL = False
@@ -6,13 +6,17 @@ LASPH = True
 ENCUT = 520.0
 NELM = 100
 NELMIN = 4
-EDIFF = 1e-07
+EDIFF = 1e-06
 
 ISIF = 3
+EDIFFG = -0.005
+IBRION = 2
 NSW = 1
 
-ISMEAR = -5
+ISMEAR = 0
 SIGMA = 0.05
+
+ISPIN = 2
 
 LWAVE = True
 LCHARG = False

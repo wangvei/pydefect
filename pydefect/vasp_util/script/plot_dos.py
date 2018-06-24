@@ -182,7 +182,7 @@ def get_dos_plot(vasprun_file, sites=None, orbital=True, xlim=None, ymaxs=None,
                         dos[name] = \
                             complete_dos.get_site_spd_dos(site)[OrbitalType[o]]
                     except:
-                        print("{} orbital does not exist.".format(o))
+                        # print("{} orbital does not exist.".format(o))
                         del orbital_set[i]
             else:
                 dos["Site:" + str(s + 1) + " " + site.specie.symbol] = \

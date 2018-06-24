@@ -1,29 +1,22 @@
-ALGO = D
+ALGO = N
 
 PREC = A
 LREAL = False
 LASPH = True
-ENCUT = 520.0
+ENCUT = 400.0
 NELM = 100
 NELMIN = 4
-EDIFF = 1e-07
+EDIFF = 1e-06
 
-ISIF = 3
-NSW = 1
+ISIF = 0
+IBRION = -1
+NSW = 0
 
-ISMEAR = -5
+ISMEAR = 0
 SIGMA = 0.05
 
-LWAVE = True
+LWAVE = False
 LCHARG = False
-
-LORBIT = 12
-
-LHFCALC = True
-AEXX = 0.25
-HFSCREEN = 0.208
-PRECFOCK = F
-TIME = 0.2
 
 NPAR = 4
 KPAR = 4

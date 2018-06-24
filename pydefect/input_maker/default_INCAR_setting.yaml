@@ -138,8 +138,11 @@ defect:
   LORBIT: 12
   ISPIN: 2
 
-pbe:
-  
+
+# functional
+scan:
+  METAGGA: SCAN
+
 pbesol:
   GGA: PS
     

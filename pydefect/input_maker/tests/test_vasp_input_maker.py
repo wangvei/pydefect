@@ -99,13 +99,13 @@ class MakeIncarTest(unittest.TestCase):
 
     # TODO: write better tests
     def test_structure_opt(self):
-        make_incar(task="structure_opt", functional="hse06",
+        make_incar(task="structure_opt", functional="hse",
                    defect_in="defect.in", hfscreen=0.2, aexx=0.3,
                    is_magnetization=True,
                    my_incar_setting="my_INCAR_setting.yaml")
 
     def test_band(self):
-        make_incar(task="band", functional="pbe", poscar="POSCAR-YMnO3",
+        make_incar(task="band", functional="pbe", poscar="PPOSCAR-YMnO3",
                    my_incar_setting="my_INCAR_setting.yaml")
 
 

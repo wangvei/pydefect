@@ -80,7 +80,7 @@ class DefectEnergiesTest(unittest.TestCase):
         self.defect_energies.calc_transition_levels()
         print(self.defect_energies._transition_levels)
         self.defect_energies.plot_energy()
-#        self.defect_energies.plot_energy(x_range=[-0.5, 5], y_range=[-5, 20])
+        self.defect_energies.plot_energy(x_range=[-0.5, 5], y_range=[-5, 20])
 #        self.defect_energies.plot_energy(file_name="test.eps")
 
 
