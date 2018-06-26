@@ -1062,12 +1062,13 @@ def chempotdiag(args):
                     formula = args.partial_pressures[2 * i]
                     pressure = args.partial_pressures[2 * i + 1]
                     partial_pressure_dict[formula] = float(pressure)
-
             cp = ChemPotDiag.\
                 from_vasp_calculations_files(poscar_paths,
                                              outcar_paths,
                                              temperature=args.temperature,
                                              pressure=partial_pressure_dict)
+            if args.elements:
+                cp.set_elements(args.elements)
         print("Energies of elements ({0}) : {1}"
               .format(cp.elements, cp.element_energy))
         #  Read args of drawing diagram from parser
