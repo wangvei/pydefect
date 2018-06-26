@@ -160,7 +160,6 @@ class ModBSPlotter(BSPlotter):
                                          label='bs 1')]
             plt.legend(handles=handles)
 
-
         plt.tight_layout()
 
         # plot the band gap with an arrow.
