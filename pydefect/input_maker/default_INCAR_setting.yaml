@@ -140,14 +140,16 @@ defect:
 
 
 # functional
-scan:
-  METAGGA: SCAN
+pbe:
 
 pbesol:
   GGA: PS
     
 pbe_d3:
   IVDW: 12
+
+scan:
+  METAGGA: SCAN
 
 # LWAVE is overwritten.
 hse:

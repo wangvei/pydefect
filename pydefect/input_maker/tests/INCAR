@@ -1,5 +1,7 @@
+# algo
 ALGO = N
 
+# accuracy
 PREC = A
 LREAL = False
 LASPH = True
@@ -8,16 +10,32 @@ NELM = 100
 NELMIN = 4
 EDIFF = 1e-06
 
+# ionic
 ISIF = 0
 IBRION = -1
 NSW = 0
 
+# occupation
 ISMEAR = 0
 SIGMA = 0.05
 
+# io_control
 LWAVE = False
 LCHARG = False
 
+# analysis
+NBANDS = 213
+
+# ldau
+LDAU = True
+LDAUTYPE = 2
+LMAXMIX = 4
+LDAUPRINT = 2
+LDAUL =  -1   2  -1
+LDAUU =   0   3   0
+LDAUJ = 0.0 0.0 0.0
+
+# parallel
 NPAR = 4
 KPAR = 4
 

@@ -3,7 +3,7 @@ import filecmp
 import unittest
 
 from pydefect.input_maker.vasp_input_maker import ModIncar, make_potcar, \
-    make_hpkot_primitive_poscar, make_band_kpoints, make_kpoints, make_incar
+    make_hpkot_primitive_poscar, make_band_kpoints, make_kpoints, MakeIncar
 from pydefect.util.structure import NotStandardizedPrimitiveError
 
 
@@ -99,14 +99,14 @@ class MakeIncarTest(unittest.TestCase):
 
     # TODO: write better tests
     def test_structure_opt(self):
-        make_incar(task="structure_opt", functional="hse",
-                   defect_in="defect.in", hfscreen=0.2, aexx=0.3,
-                   is_magnetization=True,
-                   my_incar_setting="my_INCAR_setting.yaml")
+        MakeIncar(task="structure_opt", functional="hse",
+                  defect_in="defect.in", hfscreen=0.2, aexx=0.3,
+                  is_magnetization=True, ldau=True,
+                  my_incar_setting="my_INCAR_setting.yaml")
 
     def test_band(self):
-        make_incar(task="band", functional="pbe", poscar="PPOSCAR-YMnO3",
-                   my_incar_setting="my_INCAR_setting.yaml")
+        MakeIncar(task="band", functional="pbe", poscar="PPOSCAR-YMnO3",
+                  ldau=True, my_incar_setting="my_INCAR_setting.yaml")
 
 
 if __name__ == "__main__":

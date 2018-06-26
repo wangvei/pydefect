@@ -14,7 +14,7 @@ import ruamel.yaml as yaml
 from monty.serialization import loadfn
 from monty.io import zopen
 
-from pymatgen.io.vasp import Potcar, Kpoints, Incar
+from pymatgen.io.vasp import PotcarSingle, Potcar, Kpoints, Incar
 from pymatgen.core.structure import Structure
 from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
 from pymatgen.util.io_utils import clean_lines
@@ -23,7 +23,8 @@ from pydefect.core.prior_info import PriorInfo
 from pydefect.input_maker.defect_initial_setting import DefectInitialSetting, \
     element_set
 from pydefect.database.kpt_centering import kpt_centering
-from pydefect.database.atom import symbols_to_atom
+from pydefect.database.atom import symbols_to_atom, u_parameter, \
+    unoccupied_bands
 from pydefect.util.structure import structure_to_seekpath, find_hpkot_primitive
 
 __author__ = "Yu Kumagai"
@@ -51,7 +52,7 @@ incar_flags["io_control"] = ["ISTART", "ICHARG", "LWAVE", "LCHARG"]
 incar_flags["analysis"] = ["NBANDS", "LORBIT", "NEDOS", "EMAX", "EMIN", "RWIGS"]
 incar_flags["dielectric"] = ["LEPSILON", "LRPA", "LOPTICS", "LCALCEPS", "EFIELD", "CSHIFT", "OMEGAMIN", "OMEGAMAX", "LNABLA"]
 incar_flags["dft"] = ["GGA", "IVDW", "VDW_S6", "VDW_A1", "VDW_S8", "VDW_A2", "METAGGA"]
-incar_flags["hybrid"] = ["LHFCALC", "AEXX", "HFSCREEN", "NKRED", "PRECFOCK", "TIME"]
+incar_flags["hybrid"] = ["LHFCALC", "PRECFOCK", "AEXX", "HFSCREEN", "NKRED", "TIME"]
 incar_flags["gw"] = ["NBANDSGW", "NOMEGA", "OMEGAMAX", "ANTIRES", "MAXMEM", "NMAXFOCKAE", "NBANDSLF", "ENCUTGW"]
 incar_flags["ldau"] = ["LDAU", "LDAUTYPE", "LMAXMIX", "LDAUPRINT", "LDAUL", "LDAUU", "LDAUJ"]
 incar_flags["electrostatic"] = ["NELECT", "EPSILON", "DIPOL", "IDIPOL", "LMONO", "LDIPOL"]
@@ -96,6 +97,7 @@ class Functional(Enum):
     pbe = "pbe"
     pbesol = "pbesol"
     pbe_d3 = "pbe_d3"
+    scan = "scan"
     hse = "hse"
     nhse = "nhse"
     pbe0 = "pbe0"
@@ -168,9 +170,13 @@ class ModIncar(Incar):
 
         with zopen(filename, "wt") as fw:
             for key, val in incar_flags.items():
+                comment = False
                 blank_line = False
                 for v in val:
                     if v in self.keys():
+                        if comment is False:
+                            fw.write("# " + str(key) + "\n")
+                            comment = True
                         fw.write(v + " = " + str(self[v]) + "\n")
                         blank_line = True
                 if blank_line:
@@ -419,141 +425,217 @@ def make_kpoints(task, dirname='.', poscar="POSCAR", num_split_kpoints=1,
         write_file(os.path.join(dirname, 'KPOINTS'))
 
 
-def get_max_enmax(element_names):
+class MakeIncar:
 
-    list_file = loadfn(POTCAR_LIST_FILE)
-    enmax = []
+    def __init__(self, task, functional, poscar="POSCAR", potcar=None,
+                 hfscreen=None, aexx=None, is_metal=False,
+                 is_magnetization=False, ldau=False, dirname='.',
+                 defect_in=None, prior_info=None, my_incar_setting=None):
+        """
+        Constructs an INCAR file based on default settings depending on the task.
+        ENCUT can be determined from max(ENMAX).
+        Args:
+            task (Task Enum):
+            functional (Functional Enum):
+            poscar (str): POSCAR-type file name parsed for checking elements
+            potcar (str): POTCAR-type file
+            hfscreen (float): VASP parameter of screening distance HFSCREEN
+            aexx (float): VASP parameter of the Fock exchange AEXX
+            is_metal (bool): If the system to be calculated is metal or not. This
+                             has a meaning for the calculation of a competing phase
+            is_magnetization (bool): If the magnetization is considered or not.
+            ldau (bool): If the on-site Coulomb potential is considered.
+            dirname (str): Director name at which INCAR is written.
+            defect_in (str): defect.in file name parsed for checking elements
+            prior_info (str): prior_info.json file name
+            my_incar_setting (str): user setting yaml file name
+        """
 
-    for e in element_names:
-        potcar_file_name = \
-            os.path.join(potcar_dir(), list_file[e], "POTCAR")
-        enmax.append(Potcar.from_file(potcar_file_name)[0].enmax)
+        self.task = Task.from_string(task)
+        self.functional = Functional.from_string(functional)
+        self.potcar = potcar
+        self.setting_file = loadfn(INCAR_SETTINGS_FILE)
+        self.defect_in = defect_in
 
-    return max(enmax)
+        # raise error when incompatible combinations are given.
+        if self.functional == Functional.nhse and \
+                self.task not in (Task.band, Task.dos):
+            raise IncarIncompatibleError(
+                "nHSE is not compatible with Task: {}.".format(str(self.task)))
 
+        self.setting = {}
+        for i in (self.task, self.functional):
+            try:
+                s = self.setting_file[i.name]
+                if s:
+                    self.setting.update(s)
+            except IOError:
+                print('default_INCAR_self.setting.yaml cannot be opened')
 
-# TODO: Implement pbe+u
-# TODO: NBANDS for band, dos, and dielectric function
-# TODO: READ prior_info
-def make_incar(task, functional, hfscreen=None, aexx=None, is_metal=False,
-               is_magnetization=False, dirname='.', defect_in=None,
-               poscar="POSCAR", prior_info=None, my_incar_setting=None):
-    """
-    Constructs an INCAR file based on default settings depending on the task.
-    ENCUT can be determined from max(ENMAX).
-    Args:
-        task (Task Enum):
-        functional (Functional Enum):
-        hfscreen (float): VASP parameter of screening distance HFSCREEN
-        aexx (float): VASP parameter of the Fock exchange AEXX
-        is_metal (bool): If the system to be calculated is metal or not. This
-                         has a meaning for the calculation of a competing phase
-        is_magnetization (bool):
-        dirname (str): Director name at which INCAR is written.
-        defect_in (str): defect.in file name parsed for checking elements
-        poscar (str): POSCAR-type file name parsed for checking elements
-        prior_info (str): prior_info.json file name
-        my_incar_setting (str): user setting yaml file name
-
-    defect.in file is parsed when exists, otherwise DPOSCAR file is.
-    """
-
-    setting_file = loadfn(INCAR_SETTINGS_FILE)
-
-    task = Task.from_string(task)
-    functional = Functional.from_string(functional)
-
-    # raise error when incompatible combinations are given.
-    if functional == Functional.nhse and task not in (Task.band, Task.dos):
-        raise IncarIncompatibleError(
-            "nHSE is not compatible with Task: {}.".format(str(task)))
-
-    setting = {}
-    for i in (task, functional):
+        # Parse POSCAR file.
         try:
-            s = setting_file[i.name]
-            if s:
-                setting.update(s)
-        except IOError:
-            print('default_INCAR_setting.yaml cannot be opened')
+            self.structure = Structure.from_file(poscar)
+        except:
+            raise IOError("POSCAR type file is imperative.")
+        self.elements = self.structure.symbol_set
 
-    if is_magnetization:
-        setting["ISPIN"] = 2
+        max_enmax = self._get_max_enmax()
 
-    # ENCUT is determined by three ways.
-    # 1. Parse defect.in file, check relevant elements including foreign atoms
-    #    and determine the max ENMAX value.
-    # 2. Parse POSCAR file, and check the relevant elements. Note that dopants
-    #    are not considered in this case.
-    # 3. READ my_incar_setting.yaml file.
-    if defect_in:
-        defect_initial_setting = \
-            DefectInitialSetting.from_defect_in(poscar, defect_in)
-        max_enmax = get_max_enmax(element_set(defect_initial_setting))
-    elif poscar:
-        s = Structure.from_file(poscar)
-        elements = s.symbol_set
-        max_enmax = get_max_enmax(elements)
-
-    if max_enmax:
-        if "ISIF" in setting and setting["ISIF"] > 2:
-            setting["ENCUT"] = str(max_enmax * 1.3)
+        # In case the lattice shape is relaxed, ENCUT is multiplied by 1.3 to
+        # accurately calculate stress.
+        if "ISIF" in self.setting and self.setting["ISIF"] > 2:
+            self.setting["ENCUT"] = str(max_enmax * 1.3)
         else:
-            setting["ENCUT"] = str(max_enmax)
-    else:
-        warnings.warn("ENCUT is not set. Add it manually if needed or write it"
-                      "in my_incar_setting file.")
+            self.setting["ENCUT"] = str(max_enmax)
 
-    if functional in (Functional.hse, Functional.nhse):
-        if hfscreen:
-            setting["HFSCREEN"] = hfscreen
-        if aexx:
-            setting["AEXX"] = aexx
+        if self.task in (Task.band, Task.dos, Task.dielectric,
+                         Task.dielectric_function):
+            self._add_nbands_flag()
 
-    # read prior_info here.
-    if prior_info:
-        pi = PriorInfo.load_json(filename=prior_info)
-        if pi.is_magnetic:
-            setting["ISPIN"] = 2
-        if pi.is_metal:
-            is_metal = pi.is_metal
+        if self.functional in (Functional.hse, Functional.nhse):
+            if hfscreen:
+                self.setting["HFSCREEN"] = hfscreen
+            if aexx:
+                self.setting["AEXX"] = aexx
 
-    if my_incar_setting:
-        setting.update(loadfn(my_incar_setting))
+        # read prior_info here.
+        if prior_info:
+            pi = PriorInfo.load_json(filename=prior_info)
+            # check magnetization
+            if pi.is_magnetic or is_magnetization:
+                self.setting["ISPIN"] = 2
+            if pi.is_metal:
+                is_metal = pi.is_metal
 
-    # From here, we deal with particular issues related to INCAR
+        if my_incar_setting:
+            self.setting.update(loadfn(my_incar_setting))
 
-    # remove NPAR for the calculations of dielectrics as it is not allowed.
-    if task in (Task.dielectric, Task.dielectric_function):
-        if "NPAR" in setting:
-            setting.pop("NPAR")
+        # From here, we deal with particular issues related to INCAR
+        if ldau:
+            self._add_plus_u_flags()
 
-    # remove KPAR for band structure calculations
-    if task is (Task.band,):
-        if "KPAR" in setting:
-            setting.pop("NPAR")
+        # remove NPAR for the calculations of dielectrics as it is not allowed.
+        if task in (Task.dielectric, Task.dielectric_function):
+            if "NPAR" in self.setting:
+                self.setting.pop("NPAR")
 
-    if functional in (Functional.hse, Functional.nhse) \
-            and (task in (Task.dos, Task.dielectric_function) or is_metal):
-        # the following number should be the same as factor_metal in
-        # make_kpoints
-        setting["NKRED"] = 2
+        # remove KPAR for band structure calculations
+        if task is (Task.band,):
+            if "KPAR" in self.setting:
+                self.setting.pop("KPAR")
 
-    incar = os.path.join(dirname, 'INCAR')
-    ModIncar(setting).pretty_write_file(filename=incar)
+        # add NKRED for dos, dielectric function or metal.
+        if self.functional in (Functional.hse, Functional.nhse) \
+                and (self.task in (Task.dos, Task.dielectric_function)
+                     or is_metal):
+            # the following number should be the same as factor_metal in
+            # make_kpoints
+            self.setting["NKRED"] = 2
 
-    if functional in (Functional.hse, Functional.nhse):
-        incar_pre_gga = os.path.join(dirname, 'INCAR-pre_gga')
+        # split the function to write_file
+        incar = os.path.join(dirname, 'INCAR')
+        ModIncar(self.setting).pretty_write_file(filename=incar)
 
-        # pop out hybrid related flags.
-        for i in incar_flags["hybrid"]:
-            if i in setting:
-                setting.pop(i)
+        if functional in (Functional.hse, Functional.nhse):
+            incar_pre_gga = os.path.join(dirname, 'INCAR-pre_gga')
 
-        # insert some flags.
-        setting.update(setting_file["hse_pre"])
+            # pop out hybrid related flags.
+            for i in incar_flags["hybrid"]:
+                if i in self.setting:
+                    self.setting.pop(i)
 
-        ModIncar(setting).pretty_write_file(filename=incar_pre_gga)
+            # insert some flags.
+            self.setting.update(self.setting_file["hse_pre"])
+            ModIncar(self.setting).pretty_write_file(filename=incar_pre_gga)
+
+    def _get_max_enmax(self, ):
+
+        # ENCUT is determined by one of three ways.
+        # 1. READ my_incar_self.setting.yaml file. (overwrite later)
+        # 2. Parse POTCAR file.
+        # 3. Parse defect.in file, check relevant elements including foreign
+        #    atoms and determine the max ENMAX value.
+        # 4. Parse POSCAR file, and check the relevant elements. Note that
+        #    dopants are not considered in this case.
+        if self.potcar:
+            potcar = Potcar.from_file(self.potcar)
+            enmax = [p.enmax for p in potcar]
+        else:
+            if self.defect_in:
+                defect_initial_setting = \
+                    DefectInitialSetting.from_defect_in(self.poscar,
+                                                        self.defect_in)
+                name_set = element_set(defect_initial_setting)
+            else:
+                name_set = self.elements
+            list_file = loadfn(POTCAR_LIST_FILE)
+            enmax = []
+            for e in name_set:
+                potcar_file_name = \
+                    os.path.join(potcar_dir(), list_file[e], "POTCAR")
+            enmax.append(PotcarSingle.from_file(potcar_file_name).enmax)
+
+        return max(enmax)
+
+    def _add_nbands_flag(self):
+
+        composition = self.structure.composition
+
+        num_electrons = {}
+        if self.potcar:
+            potcar = Potcar.from_file(self.potcar)
+            for p in potcar:
+                num_electrons[p.element] = p.nelectrons
+        else:
+            list_file = loadfn(POTCAR_LIST_FILE)
+            for e in self.elements:
+                potcar = os.path.join(potcar_dir(), list_file[e], "POTCAR")
+                num_electrons[e] = PotcarSingle.from_file(potcar).nelectrons
+
+        if len(num_electrons) != len(composition):
+            raise ValueError("The number of elements is not consistent.")
+
+        num_bands = 0.0
+        for e in self.elements:
+            num_bands += \
+                composition[e] * (num_electrons[e] + unoccupied_bands[e]) / 2
+
+        self.setting["NBANDS"] = ceil(num_bands)
+
+    def _add_plus_u_flags(self):
+        # Only LDAUTYPE = 2 is supported
+        ldaul = []
+        ldauu = []
+        ldauj = []
+        for e in self.elements:
+            if e in u_parameter.keys():
+                a = u_parameter[e]
+                ldaul.append(a[0])
+                ldauu.append(a[1])
+            else:
+                ldaul.append(-1)
+                ldauu.append(0)
+            # LDAUJ is always 0.
+            ldauj.append(0)
+
+        if max(ldaul) == 3:
+            self.setting["LMAXMIX"] = 6
+        elif max(ldaul) == 2:
+            self.setting["LMAXMIX"] = 4
+        elif max(ldaul) == -1:
+            return False
+
+        # These setting must be after checking the LMAXMIX.
+        self.setting["LDAU"] = True
+        self.setting["LDAUTYPE"] = 2
+        self.setting["LDAUPRINT"] = 2
+
+        self.setting["LDAUL"] = \
+            " ".join(['{0:3d}'.format(l, end="") for l in ldaul])
+        self.setting["LDAUU"] = \
+            " ".join(['{0:3d}'.format(u, end="") for u in ldauu])
+        self.setting["LDAUJ"] = \
+            " ".join(['{0:3.1f}'.format(j, end="") for j in ldauj])
 
 
 class IncarIncompatibleError(Exception):
