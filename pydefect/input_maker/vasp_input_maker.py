@@ -232,7 +232,7 @@ def make_hpkot_primitive_poscar(poscar="POSCAR", pposcar="PPOSCAR",
 
 
 def make_band_kpoints(ibzkpt, dirname='.', poscar="POSCAR",
-                      num_split_kpoints=1):
+                      num_split_kpoints=1, time_reversal=True):
     """
     Write the KPOINTS file for the band structure calculation.
     Args:
@@ -242,11 +242,13 @@ def make_band_kpoints(ibzkpt, dirname='.', poscar="POSCAR",
         poscar (str): input POSCAR-type file name
         num_split_kpoints (int): number of KPOINTS files used for a band
                                  structure calculation.
+        time_reversal:
     """
 
     s = Structure.from_file(os.path.join(poscar))
 
-    seekpath_full_info = structure_to_seekpath(s)
+    seekpath_full_info = structure_to_seekpath(structure=s,
+                                               time_reversal=time_reversal)
 
     # primitive structure
     lattice = seekpath_full_info["primitive_lattice"]
@@ -295,7 +297,7 @@ def make_band_kpoints(ibzkpt, dirname='.', poscar="POSCAR",
 def make_kpoints(task, dirname='.', poscar="POSCAR", num_split_kpoints=1,
                  ibzkpt="IBZKPT", is_metal=False, kpts_shift=None,
                  kpts_density_opt=3, kpts_density_defect=1.5, factor_dos=2,
-                 factor_metal=2, prior_info=None):
+                 factor_metal=2, prior_info=None, is_magnetization=False):
     """
     Constructs a KPOINTS file based on default settings depending on the task.
     Args:
@@ -321,6 +323,7 @@ def make_kpoints(task, dirname='.', poscar="POSCAR", num_split_kpoints=1,
             This is integer to make k-points even numbers. Then, we can use
             NKRED = 2 for hybrid functional calculations.
         prior_info (str): mp.json file name
+        is_magnetization (bool): If the magnetization is considered or not.
     """
 
     s = Structure.from_file(os.path.join(poscar))
@@ -338,7 +341,13 @@ def make_kpoints(task, dirname='.', poscar="POSCAR", num_split_kpoints=1,
 
     # band
     if task == Task.band:
-        make_band_kpoints(ibzkpt, dirname, poscar, num_split_kpoints)
+        if is_magnetization:
+            time_reversal = False
+        else:
+            time_reversal = True
+
+        make_band_kpoints(ibzkpt, dirname, poscar, num_split_kpoints,
+                          time_reversal)
         return True
     # molecule: task is competing_phase_molecule or is_molecule = .True.
     elif task == Task.competing_phase_molecule:
@@ -432,7 +441,7 @@ class MakeIncar:
                  is_magnetization=False, ldau=False, dirname='.',
                  defect_in=None, prior_info=None, my_incar_setting=None):
         """
-        Constructs an INCAR file based on default settings depending on the task.
+        Constructs an INCAR file based on default settings depending on the task
         ENCUT can be determined from max(ENMAX).
         Args:
             task (Task Enum):
@@ -441,8 +450,9 @@ class MakeIncar:
             potcar (str): POTCAR-type file
             hfscreen (float): VASP parameter of screening distance HFSCREEN
             aexx (float): VASP parameter of the Fock exchange AEXX
-            is_metal (bool): If the system to be calculated is metal or not. This
-                             has a meaning for the calculation of a competing phase
+            is_metal (bool): If the system to be calculated is metal or not.
+                             This has a meaning for the calculation of a
+                             competing phase
             is_magnetization (bool): If the magnetization is considered or not.
             ldau (bool): If the on-site Coulomb potential is considered.
             dirname (str): Director name at which INCAR is written.
@@ -502,10 +512,13 @@ class MakeIncar:
         if prior_info:
             pi = PriorInfo.load_json(filename=prior_info)
             # check magnetization
-            if pi.is_magnetic or is_magnetization:
+            if pi.is_magnetic:
                 self.setting["ISPIN"] = 2
             if pi.is_metal:
                 is_metal = pi.is_metal
+
+        if is_magnetization:
+            self.setting["ISPIN"] = 2
 
         if my_incar_setting:
             self.setting.update(loadfn(my_incar_setting))
@@ -515,12 +528,12 @@ class MakeIncar:
             self._add_plus_u_flags()
 
         # remove NPAR for the calculations of dielectrics as it is not allowed.
-        if task in (Task.dielectric, Task.dielectric_function):
+        if self.task in (Task.dielectric, Task.dielectric_function):
             if "NPAR" in self.setting:
                 self.setting.pop("NPAR")
 
         # remove KPAR for band structure calculations
-        if task is (Task.band,):
+        if self.task in (Task.band,):
             if "KPAR" in self.setting:
                 self.setting.pop("KPAR")
 
@@ -598,7 +611,7 @@ class MakeIncar:
         num_bands = 0.0
         for e in self.elements:
             num_bands += \
-                composition[e] * (num_electrons[e] + unoccupied_bands[e]) / 2
+                composition[e] * (num_electrons[e] / 2 + unoccupied_bands[e])
 
         self.setting["NBANDS"] = ceil(num_bands)
 

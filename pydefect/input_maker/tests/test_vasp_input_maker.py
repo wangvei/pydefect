@@ -108,6 +108,9 @@ class MakeIncarTest(unittest.TestCase):
         MakeIncar(task="band", functional="pbe", poscar="PPOSCAR-YMnO3",
                   ldau=True, my_incar_setting="my_INCAR_setting.yaml")
 
+    def test_dos(self):
+        MakeIncar(task="dos", functional="pbe", poscar="PPOSCAR-YMnO3",
+                  ldau=True, is_magnetization=True)
 
 if __name__ == "__main__":
     unittest.main()

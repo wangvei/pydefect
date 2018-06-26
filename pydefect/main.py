@@ -15,7 +15,7 @@ from pydefect.input_maker.defect_initial_setting \
     import print_dopant_info, DefectInitialSetting
 from pydefect.input_maker.supercell_maker import Supercell
 from pydefect.input_maker.vasp_input_maker \
-    import make_hpkot_primitive_poscar, make_incar, make_kpoints, make_potcar
+    import make_hpkot_primitive_poscar, MakeIncar, make_kpoints, make_potcar
 from pydefect.input_maker.vasp_defect_set_maker import VaspDefectInputSetMaker
 from pydefect.core.defect_entry import DefectEntry
 from pydefect.core.supercell_dft_results import SupercellDftResults
@@ -179,6 +179,9 @@ def main():
     parser_vasp_kpoints_maker.add_argument(
         "--factor_metal", dest="factor_metal", type=float, default=2,
         help="Multiplier factor the structure optimization of metallic systems")
+    parser_vasp_kpoints_maker.add_argument(
+        "--is_magnetization", dest="is_magnetization", action="store_true",
+        help="Set if the system is spin polarized.")
 
     parser_vasp_kpoints_maker.set_defaults(func=vasp_kpoints_maker)
 
@@ -195,19 +198,32 @@ def main():
     parser_vasp_incar_maker.add_argument(
         "--functional", "-f", dest="functional", type=str, help="Functional.")
     parser_vasp_incar_maker.add_argument(
+        "-p", dest="poscar", type=str, default="POSCAR")
+    parser_vasp_incar_maker.add_argument(
+        "--potcar", dest="potcar", type=str, default=None)
+    parser_vasp_incar_maker.add_argument(
         "--hfscreen", dest="hfscreen", type=float,
         help="Screening distance for exchange interaction.")
     parser_vasp_incar_maker.add_argument(
         "--aexx", dest="aexx", type=float,
         help="Mixing parameter for exchange interaction.")
     parser_vasp_incar_maker.add_argument(
+        "--is_metal", dest="is_metal", action="store_true",
+        help="Set if the system is metal.")
+    parser_vasp_incar_maker.add_argument(
         "--is_magnetization", dest="is_magnetization", action="store_true",
         help="Set if the system is spin polarized.")
     parser_vasp_incar_maker.add_argument(
-        "-p", dest="poscar", type=str, default="POSCAR")
+        "--ldau", dest="ldau", action="store_true",
+        help="Set if LDA+U is switched on.")
     parser_vasp_incar_maker.add_argument(
-        "-m", dest="my_setting_file", type=str)
-
+        "--defect_in", dest="defect_in", default=None, type=str,
+        help="defect.in-type file name.")
+    parser_vasp_incar_maker.add_argument(
+        "--pi", dest="prior_info", default=None, type=str,
+        help="prior_info-type file name.")
+    parser_vasp_incar_maker.add_argument(
+        "-m", dest="my_setting_file", default=None, type=str)
     parser_vasp_incar_maker.set_defaults(func=vasp_incar_maker)
 
     # -- vasp_poscar_maker ----------------------------------------------------
@@ -303,8 +319,16 @@ def main():
         "--is_magnetization", dest="is_magnetization", action="store_true",
         help="Set if the system is spin polarized.")
     parser_vasp_input_maker.add_argument(
+        "--ldau", dest="ldau", action="store_true",
+        help="Set if LDA+U is switched on.")
+    parser_vasp_input_maker.add_argument(
+        "--defect_in", dest="defect_in", default=None, type=str,
+        help="defect.in-type file name.")
+    parser_vasp_input_maker.add_argument(
+        "--pi", dest="prior_info", default=None, type=str,
+        help="prior_info-type file name.")
+    parser_vasp_input_maker.add_argument(
         "-m", dest="my_setting_file", type=str)
-
     # POTCAR is generated from POSCAR only.
     parser_vasp_input_maker.set_defaults(func=vasp_input_maker)
 
@@ -604,6 +628,9 @@ def main():
     parser_plot_band.add_argument(
         "-a", dest="absolute", action="store_false",
         help="Show in the absolute energy scale.")
+    parser_plot_band.add_argument(
+        "-l", dest="legend", action="store_false",
+        help="Not show the legend.")
 
     parser_plot_band.set_defaults(func=plot_band)
 
@@ -716,17 +743,22 @@ def vasp_kpoints_maker(args):
                  kpts_density_opt=args.kpts_density_opt,
                  kpts_density_defect=args.kpts_density_defect,
                  factor_dos=args.factor_dos,
-                 factor_metal=args.factor_metal)
+                 factor_metal=args.factor_metal,
+                 is_magnetization=args.is_magnetization)
 
 
 def vasp_incar_maker(args):
 
-    make_incar(task=args.task,
+    MakeIncar(task=args.task,
                functional=args.functional,
+               poscar=args.poscar,
+               potcar=args.potcar,
                hfscreen=args.hfscreen,
                aexx=args.aexx,
+               is_metal=args.is_metal,
                is_magnetization=args.is_magnetization,
-               poscar=args.poscar,
+               ldau=args.ldau,
+               defect_in=args.defect_in,
                my_incar_setting=args.my_setting_file)
 
 
@@ -761,18 +793,23 @@ def vasp_input_maker(args):
                  kpts_density_opt=args.kpts_density_opt,
                  kpts_density_defect=args.kpts_density_defect,
                  factor_dos=args.factor_dos,
-                 factor_metal=args.factor_metal)
-
-    make_incar(task=args.task,
-               functional=args.functional,
-               hfscreen=args.hfscreen,
-               aexx=args.aexx,
-               is_magnetization=args.is_magnetization,
-               poscar=args.poscar,
-               my_incar_setting=args.my_setting_file)
+                 factor_metal=args.factor_metal,
+                 is_magnetization=args.is_magnetization)
 
     elements = Structure.from_file(args.poscar).symbol_set
     make_potcar(elements)
+
+    MakeIncar(task=args.task,
+              functional=args.functional,
+              poscar=args.poscar,
+              potcar="POTCAR",
+              hfscreen=args.hfscreen,
+              aexx=args.aexx,
+              is_metal=args.is_metal,
+              is_magnetization=args.is_magnetization,
+              ldau=args.ldau,
+              defect_in=args.defect_in,
+              my_incar_setting=args.my_setting_file)
 
 
 def recommend_supercell(args):
@@ -1076,7 +1113,9 @@ def plot_band(args):
     bs_plotter = ModBSPlotter(band)
 
     if not args.vasprun2:
-        p = bs_plotter.get_plot(zero_to_efermi=args.absolute, ylim=args.yrange)
+        p = bs_plotter.get_plot(zero_to_efermi=args.absolute,
+                                ylim=args.yrange,
+                                legend=args.legend)
     else:
         bands2 = []
         for k, v in zip(args.kpoints, args.vasprun2):
@@ -1084,7 +1123,9 @@ def plot_band(args):
 
         band2 = get_reconstructed_band_structure(bands2)
         bs_plotter2 = ModBSPlotter(band2)
-        p = bs_plotter2.plot_compare(bs_plotter, zero_to_efermi=args.absolute)
+        p = bs_plotter2.plot_compare(bs_plotter,
+                                     legend=args.legend,
+                                     zero_to_efermi=args.absolute)
 
     if args.filename:
         p.savefig(args.filename, format="pdf")

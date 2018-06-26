@@ -19,7 +19,7 @@ __date__ = "May 15, 2018"
 class ModBSPlotter(BSPlotter):
 
     def get_plot(self, zero_to_efermi=True, ylim=None, smooth=False,
-                 vbm_cbm_marker=True, smooth_tol=None):
+                 vbm_cbm_marker=True, smooth_tol=None, legend=False):
         """
         Original function is copied from PYMATGEN.2018.5.22.
         Get a matplotlib object for the band structure plot.
@@ -34,6 +34,7 @@ class ModBSPlotter(BSPlotter):
             vbm_cbm_marker:
             smooth_tol (float) : tolerance for fitting spline to band data.
                 Default is None such that no tolerance will be used.
+            legend: If the figure legend is shown or not.
         """
         from pymatgen.util.plotting import pretty_plot
         plt = pretty_plot(12, 8)
@@ -57,7 +58,7 @@ class ModBSPlotter(BSPlotter):
                 for i in range(self._nb_bands):
                     for s in spin:
                         data_x = data['distances'][d]
-                        data_y = [data['energy'][d][str(Spin.up)][i][j]
+                        data_y = [data['energy'][d][str(s)][i][j]
                                   for j in range(len(data['distances'][d]))]
                         plt.plot(data_x, data_y, line_style[s],
                                  linewidth=band_line_width)
@@ -146,6 +147,19 @@ class ModBSPlotter(BSPlotter):
             for vbm in data['vbm']:
                 plt.scatter(vbm[0], vbm[1], color='g', marker='o',
                             s=100)
+
+        if legend:
+            import matplotlib.lines as mlines
+            if self._bs.is_spin_polarized:
+                handles = [mlines.Line2D([], [], linewidth=2, color='b',
+                                         label='bs 1 up'),
+                           mlines.Line2D([], [], linewidth=2, color='r',
+                                         label='bs 1 down', linestyle="--")]
+            else:
+                handles = [mlines.Line2D([], [], linewidth=2, color='b',
+                                         label='bs 1')]
+            plt.legend(handles=handles)
+
 
         plt.tight_layout()
 

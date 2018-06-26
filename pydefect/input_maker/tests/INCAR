@@ -16,15 +16,19 @@ IBRION = -1
 NSW = 0
 
 # occupation
-ISMEAR = 0
+ISMEAR = -5
 SIGMA = 0.05
+
+# magnetization
+ISPIN = 2
 
 # io_control
 LWAVE = False
 LCHARG = False
 
 # analysis
-NBANDS = 213
+NBANDS = 318
+LORBIT = 12
 
 # ldau
 LDAU = True
@@ -34,8 +38,4 @@ LDAUPRINT = 2
 LDAUL =  -1   2  -1
 LDAUU =   0   3   0
 LDAUJ = 0.0 0.0 0.0
-
-# parallel
-NPAR = 4
-KPAR = 4
 
