@@ -5,6 +5,7 @@ from collections import OrderedDict, defaultdict
 import numpy as np
 from pymatgen.io.vasp.inputs import Poscar
 from pymatgen.io.vasp.outputs import Vasprun
+from pymatgen.core.composition import Composition
 
 from pydefect.analysis.chempotdiag.gas import Gas
 
@@ -603,8 +604,9 @@ class CompoundsList(list):
         Returns (None/list):
             Matched compound data. If no compounds match, return None.
         """
+        compound_name = Composition(compound_name).reduced_formula
         matched_list = [(i, c) for i, c in enumerate(self)
-                        if c.name == compound_name]
+                        if Composition(c.name).reduced_formula == compound_name]
         if len(matched_list) == 0:
             return None
         else:

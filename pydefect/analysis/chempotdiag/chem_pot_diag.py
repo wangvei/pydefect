@@ -11,6 +11,7 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 import numpy as np
 from scipy.spatial import HalfspaceIntersection
+from pymatgen.core.composition import Composition
 
 from pydefect.analysis.chempotdiag.compound \
     import Compound, DummyCompoundForDiagram, CompoundsList
@@ -336,10 +337,13 @@ class ChemPotDiag:
             index = compound
         elif isinstance(compound, str):
             matched = self.stable_compounds.get_indices_and_compounds(compound)
+            if matched is None:
+                raise ValueError("No such compounds in diagram {0}".
+                                 format(compound))
             if len(matched) >= 2:
-                raise ValueError\
-                    ("More than one compounds matched the name {0}."
-                     .format(compound))
+                raise ValueError(
+                    "More than one compounds matched the name {0}."
+                    .format(compound))
             if matched:
                 index = matched[0][0]
         elif isinstance(compound, Compound):
@@ -347,8 +351,8 @@ class ChemPotDiag:
         else:
             raise TypeError("Input compound must be int or str or Compound.")
         if index is None:
-            raise ValueError\
-                ("{0} did not found in stable_compounds.".format(compound))
+            raise ValueError(
+                "{0} did not found in stable_compounds.".format(compound))
         to_return = \
             VerticesList([self._vertices[i]
                           for i in self._compounds_to_vertex_list[index]])
@@ -523,7 +527,10 @@ class ChemPotDiag:
                             compound.name,
                             size='smaller',
                             zorder=num_line + i, )
-                    if compound.name == remarked_compound:
+                    compound_name = Composition(compound.name).reduced_formula
+                    remarked_compound_name = \
+                        Composition(remarked_compound).reduced_formula
+                    if compound_name == remarked_compound_name:
                         vertices.set_alphabetical_label()
                         for j, v in enumerate(vertices):
                             if v.label:
@@ -564,7 +571,10 @@ class ChemPotDiag:
                             zorder=num_plane+i,
                             ha='center',
                             va='center')
-                    if compound.name == remarked_compound:
+                    compound_name = Composition(compound.name).reduced_formula
+                    remarked_compound_name = \
+                        Composition(remarked_compound).reduced_formula
+                    if compound_name == remarked_compound_name:
                         sorted_vertices.set_alphabetical_label()
                         # vertices_coords.set_alphabetical_label()
                         for j, v in enumerate(sorted_vertices):
