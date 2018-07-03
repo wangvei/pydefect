@@ -51,10 +51,12 @@ def make_vasp_inputs_from_mp(elements,
     #    os.mkdir(os.path.join(dir_path, chem_sys))
 
     # get molecules
+    molecules_formula_list = []
     if adds_molecule:
         molecules_elements = [m.composition for m in Gas]
         for me, file_name in zip(molecules_elements, molecule_file_names):
             if set([str(e) for e in me.elements]) < set(elements):
+                molecules_formula_list.append(me.reduced_formula)
                 comp_name = str(me)
                 name_dict = {"N1 H3": "NH3", "N1 O2": "NO2", "O1 H2": "H2O"}
                 if comp_name in name_dict.keys():
@@ -71,22 +73,20 @@ def make_vasp_inputs_from_mp(elements,
             all_materials = mp_rester.get_data(els_str, data_type="vasp")
             materials = [material for material in all_materials
                          if material["e_above_hull"] < criterion_e_above_hull]
-            materials_to_output = []
             comp_stable = {}
             if gets_poly:
                 materials_to_output = materials
             else:
                 for material in materials:
                     c = Composition(material["full_formula"])
-                    if gets_poly:
-                        materials_to_output.append(material)
+                    if c.reduced_formula in molecules_formula_list:
+                        continue
+                    if c.reduced_formula not in comp_stable or \
+                            material["e_above_hull"] <\
+                            comp_stable[c.reduced_formula]["e_above_hull"]:
+                        comp_stable[c.reduced_formula] = material
                     else:
-                        if c not in comp_stable or \
-                                material["e_above_hull"] <\
-                                comp_stable[c.reduced_formula]["e_above_hull"]:
-                            comp_stable[c.reduced_formula] = material
-                        else:
-                            break
+                        continue
                 materials_to_output = comp_stable.values()
             for material in materials_to_output:
                 # remove solids when directory of molecules exist
