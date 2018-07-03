@@ -19,7 +19,7 @@ from pydefect.input_maker.vasp_input_maker \
 from pydefect.input_maker.vasp_defect_set_maker import VaspDefectInputSetMaker
 from pydefect.core.defect_entry import DefectEntry
 from pydefect.core.supercell_dft_results import SupercellDftResults
-from pydefect.util.vasp_process_analyzer \
+from pydefect.vasp_util.script.vasp_process_analyzer \
     import check_vasp_output, vasp_convergence_ionic, \
     vasp_convergence_electronic
 from pydefect.core.unitcell_dft_results import UnitcellDftResults
@@ -29,7 +29,7 @@ from pydefect.analysis.chempotdiag.chem_pot_diag \
 from pydefect.analysis.chempotdiag.make_inputs import make_vasp_inputs_from_mp
 from pydefect.vasp_util.script.plot_band_structure import ModBSPlotter, \
     VaspBandStructureSymmLine
-from pydefect.vasp_util.script.plot_dos import ModDosPlotter, get_dos_plot
+from pydefect.vasp_util.script.plot_dos import get_dos_plot
 
 __version__ = "0.0.1"
 __date__ = "19.4.2018"
