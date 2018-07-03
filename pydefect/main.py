@@ -920,8 +920,8 @@ def supercell_results(args):
 def unitcell_results(args):
     try:
         dft_results = UnitcellDftResults.load_json(filename=args.json_file)
-    except:
-        raise IOError(args.json_file, "does not exist.")
+    except IOError:
+        raise FileNotFoundError("JSON for the unitcell info was not found.")
 
     if args.print:
         print(dft_results)
@@ -932,39 +932,40 @@ def unitcell_results(args):
             dft_results.set_band_edge_from_vasp(args.band_edge_dir,
                                                 vasprun_name=args.vasprun)
         except IOError:
-            print(args.band_edge_dir, "is not appropriate.")
+            raise FileNotFoundError(args.band_edge_dir, "is not appropriate.")
 
     if args.static_diele:
         dft_results.static_dielectric_tensor = args.static_diele
     elif args.static_diele_dir:
         try:
-            dft_results.set_static_dielectric_tensor_from_vasp(args.static_diele_dir,
-                                                       outcar_name=args.outcar)
+            dft_results.set_static_dielectric_tensor_from_vasp(
+                args.static_diele_dir, outcar_name=args.outcar)
         except IOError:
-            print(args.static_diele_dir, "is not appropriate.")
+            raise FileNotFoundError(
+                args.static_diele_dir, "is not appropriate.")
 
     if args.ionic_diele:
         dft_results.ionic_dielectric_tensor = args.ionic_diele
     elif args.ionic_diele_dir:
         try:
-            dft_results.set_ionic_dielectric_tensor_from_vasp(args.ionic_diele_dir,
-                                                      outcar_name=args.outcar)
+            dft_results.set_ionic_dielectric_tensor_from_vasp(
+                args.ionic_diele_dir, outcar_name=args.outcar)
         except IOError:
-            print(args.ionic_diele_dir, "is not appropriate.")
+            raise FileNotFoundError(args.ionic_diele_dir, "is not appropriate.")
 
     if args.volume_dir:
         try:
-            dft_results.set_volume_from_vasp(args.volume_dir,
-                                             contcar_name=args.poscar)
+            dft_results.set_volume_from_vasp(
+                args.volume_dir, contcar_name=args.poscar)
         except IOError:
-            print(args.volume_dir, "is not appropriate.")
+            raise FileNotFoundError(args.volume_dir, "is not appropriate.")
 
     if args.total_dos_dir:
         try:
             dft_results.set_total_dos_from_vasp(args.total_dos_dir,
                                                 vasprun_name=args.vasprun)
         except IOError:
-            print(args.total_dos_dir, "is not appropriate.")
+            raise FileNotFoundError(args.total_dos_dir, "is not appropriate.")
 
     dft_results.to_json_file(args.json_file)
 
@@ -973,12 +974,12 @@ def correction(args):
     try:
         unitcell_dft_data = UnitcellDftResults.load_json(args.unitcell_json)
     except IOError:
-        raise FileNotFoundError("JSON of unitcell was not found.")
+        raise FileNotFoundError("JSON for the unitcell info was not found.")
 
     try:
         perfect_dft_data = SupercellDftResults.load_json(args.perfect_json)
     except IOError:
-        raise FileNotFoundError("JSON of perfect was not found.")
+        raise FileNotFoundError("JSON for the perfect cell info was not found.")
 
     if args.dump_ewald_json:
         print("optimizing ewald...")
