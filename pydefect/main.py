@@ -535,7 +535,7 @@ def main():
     parser_chempotdiag.add_argument("-ch", "--criterion_hull",
                                     dest="criterion_hull", type=float,
                                     default=None,
-                                    help="")
+                                    help="Collect materials only if energy above hull is less than criterion_hull. Unit is meV/atom.")
     parser_chempotdiag.add_argument("-k", "--mp_api_key",
                                     help="",
                                     action="store_true")
