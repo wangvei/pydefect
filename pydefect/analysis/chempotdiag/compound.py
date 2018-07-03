@@ -209,7 +209,7 @@ class Compound:
             # should be raise error
             if e not in elements and self._elem_comp[e] > 1e-5:
                 raise ValueError("Invalid elements list. "
-                                 "Composition of removed element {}"
+                                 "Composition of removed element {} "
                                  "must be nearly zero ( <=1e-5 ), "
                                  "but actually {} ."
                                  .format(e, self._elem_comp[e]))
@@ -690,10 +690,16 @@ class CompoundsList(list):
         # considered_element = set()
         compounds_list = cls([], temperature=temperature, pressure=pressure)
         for poscar_path, output_path in zip(poscar_paths, output_paths):
-            compound = Compound.from_vasp_calculation_files(poscar_path,
-                                                            output_path,
-                                                            fmt=fmt)
-            compounds_list.append(compound)
+            try:
+                compound = Compound.from_vasp_calculation_files(poscar_path,
+                                                                output_path,
+                                                                fmt=fmt)
+                compounds_list.append(compound)
+            except:
+                import warnings
+                warnings.warn("Could not read {} or {}, skipped".
+                              format(poscar_path, output_path))
+                continue
         # return cls(compounds_list, temperature=temperature, pressure=pressure)
         return compounds_list
 
