@@ -584,9 +584,9 @@ class ChemPotDiag:
                              + self.elements[0] + ", "
                              + self.elements[1] + ", and "
                              + self.elements[2])
-            ax.set_xlabel('Chemical potential of ' + self.elements[0])
-            ax.set_ylabel('Chemical potential of ' + self.elements[1])
-            ax.set_zlabel('Chemical potential of ' + self.elements[2])
+            ax.set_xlabel('Chemical potential of {} (eV)'.format(self.elements[0]))
+            ax.set_ylabel('Chemical potential of {} (eV)'.format(self.elements[1]))
+            ax.set_zlabel('Chemical potential of {} (eV)'.format(self.elements[2]))
             ax.set_xlim3d(draw_range, 0)
             ax.set_ylim3d(0, draw_range)
             ax.set_zlim3d(draw_range, 0)
