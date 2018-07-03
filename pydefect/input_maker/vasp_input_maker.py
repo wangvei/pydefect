@@ -498,9 +498,11 @@ class MakeIncar:
         else:
             self.setting["ENCUT"] = str(max_enmax)
 
-        if self.task in (Task.band, Task.dos, Task.dielectric,
-                         Task.dielectric_function):
+        if self.task in (Task.band, Task.dos, Task.dielectric_function):
             self._add_nbands_flag()
+
+        if self.task in (Task.dos, Task.dielectric_function):
+            self._add_emin_emax_nedos()
 
         if self.functional in (Functional.hse, Functional.nhse):
             if hfscreen:
@@ -533,7 +535,7 @@ class MakeIncar:
                 self.setting.pop("NPAR")
 
         # remove KPAR for band structure calculations
-        if self.task in (Task.band,):
+        if self.task in (Task.band, Task.competing_phase_molecule):
             if "KPAR" in self.setting:
                 self.setting.pop("KPAR")
 
@@ -614,6 +616,12 @@ class MakeIncar:
                 composition[e] * (num_electrons[e] / 2 + unoccupied_bands[e])
 
         self.setting["NBANDS"] = ceil(num_bands)
+
+    def _add_emin_emax_nedos(self):
+        self.setting["EMIN"] = -20
+        self.setting["EMAX"] = 10
+        self.setting["NEDOS"] = 3001
+
 
     def _add_plus_u_flags(self):
         # Only LDAUTYPE = 2 is supported

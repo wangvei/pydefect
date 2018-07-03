@@ -67,7 +67,7 @@ class PriorInfo:
 
     @property
     def is_molecule(self):
-        return self._molecule
+        return self._is_molecule
 
     @property
     def is_magnetic(self):
@@ -79,3 +79,7 @@ class PriorInfo:
         if self._band_gap > self._band_gap_threshold:
             return True
 
+    @property
+    def is_metal(self):
+        if self._band_gap < self._band_gap_threshold:
+            return True
