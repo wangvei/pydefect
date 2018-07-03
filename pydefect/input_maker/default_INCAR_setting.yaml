@@ -49,6 +49,7 @@ dos:
   LCHARG: False
   LORBIT: 12
 
+# NSW = 1 is a must.
 dielectric:
   PREC: A 
   LREAL: False
@@ -56,7 +57,7 @@ dielectric:
   ISIF: 0
   EDIFF: 1.0e-07
   IBRION: 8
-  NSW: 0
+  NSW: 1
   ISMEAR: 0
   SIGMA: 0.05
   NELM: 100
