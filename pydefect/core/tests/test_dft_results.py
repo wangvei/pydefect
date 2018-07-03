@@ -264,21 +264,23 @@ class UnitcellDftResultsTest(unittest.TestCase):
         print(self.unitcell.volume)
 
     def test_dict_json(self):
-        self.unitcell.band_edge = [0.0, 1.0]
-        self.unitcell.band_edge2 = [0.0, 2.0]
-        self.unitcell.static_dielectric_tensor = \
-            np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]])
-        self.unitcell.ionic_dielectric_tensor = \
-            np.array([[2, 0, 0], [0, 2, 0], [0, 0, 2]])
-        self.unitcell.total_dos = \
-            np.array([[0, 0.5, 1.0], [0.1, 0.2, 0.4]])
-        d = self.unitcell.as_dict()
-        unitcell_from_dict = UnitcellDftResults.from_dict(d)
-        print(vars(unitcell_from_dict))
+        # self.unitcell.band_edge = [0.0, 1.0]
+        # self.unitcell.band_edge2 = [0.0, 2.0]
+        # self.unitcell.static_dielectric_tensor = \
+        #     np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]])
+        # self.unitcell.ionic_dielectric_tensor = \
+        #     np.array([[2, 0, 0], [0, 2, 0], [0, 0, 2]])
+        # self.unitcell.total_dos = \
+        #     np.array([[0, 0.5, 1.0], [0.1, 0.2, 0.4]])
+        # d = self.unitcell.as_dict()
+        # unitcell_from_dict = UnitcellDftResults.from_dict(d)
+        # print(vars(unitcell_from_dict))
 
-        tmp_file = tempfile.NamedTemporaryFile()
-        self.unitcell.to_json_file(tmp_file.name)
-        unitcell_from_json = UnitcellDftResults.load_json(tmp_file.name)
+# #        tmp_file = tempfile.NamedTemporaryFile()
+# #        self.unitcell.to_json_file(tmp_file.name)
+#         self.unitcell.to_json_file("aaa")
+        unitcell_from_json = UnitcellDftResults.load_json("aaa")
+#        unitcell_from_json = UnitcellDftResults.load_json(tmp_file.name)
         print(vars(unitcell_from_json))
 
     def test_print(self):

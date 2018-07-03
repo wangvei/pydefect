@@ -180,6 +180,9 @@ def main():
         "--factor_metal", dest="factor_metal", type=float, default=2,
         help="Multiplier factor the structure optimization of metallic systems")
     parser_vasp_kpoints_maker.add_argument(
+        "--pi", dest="prior_info", default=None, type=str,
+        help="prior_info-type file name.")
+    parser_vasp_kpoints_maker.add_argument(
         "--is_magnetization", dest="is_magnetization", action="store_true",
         help="Set if the system is spin polarized.")
 
@@ -426,8 +429,8 @@ def main():
         aliases=['ur'])
 
     parser_unitcell_results.add_argument(
-        "--json_file", dest="json_file", default="unitcell.json", type=str)
-
+        "--json_file", dest="json_file", default="unitcell.json", type=str,
+        help="Json file for the unitcell info.")
     parser_unitcell_results.add_argument(
         "--static_diele", dest="static_diele", default=None, type=float,
         nargs="+",
@@ -744,22 +747,24 @@ def vasp_kpoints_maker(args):
                  kpts_density_defect=args.kpts_density_defect,
                  factor_dos=args.factor_dos,
                  factor_metal=args.factor_metal,
+                 prior_info=args.prior_info,
                  is_magnetization=args.is_magnetization)
 
 
 def vasp_incar_maker(args):
 
     MakeIncar(task=args.task,
-               functional=args.functional,
-               poscar=args.poscar,
-               potcar=args.potcar,
-               hfscreen=args.hfscreen,
-               aexx=args.aexx,
-               is_metal=args.is_metal,
-               is_magnetization=args.is_magnetization,
-               ldau=args.ldau,
-               defect_in=args.defect_in,
-               my_incar_setting=args.my_setting_file)
+              functional=args.functional,
+              poscar=args.poscar,
+              potcar=args.potcar,
+              hfscreen=args.hfscreen,
+              aexx=args.aexx,
+              is_metal=args.is_metal,
+              is_magnetization=args.is_magnetization,
+              ldau=args.ldau,
+              defect_in=args.defect_in,
+              prior_info=args.prior_info,
+              my_incar_setting=args.my_setting_file)
 
 
 def vasp_poscar_maker(args):
@@ -794,6 +799,7 @@ def vasp_input_maker(args):
                  kpts_density_defect=args.kpts_density_defect,
                  factor_dos=args.factor_dos,
                  factor_metal=args.factor_metal,
+                 prior_info=args.prior_info,
                  is_magnetization=args.is_magnetization)
 
     elements = Structure.from_file(args.poscar).symbol_set
@@ -809,6 +815,7 @@ def vasp_input_maker(args):
               is_magnetization=args.is_magnetization,
               ldau=args.ldau,
               defect_in=args.defect_in,
+              prior_info=args.prior_info,
               my_incar_setting=args.my_setting_file)
 
 
@@ -913,8 +920,8 @@ def supercell_results(args):
 def unitcell_results(args):
     try:
         dft_results = UnitcellDftResults.load_json(filename=args.json_file)
-    except IOError:
-        print(args.json_file, "does not exist.")
+    except:
+        raise IOError(args.json_file, "does not exist.")
 
     if args.print:
         print(dft_results)
@@ -931,8 +938,7 @@ def unitcell_results(args):
         dft_results.static_dielectric_tensor = args.static_diele
     elif args.static_diele_dir:
         try:
-            dft_results. \
-                set_static_dielectric_tensor_from_vasp(args.static_diele_dir,
+            dft_results.set_static_dielectric_tensor_from_vasp(args.static_diele_dir,
                                                        outcar_name=args.outcar)
         except IOError:
             print(args.static_diele_dir, "is not appropriate.")
@@ -941,8 +947,7 @@ def unitcell_results(args):
         dft_results.ionic_dielectric_tensor = args.ionic_diele
     elif args.ionic_diele_dir:
         try:
-            dft_results. \
-                set_ionic_dielectric_tensor_from_vasp(args.ionic_diele_dir,
+            dft_results.set_ionic_dielectric_tensor_from_vasp(args.ionic_diele_dir,
                                                       outcar_name=args.outcar)
         except IOError:
             print(args.ionic_diele_dir, "is not appropriate.")
