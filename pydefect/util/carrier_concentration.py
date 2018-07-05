@@ -2,26 +2,28 @@
 # -*- coding: utf-8 -*-
 
 import numpy as np
-from scipy.constants import k, eV
+from scipy.constants import physical_constants
 import matplotlib.pyplot as plt
+
+EV = physical_constants['Boltzmann constant in eV/K'][0]
 
 
 def fermi_dirac_dist(energy, fermi_level, temperature):
 
-    if (energy - fermi_level) / (k / eV * temperature) < 100:
+    if (energy - fermi_level) / (EV * temperature) < 100:
         return np.reciprocal(
-            np.exp((energy - fermi_level) / (k / eV * temperature)) + 1)
+            np.exp((energy - fermi_level) / (EV * temperature)) + 1)
     else:
         return 0.0
 
 
 def bose_einstein_dist(energy, fermi_level, temperature):
     return np.reciprocal(
-        np.exp((energy - fermi_level) / (k / eV * temperature)) - 1)
+        np.exp((energy - fermi_level) / (EV * temperature)) - 1)
 
 
 def maxwell_boltzmann_dist(energy, temperature):
-    return np.exp(- energy / (k / eV * temperature))
+    return np.exp(- energy / (EV * temperature))
 
 
 class CarrierConcentration:
@@ -37,21 +39,12 @@ class CarrierConcentration:
             ns: Carrier electron concentrations at the Fermi levels.
             ps: Carrier hole concentrations at the Fermi levels.
         """
-        self._temperature = temperature
+        self.temperature = temperature
         self.vbm = vbm
         self.cbm = cbm
-        self._fermi_levels = fermi_levels
+        self.fermi_levels = fermi_levels
         self.ns = ns
         self.ps = ps
-
-    # getter
-    @property
-    def temperature(self):
-        return self._temperature
-
-    @property
-    def fermi_levels(self):
-        return self._fermi_levels
 
     @property
     def electron_concentration(self):
@@ -93,26 +86,33 @@ class CarrierConcentration:
 
         for f in fermi_levels:
 
-            ns.append(cls.n(temperature, f, total_dos, vbm, volume))
-            ps.append(cls.p(temperature, f, total_dos, cbm, volume))
+            ns.append(cls.n(temperature, f, total_dos, cbm, volume))
+            ps.append(cls.p(temperature, f, total_dos, vbm, volume))
 
         return cls(temperature, vbm, cbm, fermi_levels, ns, ps)
 
     @staticmethod
-    def n(temperature, fermi_level, total_dos, vbm, volume, threshold=0.05):
+    def n(temperature, fermi_level, total_dos, cbm, volume, threshold=0.05):
+        """
+        Calculate the electron carrier concentration at the given absolute
+        fermi_level.
+        """
         mesh_distance = total_dos[1][1] - total_dos[1][0]
-        print(mesh_distance, fermi_level)
         n = sum(fermi_dirac_dist(e, fermi_level, temperature) * td
                 for td, e in zip(total_dos[0], total_dos[1])
-                if e <= vbm + threshold)
+                if e >= cbm - threshold)
         return n * mesh_distance / volume
 
     @staticmethod
-    def p(temperature, fermi_level, total_dos, cbm, volume, threshold=0.05):
+    def p(temperature, fermi_level, total_dos, vbm, volume, threshold=0.05):
+        """
+        Calculate the hole carrier concentration at the given absolute
+        fermi_level.
+        """
         mesh_distance = total_dos[1][1] - total_dos[1][0]
         p = sum(fermi_dirac_dist(fermi_level, e, temperature) * td
                 for td, e in zip(total_dos[0], total_dos[1])
-                if e >= cbm - threshold)
+                if e <= vbm + threshold)
         return p * mesh_distance / volume
 
     def get_plot(self, xlim=None, ylim=None, relative=True):
@@ -160,7 +160,3 @@ class CarrierConcentration:
         ax.plot(fermi_levels, self.ps, '-', color="blue", label="p")
 
         plt.show()
-
-    @temperature.setter
-    def temperature(self, value):
-        self._temperature = value

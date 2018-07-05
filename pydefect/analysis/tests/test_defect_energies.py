@@ -76,6 +76,14 @@ class DefectEnergiesTest(unittest.TestCase):
         print(self.defect_energies.cbm)
         print(self.defect_energies.band_gap)
 
+    def test_equilibrium_concentration(self):
+        num_sites_filename = os.path.join(test_dir, "MgO/defects/num_sites.yaml")
+        # print(self.defect_energies.defect_concentration(
+        #     temperature=1000, e_f=3.0036,
+        #     num_sites_filename=num_sites_filename))
+        print(self.defect_energies.equilibrium_concentration(
+            temperature=1000, num_sites_filename=num_sites_filename))
+
     def test_calc_transition_levels(self):
         self.defect_energies.calc_transition_levels()
         print(self.defect_energies._transition_levels)
