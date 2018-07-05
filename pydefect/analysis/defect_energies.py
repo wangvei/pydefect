@@ -11,6 +11,8 @@ from itertools import combinations
 from pydefect.core.supercell_dft_results import SupercellDftResults
 from pydefect.core.unitcell_dft_results import UnitcellDftResults
 from pydefect.input_maker.defect_set_maker import is_name_selected
+from pydefect.util.carrier_concentration import maxwell_boltzmann_dist, \
+    CarrierConcentration
 
 
 Defect = namedtuple("Defect", ("defect_entry", "dft_results", "correction"))
@@ -26,14 +28,13 @@ class DefectEnergies:
         """
         Calculates defect formation energies.
         Args:
-
             unitcell (UnitcellDftResults):
             perfect (SupercellDftResults)
             defects (list of namedtuple Defect):
                 [[Defect, ...]
                 Defect = namedtuple("Defect", "defect_entry", "dft_results",
                                     "correction")
-            chem_pot (ChemPot):
+            chem_pot (ChemPot): Chempot object.
             chem_pot_label (str):
         """
 
@@ -46,6 +47,7 @@ class DefectEnergies:
         rel_chem_pot, standard_energy = chem_pot
         rel_chem_pot = rel_chem_pot[chem_pot_label]
 
+        # defect formation energies at the vbm
         self._defect_energies = defaultdict(dict)
 
         for d in defects:
@@ -68,7 +70,75 @@ class DefectEnergies:
                 relative_energy + correction_energy + \
                 electron_interchange_energy + element_interchange_energy
 
-    def print_energies(self):
+    def defect_concentration(self, temperature, fermi_level):
+        concentrations = defaultdict(dict)
+        for name in self._defect_energies.keys():
+            for charge in self._defect_energies[name].keys():
+                energy = \
+                    self._defect_energies[name][charge] + fermi_level * charge
+                concentrations[name][charge] = \
+                    maxwell_boltzmann_dist(energy, temperature)
+
+        return concentrations
+
+    def equilibrium_concentration(self, temperature, max_iteration=100):
+
+        for iteration in range(max_iteration):
+
+            n = CarrierConcentration.n(temperature, )
+
+
+            p = np.sum([v[1] * (1.0 - fermi_dirac(v[0], e, temperature))
+                        for v in valence_band])
+            n = np.sum([c[1] * fermi_dirac(c[0], e, temperature)
+                        for c in conduction_band])
+
+            for i, d in enumerate(defect_energy):
+                each_defect_energy = d + (e - vbm) * defect_charge[i]
+                defect_concentration[i] = \
+                    maxwell_boltzmann(each_defect_energy, temperature) \
+                    * defect_num_site[i]
+
+            if opts.quench:
+                for k in species_index.values():
+                    fixed_concentration_sum = \
+                        np.sum([fixed_defect_concentration[i] for i in k])
+                    distribution_sum = np.sum(
+                        [defect_concentration[i] for i in k])
+                    for i in k:
+                        defect_concentration[i] = \
+                            fixed_concentration_sum * defect_concentration[
+                                i] / distribution_sum
+
+            if opts.intrinsic:
+                defect_concentration = np.zeros(len(defect_name), dtype=float)
+
+            sum_charge = p - n + np.dot(defect_concentration, defect_charge)
+            """                                                                            
+            In case the Fermi level locates in between vbm and cbm, the common ration   
+            0.5 is sufficient. Otherwise, higher common ratio is essential, and so 0.75 
+            is set here.                                                                   
+            """
+            mesh *= 0.75
+            e = e + np.sign(sum_charge) * mesh
+            #    print "Sum of chargies %.8e" % (sum_charge / volume * 1.0e24)
+            #    print "p: %.8e, n: %.8e, net: %.8e" % \
+            #        (p / volume * 1.0e24, n / volume * 1.0e24, (p - n) / volume * 1.0e24)
+
+            # This line controles the accuracy.
+            if np.abs(
+                    sum_charge / np.amax([np.amax(defect_concentration), n, p])) \
+                    < 1.0e-4:
+                #                                                                      < 1.0e-8:
+                break
+
+            if iteration == max_iteration - 1:
+                print
+                "Scf has not been reached. Bye."
+                sys.exit(1)
+
+
+    def __str__(self):
         pass
 
     @staticmethod

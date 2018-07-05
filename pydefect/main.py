@@ -702,8 +702,8 @@ def main():
                                     type=str,
                                     default="A")
     parser_plot_energy.add_argument("--defect_dirs", dest="defect_dirs",
-                                    default="", type=str)
-    parser_plot_energy.add_argument("--show_tls", dest="--show_tls",
+                                    nargs="+", type=str)
+    parser_plot_energy.add_argument("--show_tls", dest="show_tls",
                                     action="store_true",
                                     help="Show the transition levels.")
 
@@ -1161,7 +1161,7 @@ def plot_energy(args):
         from glob import glob
         defects_dirs = glob('*[0-9]/')
     else:
-        defects_dirs = args.defects
+        defects_dirs = args.defect_dirs
 
     defects = []
     for d in defects_dirs:
@@ -1188,7 +1188,11 @@ def plot_energy(args):
                                      system_name=args.name)
 
     defect_energies.calc_transition_levels()
-    defect_energies.plot_energy()
+
+    if args.save_file:
+        pass
+    else:
+        defect_energies.plot_energy(show_tls=args.show_tls)
 
 
 if __name__ == "__main__":

@@ -24,7 +24,7 @@ __date__ = "December 4, 2017"
 
 class UnitcellDftResults:
     """
-    DFT results for a unitcell
+    DFT results for a unitcell.
     Args:
         band_edge (1x2 list): VBM and CBM.
         static_dielectric_tensor (3x3 numpy array):
@@ -147,7 +147,8 @@ class UnitcellDftResults:
         if self._band_edge is not None and \
            self._static_dielectric_tensor is not None and \
            self._ionic_dielectric_tensor is not None and \
-           self._total_dos is not None:
+           self._total_dos is not None and \
+           self._volume is not None:
             return True
         else:
             return False
