@@ -5,6 +5,7 @@ import numpy as np
 import os
 import tempfile
 import unittest
+from copy import deepcopy
 
 from pydefect.analysis.defect_energies import DefectEnergies, Defect
 from pydefect.analysis.chempotdiag.chem_pot_diag import ChemPotDiag
@@ -77,22 +78,31 @@ class DefectEnergiesTest(unittest.TestCase):
         print(self.defect_energies.band_gap)
 
     def test_equilibrium_concentration(self):
-        num_sites_filename = os.path.join(test_dir, "MgO/defects/num_sites.yaml")
-        # print(self.defect_energies.defect_concentration(
-        #     temperature=1000, e_f=3.0036,
-        #     num_sites_filename=num_sites_filename))
-        dc = self.defect_energies.equilibrium_concentration(
+        num_sites_filename = os.path.join(test_dir,
+                                          "MgO/defects/num_sites.yaml")
+#        self.defect_energies.defect_concentration(
+#            temperature=1000, e_f=3.0036, num_sites_filename=num_sites_filename)
+
+        defect_energies = deepcopy(self.defect_energies)
+
+        defect_energies.equilibrium_concentration(
             temperature=10000, num_sites_filename=num_sites_filename)
-        print(dc)
-        print(self.defect_energies.equilibrium_concentration(
-            temperature=3000, num_sites_filename=num_sites_filename,
-            prev_concentrations=dc[3]))
+        print(defect_energies._concentration1)
+        defect_energies.equilibrium_concentration(
+            temperature=3000, num_sites_filename=num_sites_filename)
+        print(defect_energies._concentration1)
+        print(defect_energies._concentration2)
 
     def test_calc_transition_levels(self):
-        self.defect_energies.calc_transition_levels()
-        print(self.defect_energies._transition_levels)
-        self.defect_energies.plot_energy()
-        self.defect_energies.plot_energy(x_range=[-0.5, 5], y_range=[-5, 20])
+        num_sites_filename = os.path.join(test_dir,
+                                          "MgO/defects/num_sites.yaml")
+        defect_energies = deepcopy(self.defect_energies)
+        defect_energies.calc_transition_levels()
+        print(defect_energies._transition_levels)
+#        defect_energies.plot_energy()
+        defect_energies.equilibrium_concentration(
+            temperature=10000, num_sites_filename=num_sites_filename)
+        defect_energies.plot_energy(x_range=[-0.5, 5], y_range=[-5, 20])
 #        self.defect_energies.plot_energy(file_name="test.eps")
 
 

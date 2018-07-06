@@ -17,6 +17,8 @@ from pydefect.util.carrier_concentration import maxwell_boltzmann_dist, \
 
 Defect = namedtuple("Defect", ("defect_entry", "dft_results", "correction"))
 TransitionLevel = namedtuple("TransitionLevel", ("cross_points", "charges"))
+Concentration = namedtuple("Concentration", ("temperature", "e_f", "n", "p",
+                                             "defect_concentration"))
 
 
 class DefectEnergies:
@@ -77,8 +79,7 @@ class DefectEnergies:
                 relative_energy + correction_energy + \
                 electron_interchange_energy + element_interchange_energy
 
-    def defect_concentration(self, temperature, e_f, num_sites_filename,
-                             prev_concentrations=None):
+    def defect_concentration(self, temperature, e_f, num_sites_filename):
 
         num_sites = loadfn(num_sites_filename)
         concentrations = defaultdict(dict)
@@ -88,14 +89,15 @@ class DefectEnergies:
                 raise KeyError(
                     "{0} is not in {1}.".format(name, num_sites_filename))
 
-            if prev_concentrations is None:
+            if self._concentration1 is None:
                 for charge in self._defect_energies[name].keys():
                     energy = self._defect_energies[name][charge] + e_f * charge
                     concentrations[name][charge] = \
                         maxwell_boltzmann_dist(energy, temperature) \
                         / self._volume * num_sites[name]
             else:
-                total = sum(prev_concentrations[name].values())
+                dc = self._concentration1.defect_concentration[name]
+                total = sum(dc.values())
                 ratio = {}
                 for charge in self._defect_energies[name].keys():
                     energy = self._defect_energies[name][charge] + e_f * charge
@@ -117,10 +119,10 @@ class DefectEnergies:
         return concentrations
 
     def equilibrium_concentration(self, temperature, num_sites_filename,
-                                  prev_concentrations=None,
-                                  max_iteration=50, threshold=1e-5):
-
-        print(self._vbm, self._cbm)
+                                  max_iteration=50, threshold=1e-5,
+                                  initialize=False):
+        if initialize is True:
+            self.unset_concentration()
 
         mesh = self._cbm - self._vbm
         e_f = (self._vbm + self._cbm) / 2
@@ -131,8 +133,7 @@ class DefectEnergies:
             p = CarrierConcentration.p(temperature, e_f, self._total_dos,
                                        self._vbm, self._volume)
             defect_concentration = \
-                self.defect_concentration(temperature, e_f, num_sites_filename,
-                                          prev_concentrations)
+                self.defect_concentration(temperature, e_f, num_sites_filename)
             defect_charge = \
                 sum([sum([c * e for c, e in defect_concentration[d].items()])
                      for d in defect_concentration])
@@ -148,14 +149,19 @@ class DefectEnergies:
             # This line controls the accuracy.
             max_concentration = np.amax([n, p, charge_sum])
             if np.abs(charge_sum / max_concentration) < threshold:
-                self._e_f = e_f
-                self._n = n
-                self._p = p
-                self._defect_concentration = defect_concentration
-                return e_f, n, p, defect_concentration
+                c = Concentration(temperature, e_f, n, p, defect_concentration)
+                if self._concentration1:
+                    self._concentration2 = c
+                else:
+                    self._concentration1 = c
+                break
 
         print("Equilibrium condition has not been reached. ")
         return False
+
+    def unset_concentration(self):
+        self._concentration1 = None
+        self._concentration2 = None
 
     def __str__(self):
         pass
@@ -253,6 +259,14 @@ class DefectEnergies:
         plt.axvline(x=x_max, linewidth=1.0, linestyle='dashed')
         plt.axhline(y=0, linewidth=1.0, linestyle='dashed')
 
+        # Lines for the equilibrium Fermi level(s)
+        if self._concentration1:
+            plt.axvline(x=self._concentration1.e_f - self._vbm,
+                        linewidth=2.0, linestyle='dashed')
+        if self._concentration2:
+            plt.axvline(x=self._concentration2.e_f - self._vbm,
+                        linewidth=2.0, linestyle='dashed')
+
         for i, (name, tl) in enumerate(self.transition_levels.items()):
 
             color = matplotlib.cm.hot(float(i) / len(self.transition_levels))
@@ -302,6 +316,8 @@ class DefectEnergies:
 
             for j, (x, y) in enumerate(middle_points):
                 ax.annotate(str(tl.charges[j]), (x, y), color=color)
+
+#        if self._concentration1:
 
         fig.subplots_adjust(right=0.75)
 
