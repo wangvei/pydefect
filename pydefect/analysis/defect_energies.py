@@ -3,7 +3,7 @@
 import numpy as np
 import matplotlib
 import matplotlib.pyplot as plt
-import warnings
+from monty.serialization import loadfn
 
 from collections import defaultdict, namedtuple
 from itertools import combinations
@@ -11,6 +11,8 @@ from itertools import combinations
 from pydefect.core.supercell_dft_results import SupercellDftResults
 from pydefect.core.unitcell_dft_results import UnitcellDftResults
 from pydefect.input_maker.defect_set_maker import is_name_selected
+from pydefect.util.carrier_concentration import maxwell_boltzmann_dist, \
+    CarrierConcentration
 
 
 Defect = namedtuple("Defect", ("defect_entry", "dft_results", "correction"))
@@ -26,27 +28,31 @@ class DefectEnergies:
         """
         Calculates defect formation energies.
         Args:
-
             unitcell (UnitcellDftResults):
             perfect (SupercellDftResults)
             defects (list of namedtuple Defect):
                 [[Defect, ...]
                 Defect = namedtuple("Defect", "defect_entry", "dft_results",
                                     "correction")
-            chem_pot (ChemPot):
+            chem_pot (ChemPot): Chempot object.
             chem_pot_label (str):
         """
 
         self._vbm, self._cbm = unitcell.band_edge
+        self._volume = unitcell.volume * 10 ** -24  # [A^3] -> [cm^3]
+        self._total_dos = unitcell.total_dos
         self.title = system_name + " condition " + chem_pot_label
         # TODO: check if exists
         # self._vbm2, self._cbm2 = unitcell.band_edge2
         self._transition_levels = {}
+        self._defects = defects
 
         rel_chem_pot, standard_energy = chem_pot
         rel_chem_pot = rel_chem_pot[chem_pot_label]
 
+        # defect formation energies at the vbm
         self._defect_energies = defaultdict(dict)
+        self._defect_num_sites = {}
 
         for d in defects:
             name = d.defect_entry.name
@@ -68,7 +74,74 @@ class DefectEnergies:
                 relative_energy + correction_energy + \
                 electron_interchange_energy + element_interchange_energy
 
-    def print_energies(self):
+    def defect_concentration(self, temperature, e_f, num_sites_filename,
+                             prev_concentrations=None):
+
+        num_sites = loadfn(num_sites_filename)
+        concentrations = defaultdict(dict)
+
+        for name in self._defect_energies.keys():
+            if name not in num_sites.keys():
+                raise KeyError(
+                    "{0} is not in {1}.".format(name, num_sites_filename))
+
+            if prev_concentrations is None:
+                for charge in self._defect_energies[name].keys():
+                    energy = self._defect_energies[name][charge] + e_f * charge
+                    concentrations[name][charge] = \
+                        maxwell_boltzmann_dist(energy, temperature) \
+                        / self._volume * num_sites[name]
+            else:
+                total = sum(prev_concentrations[name])
+                ratio = {}
+                for charge in self._defect_energies[name].keys():
+                    energy = self._defect_energies[name][charge] + e_f * charge
+                    ratio[charge] = \
+                        maxwell_boltzmann_dist(energy, temperature) \
+                        * num_sites[name]
+                ratio_sum = sum(ratio)
+                for charge in self._defect_energies[name].keys():
+                    concentrations[name][charge] = \
+                        total * ratio[charge] / ratio_sum
+
+        return concentrations
+
+    def equilibrium_concentration(self, temperature, num_sites_filename,
+                                  defect_concentrations=None,
+                                  max_iteration=50, threshold=1e-5):
+
+        mesh = self._cbm - self._vbm
+        e_f = (self._vbm + self._cbm) / 2
+        for iteration in range(max_iteration):
+
+            n = CarrierConcentration.n(temperature, e_f, self._total_dos,
+                                       self._cbm, self._volume)
+            p = CarrierConcentration.p(temperature, e_f, self._total_dos,
+                                       self._vbm, self._volume)
+            defect_concentration = \
+                self.defect_concentration(temperature, e_f, num_sites_filename,
+                                          defect_concentrations)
+            defect_charge = \
+                sum([sum([c * e for c, e in defect_concentration[d].items()])
+                     for d in defect_concentration])
+#            print(e_f, defect_charge, p, n)
+            charge_sum = p - n + defect_charge
+
+            # In case the Fermi level locates in between vbm and cbm, the common
+            # ratio 0.5 is okay. Otherwise, higher common ratio is needed.
+            # Therefore, 0.6 is set here.
+            mesh *= 0.6
+            e_f = e_f + np.sign(charge_sum) * mesh
+
+            # This line controls the accuracy.
+            max_concentration = np.amax([n, p, charge_sum])
+            if np.abs(charge_sum / max_concentration) < threshold:
+                return n, p, defect_concentration
+
+        print("Equilibrium condition has not been reached. ")
+        return False
+
+    def __str__(self):
         pass
 
     @staticmethod
