@@ -528,8 +528,12 @@ class ChemPotDiag:
                             size='smaller',
                             zorder=num_line + i, )
                     compound_name = Composition(compound.name).reduced_formula
-                    remarked_compound_name = \
-                        Composition(remarked_compound).reduced_formula
+
+                    remarked_compound_name = None
+                    if remarked_compound:
+                        remarked_compound_name = \
+                            Composition(remarked_compound).reduced_formula
+
                     if compound_name == remarked_compound_name:
                         vertices.set_alphabetical_label()
                         for j, v in enumerate(vertices):
@@ -572,8 +576,12 @@ class ChemPotDiag:
                             ha='center',
                             va='center')
                     compound_name = Composition(compound.name).reduced_formula
-                    remarked_compound_name = \
-                        Composition(remarked_compound).reduced_formula
+
+                    remarked_compound_name = None
+                    if remarked_compound:
+                        remarked_compound_name = \
+                            Composition(remarked_compound).reduced_formula
+
                     if compound_name == remarked_compound_name:
                         sorted_vertices.set_alphabetical_label()
                         # vertices_coords.set_alphabetical_label()
