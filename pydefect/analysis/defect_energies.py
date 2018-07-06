@@ -42,6 +42,7 @@ class DefectEnergies:
 
         self._concentration1 = None
         self._concentration2 = None
+        self._transition_levels = None
 
         self._vbm, self._cbm = unitcell.band_edge
         self._volume = unitcell.volume * 10 ** -24  # [A^3] -> [cm^3]
@@ -49,7 +50,6 @@ class DefectEnergies:
         self.title = system_name + " condition " + chem_pot_label
         # TODO: check if exists
         # self._vbm2, self._cbm2 = unitcell.band_edge2
-        self._transition_levels = {}
         self._defects = defects
 
         rel_chem_pot, standard_energy = chem_pot
@@ -154,7 +154,7 @@ class DefectEnergies:
                     self._concentration2 = c
                 else:
                     self._concentration1 = c
-                break
+                return True
 
         print("Equilibrium condition has not been reached. ")
         return False
@@ -171,7 +171,7 @@ class DefectEnergies:
         d = {c: e + c * ef for c, e in ec.items()}
         return min(d.items(), key=lambda x: x[1])
 
-    def calc_transition_levels(self):
+    def calc_transition_levels(self, x_range=None):
         """
         Calculates a set of transition levels
 
@@ -181,18 +181,27 @@ class DefectEnergies:
 
         transition_levels = {}
 
+        if x_range:
+            x_min = x_range[0]
+            x_max = x_range[1]
+        else:
+            x_min = 0.0
+            x_max = self.band_gap
+
+        x_diff = x_max - x_min
+
         for name, e_of_c in self._defect_energies.items():
             points = []
             charge = set()
 
-            # Estimate the lowest energies for each defect at the vbm
-            c_vbm, min_e_vbm = self.min_e_at_ef(e_of_c, 0)
-            points.append([0.0, min_e_vbm])
+            # Estimate the lowest energies for each defect at the lowest energy.
+            c_vbm, min_e_vbm = self.min_e_at_ef(e_of_c, x_min)
+            points.append([x_min, min_e_vbm])
             charge.add(c_vbm)
 
-            # Same but at the cbm
-            c_cbm, min_e_cbm = self.min_e_at_ef(e_of_c, self.band_gap)
-            points.append([self.band_gap, min_e_cbm])
+            # and at the highest energy.
+            c_cbm, min_e_cbm = self.min_e_at_ef(e_of_c, x_max)
+            points.append([x_max, min_e_cbm])
             charge.add(c_cbm)
 
             for (c1, e1), (c2, e2) in combinations(e_of_c.items(), r=2):
@@ -202,7 +211,7 @@ class DefectEnergies:
 
                 compared_energy = self.min_e_at_ef(e_of_c, x)[1] + 0.00001
 
-                if 0 < x < self.band_gap and y < compared_energy:
+                if 0 < x < x_diff and y < compared_energy:
                     points.append([x, y])
                     charge.add(c1)
                     charge.add(c2)
@@ -225,38 +234,46 @@ class DefectEnergies:
             show_tls (bool): If transition level values are shown or not.
         """
 
-        fig = plt.figure()
-        ax = fig.add_subplot(111)
+        fig, ax = plt.subplots()
 
         plt.title(self.title)
 
         ax.set_xlabel("Fermi level (eV)")
         ax.set_ylabel("Formation energy (eV)")
 
-        x_max = max([max(np.array(tl.cross_points).transpose()[0])
-                     for tl in self.transition_levels.values()])
-        x_min = 0
-        y_max = max([max(np.array(tl.cross_points).transpose()[1])
-                     for tl in self.transition_levels.values()])
-        y_min = min([min(np.array(tl.cross_points).transpose()[1])
-                     for tl in self.transition_levels.values()])
-        if y_min > 0:
-            y_min = 0
+        if self.transition_levels is None:
+            raise NoTransitionError("Transition levels are not calculated yet.")
 
         if x_range:
-            plt.xlim(x_range[0], x_range[1])
-        if y_range:
-            plt.ylim(y_range[0], y_range[1])
+            x_min = x_range[0]
+            x_max = x_range[1]
         else:
+            x_min = 0
+            x_max = self.band_gap
+        if y_range:
+            y_min = y_range[0]
+            y_max = y_range[1]
+        else:
+            y_min = min([min(np.array(tl.cross_points).transpose()[1])
+                         for tl in self.transition_levels.values()])
+            y_max = max([max(np.array(tl.cross_points).transpose()[1])
+                         for tl in self.transition_levels.values()])
+            if y_min > 0:
+                y_min = 0
             margin = (y_max - y_min) * 0.08
-            plt.ylim(y_min - margin, y_max + margin)
+            y_min -= margin
+            y_max += margin
+
+        plt.xlim(x_min, x_max)
+        plt.ylim(y_min, y_max)
 
         margin_plot_x = (x_max - x_min) * 0.025
         margin_plot_y = (y_max - y_min) * 0.025
 
         # support lines
-        plt.axvline(x=0, linewidth=1.0, linestyle='dashed')
-        plt.axvline(x=x_max, linewidth=1.0, linestyle='dashed')
+        if x_range:
+            plt.axvline(x=0, linewidth=1.0, linestyle='dashed')
+            plt.axvline(x=self.band_gap, linewidth=1.0, linestyle='dashed')
         plt.axhline(y=0, linewidth=1.0, linestyle='dashed')
 
         # Lines for the equilibrium Fermi level(s)
@@ -346,3 +363,5 @@ class DefectEnergies:
     def band_gap(self):
         return self._cbm - self._vbm
 
+class NoTransitionError(Exception):
+    pass
