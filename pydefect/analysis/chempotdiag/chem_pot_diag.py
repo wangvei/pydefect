@@ -219,7 +219,8 @@ class ChemPotDiag:
                                      output_paths,
                                      fmt="outcar",
                                      temperature=None,
-                                     pressure=None):
+                                     pressure=None,
+                                     energy_shift_dict={}):
         """
         Args:
             poscar_paths (list of str):
@@ -227,6 +228,7 @@ class ChemPotDiag:
             fmt (str): "outcar" or "vasprun".
             temperature (float): (K)
             pressure (dict): (Pa)
+            energy_shift_dict (dict): unit: (eV), e.g. {N2_molecule/OUTCAR: 1}
         Returns:
             (ChemPotDiag) ChemPotDiag object from vasp files.
         """
@@ -235,7 +237,9 @@ class ChemPotDiag:
                                                        output_paths,
                                                        fmt=fmt,
                                                        temperature=temperature,
-                                                       pressure=pressure)
+                                                       pressure=pressure,
+                                                       energy_shift_dict=
+                                                       energy_shift_dict)
         return cls.from_calculation(compounds_list)
 
     @property
