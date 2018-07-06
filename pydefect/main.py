@@ -565,13 +565,20 @@ def main():
                                     dest="outcar_name", type=str,
                                     default="OUTCAR",
                                     help="Name of OUTCAR, like OUTCAR-finish")
+    parser_chempotdiag.add_argument("-es", "--energy_shift", type=str,
+                                    dest="energy_shift",
+                                    nargs='+', default=None,
+                                    help="Energy shift, "
+                                         "e.g. -es N2/molecule 1 "
+                                         "-> make more unstable N2/molecule "
+                                         "by 1 eV")
 
     # thermodynamic status (P and T) input
     parser_chempotdiag.add_argument("-pp", "--partial_pressures",
                                     dest="partial_pressures", type=str,
                                     nargs='+', default=None,
-                                    help="partial pressure of system."
-                                         "e.g. -pp O2 1e+5 N2 20000"
+                                    help="partial pressure of system. "
+                                         "e.g. -pp O2 1e+5 N2 20000 "
                                          "-> O2: 1e+5(Pa), N2: 20000(Pa)")
     parser_chempotdiag.add_argument("-t", "--temperature",
                                     dest="temperature", type=float,
@@ -1057,8 +1064,11 @@ def chempotdiag(args):
                               " reading data from energy_file")
             cp = ChemPotDiag.from_file(args.energy_file)
         if args.vasp_dirs:
+
             poscar_paths = [d + args.poscar_name for d in args.vasp_dirs]
             outcar_paths = [d + args.outcar_name for d in args.vasp_dirs]
+
+            # pressure and temperature
             partial_pressure_dict = {}
             if args.partial_pressures:
                 if len(args.partial_pressures) % 2 != 0:
@@ -1068,11 +1078,25 @@ def chempotdiag(args):
                     formula = args.partial_pressures[2 * i]
                     pressure = args.partial_pressures[2 * i + 1]
                     partial_pressure_dict[formula] = float(pressure)
+
+            # manually set energy
+            energy_shift_dict = {}
+            if args.energy_shift:
+                if len(args.energy_shift) % 2 != 0:
+                    raise ValueError("Invalid energy shift input {}".
+                                     format(args.energy_shift))
+                for i in range(int(len(args.energy_shift)/2)):
+                    output_name = \
+                        args.energy_shift[2 * i] + "/" + args.outcar_name
+                    es = args.energy_shift[2 * i + 1]
+                    energy_shift_dict[output_name] = float(es)
+
             cp = ChemPotDiag.\
                 from_vasp_calculations_files(poscar_paths,
                                              outcar_paths,
                                              temperature=args.temperature,
-                                             pressure=partial_pressure_dict)
+                                             pressure=partial_pressure_dict,
+                                             energy_shift_dict=energy_shift_dict)
             if args.elements:
                 cp.set_elements(args.elements)
         print("Energies of elements ({0}) : {1}"

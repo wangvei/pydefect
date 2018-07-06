@@ -1,6 +1,7 @@
 from __future__ import print_function
 import copy
 from collections import OrderedDict, defaultdict
+import os
 
 import numpy as np
 from pymatgen.io.vasp.inputs import Poscar
@@ -49,7 +50,8 @@ class Compound:
     @classmethod
     def from_vasp_calculation_files(cls, poscar_path, output_path,
                                     fmt="outcar", is_molecule_gas=True,
-                                    elements=None, name=None):
+                                    elements=None, name=None,
+                                    energy_shift=0):
         """
         Args:
             poscar_path (str):
@@ -66,6 +68,7 @@ class Compound:
                                             If not provided, automatically
                                             determined from poscar.
             name (None/str): Name of the compound.
+            energy_shift (float):
         Returns:
             (CompoundsList) CompoundsList object from vasp files.
         """
@@ -86,11 +89,12 @@ class Compound:
             with open(output_path) as fr:
                 for line in reversed(fr.readlines()):
                     if line.find("energy(sigma->0)") > 1:
-                        energy = float(line.split()[-1])
+                        energy = float(line.split()[-1]) + energy_shift
                         break
         elif fmt == "vasprun":
             v = Vasprun(output_path)
-            energy = v.ionic_steps[-1]["electronic_steps"][-1]["e_0_energy"]
+            energy = v.ionic_steps[-1]["electronic_steps"][-1]["e_0_energy"] +\
+                energy_shift
         else:
             raise ValueError("Invalid format {} .".format(fmt))
         if name is None:
@@ -100,7 +104,6 @@ class Compound:
         composition_vector = np.zeros(len(elements))
         for i, element in enumerate(elements):
             composition_vector[i] = pmg_composition.as_dict()[element]
-        energy = float(energy)
         return cls(name, elements, composition_vector, energy, gas=gas)
 
     @property
@@ -674,7 +677,7 @@ class CompoundsList(list):
     @classmethod
     def from_vasp_calculations_files(
             cls, poscar_paths, output_paths, fmt="outcar",
-            temperature=None, pressure=None):
+            temperature=None, pressure=None, energy_shift_dict={}):
         """
         Args:
             poscar_paths (list of str):
@@ -682,6 +685,7 @@ class CompoundsList(list):
             fmt (str): "outcar" or "vasprun".
             temperature (float): (K)
             pressure (dict): (Pa)
+            energy_shift_dict (dict): unit: (eV), e.g. {N2_molecule/OUTCAR: 1}
         Returns:
             (CompoundsList) CompoundsList object from vasp files.
         """
@@ -689,13 +693,27 @@ class CompoundsList(list):
             raise ValueError("Number of Paths of poscar ({}) and "
                              "number of paths of output ({}) differs"
                              .format(len(poscar_paths), len(output_paths)))
+
+        # to match energy_shift_dict key,
+        # output_paths is transformed to abs_path
+        # (for example, it is preferable to match "OUTCAR" and "./OUTCAR")
+        energy_shift_dict = {os.path.abspath(k): v
+                             for k, v in energy_shift_dict.items()}
+        energy_shift_dict = defaultdict(float, energy_shift_dict)
+        abs_output_paths = [os.path.abspath(op) for op in output_paths]
+        diff = set(energy_shift_dict) - set(abs_output_paths)
+        if diff:
+            raise ValueError("{} is invalid path.".format(diff))
         # considered_element = set()
         compounds_list = cls([], temperature=temperature, pressure=pressure)
-        for poscar_path, output_path in zip(poscar_paths, output_paths):
+        for poscar_path, output_path in zip(poscar_paths, abs_output_paths):
             try:
-                compound = Compound.from_vasp_calculation_files(poscar_path,
-                                                                output_path,
-                                                                fmt=fmt)
+                compound = Compound.\
+                    from_vasp_calculation_files(poscar_path,
+                                                output_path,
+                                                fmt=fmt,
+                                                energy_shift=energy_shift_dict[
+                                                     output_path])
                 compounds_list.append(compound)
             except:
                 import warnings
