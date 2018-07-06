@@ -81,8 +81,12 @@ class DefectEnergiesTest(unittest.TestCase):
         # print(self.defect_energies.defect_concentration(
         #     temperature=1000, e_f=3.0036,
         #     num_sites_filename=num_sites_filename))
+        dc = self.defect_energies.equilibrium_concentration(
+            temperature=10000, num_sites_filename=num_sites_filename)
+        print(dc)
         print(self.defect_energies.equilibrium_concentration(
-            temperature=1000, num_sites_filename=num_sites_filename))
+            temperature=3000, num_sites_filename=num_sites_filename,
+            prev_concentrations=dc[3]))
 
     def test_calc_transition_levels(self):
         self.defect_energies.calc_transition_levels()

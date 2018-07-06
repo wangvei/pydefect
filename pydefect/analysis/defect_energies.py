@@ -38,6 +38,9 @@ class DefectEnergies:
             chem_pot_label (str):
         """
 
+        self._concentration1 = None
+        self._concentration2 = None
+
         self._vbm, self._cbm = unitcell.band_edge
         self._volume = unitcell.volume * 10 ** -24  # [A^3] -> [cm^3]
         self._total_dos = unitcell.total_dos
@@ -92,23 +95,32 @@ class DefectEnergies:
                         maxwell_boltzmann_dist(energy, temperature) \
                         / self._volume * num_sites[name]
             else:
-                total = sum(prev_concentrations[name])
+                total = sum(prev_concentrations[name].values())
                 ratio = {}
                 for charge in self._defect_energies[name].keys():
                     energy = self._defect_energies[name][charge] + e_f * charge
+#                    print("energy")
+#                    print(energy)
                     ratio[charge] = \
                         maxwell_boltzmann_dist(energy, temperature) \
-                        * num_sites[name]
-                ratio_sum = sum(ratio)
+                        / self._volume * num_sites[name]
+#                    print(ratio[charge])
+                ratio_sum = sum(ratio.values())
+#                print(ratio)
+#                print(ratio_sum)
                 for charge in self._defect_energies[name].keys():
                     concentrations[name][charge] = \
                         total * ratio[charge] / ratio_sum
 
+#                print(concentrations[name])
+
         return concentrations
 
     def equilibrium_concentration(self, temperature, num_sites_filename,
-                                  defect_concentrations=None,
+                                  prev_concentrations=None,
                                   max_iteration=50, threshold=1e-5):
+
+        print(self._vbm, self._cbm)
 
         mesh = self._cbm - self._vbm
         e_f = (self._vbm + self._cbm) / 2
@@ -120,7 +132,7 @@ class DefectEnergies:
                                        self._vbm, self._volume)
             defect_concentration = \
                 self.defect_concentration(temperature, e_f, num_sites_filename,
-                                          defect_concentrations)
+                                          prev_concentrations)
             defect_charge = \
                 sum([sum([c * e for c, e in defect_concentration[d].items()])
                      for d in defect_concentration])
@@ -136,7 +148,11 @@ class DefectEnergies:
             # This line controls the accuracy.
             max_concentration = np.amax([n, p, charge_sum])
             if np.abs(charge_sum / max_concentration) < threshold:
-                return n, p, defect_concentration
+                self._e_f = e_f
+                self._n = n
+                self._p = p
+                self._defect_concentration = defect_concentration
+                return e_f, n, p, defect_concentration
 
         print("Equilibrium condition has not been reached. ")
         return False
