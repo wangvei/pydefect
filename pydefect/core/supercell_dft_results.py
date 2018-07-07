@@ -126,12 +126,13 @@ class SupercellDftResults:
     """
 
     def __init__(self, final_structure, total_energy, magnetization,
-                 eigenvalues, electrostatic_potential):
+                 eigenvalues, electrostatic_potential, eigenvalue_properties):
         self._final_structure = final_structure
         self._total_energy = total_energy
         self._magnetization = magnetization
         self._eigenvalues = eigenvalues
         self._electrostatic_potential = electrostatic_potential
+        self._eigenvalue_properties = eigenvalue_properties
 
     def __str__(self):
         outs = ["total energy: " + str(self._total_energy),
@@ -161,9 +162,10 @@ class SupercellDftResults:
         magnetization = outcar.total_mag
         eigenvalues = vasprun.eigenvalues
         electrostatic_potential = outcar.electrostatic_potential
+        eigenvalue_properties = vasprun.eigenvalue_band_properties
 
         return cls(final_structure, total_energy, magnetization, eigenvalues,
-                   electrostatic_potential)
+                   electrostatic_potential, eigenvalue_properties)
 
     @classmethod
     def from_dict(cls, d):
@@ -176,7 +178,8 @@ class SupercellDftResults:
             eigenvalues[Spin(int(spin))] = np.array(v)
 
         return cls(d["final_structure"], d["total_energy"], d["magnetization"],
-                   eigenvalues, d["electrostatic_potential"])
+                   eigenvalues, d["electrostatic_potential"],
+                   d["eigenvalue_properties"])
 
     @classmethod
     def load_json(cls, filename):
@@ -202,7 +205,8 @@ class SupercellDftResults:
              "total_energy":            self._total_energy,
              "magnetization":           self._magnetization,
              "eigenvalues":             eigenvalues,
-             "electrostatic_potential": self._electrostatic_potential}
+             "electrostatic_potential": self._electrostatic_potential,
+             "eigenvalue_properties": self._eigenvalue_properties}
 
         return d
 
@@ -232,6 +236,10 @@ class SupercellDftResults:
     @property
     def electrostatic_potential(self):
         return self._electrostatic_potential
+
+    @property
+    def eigenvalue_properties(self):
+        return self._eigenvalue_properties
 
     def relative_total_energy(self, perfect_dft_results):
         """

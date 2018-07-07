@@ -47,7 +47,14 @@
           0.0,
           0.0
         ],
-        "label": "Mg"
+        "label": "Mg",
+        "properties": {
+          "velocities": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        }
       },
       {
         "species": [
@@ -66,7 +73,14 @@
           2.1234465,
           0.0
         ],
-        "label": "Mg"
+        "label": "Mg",
+        "properties": {
+          "velocities": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        }
       },
       {
         "species": [
@@ -85,7 +99,14 @@
           0.0,
           2.1234465
         ],
-        "label": "Mg"
+        "label": "Mg",
+        "properties": {
+          "velocities": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        }
       },
       {
         "species": [
@@ -104,7 +125,14 @@
           2.1234465,
           2.1234465
         ],
-        "label": "Mg"
+        "label": "Mg",
+        "properties": {
+          "velocities": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        }
       },
       {
         "species": [
@@ -123,7 +151,14 @@
           2.1234465,
           2.1234465
         ],
-        "label": "Mg"
+        "label": "Mg",
+        "properties": {
+          "velocities": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        }
       },
       {
         "species": [
@@ -142,7 +177,14 @@
           4.246893,
           2.1234465
         ],
-        "label": "Mg"
+        "label": "Mg",
+        "properties": {
+          "velocities": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        }
       },
       {
         "species": [
@@ -161,7 +203,14 @@
           2.1234465,
           4.246893
         ],
-        "label": "Mg"
+        "label": "Mg",
+        "properties": {
+          "velocities": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        }
       },
       {
         "species": [
@@ -180,7 +229,14 @@
           4.246893,
           4.246893
         ],
-        "label": "Mg"
+        "label": "Mg",
+        "properties": {
+          "velocities": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        }
       },
       {
         "species": [
@@ -199,7 +255,14 @@
           2.1234465,
           2.1234465
         ],
-        "label": "O"
+        "label": "O",
+        "properties": {
+          "velocities": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        }
       },
       {
         "species": [
@@ -218,7 +281,14 @@
           4.246893,
           2.1234465
         ],
-        "label": "O"
+        "label": "O",
+        "properties": {
+          "velocities": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        }
       },
       {
         "species": [
@@ -237,7 +307,14 @@
           2.1234465,
           4.246893
         ],
-        "label": "O"
+        "label": "O",
+        "properties": {
+          "velocities": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        }
       },
       {
         "species": [
@@ -256,7 +333,14 @@
           4.246893,
           4.246893
         ],
-        "label": "O"
+        "label": "O",
+        "properties": {
+          "velocities": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        }
       },
       {
         "species": [
@@ -275,7 +359,14 @@
           4.246893,
           4.246893
         ],
-        "label": "O"
+        "label": "O",
+        "properties": {
+          "velocities": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        }
       },
       {
         "species": [
@@ -294,7 +385,14 @@
           6.3703395,
           4.246893
         ],
-        "label": "O"
+        "label": "O",
+        "properties": {
+          "velocities": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        }
       },
       {
         "species": [
@@ -313,7 +411,14 @@
           4.246893,
           6.3703395
         ],
-        "label": "O"
+        "label": "O",
+        "properties": {
+          "velocities": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        }
       },
       {
         "species": [
@@ -332,7 +437,14 @@
           6.3703395,
           6.3703395
         ],
-        "label": "O"
+        "label": "O",
+        "properties": {
+          "velocities": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        }
       }
     ]
   },
@@ -893,5 +1005,11 @@
     -69.7919,
     -69.7919,
     -69.7919
+  ],
+  "eigenvalue_properties": [
+    4.4891000000000005,
+    8.4992,
+    2.0101,
+    true
   ]
 }
