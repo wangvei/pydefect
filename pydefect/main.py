@@ -4,6 +4,7 @@
 import argparse
 from glob import glob
 import os
+from os.path import join
 import warnings
 
 from pymatgen.core.structure import Structure
@@ -632,7 +633,7 @@ def main():
     parser_plot_band.add_argument(
         "-k", dest="kpoints", nargs="+", type=str)
     parser_plot_band.add_argument(
-        "-y", dest="yrange", nargs="+", type=float)
+        "-y", dest="y_range", nargs="+", type=float)
     parser_plot_band.add_argument(
         "-f", dest="filename", type=str, help="pdf file name.")
     parser_plot_band.add_argument(
@@ -659,7 +660,7 @@ def main():
         "-o", dest="orbital", action="store_false",
         help="Switch off the orbital decomposition.")
     parser_plot_dos.add_argument(
-        "-x", dest="xrange", nargs="+", type=float, default=None,
+        "-x", dest="x_range", nargs="+", type=float, default=None,
         help="Set energy minimum and maximum.")
     parser_plot_dos.add_argument(
         "-y", dest="ymaxs", nargs="+", type=float, default=None,
@@ -688,31 +689,52 @@ def main():
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
         aliases=['pe'])
 
-    parser_plot_energy.add_argument("--name", dest="name", type=str, default="")
-#    parser_plot_energy.add_argument("--xrange", dest="xrange", type=str,
-#                                    nargs='+', default=None,
-#                                    help="X range for the plot.")
-#    parser_plot_energy.add_argument("--yrange", dest="yrange", type=str,
-#                                    nargs='+', default=None,
-#                                    help="Y range for the plot.")
-    parser_plot_energy.add_argument("-s", "--save_file", dest="save_file",
-                                    type=str, default=None,
-                                    help="File name to save the drawn plot.")
-    parser_plot_energy.add_argument("--unitcell", dest="unitcell", type=str,
-                                    default="unitcell.json")
-    parser_plot_energy.add_argument("--perfect", dest="perfect", type=str,
-                                    default="perfect/dft_results.json")
-    parser_plot_energy.add_argument("--chem_pot_yaml", dest="chem_pot_yaml",
-                                    type=str,
-                                    default="chem_pot.yaml")
-    parser_plot_energy.add_argument("--chem_pot_label", dest="chem_pot_label",
-                                    type=str,
-                                    default="A")
-    parser_plot_energy.add_argument("--defect_dirs", dest="defect_dirs",
-                                    nargs="+", type=str)
-    parser_plot_energy.add_argument("--show_tls", dest="show_tls",
-                                    action="store_true",
-                                    help="Show the transition levels.")
+    parser_plot_energy.add_argument(
+        "--name", dest="name", type=str, default="")
+    parser_plot_energy.add_argument(
+        "-x", "--xrange", dest="x_range", type=float, nargs='+', default=None,
+        help="Two float values for the x-range of the plot.")
+    parser_plot_energy.add_argument(
+        "-y", "--yrange", dest="y_range", type=float, nargs='+', default=None,
+        help="Two float values for the y-range of the plot.")
+    parser_plot_energy.add_argument(
+        "-s", "--save_file", dest="save_file", type=str, default=None,
+        help="File name to save the plot.")
+    parser_plot_energy.add_argument(
+        "--unitcell", dest="unitcell", type=str, default="unitcell.json",
+        help="UnitcellDftResults class object json file name.")
+    parser_plot_energy.add_argument(
+        "--perfect", dest="perfect", type=str,
+        default="perfect/dft_results.json",
+        help="Json file name for the SupercellDftResults class object of the "
+             "perfect supercell result.")
+    parser_plot_energy.add_argument(
+        "--defect_dirs", dest="defect_dirs", nargs="+", type=str,
+        help="Directory names for the defect supercell results. "
+             "defect_entry.json, dft_results.json, and correction.json files "
+             "are required in each directory.")
+    parser_plot_energy.add_argument(
+        "--chem_pot_yaml", dest="chem_pot_yaml", type=str,
+        default="chem_pot.yaml",
+        help="Yaml file name for the chemical potential.")
+    parser_plot_energy.add_argument(
+        "--chem_pot_label", dest="chem_pot_label", type=str, default="A",
+        help="Label indicating the equilibrium point in the chemical potential"
+             "diagram.")
+    parser_plot_energy.add_argument(
+        "--filtering", dest="filtering", type=str, help="Filtering word.")
+    parser_plot_energy.add_argument(
+        "--show_tls", dest="show_tls", action="store_true",
+        help="Show the transition levels.")
+    parser_plot_energy.add_argument(
+        "-t", "--temperature", dest="temperature", nargs="+", type=float,
+        help="Temperature for calculating the Fermi level. When two "
+             "temperatures are supplied, the first temperature is quenched to "
+             "the second temperature.")
+    parser_plot_energy.add_argument(
+        "-ns", "--num_sites", dest="num_site_file", type=str,
+        help="The yaml file name that shows the number of sites. An example is "
+             "Va_Mg1: 2")
 
     parser_plot_energy.set_defaults(func=plot_energy)
 
@@ -744,7 +766,6 @@ def vasp_defect_set(args):
 
 
 def vasp_kpoints_maker(args):
-
     make_kpoints(task=args.task,
                  poscar=args.poscar,
                  num_split_kpoints=args.num_split_kpoints,
@@ -759,7 +780,6 @@ def vasp_kpoints_maker(args):
 
 
 def vasp_incar_maker(args):
-
     MakeIncar(task=args.task,
               functional=args.functional,
               poscar=args.poscar,
@@ -775,10 +795,9 @@ def vasp_incar_maker(args):
 
 
 def vasp_poscar_maker(args):
-
     if args.supercell:
         structure = Structure.from_file(args.poscar)
-        Supercell(structure=structure, multi=args.supercell).\
+        Supercell(structure=structure, multi=args.supercell). \
             to_poscar(filename=args.sposcar)
     else:
         make_hpkot_primitive_poscar(poscar=args.poscar,
@@ -796,7 +815,6 @@ def vasp_potcar_maker(args):
 
 
 def vasp_input_maker(args):
-
     make_kpoints(task=args.task,
                  poscar=args.poscar,
                  num_split_kpoints=args.num_split_kpoints,
@@ -916,7 +934,7 @@ def supercell_results(args):
                         vasprun_name=args.vasprun)
 
                     dft_results.to_json_file(
-                        filename=os.path.join(d, "dft_results.json"))
+                        filename=join(d, "dft_results.json"))
                 except:
                     warnings.warn(
                         message="Parsing data in " + d + " is failed.")
@@ -1014,25 +1032,22 @@ def correction(args):
         dirs = args.dirs
 
     for directory in dirs:
-        json_to_make = os.path.join(directory, "correction.json")
+        json_to_make = join(directory, "correction.json")
         if os.path.exists(json_to_make) and not args.force_overwrite:
             print("{} exists. Correction was not done.".format(json_to_make))
             continue
         print("correcting {0} ...".format(directory))
         try:
-            entry = DefectEntry.load_json(
-                os.path.join(directory, "defect_entry.json"))
-            defect_dft_data = \
-                SupercellDftResults.load_json(
-                    os.path.join(directory, "dft_results.json"))
+            entry = DefectEntry.load_json(join(directory, "defect_entry.json"))
+            defect_dft_data = SupercellDftResults.load_json(
+                join(directory, "dft_results.json"))
             c = Correction.compute_alignment_by_extended_fnv(entry,
                                                              defect_dft_data,
                                                              perfect_dft_data,
                                                              unitcell_dft_data,
                                                              ewald_data)
-            c.plot_distance_vs_potential(
-                file_name=os.path.join(directory, "potential.eps"))
-            c.to_json_file(os.path.join(directory, "correction.json"))
+            c.plot_distance_vs_potential(join(directory, "potential.eps"))
+            c.to_json_file(join(directory, "correction.json"))
         except Exception as e:
             warnings.warn("Correction for {0} is failed. "
                           "The calculation for {0} is skipped."
@@ -1041,7 +1056,6 @@ def correction(args):
 
 
 def chempotdiag(args):
-
     if args.mat_proj_poscar:
         kwargs_to_make_vasp_inputs = {}
         if args.dir_path:
@@ -1074,7 +1088,7 @@ def chempotdiag(args):
                 if len(args.partial_pressures) % 2 != 0:
                     raise ValueError("Invalid partial pressures input {}".
                                      format(args.partial_pressures))
-                for i in range(int(len(args.partial_pressures)/2)):
+                for i in range(int(len(args.partial_pressures) / 2)):
                     formula = args.partial_pressures[2 * i]
                     pressure = args.partial_pressures[2 * i + 1]
                     partial_pressure_dict[formula] = float(pressure)
@@ -1085,13 +1099,13 @@ def chempotdiag(args):
                 if len(args.energy_shift) % 2 != 0:
                     raise ValueError("Invalid energy shift input {}".
                                      format(args.energy_shift))
-                for i in range(int(len(args.energy_shift)/2)):
+                for i in range(int(len(args.energy_shift) / 2)):
                     output_name = \
                         args.energy_shift[2 * i] + "/" + args.outcar_name
                     es = args.energy_shift[2 * i + 1]
                     energy_shift_dict[output_name] = float(es)
 
-            cp = ChemPotDiag.\
+            cp = ChemPotDiag. \
                 from_vasp_calculations_files(poscar_paths,
                                              outcar_paths,
                                              temperature=args.temperature,
@@ -1145,7 +1159,7 @@ def plot_band(args):
 
     if not args.vasprun2:
         p = bs_plotter.get_plot(zero_to_efermi=args.absolute,
-                                ylim=args.yrange,
+                                ylim=args.y_range,
                                 legend=args.legend)
     else:
         bands2 = []
@@ -1166,7 +1180,7 @@ def plot_band(args):
 
 def plot_dos(args):
     dos = get_dos_plot(vasprun_file=args.vasprun, sites=args.sites,
-                       orbital=args.orbital, xlim=args.xrange,
+                       orbital=args.orbital, xlim=args.x_range,
                        ymaxs=args.ymaxs, zero_at_efermi=args.absolute,
                        legend=args.legend, symprec=args.symprec)
 
@@ -1177,12 +1191,10 @@ def plot_dos(args):
 
 
 def plot_energy(args):
-
     unitcell = UnitcellDftResults.load_json(args.unitcell)
     perfect = SupercellDftResults.load_json(args.perfect)
 
     if not args.defect_dirs:
-        from glob import glob
         defects_dirs = glob('*[0-9]/')
     else:
         defects_dirs = args.defect_dirs
@@ -1190,33 +1202,33 @@ def plot_energy(args):
     defects = []
     for d in defects_dirs:
         try:
-
-            de = DefectEntry.load_json(os.path.join(d, "defect_entry.json"))
-            dr = SupercellDftResults.\
-                load_json(os.path.join(d, "dft_results.json"))
-            co = Correction.load_json(os.path.join(d, "correction.json"))
-
-            defects.append(Defect(defect_entry=de,
-                                  dft_results=dr,
-                                  correction=co))
+            e = DefectEntry.load_json(join(d, "defect_entry.json"))
+            r = SupercellDftResults.load_json(join(d, "dft_results.json"))
+            c = Correction.load_json(join(d, "correction.json"))
+            defects.append(Defect(defect_entry=e, dft_results=r, correction=c))
         except:
             warnings.warn(message="Parsing data in " + d + " is failed.")
 
     chem_pot = ChemPotDiag.load_vertices_yaml(args.chem_pot_yaml)
-
     defect_energies = DefectEnergies(unitcell=unitcell,
                                      perfect=perfect,
                                      defects=defects,
                                      chem_pot=chem_pot,
                                      chem_pot_label=args.chem_pot_label,
+                                     filtering_words=args.filtering,
                                      system_name=args.name)
+    if args.show_tls:
+        defect_energies.calc_transition_levels(args.x_range)
+    if args.temperature:
+        t1 = args.temperature[0]
+        defect_energies.equilibrium_concentration(t1, args.num_site_file)
+        if len(args.temperature) == 2:
+            t2 = args.temperature[1]
+            defect_energies.equilibrium_concentration(t2, args.num_site_file)
 
-    defect_energies.calc_transition_levels()
-
-    if args.save_file:
-        pass
-    else:
-        defect_energies.plot_energy(show_tls=args.show_tls)
+    defect_energies.show_concentration()
+    defect_energies.plot_energy(args.save_file, args.x_range, args.y_range,
+                                args.show_tls)
 
 
 if __name__ == "__main__":

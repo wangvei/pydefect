@@ -43,6 +43,7 @@ class DefectEnergies:
         self._concentration1 = None
         self._concentration2 = None
         self._transition_levels = None
+        self._tl_range = None
 
         self._vbm, self._cbm = unitcell.band_edge
         self._volume = unitcell.volume * 10 ** -24  # [A^3] -> [cm^3]
@@ -87,10 +88,11 @@ class DefectEnergies:
         for name in self._defect_energies.keys():
             if name not in num_sites.keys():
                 raise KeyError(
-                    "{0} is not in {1}.".format(name, num_sites_filename))
+                    "{} is not in {}.".format(name, num_sites_filename))
 
             if self._concentration1 is None:
                 for charge in self._defect_energies[name].keys():
+
                     energy = self._defect_energies[name][charge] + e_f * charge
                     concentrations[name][charge] = \
                         maxwell_boltzmann_dist(energy, temperature) \
@@ -101,20 +103,13 @@ class DefectEnergies:
                 ratio = {}
                 for charge in self._defect_energies[name].keys():
                     energy = self._defect_energies[name][charge] + e_f * charge
-#                    print("energy")
-#                    print(energy)
                     ratio[charge] = \
                         maxwell_boltzmann_dist(energy, temperature) \
                         / self._volume * num_sites[name]
-#                    print(ratio[charge])
                 ratio_sum = sum(ratio.values())
-#                print(ratio)
-#                print(ratio_sum)
                 for charge in self._defect_energies[name].keys():
                     concentrations[name][charge] = \
                         total * ratio[charge] / ratio_sum
-
-#                print(concentrations[name])
 
         return concentrations
 
@@ -125,27 +120,27 @@ class DefectEnergies:
             self.unset_concentration()
 
         mesh = self._cbm - self._vbm
-        e_f = (self._vbm + self._cbm) / 2
+        e_f_abs = (self._vbm + self._cbm) / 2
         for iteration in range(max_iteration):
 
-            n = CarrierConcentration.n(temperature, e_f, self._total_dos,
+            # Use absolute Fermi level for p and n.
+            n = CarrierConcentration.n(temperature, e_f_abs, self._total_dos,
                                        self._cbm, self._volume)
-            p = CarrierConcentration.p(temperature, e_f, self._total_dos,
+            p = CarrierConcentration.p(temperature, e_f_abs, self._total_dos,
                                        self._vbm, self._volume)
+            e_f = e_f_abs - self._vbm
             defect_concentration = \
                 self.defect_concentration(temperature, e_f, num_sites_filename)
             defect_charge = \
                 sum([sum([c * e for c, e in defect_concentration[d].items()])
                      for d in defect_concentration])
-#            print(e_f, defect_charge, p, n)
             charge_sum = p - n + defect_charge
 
             # In case the Fermi level locates in between vbm and cbm, the common
             # ratio 0.5 is okay. Otherwise, higher common ratio is needed.
             # Therefore, 0.6 is set here.
             mesh *= 0.6
-            e_f = e_f + np.sign(charge_sum) * mesh
-
+            e_f_abs = e_f_abs + np.sign(charge_sum) * mesh
             # This line controls the accuracy.
             max_concentration = np.amax([n, p, charge_sum])
             if np.abs(charge_sum / max_concentration) < threshold:
@@ -168,7 +163,9 @@ class DefectEnergies:
 
     @staticmethod
     def min_e_at_ef(ec, ef):
+        # d[c1] = energy for charge c1
         d = {c: e + c * ef for c, e in ec.items()}
+        # return charge for the lowest energy, and its energy value
         return min(d.items(), key=lambda x: x[1])
 
     def calc_transition_levels(self, x_range=None):
@@ -188,18 +185,17 @@ class DefectEnergies:
             x_min = 0.0
             x_max = self.band_gap
 
-        x_diff = x_max - x_min
-
+        # e_of_c[charge] = energy
         for name, e_of_c in self._defect_energies.items():
             points = []
             charge = set()
 
-            # Estimate the lowest energies for each defect at the lowest energy.
+            # Estimate the lowest energies at the lowest Fermi level.
             c_vbm, min_e_vbm = self.min_e_at_ef(e_of_c, x_min)
             points.append([x_min, min_e_vbm])
             charge.add(c_vbm)
 
-            # and at the highest energy.
+            # and at the highest Fermi level
             c_cbm, min_e_cbm = self.min_e_at_ef(e_of_c, x_max)
             points.append([x_max, min_e_cbm])
             charge.add(c_cbm)
@@ -211,7 +207,7 @@ class DefectEnergies:
 
                 compared_energy = self.min_e_at_ef(e_of_c, x)[1] + 0.00001
 
-                if 0 < x < x_diff and y < compared_energy:
+                if x_min < x < x_max and y < compared_energy:
                     points.append([x, y])
                     charge.add(c1)
                     charge.add(c2)
@@ -221,6 +217,7 @@ class DefectEnergies:
                                 charges=sorted(charge))
 
         self._transition_levels = transition_levels
+        self._tl_range = [x_min, x_max]
 
     def plot_energy(self, file_name=None, x_range=None, y_range=None,
                     show_tls=False):
@@ -236,13 +233,13 @@ class DefectEnergies:
 
         fig, ax = plt.subplots()
 
-        plt.title(self.title)
+        plt.title(self.title, fontsize=15)
 
-        ax.set_xlabel("Fermi level (eV)")
-        ax.set_ylabel("Formation energy (eV)")
+        ax.set_xlabel("Fermi level (eV)", fontsize=15)
+        ax.set_ylabel("Formation energy (eV)", fontsize=15)
 
         if self.transition_levels is None:
-            raise NoTransitionError("Transition levels are not calculated yet.")
+            raise NoTLError("Transition levels are not calculated yet.")
 
         if x_range:
             x_min = x_range[0]
@@ -250,6 +247,7 @@ class DefectEnergies:
         else:
             x_min = 0
             x_max = self.band_gap
+
         if y_range:
             y_min = y_range[0]
             y_max = y_range[1]
@@ -260,15 +258,13 @@ class DefectEnergies:
                          for tl in self.transition_levels.values()])
             if y_min > 0:
                 y_min = 0
+            # Make top and bottom space
             margin = (y_max - y_min) * 0.08
             y_min -= margin
             y_max += margin
 
         plt.xlim(x_min, x_max)
         plt.ylim(y_min, y_max)
-
-        margin_plot_x = (x_max - x_min) * 0.025
-        margin_plot_y = (y_max - y_min) * 0.025
 
         # support lines
         if x_range:
@@ -278,11 +274,21 @@ class DefectEnergies:
 
         # Lines for the equilibrium Fermi level(s)
         if self._concentration1:
-            plt.axvline(x=self._concentration1.e_f - self._vbm,
-                        linewidth=2.0, linestyle='dashed')
-        if self._concentration2:
-            plt.axvline(x=self._concentration2.e_f - self._vbm,
-                        linewidth=2.0, linestyle='dashed')
+            t1 = self._concentration1.temperature
+            x1 = self._concentration1.e_f
+            plt.axvline(x=x1, linewidth=2.0, linestyle='dashed', color="red")
+            ax.annotate("T$_1$=" + str(t1) + "K", (x1, y_min), fontsize=10)
+            if self._concentration2:
+                t2 = self._concentration2.temperature
+                x2 = self._concentration2.e_f
+                plt.axvline(x=x2, linewidth=2.0, linestyle='dashed',
+                            color="purple")
+                ax.annotate("T$_2$=" + str(t2) + "K", (x2, y_min), fontsize=10)
+#                ax.arrow(x1, 0.1, x2 - x1, 0, length_includes_head=True,
+#                         color="black")
+#                ax.arrow(x1, 0.1, x2 - x1, 0, width=0.2,
+#                         length_includes_head=True, head_width=1.6,
+#                         head_length=0.2, color="black")
 
         for i, (name, tl) in enumerate(self.transition_levels.items()):
 
@@ -292,20 +298,22 @@ class DefectEnergies:
             shallow = []
             transition_levels = []
 
+            # Store the coords for the filled and open circles.
             for cp in cross_points:
-                if cp[0] == 0.0 or cp[0] == self.band_gap:
-                    if cp[0] == 0.0 and max(tl.charges) < 0:
-                        shallow.append(cp)
-                    elif cp[0] == self.band_gap and min(tl.charges) > 0:
-                        shallow.append(cp)
-                else:
+                tl_x_min = self._tl_range[0]
+                tl_x_max = self._tl_range[1]
+                if (cp[0] < tl_x_min + 0.0001 and max(tl.charges) < 0) \
+                        or (cp[0] > tl_x_max - 0.0001 and min(tl.charges) > 0):
+                    shallow.append(cp)
+                elif not (cp[0] == tl_x_min or cp[0] == tl_x_max):
                     transition_levels.append(cp)
 
             # set the x and y arrays to be compatible with matplotlib style.
             # e.g., x = [0.0, 0.3, 0.5, ...], y = [2.1, 3.2, 1.2, ...]
             # plot lines
             x, y = np.array(cross_points).transpose()
-            ax.plot(x, y, '-', color=color, label=name)
+            line, = ax.plot(x, y, '-', color=color, label=name)
+            line.set_label(name)
 
             # plot filled circles for transition levels.
             if transition_levels:
@@ -317,31 +325,52 @@ class DefectEnergies:
                 x, y = np.array(shallow).transpose()
                 ax.scatter(x, y, facecolor="white", edgecolor=color)
 
+            # These determine the positions of the transition levels.
+            margin_x = (x_max - x_min) * 0.025
+            margin_y = (y_max - y_min) * 0.025
             if show_tls:
                 for cp in cross_points:
+                    if cp[0] < x_min + 0.0001 or cp[0] > x_max - 0.0001:
+                        continue
                     s = str(round(cp[0], 2)) + ", " + str(round(cp[1], 2))
-                    ax.annotate(s,
-                                (cp[0] + margin_plot_x, cp[1] - margin_plot_y),
+                    ax.annotate(s, (cp[0] + margin_x, cp[1] - margin_y),
                                 color=color, fontsize=8)
-
-            ax.legend(bbox_to_anchor=(1.05, 0.0), loc="lower left")
 
             # Arrange the charge states at the middle of the transition levels.
             middle_points = \
-                reversed([[(a[0] + b[0]) / 2, (a[1] + b[1]) / 2 + margin_plot_y]
+                reversed([[(a[0] + b[0]) / 2, (a[1] + b[1]) / 2 + margin_y]
                           for a, b in zip(cross_points, cross_points[1:])])
 
             for j, (x, y) in enumerate(middle_points):
-                ax.annotate(str(tl.charges[j]), (x, y), color=color)
+                ax.annotate(str(tl.charges[j]), (x, y), color=color,
+                            fontsize=13)
 
-#        if self._concentration1:
-
+        ax.legend()
         fig.subplots_adjust(right=0.75)
 
         if file_name:
             plt.savefig(file_name)
         else:
             plt.show()
+
+    def show_concentration(self):
+        if self._concentration2:
+            cs = [self._concentration1, self._concentration2]
+        else:
+            cs = [self._concentration1]
+
+        for c in cs:
+            print("--------")
+            print("Tempereture: {} K.".format(c.temperature))
+            print("Fermi level: {} eV.".format(c.e_f))
+            print("p: {:.1e} cm-3.".format(c.p))
+            print("n: {:.1e} cm-3.".format(c.n))
+            print("p - n: {:.1e} cm-3.".format(c.p - c.n))
+            for name, c_of_charge in c.defect_concentration.items():
+                print("---")
+                for charge, concentration in c_of_charge.items():
+                    print("{} {}: {:.1e} cm-3.".format(name, charge,
+                                                       concentration))
 
     @property
     def defect_energies(self):
@@ -363,5 +392,6 @@ class DefectEnergies:
     def band_gap(self):
         return self._cbm - self._vbm
 
-class NoTransitionError(Exception):
+
+class NoTLError(Exception):
     pass
