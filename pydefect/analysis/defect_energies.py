@@ -45,7 +45,10 @@ class DefectEnergies:
         self._transition_levels = None
         self._tl_range = None
 
+        # Note that vbm, cbm, perfect_vbm, perfect_cbm are in absolute energy.
         self._vbm, self._cbm = unitcell.band_edge
+        self._perfect_cbm, self._perfect_vbm = \
+            perfect.eigenvalue_properties[1:3]
         self._volume = unitcell.volume * 10 ** -24  # [A^3] -> [cm^3]
         self._total_dos = unitcell.total_dos
         self.title = system_name + " condition " + chem_pot_label
@@ -270,6 +273,25 @@ class DefectEnergies:
         if x_range:
             plt.axvline(x=0, linewidth=1.0, linestyle='dashed')
             plt.axvline(x=self.band_gap, linewidth=1.0, linestyle='dashed')
+            ax.annotate("cbm", (self.band_gap, y_min * 0.9 + y_max * 0.1),
+                        fontsize=10)
+
+            perfect_vbm = self._perfect_vbm - self._vbm
+            perfect_cbm = self._perfect_cbm - self._vbm
+            print(self._perfect_vbm)
+            print(perfect_vbm)
+            print(perfect_cbm)
+            if perfect_vbm < - 0.05:
+                plt.axvline(x=perfect_vbm, linewidth=1.0, linestyle='dotted')
+                ax.annotate("supercell vbm",
+                            (perfect_vbm, y_min * 0.9 + y_max * 0.1),
+                            fontsize=10)
+            if perfect_cbm > self.band_gap + 0.05:
+                plt.axvline(x=perfect_cbm, linewidth=1.0, linestyle='dotted')
+                ax.annotate("supercell cbm",
+                            (perfect_cbm, y_min * 0.9 + y_max * 0.1),
+                            fontsize=10)
+
         plt.axhline(y=0, linewidth=1.0, linestyle='dashed')
 
         # Lines for the equilibrium Fermi level(s)
@@ -277,18 +299,13 @@ class DefectEnergies:
             t1 = self._concentration1.temperature
             x1 = self._concentration1.e_f
             plt.axvline(x=x1, linewidth=2.0, linestyle='dashed', color="red")
-            ax.annotate("T$_1$=" + str(t1) + "K", (x1, y_min), fontsize=10)
+            ax.annotate("T$_1$=" + str(t1) + "K", (x1, y_min), fontsize=7)
             if self._concentration2:
                 t2 = self._concentration2.temperature
                 x2 = self._concentration2.e_f
                 plt.axvline(x=x2, linewidth=2.0, linestyle='dashed',
                             color="purple")
-                ax.annotate("T$_2$=" + str(t2) + "K", (x2, y_min), fontsize=10)
-#                ax.arrow(x1, 0.1, x2 - x1, 0, length_includes_head=True,
-#                         color="black")
-#                ax.arrow(x1, 0.1, x2 - x1, 0, width=0.2,
-#                         length_includes_head=True, head_width=1.6,
-#                         head_length=0.2, color="black")
+                ax.annotate("T$_2$=" + str(t2) + "K", (x2, y_min), fontsize=7)
 
         for i, (name, tl) in enumerate(self.transition_levels.items()):
 

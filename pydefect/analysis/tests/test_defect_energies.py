@@ -97,7 +97,7 @@ class DefectEnergiesTest(unittest.TestCase):
         num_sites_filename = os.path.join(test_dir,
                                           "MgO/defects/num_sites.yaml")
         defect_energies = deepcopy(self.defect_energies)
-        defect_energies.calc_transition_levels(x_range=[-0.5, 8])
+        defect_energies.calc_transition_levels(x_range=[-1.5, 8])
         print(defect_energies._transition_levels)
         defect_energies.equilibrium_concentration(
             temperature=10000, num_sites_filename=num_sites_filename)
@@ -105,7 +105,7 @@ class DefectEnergiesTest(unittest.TestCase):
             temperature=3000, num_sites_filename=num_sites_filename)
 #        defect_energies.plot_energy()
         defect_energies.show_concentration()
-        defect_energies.plot_energy(x_range=[-0.5, 8], y_range=[-5, 50])
+        defect_energies.plot_energy(x_range=[-1.5, 8], y_range=[-5, 50])
 #        self.defect_energies.plot_energy(file_name="test.eps")
 
 
