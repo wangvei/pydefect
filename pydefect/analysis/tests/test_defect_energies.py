@@ -36,7 +36,6 @@ class DefectEnergiesTest(unittest.TestCase):
                                     "MgO/defects/perfect/dft_results.json")
         perfect = SupercellDftResults.load_json(perfect_file)
 
-        # defect_dirs = ["Va_O1_1", "Va_O1_2", "Va_O1_0"]
         defect_dirs = ["Mg_O1_0", "Mg_O1_1", "Mg_O1_2", "Mg_O1_3", "Mg_O1_4",
                        "Mg_i1_0", "Mg_i1_1", "Mg_i1_2", "Va_O1_1", "Va_O1_2",
                        "Va_O1_0"]
@@ -68,8 +67,7 @@ class DefectEnergiesTest(unittest.TestCase):
                                               defects=defects,
                                               chem_pot=chem_pot,
                                               chem_pot_label=chem_pot_label,
-                                              system_name="MgO")
-#        filtering_words=["Va_O"],
+                                              system="MgO")
 
     def test_energies(self):
         print(self.defect_energies._defect_energies)
@@ -77,36 +75,38 @@ class DefectEnergiesTest(unittest.TestCase):
         print(self.defect_energies.cbm)
         print(self.defect_energies.band_gap)
 
-    def test_equilibrium_concentration(self):
-        num_sites_filename = os.path.join(test_dir,
-                                          "MgO/defects/num_sites.yaml")
-#        self.defect_energies.defect_concentration(
-#            temperature=1000, e_f=3.0036, num_sites_filename=num_sites_filename)
+#        filtering_words=["Va_O"],
 
-        defect_energies = deepcopy(self.defect_energies)
+#     def test_equilibrium_concentration(self):
+#         num_sites_filename = os.path.join(test_dir,
+#                                           "MgO/defects/num_sites.yaml")
+# #        self.defect_energies.defect_concentration(
+# #            temperature=1000, e_f=3.0036, num_sites_filename=num_sites_filename)
 
-        defect_energies.equilibrium_concentration(
-            temperature=10000, num_sites_filename=num_sites_filename)
-        print(defect_energies._concentration1)
-        defect_energies.equilibrium_concentration(
-            temperature=3000, num_sites_filename=num_sites_filename)
-        print(defect_energies._concentration1)
-        print(defect_energies._concentration2)
+        # defect_energies = deepcopy(self.defect_energies)
 
-    def test_calc_transition_levels(self):
-        num_sites_filename = os.path.join(test_dir,
-                                          "MgO/defects/num_sites.yaml")
-        defect_energies = deepcopy(self.defect_energies)
-        defect_energies.calc_transition_levels(x_range=[-1.5, 8])
-        print(defect_energies._transition_levels)
-        defect_energies.equilibrium_concentration(
-            temperature=10000, num_sites_filename=num_sites_filename)
-        defect_energies.equilibrium_concentration(
-            temperature=3000, num_sites_filename=num_sites_filename)
-#        defect_energies.plot_energy()
-        defect_energies.show_concentration()
-        defect_energies.plot_energy(x_range=[-1.5, 8], y_range=[-5, 50])
-#        self.defect_energies.plot_energy(file_name="test.eps")
+        # defect_energies.equilibrium_concentration(
+        #     temperature=10000, num_sites_filename=num_sites_filename)
+        # print(defect_energies._original_concent)
+        # defect_energies.equilibrium_concentration(
+        #     temperature=3000, num_sites_filename=num_sites_filename)
+        # print(defect_energies._original_concent)
+        # print(defect_energies._quenched_concent)
+
+#     def test_calc_transition_levels(self):
+#         num_sites_filename = os.path.join(test_dir,
+#                                           "MgO/defects/num_sites.yaml")
+#         defect_energies = deepcopy(self.defect_energies)
+#         defect_energies.calc_transition_levels(x_range=[-1.5, 8])
+#         print(defect_energies._transition_levels)
+#         defect_energies.equilibrium_concentration(
+#             temperature=10000, num_sites_filename=num_sites_filename)
+#         defect_energies.equilibrium_concentration(
+#             temperature=3000, num_sites_filename=num_sites_filename)
+# #        defect_energies.plot_energy()
+#         defect_energies.show_concentration()
+#         defect_energies.plot_energy(x_range=[-1.5, 8], y_range=[-5, 50])
+# #        self.defect_energies.plot_energy(file_name="test.eps")
 
 
 if __name__ == "__main__":
