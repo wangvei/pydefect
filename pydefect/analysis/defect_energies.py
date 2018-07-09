@@ -36,32 +36,37 @@ class DefectEnergies:
                 [[Defect, ...]
                 Defect = namedtuple("Defect", "defect_entry", "dft_results",
                                     "correction")
-            chem_pot (ChemPot): Chempot object.
+            chem_pot (ChemPot): Chempot class object.
             chem_pot_label (str):
+            filtering_words (str): Words used for filtering the defect types
+            system_name (str): A system name used for the title
         """
-
+        # Objects of the Concentration named tuple for 1st and 2nd temperature.
         self._concentration1 = None
         self._concentration2 = None
+        # Object of the TransitionLevel named tuple.
         self._transition_levels = None
-        self._tl_range = None
+        self._calculated_transition_level_range = None
 
-        # Note that vbm, cbm, perfect_vbm, perfect_cbm are in absolute energy.
+        # Note: vbm, cbm, perfect_vbm, perfect_cbm are in absolute energy.
         self._vbm, self._cbm = unitcell.band_edge
+        # The band edges in the perfect supercell calculation
         self._perfect_cbm, self._perfect_vbm = \
             perfect.eigenvalue_properties[1:3]
+        self._vbm2, self._cbm2 = (None, None)
+
         self._volume = unitcell.volume * 10 ** -24  # [A^3] -> [cm^3]
         self._total_dos = unitcell.total_dos
-        self.title = system_name + " condition " + chem_pot_label
-        # TODO: check if exists
-        # self._vbm2, self._cbm2 = unitcell.band_edge2
+        self._title = system_name + " condition " + chem_pot_label
         self._defects = defects
 
-        rel_chem_pot, standard_energy = chem_pot
-        rel_chem_pot = rel_chem_pot[chem_pot_label]
+        # chemical potentials
+        _, standard_e = chem_pot
+        relative_chem_pot = _[chem_pot_label]
 
         # defect formation energies at the vbm
         self._defect_energies = defaultdict(dict)
-        self._defect_num_sites = {}
+        self._num_defect_sites = {}
 
         for d in defects:
             name = d.defect_entry.name
@@ -70,13 +75,12 @@ class DefectEnergies:
                 continue
             charge = d.defect_entry.charge
             element_diff = d.defect_entry.element_diff
-
             # calculate four terms for a defect formation energy.
             relative_energy = d.dft_results.relative_total_energy(perfect)
             correction_energy = d.correction.total_correction_energy
             electron_interchange_energy = self._vbm * charge
             element_interchange_energy = \
-                - sum([v * (rel_chem_pot.elem_coords[k] + standard_energy[k])
+                - sum([v * (relative_chem_pot.elem_coords[k] + standard_e[k])
                        for k, v in element_diff.items()])
 
             self._defect_energies[name][charge] = \
@@ -84,6 +88,22 @@ class DefectEnergies:
                 electron_interchange_energy + element_interchange_energy
 
     def defect_concentration(self, temperature, e_f, num_sites_filename):
+        """
+        Calculates defect concentrations. When the self._concentration1 is set,
+        the each defect concentration is kept fixed. For example, the sum of
+        Va_O1_0, Va_O1_1 and Va_O1_2 are fixed.
+
+        Args:
+            temperature (float): Temperature in K.
+            e_f (float): Fermi level in the absolute scale.
+            num_sites_filename (str): Yaml file name for the number of sites in
+                                      a given volume. Example is
+                                        Va_Mg1 : 2
+                                        Va_O1 : 2
+                                        Mg_i1 : 4
+        Return:
+            concentrations[defect name][charge]:
+        """
 
         num_sites = loadfn(num_sites_filename)
         concentrations = defaultdict(dict)
@@ -101,6 +121,11 @@ class DefectEnergies:
                         maxwell_boltzmann_dist(energy, temperature) \
                         / self._volume * num_sites[name]
             else:
+                if self._concentration2:
+                    raise ValueError(
+                        "Concentrations at the quenched temperature is already "
+                        "set. Unset the concentrations first.")
+
                 dc = self._concentration1.defect_concentration[name]
                 total = sum(dc.values())
                 ratio = {}
@@ -119,18 +144,32 @@ class DefectEnergies:
     def equilibrium_concentration(self, temperature, num_sites_filename,
                                   max_iteration=50, threshold=1e-5,
                                   initialize=False):
+        """
+        Calculates the equilibrium defect concentrations
+
+        Args:
+            temperature (float): Temperature in K.
+            num_sites_filename (str): Yaml file name for the number of sites in
+                                      a given volume.
+            max_iteration (int): Max iteration number for seeking the
+                                 equilibrium defect concentrations
+            threshold (float): Threshold for the convergence of the SCF
+                               calculation of the carrier/defect concentrations.
+            initialize (bool): Whether to reset the defect concentration
+        """
         if initialize is True:
             self.unset_concentration()
 
-        mesh = self._cbm - self._vbm
+        # In case the Fermi level locates in between vbm and cbm, the common
+        distance = self._cbm - self._vbm
         e_f_abs = (self._vbm + self._cbm) / 2
         for iteration in range(max_iteration):
 
             # Use absolute Fermi level for p and n.
-            n = CarrierConcentration.n(temperature, e_f_abs, self._total_dos,
-                                       self._cbm, self._volume)
             p = CarrierConcentration.p(temperature, e_f_abs, self._total_dos,
                                        self._vbm, self._volume)
+            n = CarrierConcentration.n(temperature, e_f_abs, self._total_dos,
+                                       self._cbm, self._volume)
             e_f = e_f_abs - self._vbm
             defect_concentration = \
                 self.defect_concentration(temperature, e_f, num_sites_filename)
@@ -141,17 +180,17 @@ class DefectEnergies:
 
             # In case the Fermi level locates in between vbm and cbm, the common
             # ratio 0.5 is okay. Otherwise, higher common ratio is needed.
-            # Therefore, 0.6 is set here.
-            mesh *= 0.6
-            e_f_abs = e_f_abs + np.sign(charge_sum) * mesh
+            # Therefore, 0.7 is set here.
+            distance *= 0.7
+            e_f_abs = e_f_abs + np.sign(charge_sum) * distance
             # This line controls the accuracy.
             max_concentration = np.amax([n, p, charge_sum])
             if np.abs(charge_sum / max_concentration) < threshold:
                 c = Concentration(temperature, e_f, n, p, defect_concentration)
-                if self._concentration1:
-                    self._concentration2 = c
-                else:
+                if self._concentration1 is None:
                     self._concentration1 = c
+                else:
+                    self._concentration2 = c
                 return True
 
         print("Equilibrium condition has not been reached. ")
@@ -161,8 +200,9 @@ class DefectEnergies:
         self._concentration1 = None
         self._concentration2 = None
 
-    def __str__(self):
-        pass
+    def set_vbm2_cbm2(self, vbm2, cbm2):
+        self._vbm2 = vbm2
+        self._cbm2 = cbm2
 
     @staticmethod
     def min_e_at_ef(ec, ef):
@@ -220,7 +260,7 @@ class DefectEnergies:
                                 charges=sorted(charge))
 
         self._transition_levels = transition_levels
-        self._tl_range = [x_min, x_max]
+        self._calculated_transition_level_range = [x_min, x_max]
 
     def plot_energy(self, file_name=None, x_range=None, y_range=None,
                     show_tls=False):
@@ -236,7 +276,7 @@ class DefectEnergies:
 
         fig, ax = plt.subplots()
 
-        plt.title(self.title, fontsize=15)
+        plt.title(self._title, fontsize=15)
 
         ax.set_xlabel("Fermi level (eV)", fontsize=15)
         ax.set_ylabel("Formation energy (eV)", fontsize=15)
@@ -317,8 +357,8 @@ class DefectEnergies:
 
             # Store the coords for the filled and open circles.
             for cp in cross_points:
-                tl_x_min = self._tl_range[0]
-                tl_x_max = self._tl_range[1]
+                tl_x_min = self._calculated_transition_level_range[0]
+                tl_x_max = self._calculated_transition_level_range[1]
                 if (cp[0] < tl_x_min + 0.0001 and max(tl.charges) < 0) \
                         or (cp[0] > tl_x_max - 0.0001 and min(tl.charges) > 0):
                     shallow.append(cp)

@@ -1221,7 +1221,7 @@ def plot_energy(args):
         defect_energies.calc_transition_levels(args.x_range)
     if args.temperature:
         t1 = args.temperature[0]
-        defect_energies.equilibrium_concentration(t2, args.num_site_file)
+        defect_energies.equilibrium_concentration(t1, args.num_site_file)
         if len(args.temperature) == 2:
             t2 = args.temperature[1]
             defect_energies.equilibrium_concentration(t2, args.num_site_file)
