@@ -209,7 +209,7 @@ class DefectSites:
     def __init__(self, defect_sites):
         self._defect_sites = defect_sites
 
-    def set_from_yaml(self, filename):
+    def from_yaml(self, filename):
         self._defect_sites = defaultdict(dict)
 
 
