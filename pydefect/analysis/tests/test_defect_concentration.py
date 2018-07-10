@@ -8,6 +8,7 @@ import unittest
 from copy import deepcopy
 
 from pydefect.analysis.defect_energies import DefectEnergies, Defect
+from pydefect.analysis.defect_concentration import DefectConcentration
 from pydefect.analysis.chempotdiag.chem_pot_diag import ChemPotDiag
 from pydefect.core.correction import Correction
 from pydefect.core.supercell_dft_results import SupercellDftResults
@@ -26,12 +27,12 @@ test_dir = os.path.join(os.path.dirname(__file__), "..", "..", "..",
                         "test_files", "core")
 
 
-class DefectEnergiesTest(unittest.TestCase):
+class DefectConcentrationTest(unittest.TestCase):
 
     def setUp(self):
         """ """
         unitcell_file = os.path.join(test_dir, "MgO/defects/unitcell.json")
-        unitcell = UnitcellDftResults.load_json(unitcell_file)
+        self.unitcell = UnitcellDftResults.load_json(unitcell_file)
         perfect_file = os.path.join(test_dir,
                                     "MgO/defects/perfect/dft_results.json")
         perfect = SupercellDftResults.load_json(perfect_file)
@@ -63,19 +64,50 @@ class DefectEnergiesTest(unittest.TestCase):
         chem_pot_label = "A"
 
         self.defect_energies = \
-            DefectEnergies.from_files(unitcell=unitcell,
+            DefectEnergies.from_files(unitcell=self.unitcell,
                                       perfect=perfect,
                                       defects=defects,
                                       chem_pot=chem_pot,
                                       chem_pot_label=chem_pot_label,
                                       system="MgO")
 
-    def test_energies(self):
-        print(self.defect_energies.energies)
-        print(self.defect_energies.transition_levels)
-        print(self.defect_energies.vbm)
-        print(self.defect_energies.cbm)
-        print(self.defect_energies.band_gap)
+    def test_from_defect_energies(self):
+        temperature = 10000
+        num_sites_filename = os.path.join(test_dir,
+                                          "MgO/defects/num_sites.yaml")
+
+        dc1 = DefectConcentration.from_defect_energies(
+            defect_energies=self.defect_energies,
+            temperature=temperature,
+            unitcell=self.unitcell,
+            num_sites_filename=num_sites_filename)
+
+        print(dc1.energies)
+        print(dc1.temperature)
+        print(dc1.e_f)
+        print(dc1.p)
+        print(dc1.n)
+        print(dc1.concentration)
+
+        temperature2 = 1000
+
+        dc2 = DefectConcentration.from_defect_energies(
+            defect_energies=self.defect_energies,
+            temperature=temperature2,
+            unitcell=self.unitcell,
+            num_sites_filename=num_sites_filename,
+            previous_concentration=dc1,
+            verbose=True)
+
+        print("-------------------------------")
+        print(dc2.energies)
+        print(dc2.temperature)
+        print(dc2.e_f)
+        print(dc2.p)
+        print(dc2.n)
+        print(dc2.concentration)
+
+
 
 if __name__ == "__main__":
     unittest.main()

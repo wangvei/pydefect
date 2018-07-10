@@ -1,0 +1,6 @@
+Mg_O1: 2
+Mg_i1: 4
+
+39         defect_dirs = ["Mg_O1_0", "Mg_O1_1", "Mg_O1_2", "Mg_O1_3", "Mg_O1_4",   
+ 40                        "Mg_i1_0", "Mg_i1_1", "Mg_i1_2", "Va_O1_1", "Va_O1_2",   
+ 41                        "Va_O1_0"] 

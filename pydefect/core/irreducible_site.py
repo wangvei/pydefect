@@ -18,15 +18,19 @@ class IrreducibleSite:
     Note2: first_index atom is assumed to represent the irreducible atoms.
 
     Args:
-        irreducible_name (str): element name with the irreducible index
-                                (e.g., Mg1)
-        element (str): element name (e.g., Mg)
-        first_index (int): first index of irreducible_name.
-        last_index (int): last index of irreducible_name.
-        representative_coords (list): representative coordinates, namely the
-                                      position of first_index
+        irreducible_name (str):
+            Element name with the irreducible index (e.g., Mg1)
+        element (str):
+            Element name (e.g., Mg)
+        first_index (int):
+            First index of irreducible_name.
+        last_index (int):
+            Last index of irreducible_name.
+        representative_coords (list):
+            Representative coordinates, namely the position of first_index
 
     TODO1: Add the site symmetry information.
+    TODO2: Add the number of equivalent sites
     """
     def __init__(self, irreducible_name, element, first_index, last_index,
                  representative_coords):

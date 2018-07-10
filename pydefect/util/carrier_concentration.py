@@ -28,7 +28,7 @@ def maxwell_boltzmann_dist(energy, temperature):
 
 class CarrierConcentration:
     """
-    Carrier concentration
+    Carrier calc_concentration
     """
 
     def __init__(self, temperature, vbm, cbm, fermi_levels, ns, ps):
@@ -94,7 +94,7 @@ class CarrierConcentration:
     @staticmethod
     def n(temperature, fermi_level, total_dos, cbm, volume, threshold=0.05):
         """
-        Calculate the electron carrier concentration at the given absolute
+        Calculate the electron carrier calc_concentration at the given absolute
         fermi_level.
         """
         mesh_distance = total_dos[1][1] - total_dos[1][0]
@@ -106,7 +106,7 @@ class CarrierConcentration:
     @staticmethod
     def p(temperature, fermi_level, total_dos, vbm, volume, threshold=0.05):
         """
-        Calculate the hole carrier concentration at the given absolute
+        Calculate the hole carrier calc_concentration at the given absolute
         fermi_level.
         """
         mesh_distance = total_dos[1][1] - total_dos[1][0]
