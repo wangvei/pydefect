@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from copy import copy
+from copy import deepcopy
 from enum import Enum
 import numpy as np
 import matplotlib
@@ -57,14 +57,13 @@ class DefectPlotter:
             self._e_f2 = defect_concentration.previous_concentration.e_f
             self._t2 = defect_concentration.previous_concentration.temperature
 
-    def plot_energy(self, file_name=None, filtering_words=None, x_range=None,
-                    y_range=None, show_transition_levels=False):
+    def plot_energy(self, filtering_words=None, x_range=None,
+                    y_range=None, show_Fermi_level=True,
+                    show_transition_levels=False):
         """
         Plots the defect formation energies as a function of the Fermi level.
 
         Args:
-            file_name (str):
-                File name for saving the plot.
             filtering_words (str):
                 Words used for filtering the defect types
             x_range (2x1 list):
@@ -82,6 +81,16 @@ class DefectPlotter:
         ax.set_xlabel("Fermi level (eV)", fontsize=15)
         ax.set_ylabel("Formation energy (eV)", fontsize=15)
 
+        # filtering specific words for plot.
+        transition_levels = deepcopy(self._transition_levels)
+        if filtering_words:
+            for name in self._transition_levels.keys():
+                if is_name_selected(name, filtering_words) is False:
+                    transition_levels.pop(name)
+
+        if transition_levels == {}:
+            raise KeyError("No transition levels are detected.")
+
         if x_range:
             x_min = x_range[0]
             x_max = x_range[1]
@@ -94,13 +103,13 @@ class DefectPlotter:
             y_max = y_range[1]
         else:
             y_min = min([min(np.array(tl.cross_points).transpose()[1])
-                         for tl in self._transition_levels.values()])
+                         for tl in transition_levels.values()])
             y_max = max([max(np.array(tl.cross_points).transpose()[1])
-                         for tl in self._transition_levels.values()])
+                         for tl in transition_levels.values()])
             if y_min > 0:
                 y_min = 0
             # Make top and bottom space
-            margin = (y_max - y_min) * 0.08
+            margin = (y_max - y_min) * 0.1
             y_min -= margin
             y_max += margin
 
@@ -130,22 +139,19 @@ class DefectPlotter:
         plt.axhline(y=0, linewidth=1.0, linestyle='dashed')
 
         # Lines for the equilibrium Fermi level
-        if self._e_f1:
-            e_f1 = self._e_f1 - self._vbm
-            plt.axvline(x=e_f1, linewidth=2.0, linestyle='dashed', color="red")
-            ax.annotate("T$_1$=" + str(self._t1) + "K", (e_f1, y_min),
-                        fontsize=7)
-        if self._e_f2:
-            e_f2 = self._e_f2 - self._vbm
-            plt.axvline(x=e_f2, linewidth=2.0, linestyle='dashed',
-                        color="purple")
-            ax.annotate("T$_2$=" + str(self._t2) + "K", (e_f2, y_min),
-                        fontsize=7)
-
-        if filtering_words:
-            transition_levels = self._transition_levels
-        else:
-            transition_levels = self._transition_levels
+        if show_Fermi_level:
+            if self._e_f1:
+                e_f1 = self._e_f1 - self._vbm
+                plt.axvline(x=e_f1, linewidth=2.0, linestyle='dashed',
+                            color="red")
+                ax.annotate("T$_1$=" + str(self._t1) + "K", (e_f1, y_min),
+                            fontsize=7)
+            if self._e_f2:
+                e_f2 = self._e_f2 - self._vbm
+                plt.axvline(x=e_f2, linewidth=2.0, linestyle='dashed',
+                            color="purple")
+                ax.annotate("T$_2$=" + str(self._t2) + "K", (e_f2, y_min),
+                            fontsize=7)
 
         for i, (name, tl) in enumerate(transition_levels.items()):
 
@@ -217,12 +223,7 @@ class DefectPlotter:
         ax.legend()
         fig.subplots_adjust(right=0.75)
 
-        if file_name:
-            plt.savefig(file_name)
-        else:
-            plt.show()
+        return plt
 
-# TODO: filtering word
-# TODO: split functions for plot and save
 # TODO: draw thin lines for options
 

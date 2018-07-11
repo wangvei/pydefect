@@ -622,7 +622,6 @@ class MakeIncar:
         self.setting["EMAX"] = 10
         self.setting["NEDOS"] = 3001
 
-
     def _add_plus_u_flags(self):
         # Only LDAUTYPE = 2 is supported
         ldaul = []
