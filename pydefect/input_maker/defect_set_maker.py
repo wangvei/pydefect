@@ -99,8 +99,7 @@ def is_name_selected(name, keywords):
         raise TypeError("The type of keywords is not list.")
 
     for p in keywords:
-        pattern = r"" + re.escape(p)
-        if re.search(pattern, name):
+        if re.search(p, name):
             return True
 
     return False
