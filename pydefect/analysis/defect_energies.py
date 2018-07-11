@@ -53,6 +53,7 @@ class DefectEnergies:
                    system=""):
         """
         Calculates defect formation energies.
+        Note that all the energies are calculated at 0 eV in the absolute scale.
         Args:
             unitcell (UnitcellDftResults):
             perfect (SupercellDftResults)
@@ -86,14 +87,12 @@ class DefectEnergies:
             # calculate four terms for a defect formation energy.
             relative_energy = d.dft_results.relative_total_energy(perfect)
             correction_energy = d.correction.total_correction_energy
-            electron_interchange_energy = vbm * charge
             element_interchange_energy = \
                 - sum([v * (relative_chem_pot.elem_coords[k] + standard_e[k])
                        for k, v in element_diff.items()])
 
             energies[name][charge] = \
-                relative_energy + correction_energy + \
-                electron_interchange_energy + element_interchange_energy
+                relative_energy + correction_energy + element_interchange_energy
 
             magnetization[name][charge] = d.dft_results.magnetization
 
@@ -102,7 +101,7 @@ class DefectEnergies:
 
         for name, e_of_c in energies.items():
             points = []
-            charge = set()
+            charge = []
 
             for (c1, e1), (c2, e2) in combinations(e_of_c.items(), r=2):
                 # Estimate the cross point between two charge states
@@ -114,8 +113,7 @@ class DefectEnergies:
                 # if x_min < x < x_max and y < compared_energy:
                 if y < compared_energy:
                     points.append([x, y])
-                    charge.add(c1)
-                    charge.add(c2)
+                    charge.append([c1, c2])
 
             transition_levels[name] = \
                 TransitionLevel(cross_points=sorted(points, key=lambda x: x[0]),
@@ -125,9 +123,9 @@ class DefectEnergies:
 
     @staticmethod
     def min_e_at_ef(ec, ef):
-        # d[c1] = energy for charge c1
+        # calculate each energy at the given Fermi level ef.
         d = {c: e + c * ef for c, e in ec.items()}
-        # return charge for the lowest energy, and its energy value
+        # return the charge with the lowest energy, and its energy value
         return min(d.items(), key=lambda x: x[1])
 
     @classmethod

@@ -8,6 +8,8 @@ import unittest
 from copy import deepcopy
 
 from pydefect.analysis.defect_energies import DefectEnergies, Defect
+from pydefect.analysis.defect_concentration import DefectConcentration
+from pydefect.analysis.defect_plotter import DefectPlotter
 from pydefect.analysis.chempotdiag.chem_pot_diag import ChemPotDiag
 from pydefect.core.correction import Correction
 from pydefect.core.supercell_dft_results import SupercellDftResults
@@ -70,12 +72,29 @@ class DefectEnergiesTest(unittest.TestCase):
                                       chem_pot_label=chem_pot_label,
                                       system="MgO")
 
-    def test_energies(self):
-        print(self.defect_energies.energies)
-        print(self.defect_energies.transition_levels)
-        print(self.defect_energies.vbm)
-        print(self.defect_energies.cbm)
-        print(self.defect_energies.band_gap)
+        temperature = 10000
+        temperature2 = 1000
+        num_sites_filename = os.path.join(test_dir,
+                                          "MgO/defects/num_sites.yaml")
+
+        dc1 = DefectConcentration.from_defect_energies(
+            defect_energies=self.defect_energies,
+            temperature=temperature,
+            unitcell=unitcell,
+            num_sites_filename=num_sites_filename)
+
+        self.dc2 = DefectConcentration.from_defect_energies(
+            defect_energies=self.defect_energies,
+            temperature=temperature2,
+            unitcell=unitcell,
+            num_sites_filename=num_sites_filename,
+            previous_concentration=dc1,
+            verbose=False)
+
+    def test_calc_transition_levels(self):
+        dp = DefectPlotter(self.defect_energies, self.dc2)
+        dp.plot_energy()
+
 
 if __name__ == "__main__":
     unittest.main()

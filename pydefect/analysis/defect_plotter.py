@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+from copy import copy
 from enum import Enum
 import numpy as np
 import matplotlib
@@ -35,6 +36,7 @@ class DefectPlotter:
         """
         # Objects of the Concentration named tuple for 1st and 2nd temperature.
         self._title = defect_energies.title
+        self._energies = defect_energies.energies
         self._transition_levels = defect_energies.transition_levels
         self._vbm = defect_energies.vbm
         self._cbm = defect_energies.cbm
@@ -80,9 +82,6 @@ class DefectPlotter:
         ax.set_xlabel("Fermi level (eV)", fontsize=15)
         ax.set_ylabel("Formation energy (eV)", fontsize=15)
 
-        if self._transition_levels is None:
-            raise NoTLError("Transition levels are not calculated yet.")
-
         if x_range:
             x_min = x_range[0]
             x_max = x_range[1]
@@ -108,80 +107,92 @@ class DefectPlotter:
         plt.xlim(x_min, x_max)
         plt.ylim(y_min, y_max)
 
-        # support lines
+        # plot vbm, cbm, supercell_vbm, supercell_cbm lines.
         if x_range:
             plt.axvline(x=0, linewidth=1.0, linestyle='dashed')
             plt.axvline(x=self._band_gap, linewidth=1.0, linestyle='dashed')
             ax.annotate("cbm", (self._band_gap, y_min * 0.9 + y_max * 0.1),
                         fontsize=10)
 
-            perfect_vbm = self._supercell_vbm - self._vbm
-            perfect_cbm = self._supercell_cbm - self._vbm
-            print(self._supercell_vbm)
-            print(perfect_vbm)
-            print(perfect_cbm)
-            if perfect_vbm < - 0.05:
-                plt.axvline(x=perfect_vbm, linewidth=1.0, linestyle='dotted')
+            supercell_vbm = self._supercell_vbm - self._vbm
+            supercell_cbm = self._supercell_cbm - self._vbm
+            if supercell_vbm < - 0.05:
+                plt.axvline(x=supercell_vbm, linewidth=1.0, linestyle='dotted')
                 ax.annotate("supercell vbm",
-                            (perfect_vbm, y_min * 0.9 + y_max * 0.1),
+                            (supercell_vbm, y_min * 0.9 + y_max * 0.1),
                             fontsize=10)
-            if perfect_cbm > self._band_gap + 0.05:
-                plt.axvline(x=perfect_cbm, linewidth=1.0, linestyle='dotted')
+            if supercell_cbm > self._band_gap + 0.05:
+                plt.axvline(x=supercell_cbm, linewidth=1.0, linestyle='dotted')
                 ax.annotate("supercell cbm",
-                            (perfect_cbm, y_min * 0.9 + y_max * 0.1),
+                            (supercell_cbm, y_min * 0.9 + y_max * 0.1),
                             fontsize=10)
 
         plt.axhline(y=0, linewidth=1.0, linestyle='dashed')
 
-        # Lines for the equilibrium Fermi level(s)
+        # Lines for the equilibrium Fermi level
         if self._e_f1:
-            plt.axvline(x=self._e_f1, linewidth=2.0, linestyle='dashed', color="red")
-            ax.annotate("T$_1$=" + str(self._t1) + "K", (self._e_f1, y_min),
+            e_f1 = self._e_f1 - self._vbm
+            plt.axvline(x=e_f1, linewidth=2.0, linestyle='dashed', color="red")
+            ax.annotate("T$_1$=" + str(self._t1) + "K", (e_f1, y_min),
                         fontsize=7)
-            if self._e_f2:
-                plt.axvline(x=self._e_f2, linewidth=2.0, linestyle='dashed',
-                            color="purple")
-                ax.annotate("T$_2$=" + str(self._t2) + "K",
-                            (self._e_f2, self._t2), fontsize=7)
+        if self._e_f2:
+            e_f2 = self._e_f2 - self._vbm
+            plt.axvline(x=e_f2, linewidth=2.0, linestyle='dashed',
+                        color="purple")
+            ax.annotate("T$_2$=" + str(self._t2) + "K", (e_f2, y_min),
+                        fontsize=7)
 
-        for i, (name, tl) in enumerate(self._transition_levels.items()):
+        if filtering_words:
+            transition_levels = self._transition_levels
+        else:
+            transition_levels = self._transition_levels
+
+        for i, (name, tl) in enumerate(transition_levels.items()):
 
             color = matplotlib.cm.hot(float(i) / len(self._transition_levels))
 
-            cross_points = tl.cross_points
-            shallow = []
-            transition_levels = []
+            # ---------- Calculate cross points --------------------------------
+            energies = self._energies[name]
+            cross_points = []
+            shallow_points = []
+            transition_points = []
+            charge_set = set()
 
-            # Store the coords for the filled and open circles.
-            for cp in cross_points:
-                # tl_x_min = self._calculated_transition_level_range[0]
-                # # tl_x_max = self._calculated_transition_level_range[1]
-                # if (cp[0] < tl_x_min + 0.0001 and max(tl.charges) < 0) \
-                #         or (cp[0] > tl_x_max - 0.0001 and min(tl.charges) > 0):
-                #     shallow.append(cp)
-                # elif not (cp[0] == tl_x_min or cp[0] == tl_x_max):
-                #     transition_levels.append(cp)
-                if (cp[0] < x_min + 0.0001 and max(tl.charges) < 0) \
-                        or (cp[0] > x_max - 0.0001 and min(tl.charges) > 0):
-                    shallow.append(cp)
-                elif not (cp[0] == x_min or cp[0] == x_max):
-                    transition_levels.append(cp)
+            # x_min
+            c, y = DefectEnergies.min_e_at_ef(energies, x_min + self._vbm)
+            cross_points.append([x_min, y])
+            # Adding charge is necessary when transition level is absent.
+            charge_set.add(c)
+            if c < 0:
+                shallow_points.append([x_min, y])
+
+            for cp, c in zip(tl.cross_points, tl.charges):
+                if x_min < cp[0] - self._vbm < x_max:
+                    cross_points.append([cp[0] - self._vbm, cp[1]])
+                    transition_points.append([cp[0] - self._vbm, cp[1]])
+                    charge_set.add(c[0])
+                    charge_set.add(c[1])
+            # x_max
+            c, y = DefectEnergies.min_e_at_ef(energies, x_max + self._vbm)
+            cross_points.append([x_max, y])
+            if c > 0:
+                shallow_points.append([x_max, y])
+            # ------------------------------------------------------------------
 
             # set the x and y arrays to be compatible with matplotlib style.
             # e.g., x = [0.0, 0.3, 0.5, ...], y = [2.1, 3.2, 1.2, ...]
-            # plot lines
             x, y = np.array(cross_points).transpose()
             line, = ax.plot(x, y, '-', color=color, label=name)
             line.set_label(name)
 
             # plot filled circles for transition levels.
-            if transition_levels:
-                x, y = np.array(transition_levels).transpose()
+            if transition_points:
+                x, y = np.array(transition_points).transpose()
                 ax.scatter(x, y, color=color)
 
             # plot unfilled circles for shallow levels.
-            if shallow:
-                x, y = np.array(shallow).transpose()
+            if shallow_points:
+                x, y = np.array(shallow_points).transpose()
                 ax.scatter(x, y, facecolor="white", edgecolor=color)
 
             # These determine the positions of the transition levels.
@@ -196,12 +207,11 @@ class DefectPlotter:
                                 color=color, fontsize=8)
 
             # Arrange the charge states at the middle of the transition levels.
-            middle_points = \
-                reversed([[(a[0] + b[0]) / 2, (a[1] + b[1]) / 2 + margin_y]
-                          for a, b in zip(cross_points, cross_points[1:])])
-
-            for j, (x, y) in enumerate(middle_points):
-                ax.annotate(str(tl.charges[j]), (x, y), color=color,
+            charge_state_position = \
+                [[(a[0] + b[0]) / 2, (a[1] + b[1]) / 2 + margin_y]
+                 for a, b in zip(cross_points, cross_points[1:])]
+            for j, (x, y) in enumerate(charge_state_position):
+                ax.annotate(str(sorted(charge_set)[j]), (x, y), color=color,
                             fontsize=13)
 
         ax.legend()
@@ -212,7 +222,7 @@ class DefectPlotter:
         else:
             plt.show()
 
-
-class NoTLError(Exception):
-    pass
+# TODO: filtering word
+# TODO: split functions for plot and save
+# TODO: draw thin lines for options
 
