@@ -59,7 +59,7 @@ class DefectPlotter:
 
     def plot_energy(self, filtering_words=None, x_range=None,
                     y_range=None, show_Fermi_level=True,
-                    show_transition_levels=False):
+                    show_transition_levels=False, show_all_lines=False):
         """
         Plots the defect formation energies as a function of the Fermi level.
 
@@ -209,21 +209,26 @@ class DefectPlotter:
                     if cp[0] < x_min + 0.0001 or cp[0] > x_max - 0.0001:
                         continue
                     s = str(round(cp[0], 2)) + ", " + str(round(cp[1], 2))
-                    ax.annotate(s, (cp[0] + margin_x, cp[1] - margin_y),
-                                color=color, fontsize=8)
+                    ax.annotate(s, (cp[0] + margin_x, cp[1] - 1.8 * margin_y),
+                                color=color, fontsize=10)
 
             # Arrange the charge states at the middle of the transition levels.
             charge_state_position = \
                 [[(a[0] + b[0]) / 2, (a[1] + b[1]) / 2 + margin_y]
                  for a, b in zip(cross_points, cross_points[1:])]
             for j, (x, y) in enumerate(charge_state_position):
-                ax.annotate(str(sorted(charge_set)[j]), (x, y), color=color,
-                            fontsize=13)
+                ax.annotate(str(sorted(charge_set, reverse=True)[j]), (x, y),
+                            color=color, fontsize=13)
+
+            if show_all_lines:
+                for c, e in self._energies[name].items():
+                    y1 = e + c * (x_min + self._vbm)
+                    y2 = e + c * (x_max + self._vbm)
+                    ax.plot([x_min, x_max], [y1, y2], '-', linewidth=0.3,
+                            color=color)
 
         ax.legend()
-        fig.subplots_adjust(right=0.75)
+#        fig.subplots_adjust(right=0.75)
 
         return plt
-
-# TODO: draw thin lines for options
 

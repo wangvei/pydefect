@@ -93,9 +93,10 @@ class DefectEnergiesTest(unittest.TestCase):
 
     def test_calc_transition_levels(self):
         dp = DefectPlotter(self.defect_energies, self.dc2)
-        plt = dp.plot_energy(filtering_words=["Va_O[0-9]+"],
-                             show_transition_levels=True,
-                             show_Fermi_level=False)
+#        plt = dp.plot_energy(filtering_words=["Va_O[0-9]+"],
+        plt = dp.plot_energy(show_transition_levels=True,
+                             show_Fermi_level=False,
+                             show_all_lines=True)
         plt.show()
 
 if __name__ == "__main__":
