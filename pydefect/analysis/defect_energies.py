@@ -56,14 +56,20 @@ class DefectEnergies:
         Note that all the energies are calculated at 0 eV in the absolute scale.
         Args:
             unitcell (UnitcellDftResults):
+                UnitcellDftResults object for band edge.
             perfect (SupercellDftResults)
+                SupercellDftResults object of perfect supecell for band edge in
+                supercell.
             defects (list of namedtuple Defect):
-                [[Defect, ...]
-                Defect = namedtuple("Defect", "defect_entry", "dft_results",
-                                    "correction")
-            chem_pot (ChemPot): Chempot class object.
+                List of the Defect namedtuple object.
+                Defect = namedtuple(
+                    "Defect", "defect_entry", "dft_results", "correction")
+            chem_pot (ChemPot):
+                Chemical potentials of the competing phases.
             chem_pot_label (str):
-            system (str): A system name used for the title
+                Equilibrium point specified in ChemPot.
+            system (str):
+                System name used for the title.
         """
         # Note: vbm, cbm, perfect_vbm, perfect_cbm are in absolute energy.
         vbm, cbm = unitcell.band_edge
@@ -170,8 +176,19 @@ class DefectEnergies:
     def __str__(self):
         pass
 
-    def U_values(self):
-        pass
+    def u(self, name, charge):
+        """
+        Return U value among three charge states.
+        Args:
+            name (str):
+                Name of the defect.
+            charge (list):
+                1x3 list comprising three charge states.
+        """
+        if (charge[0] + charge[2]) / 2 != charge[1]:
+            assert ValueError("The charge states are not preserved.")
+        energies = [self.energies[name][c] for c in charge]
+        return energies[0] + energies[2] - 2 * energies[1]
 
     @property
     def energies(self):

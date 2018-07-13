@@ -14,7 +14,7 @@ from pymatgen.electronic_structure.bandstructure \
 from pydefect.analysis.defect_energies import DefectEnergies, Defect
 from pydefect.input_maker.defect_initial_setting \
     import print_dopant_info, DefectInitialSetting
-from pydefect.input_maker.supercell_maker import Supercell
+from pydefect.input_maker.supercell_maker import Supercell, Supercells
 from pydefect.input_maker.vasp_input_maker \
     import make_hpkot_primitive_poscar, MakeIncar, make_kpoints, make_potcar
 from pydefect.input_maker.vasp_defect_set_maker import VaspDefectInputSetMaker
@@ -107,7 +107,6 @@ def main():
 
     #    groups = parser_input.add_mutually_exclusive_group(required=True)
     parser_initial.set_defaults(func=initial_setting)
-
     # -- vasp_defect_set_maker -------------------------------------------------
     parser_vasp_defect_set = subparsers.add_parser(
         name="vasp_defect_set",
@@ -359,12 +358,16 @@ def main():
         "--max_num_atoms", dest="max_num_atoms", type=int, default=400,
         help="Maximum number of atoms")
     parser_recommend_supercell.add_argument(
-        "--no_conventional", dest="no_conventional", action="store_false",
-        help="Set if the supercell is not based on the conventional cell.")
+        "-pr", "--primitive", dest="primitive", action="store_true",
+        help="Set if the supercell is expanded with primitive cell.")
     parser_recommend_supercell.add_argument(
-        "--smallest_criterion", dest="smallest_criterion", action="store_true",
+        "-s", "--smallest_isotropy", dest="smallest_isotropy",
+        action="store_true",
         help="Output the smallest criterion supercell instead of the smallest "
              "supercell.")
+    parser_recommend_supercell.add_argument(
+        "-set", dest="set", action="store_true",
+        help="Output a set of the supercells satisfying the criterion.")
 
     parser_recommend_supercell.set_defaults(func=recommend_supercell)
 
@@ -690,7 +693,8 @@ def main():
         aliases=['pe'])
 
     parser_plot_energy.add_argument(
-        "--name", dest="name", type=str, default="")
+        "--name", dest="name", type=str, default="",
+        help="System name that is written in the title.")
     parser_plot_energy.add_argument(
         "-x", "--xrange", dest="x_range", type=float, nargs='+', default=None,
         help="Two float values for the x-range of the plot.")
@@ -735,6 +739,9 @@ def main():
         "-ns", "--num_sites", dest="num_site_file", type=str,
         help="The yaml file name that shows the number of sites. An example is "
              "Va_Mg1: 2")
+    # parser_plot_energy.add_argument(
+    #     "-u", dest="u", action="store_true",
+    #     help="Calculate the U values at given defect name and three charges")
 
     parser_plot_energy.set_defaults(func=plot_energy)
 
@@ -846,22 +853,36 @@ def vasp_input_maker(args):
 
 def recommend_supercell(args):
     structure = Structure.from_file(args.poscar)
-    s, uc_structure, multi, isotropy, criterion = \
-        Supercell.recommended_supercell(
-            structure=structure,
-            to_conventional=args.no_conventional,
-            max_num_atoms=args.max_num_atoms,
-            min_num_atoms=args.min_num_atoms,
-            isotropy_criterion=args.criterion,
-            smallest_criterion=args.smallest_criterion)
-    if criterion:
-        s.to_poscar(filename=args.sposcar)
-        uc_structure.to(filename=args.ucposcar)
+    supercells = Supercells(structure=structure,
+                            primitive=args.primitive,
+                            max_num_atoms=args.max_num_atoms,
+                            min_num_atoms=args.min_num_atoms,
+                            isotropy_criterion=args.criterion)
+    if supercells.converged:
+        supercells.unitcell_structure.to(filename=args.ucposcar)
+        if args.set:
+            print(len(supercells.supercells))
+            for s in supercells.supercells:
+
+                if supercells.is_primitive:
+                    cell = "p"
+                else:
+                    cell = "c"
+                multi = \
+                    cell + "x".join([str(list(s.multi)[i]) for i in range(3)])
+
+                name = args.sposcar + "_" + multi + "_" + str(s.num_atoms)
+                s.to_poscar(filename=name)
+        else:
+            if args.smallest_isotropy:
+                s = supercells.sorted_by_isotropy()[0]
+            else:
+                s = supercells.sorted_by_atoms()[0]
+            s.to_poscar(filename=args.sposcar)
+
     else:
-        print("Supercell is not constructed properly.")
-        print("Best candidate")
-        print("Multi: {0} {1} {2}, Isotropy: {3:.3}".
-              format(multi[0], multi[1], multi[2], isotropy))
+        print("Any supercell does not satisfy the criterion.")
+        print("Increase the criterion if needed")
 
 
 def defect_entry(args):
@@ -1210,13 +1231,16 @@ def plot_energy(args):
             warnings.warn(message="Parsing data in " + d + " is failed.")
 
     chem_pot = ChemPotDiag.load_vertices_yaml(args.chem_pot_yaml)
-    defect_energies = DefectEnergies(unitcell=unitcell,
-                                     perfect=perfect,
-                                     defects=defects,
-                                     chem_pot=chem_pot,
-                                     chem_pot_label=args.chem_pot_label,
-                                     filtering_words=args.filtering,
-                                     system_name=args.name)
+    defect_energies = \
+        DefectEnergies.from_files(unitcell=unitcell,
+                                  perfect=perfect,
+                                  defects=defects,
+                                  chem_pot=chem_pot,
+                                  chem_pot_label=args.chem_pot_label,
+                                  system=args.name)
+#    if args.calc_u:
+#        defect_energies.u()
+
     if args.show_tls:
         defect_energies.calc_transition_levels(args.x_range)
     if args.temperature:

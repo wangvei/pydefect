@@ -8,12 +8,9 @@ import warnings
 from monty.json import MontyEncoder
 from monty.serialization import loadfn
 
-from collections import defaultdict, namedtuple
-from itertools import combinations
+from collections import defaultdict
 
-from pydefect.core.supercell_dft_results import SupercellDftResults
 from pydefect.core.unitcell_dft_results import UnitcellDftResults
-from pydefect.input_maker.defect_set_maker import is_name_selected
 from pydefect.util.carrier_concentration import maxwell_boltzmann_dist, \
     CarrierConcentration
 
@@ -105,6 +102,8 @@ def calc_equilibrium_concentration(energies, temperature, vbm, cbm, total_dos,
     Calculates the equilibrium carrier and defect concentration at a given
     temperature.
 
+    Args:
+        energies (defaultdict):
             Defect formation energies. energies[name][charge]
         temperature (float):
             Temperature in K.

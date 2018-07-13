@@ -1,38 +1,28 @@
 # -*- coding: utf-8 -*-
 
 from copy import deepcopy
-from enum import Enum
 import numpy as np
 import matplotlib
 import matplotlib.pyplot as plt
-from monty.serialization import loadfn
-import json
-import warnings
-
-from monty.json import MontyEncoder
-from monty.serialization import loadfn
-
-from collections import defaultdict, namedtuple
-from itertools import combinations
 
 from pydefect.analysis.defect_energies import DefectEnergies
 from pydefect.analysis.defect_concentration import DefectConcentration
-from pydefect.core.supercell_dft_results import SupercellDftResults
-from pydefect.core.unitcell_dft_results import UnitcellDftResults
 from pydefect.input_maker.defect_set_maker import is_name_selected
-from pydefect.util.carrier_concentration import maxwell_boltzmann_dist, \
-    CarrierConcentration
 
 
 class DefectPlotter:
     """
+    A class for plotting the defect formation energies as a function of the
+    Fermi level.
     """
     def __init__(self, defect_energies, defect_concentration=None):
         """
-        Calculates defect formation energies.
+        Store data used for the plot.
         Args:
             defect_energies (DefectEnergies):
+                DefectEnergies class object.
             defect_concentration (DefectConcentration):
+                DefectConcentration class object.
         """
         # Objects of the Concentration named tuple for 1st and 2nd temperature.
         self._title = defect_energies.title
@@ -62,16 +52,19 @@ class DefectPlotter:
                     show_transition_levels=False, show_all_lines=False):
         """
         Plots the defect formation energies as a function of the Fermi level.
-
         Args:
             filtering_words (str):
                 Words used for filtering the defect types
-            x_range (2x1 list):
-                x range for the plot.
-            y_range (2x1 list):
-                y range for the plot.
+            x_range (list):
+                1x2 list for determining x range.
+            y_range (list):
+                1x2 list for determining y range.
+            show_Fermi_level (bool):
+                Whether to show the Fermi level(s) in the plot.
             show_transition_levels (bool):
-                Whether the transition levels are shown in the plot.
+                Whether to show the transition levels in the plot.
+            show_all_lines (bool):
+                Whether to show all lines in the plot.
         """
 
         fig, ax = plt.subplots()

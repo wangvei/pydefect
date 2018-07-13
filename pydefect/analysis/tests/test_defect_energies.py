@@ -77,6 +77,10 @@ class DefectEnergiesTest(unittest.TestCase):
         print(self.defect_energies.cbm)
         print(self.defect_energies.band_gap)
 
+    def test_U(self):
+        print(self.defect_energies.u(name="Va_O1", charge=[0, 1, 2]))
+
+
 if __name__ == "__main__":
     unittest.main()
 
