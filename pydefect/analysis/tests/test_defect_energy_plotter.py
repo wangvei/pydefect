@@ -9,7 +9,7 @@ from copy import deepcopy
 
 from pydefect.analysis.defect_energies import DefectEnergies, Defect
 from pydefect.analysis.defect_concentration import DefectConcentration
-from pydefect.analysis.defect_plotter import DefectPlotter
+from pydefect.analysis.defect_energy_plotter import DefectEnergyPlotter
 from pydefect.analysis.chempotdiag.chem_pot_diag import ChemPotDiag
 from pydefect.core.correction import Correction
 from pydefect.core.supercell_dft_results import SupercellDftResults
@@ -92,7 +92,7 @@ class DefectEnergiesTest(unittest.TestCase):
             verbose=False)
 
     def test_calc_transition_levels(self):
-        dp = DefectPlotter(self.defect_energies, self.dc2)
+        dp = DefectEnergyPlotter(self.defect_energies, self.dc2)
 #        plt = dp.plot_energy(filtering_words=["Va_O[0-9]+"],
         plt = dp.plot_energy(show_transition_levels=True,
                              show_Fermi_level=False,

@@ -11,7 +11,6 @@ from pymatgen.core.structure import Structure
 from pymatgen.electronic_structure.bandstructure \
     import get_reconstructed_band_structure
 
-from pydefect.analysis.defect_energies import DefectEnergies, Defect
 from pydefect.input_maker.defect_initial_setting \
     import print_dopant_info, DefectInitialSetting
 from pydefect.input_maker.supercell_maker import Supercell, Supercells
@@ -31,9 +30,12 @@ from pydefect.analysis.chempotdiag.make_inputs import make_vasp_inputs_from_mp
 from pydefect.vasp_util.script.plot_band_structure import ModBSPlotter, \
     VaspBandStructureSymmLine
 from pydefect.vasp_util.script.plot_dos import get_dos_plot
+from pydefect.analysis.defect_energies import DefectEnergies, Defect
+from pydefect.analysis.defect_concentration import DefectConcentration
+from pydefect.analysis.defect_energy_plotter import DefectEnergyPlotter
 
 __version__ = "0.0.1"
-__date__ = "19.4.2018"
+__date__ = "13.July.2018"
 
 # Following defaults determine the condition of automatic defect calculations.
 # electronegativity difference for antisites and substitutional impurities
@@ -393,6 +395,20 @@ def main():
         help="Print DefectEntry class object information.")
 
     parser_defect_entry.set_defaults(func=defect_entry)
+    # -- check_convergence -----------------------------------------------------
+    parser_check_convergence = subparsers.add_parser(
+        name="check_convergence",
+        description="Tools for checking the vasp calculation results",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+        aliases=['sr'])
+
+    parser_check_convergence.add_argument(
+        "-c", "--convergence", dest="convergence", action="store_true",
+        help="Check convergence of vasp calc at electronic and ionic steps.")
+    parser_check_convergence.add_argument(
+        "--dirs", dest="dirs", nargs="+", type=str,
+        help="Directory names.")
+    parser_check_convergence.set_defaults(func=check_convergence)
 
     # -- supercell_dft_results -------------------------------------------------
     parser_supercell_results = subparsers.add_parser(
@@ -401,9 +417,6 @@ def main():
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
         aliases=['sr'])
 
-    parser_supercell_results.add_argument(
-        "-c", "--convergence", dest="convergence", action="store_true",
-        help="Check convergence of vasp calc at electronic and ionic steps.")
     parser_supercell_results.add_argument(
         "--dirs", dest="dirs", nargs="+", type=str,
         help="Directory names.")
@@ -423,7 +436,7 @@ def main():
         "--print", dest="print", action="store_true",
         help="Print SupercellDftResults class object information.")
 
-    parser_supercell_results.set_defaults(func=supercell_results)
+    parser_supercell_results.set_defaults(func=supercell_dft_results)
 
     # -- unitcell_dft_results -------------------------------------------------
     parser_unitcell_results = subparsers.add_parser(
@@ -472,7 +485,7 @@ def main():
         "--print", dest="print", action="store_true",
         help="Print Unitcell class object information.")
 
-    parser_unitcell_results.set_defaults(func=unitcell_results)
+    parser_unitcell_results.set_defaults(func=unitcell_dft_results)
 
     # -- correction ------------------------------------------------------------
     parser_correction = subparsers.add_parser(
@@ -703,7 +716,7 @@ def main():
         help="Two float values for the y-range of the plot.")
     parser_plot_energy.add_argument(
         "-s", "--save_file", dest="save_file", type=str, default=None,
-        help="File name to save the plot.")
+        help="PDF file name to save the plot.")
     parser_plot_energy.add_argument(
         "--unitcell", dest="unitcell", type=str, default="unitcell.json",
         help="UnitcellDftResults class object json file name.")
@@ -728,8 +741,14 @@ def main():
     parser_plot_energy.add_argument(
         "--filtering", dest="filtering", type=str, help="Filtering word.")
     parser_plot_energy.add_argument(
-        "--show_tls", dest="show_tls", action="store_true",
+        "-c", "--concentration", dest="concentration", action="store_true",
+        help="Calculate the carrier and defect concentrations.")
+    parser_plot_energy.add_argument(
+        "-stl", "--show_tl", dest="show_tl", action="store_true",
         help="Show the transition levels.")
+    parser_plot_energy.add_argument(
+        "-sal", "--show_al", dest="show_al", action="store_true",
+        help="Show all the energy lines.")
     parser_plot_energy.add_argument(
         "-t", "--temperature", dest="temperature", nargs="+", type=float,
         help="Temperature for calculating the Fermi level. When two "
@@ -893,7 +912,51 @@ def defect_entry(args):
         print(DefectEntry.load_json(args.json))
 
 
-def supercell_results(args):
+def check_convergence(args):
+    for d in args.dirs:
+        if os.path.isdir(d) is False:
+            warnings.warn(message=d + " does not exist, so nothing is done.")
+        else:
+            check = check_vasp_output(d,
+                                      contcar_name=args.poscar,
+                                      outcar_name=args.outcar,
+                                      vasprun_name=args.vasprun)
+            if check["all"]:
+                if vasp_convergence_ionic(d, args.vasprun):
+                    ionic = "Y"
+                else:
+                    ionic = "N"
+                if vasp_convergence_electronic(d, args.vasprun):
+                    electronic = "Y"
+                else:
+                    electronic = "N"
+                print("{:>20}  ionic:{:>3}  electronic:{:>3}".
+                      format(d, ionic, electronic))
+            else:
+                contcar = "Y"
+                outcar = "Y"
+                vasprun = "Y"
+
+                if check["contcar"] is None:
+                    contcar = "NA"
+                elif check["contcar"] is False:
+                    contcar = "N"
+
+                if check["outcar"] is None:
+                    outcar = "NA"
+                elif check["outcar"] is False:
+                    outcar = "N"
+
+                if check["vasprun"] is None:
+                    vasprun = "NA"
+                elif check["vasprun"] is False:
+                    vasprun = "N"
+
+            print("{:>20}  CONTCAR:{:>3}  OUTCAR:{:>3}, vasprun:{:>3}".
+                  format(d, contcar, outcar, vasprun))
+
+
+def supercell_dft_results(args):
     if args.print:
         print(SupercellDftResults.load_json(args.json))
         return True
@@ -906,64 +969,24 @@ def supercell_results(args):
 
     for d in dirs:
         if os.path.isdir(d):
-            if args.convergence:
-                check = check_vasp_output(d,
-                                          contcar_name=args.poscar,
-                                          outcar_name=args.outcar,
-                                          vasprun_name=args.vasprun)
-                if check["all"]:
-                    if vasp_convergence_ionic(d, args.vasprun):
-                        ionic = "Y"
-                    else:
-                        ionic = "N"
-                    if vasp_convergence_electronic(d, args.vasprun):
-                        electronic = "Y"
-                    else:
-                        electronic = "N"
-                    print("{:>20}  ionic:{:>3}  electronic:{:>3}".
-                          format(d, ionic, electronic))
-                else:
-                    contcar = "Y"
-                    outcar = "Y"
-                    vasprun = "Y"
+            print(d)
+            try:
+                dft_results = SupercellDftResults.from_vasp_files(
+                    d,
+                    contcar_name=args.poscar,
+                    outcar_name=args.outcar,
+                    vasprun_name=args.vasprun)
 
-                    if check["contcar"] is None:
-                        contcar = "NA"
-                    elif check["contcar"] is False:
-                        contcar = "N"
-
-                    if check["outcar"] is None:
-                        outcar = "NA"
-                    elif check["outcar"] is False:
-                        outcar = "N"
-
-                    if check["vasprun"] is None:
-                        vasprun = "NA"
-                    elif check["vasprun"] is False:
-                        vasprun = "N"
-
-                    print("{:>20}  CONTCAR:{:>3}  OUTCAR:{:>3}, vasprun:{:>3}".
-                          format(d, contcar, outcar, vasprun))
-
-            else:
-                print(d)
-                try:
-                    dft_results = SupercellDftResults.from_vasp_files(
-                        d,
-                        contcar_name=args.poscar,
-                        outcar_name=args.outcar,
-                        vasprun_name=args.vasprun)
-
-                    dft_results.to_json_file(
-                        filename=join(d, "dft_results.json"))
-                except:
-                    warnings.warn(
-                        message="Parsing data in " + d + " is failed.")
+                dft_results.to_json_file(
+                    filename=join(d, "dft_results.json"))
+            except:
+                warnings.warn(
+                    message="Parsing data in " + d + " is failed.")
         else:
             warnings.warn(message=d + " does not exist, so nothing is done.")
 
 
-def unitcell_results(args):
+def unitcell_dft_results(args):
     try:
         dft_results = UnitcellDftResults.load_json(filename=args.json_file)
     except IOError:
@@ -1231,6 +1254,8 @@ def plot_energy(args):
             warnings.warn(message="Parsing data in " + d + " is failed.")
 
     chem_pot = ChemPotDiag.load_vertices_yaml(args.chem_pot_yaml)
+
+    # First construct DefectEnergies class object.
     defect_energies = \
         DefectEnergies.from_files(unitcell=unitcell,
                                   perfect=perfect,
@@ -1238,21 +1263,38 @@ def plot_energy(args):
                                   chem_pot=chem_pot,
                                   chem_pot_label=args.chem_pot_label,
                                   system=args.name)
-#    if args.calc_u:
-#        defect_energies.u()
 
-    if args.show_tls:
-        defect_energies.calc_transition_levels(args.x_range)
-    if args.temperature:
-        t1 = args.temperature[0]
-        defect_energies.equilibrium_concentration(t1, args.num_site_file)
+    if args.concentration:
+        defect_concentration = \
+            DefectConcentration.from_defect_energies(
+                defect_energies=defect_energies,
+                temperature=args.temperature[0],
+                unitcell=unitcell,
+                num_sites_filename=args.num_site_file)
+
         if len(args.temperature) == 2:
-            t2 = args.temperature[1]
-            defect_energies.equilibrium_concentration(t2, args.num_site_file)
+            defect_concentration = \
+                DefectConcentration.from_defect_energies(
+                    defect_energies=defect_energies,
+                    temperature=args.temperature[1],
+                    unitcell=unitcell,
+                    num_sites_filename=args.num_site_file,
+                    previous_concentration=defect_concentration)
+    else:
+        defect_concentration = None
 
-    defect_energies.show_concentration()
-    defect_energies.plot_energy(args.save_file, args.x_range, args.y_range,
-                                args.show_tls)
+    plotter = DefectEnergyPlotter(defect_energies, defect_concentration)
+    plt = plotter.plot_energy(filtering_words=args.filtering,
+                              x_range=args.x_range,
+                              y_range=args.y_range,
+                              show_fermi_level=args.concentration,
+                              show_transition_levels=args.show_tl,
+                              show_all_lines=args.show_al)
+
+    if args.save_file:
+        plt.savefig(args.save_file, format="pdf")
+    else:
+        plt.show()
 
 
 if __name__ == "__main__":

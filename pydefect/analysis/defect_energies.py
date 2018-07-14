@@ -57,8 +57,8 @@ class DefectEnergies:
         Args:
             unitcell (UnitcellDftResults):
                 UnitcellDftResults object for band edge.
-            perfect (SupercellDftResults)
-                SupercellDftResults object of perfect supecell for band edge in
+            perfect (SupercellDftResults):
+                SupercellDftResults object of perfect supercell for band edge in
                 supercell.
             defects (list of namedtuple Defect):
                 List of the Defect namedtuple object.

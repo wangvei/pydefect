@@ -10,7 +10,7 @@ from pydefect.analysis.defect_concentration import DefectConcentration
 from pydefect.input_maker.defect_set_maker import is_name_selected
 
 
-class DefectPlotter:
+class DefectEnergyPlotter:
     """
     A class for plotting the defect formation energies as a function of the
     Fermi level.
@@ -43,23 +43,24 @@ class DefectPlotter:
             self._e_f1 = defect_concentration.e_f
             self._t1 = defect_concentration.temperature
 
-        if defect_concentration.previous_concentration:
-            self._e_f2 = defect_concentration.previous_concentration.e_f
-            self._t2 = defect_concentration.previous_concentration.temperature
+            if defect_concentration.previous_concentration:
+                self._e_f2 = defect_concentration.previous_concentration.e_f
+                self._t2 = \
+                    defect_concentration.previous_concentration.temperature
 
     def plot_energy(self, filtering_words=None, x_range=None,
-                    y_range=None, show_Fermi_level=True,
+                    y_range=None, show_fermi_level=True,
                     show_transition_levels=False, show_all_lines=False):
         """
         Plots the defect formation energies as a function of the Fermi level.
         Args:
-            filtering_words (str):
-                Words used for filtering the defect types
+            filtering_words (list):
+                List of words used for filtering the defect types
             x_range (list):
                 1x2 list for determining x range.
             y_range (list):
                 1x2 list for determining y range.
-            show_Fermi_level (bool):
+            show_fermi_level (bool):
                 Whether to show the Fermi level(s) in the plot.
             show_transition_levels (bool):
                 Whether to show the transition levels in the plot.
@@ -132,7 +133,7 @@ class DefectPlotter:
         plt.axhline(y=0, linewidth=1.0, linestyle='dashed')
 
         # Lines for the equilibrium Fermi level
-        if show_Fermi_level:
+        if show_fermi_level:
             if self._e_f1:
                 e_f1 = self._e_f1 - self._vbm
                 plt.axvline(x=e_f1, linewidth=2.0, linestyle='dashed',

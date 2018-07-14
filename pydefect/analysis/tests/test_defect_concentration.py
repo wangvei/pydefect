@@ -108,7 +108,6 @@ class DefectConcentrationTest(unittest.TestCase):
         print(dc2.concentration)
 
 
-
 if __name__ == "__main__":
     unittest.main()
 

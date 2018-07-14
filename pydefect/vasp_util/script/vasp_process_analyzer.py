@@ -55,3 +55,7 @@ def vasp_convergence_electronic(directory_path, vasprun_name="vasprun.xml"):
     """ """
     vasprun = Vasprun(os.path.join(directory_path, vasprun_name))
     return vasprun.converged_electronic
+
+
+class VaspNotConvergedError(Exception):
+    pass

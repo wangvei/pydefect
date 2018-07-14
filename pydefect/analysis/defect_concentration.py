@@ -265,7 +265,6 @@ class DefectConcentration:
             for charge, concent in c_of_charge.items():
                 print("{} {}: {:.1e} cm-3.".format(name, charge, concent))
 
-
     @property
     def energies(self):
         return self._energies
