@@ -37,7 +37,9 @@ def defect_center(defect_entry, structure=None):
 
     Args:
         structure (Structure):
-        defect_entry (DefectEntry): related DefectEntry class object
+            pmg Structure class object for perfect supercell
+        defect_entry (DefectEntry):
+            Related DefectEntry class object
     """
     # If structure is not given, initial_structure of defect_entry is used.
     if structure is None:
@@ -114,8 +116,10 @@ def distances_from_point(structure, defect_entry):
     zero is also set to the interstitial site.
 
     Args:
-        structure (Structure): pmg structure class object
-        defect_entry (DefectEntry): DefectEntry class object considered
+        structure (Structure):
+            pmg Structure class object for perfect supercell
+        defect_entry (DefectEntry):
+            DefectEntry class object considered
     """
     return distance_list(structure, defect_center(defect_entry, structure))
 
@@ -131,7 +135,7 @@ class SupercellDftResults:
         """
         Args:
             final_structure (Structure):
-                pmg structure class object. Usually relaxed structures
+                pmg Structure class object. Usually relaxed structures
             total_energy (float):
                 Final total energy in eV.
             magnetization (float):

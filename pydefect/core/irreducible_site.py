@@ -30,7 +30,8 @@ class IrreducibleSite:
             Representative coordinates, namely the position of first_index
 
     TODO1: Add the site symmetry information.
-    TODO2: Add the number of equivalent sites
+    TODO2: Add the number of equivalent sites in the primitive unitcell
+    TODO3: Add the coordination numbers
     """
     def __init__(self, irreducible_name, element, first_index, last_index,
                  representative_coords):

@@ -106,29 +106,39 @@ class DefectInitialSetting:
     point defect calculations for a particular material.
 
     Args:
-        structure (Structure): pmg Structure/IStructure class object for
-                               perfect supercell
-        irreducible_sites (list): list of IrreducibleSite class objects
-        dopant_configs (Nx2 list): dopant configurations,
-                                    e.g., [["Al", Mg"], ["N", "O"]]
-        antisite_configs (Nx2 list): antisite configurations,
-                                  e.g., [["Mg","O"], ["O", "Mg"]]
-        interstitial_coords (Nx3 list): coordinates for interstitial sites,
-                                         e.g., [[0, 0, 0], [0.1, 0.1, 0.1], ..]
-        included (list): exceptionally added defects with charges
-                          e.g., ["Va_O1_-1", "Va_O1_-2"]
-        excluded (list): exceptionally removed defects with charges.
-                          If they don't exist, this flag does nothing.
-                          e.g., ["Va_O1_1", "Va_O1_2"]
-        distance (float): Maximum displacement in angstrom.
-                          0 means random displacement is switched off.
-        cutoff (float): Cutoff radius in which atoms are displaced.
-        symprec (float): Precision used for symmetry analysis.
-        oxidation_states (dict): Oxidation states for relevant elements.
-                                 Used to determine the default defect charges.
-        electronegativity (dict): Electronegativity for relevant elements.
-                                 Used to determine the substitutional defects.
+        structure (Structure):
+            pmg Structure class object for perfect supercell
+        irreducible_sites (list):
+            List of IrreducibleSite class objects
+        dopant_configs (Nx2 list):
+            Dopant configurations, e.g., [["Al", Mg"], ["N", "O"]]
+        antisite_configs (Nx2 list):
+            Antisite configurations, e.g., [["Mg","O"], ["O", "Mg"]]
+        interstitial_coords (Nx3 list):
+            Coordinates for interstitial sites, e.g., [[0, 0, 0], [0, 0, 0.1]]
+        included (list):
+            Exceptionally added defects with charges,
+            e.g., ["Va_O1_-1", "Va_O1_-2"]
+        excluded (list):
+            Exceptionally removed defects with charges. If they don't exist,
+            this flag does nothing. e.g., ["Va_O1_1", "Va_O1_2"]
+        distance (float):
+            Maximum displacement in angstrom. 0 means random displacement is
+            switched off.
+        cutoff (float):
+            Cutoff radius in which atoms are displaced.
+        symprec (float):
+            Precision used for symmetry analysis.
+        oxidation_states (dict):
+            Oxidation states for relevant elements. Used to determine the
+            default defect charges.
+        electronegativity (dict):
+            Electronegativity for relevant elements. Used to determine the
+            substitutional defects.
     """
+
+    # TODO: Add the coordination information.
+    # TODO: Add the site symmetry.
 
     def __init__(self, structure, irreducible_sites, dopant_configs,
                  antisite_configs, interstitial_coords, included, excluded,
@@ -289,26 +299,31 @@ class DefectInitialSetting:
         Generates DefectInitialSetting object with default settings.
 
         Args:
-            poscar (str): POSCAR type file name used for supercell defect
-                          calculations
-            dopants (list): dopant element names, e.g., ["Al", "N"]
+            poscar (str):
+                POSCAR type file name used for supercell defect calculations
+            dopants (list):
+                Dopant element names, e.g., ["Al", "N"]
             flattened_interstitial_coords (list):
-                Coordinates for interstitial sites.
-                The number of elements needs to be
-                divided by 3.
-                e.g., [0, 0, 0, 0.1, 0.1, 0.1]
-            is_antisite (bool): Whether to consider antisite defects.
-            en_diff (float): Electronegativity (EN) difference for determining
-                             sets of antisites and dopant sites.
-            included (list): Exceptionally added defects with charges
-                            e.g., ["Va_O1_-1", "Va_O1_-2"]
-            excluded (list): Exceptionally removed defects with charges.
-                            If they don't exist, this flag does nothing.
-                            e.g., ["Va_O1_1", "Va_O1_2"]
-            distance (float): Maximum displacement distance in angstrom. 0 means
-                              that random displacement is not considered.
-            cutoff (float): Cutoff radius in which atoms are displaced.
-            symprec (float): Precision used for symmetry analysis.
+                Coordinates for interstitial sites. The number of elements needs
+                to be divided by 3. e.g., [0, 0, 0, 0.1, 0.1, 0.1]
+            is_antisite (bool):
+                Whether to consider antisite defects.
+            en_diff (float):
+                Electronegativity (EN) difference for determining sets of
+                antisites and dopant sites.
+            included (list):
+                Exceptionally added defects with charges,
+                e.g., ["Va_O1_-1", "Va_O1_-2"]
+            excluded (list):
+                Exceptionally removed defects with charges. If they don't exist,
+                this flag does nothing. e.g., ["Va_O1_1", "Va_O1_2"]
+            distance (float):
+                Maximum displacement distance in angstrom. 0 means that random
+                displacement is not considered.
+            cutoff (float):
+                Cutoff radius in which atoms are displaced.
+            symprec (float):
+                Precision used for symmetry analysis.
         """
 
         if dopants is None:
@@ -492,7 +507,8 @@ class DefectInitialSetting:
         """
         Helper method to write down defect.in file.
         Args:
-            defect_in_file (str): Name of defect.in type file.
+            defect_in_file (str):
+                Name of defect.in type file.
         """
         with open(defect_in_file, 'w') as di:
 

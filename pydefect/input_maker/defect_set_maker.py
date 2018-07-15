@@ -130,16 +130,22 @@ class DefectMaker:
             defect name in PyDefect manner, e.g., "Va_Mg2_-2".
         structure (Structure):
             Structure class object for the *perfect* supercell.
-        irreducible_sites ([IrreducibleSite])
-        interstitial_coords (Nx3 list): coordinates of interstitial sites,
-                                         e.g., [[0, 0, 0], [0.1, 0.1, 0.1], ..]
+        irreducible_sites ([IrreducibleSite]):
+            List of the IrreducibleSite object.
+        interstitial_coords (Nx3 list):
+            coordinates of interstitial sites,
+            e.g., [[0, 0, 0], [0.1, 0.1, 0.1], ..]
 
     Parameters in use:
-        in_name" (str): Inserted element name. "Va" is used for vacancies.
-        out_name" (str): Removed site name. "in", where n is an integer,
-                         is used for interstitials. E.g., "i1".
-        charge (int): DefectSupercell charge state
-        removed_atom_index (int): removed atom index from the perfect structure.
+        in_name" (str):
+            Inserted element name. "Va" is used for vacancies.
+        out_name" (str):
+            Removed site name. "in", where n is an integer, is used for
+            interstitials. E.g., "i1".
+        charge (int):
+            DefectSupercell charge state
+        removed_atom_index (int):
+            Removed atom index from the perfect structure.
     """
     def __init__(self, defect_name, structure, irreducible_sites,
                  interstitial_coords):
@@ -215,8 +221,10 @@ class DefectInputSetMaker(metaclass=ABCMeta):
             It specifies (a) particular defect(s).
 
     Parameters in use:
-        in_pattern (str): pattern for screening in_name
-        out_pattern (str): pattern for screening out_name
+        in_pattern (str):
+            Pattern for screening in_name
+        out_pattern (str):
+            Pattern for screening out_name
     """
 
     # TODO: keywords here and filtering_words in vasp_defect_set_maker must be
