@@ -23,7 +23,7 @@ __date__ = "December 4, 2017"
 
 class VaspDefectInputSetMaker(DefectInputSetMaker):
 
-    def __init__(self, defect_initial_setting, filtering_words=None,
+    def __init__(self, defect_initial_setting, keywords=None,
                  particular_defects=None, incar="INCAR", kpoints="KPOINTS",
                  force_overwrite=False):
 
@@ -31,7 +31,7 @@ class VaspDefectInputSetMaker(DefectInputSetMaker):
             raise VaspInputFileError("INCAR and/or KPOINTS is absent.")
 
         # make self._defect_initial_setting and self._defect_name_set
-        super().__init__(defect_initial_setting, filtering_words,
+        super().__init__(defect_initial_setting, keywords,
                          particular_defects, force_overwrite)
 
         self._incar = incar

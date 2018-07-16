@@ -4,7 +4,7 @@ import numpy as np
 import os
 import unittest
 
-from pydefect.util.structure import structure_to_spglib_cell, \
+from pydefect.util.structure import get_symmetry_dataset, structure_to_spglib_cell, \
     spglib_cell_to_structure, find_hpkot_primitive, structure_to_seekpath, \
     perturb_neighbors, NotStandardizedPrimitiveError
 from pymatgen.core.structure import Structure
@@ -19,6 +19,16 @@ __date__ = "April 4, 2018"
 
 test_dir = os.path.join(os.path.dirname(__file__), "..", "..", "..",
                         "test_files", "input_maker")
+
+class GetSymmetryDatasetTest(unittest.TestCase):
+
+    def setUp(self):
+        self.structure = Structure.from_file("POSCAR-MgO64atoms")
+
+    def test(self):
+        get_symmetry_dataset(self.structure)
+        rotations = sym_dataset["rotations"]
+        translations = sym_dataset["translations"]
 
 
 class StructureToSpglibCellTest(unittest.TestCase):

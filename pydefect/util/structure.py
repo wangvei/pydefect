@@ -2,6 +2,7 @@
 
 from collections import OrderedDict
 
+import numpy as np
 import seekpath
 import spglib
 from pymatgen import Structure
@@ -19,13 +20,61 @@ __status__ = "Development"
 __date__ = "April 4, 2018"
 
 
+def get_symmetry_dataset(structure):
+    """
+    Args:
+        structure (Structure):
+            Pymatgen Structure class object
+    """
+    cell = structure_to_spglib_cell(structure)
+    print(cell[0])
+    return spglib.get_symmetry_dataset(cell)
+
+
+    # lattice = cell[0]
+    # rotations = dataset["rotations"]
+    # translations = dataset["translations"]
+    # rotations = _get_site_symmetry([0, 0, 0], lattice, rotations, translations,
+    #                                symprec=0.01)
+    # print(rotations)
+    # print(get_point_group(rotations))
+
+#    print(len(rotations))
+
+
+# def get_site_symmetry_from_atom_index(cell, dataset, index, symprec=0.01):
+#     lattice = cell[0]
+#     pos = cell[1][index]
+#     dataset = get_symmetry_dataset()
+
+
+def get_point_group(rotations):
+    ptg = spglib.get_pointgroup(rotations)
+    return ptg[0].strip(), ptg[2]
+
+
+def get_rotations(pos, lattice, rotations, translations, symprec):
+    site_symmetries = []
+
+    for r, t in zip(rotations, translations):
+        rot_pos = np.dot(pos, r.T) + t
+        diff = pos - rot_pos
+        diff -= np.rint(diff)
+        diff = np.dot(diff, lattice)
+        if np.linalg.norm(diff) < symprec:
+            site_symmetries.append(r)
+
+    return np.array(site_symmetries, dtype='intc')
+
+
 def structure_to_spglib_cell(structure):
     """
-    Returns a *cell* tuple parsed by spglib that is composed of lattice
+    Return a *cell* tuple parsed by spglib that is composed of lattice
     parameters, atomic positions in fractional coordinates, and corresponding
     atomic numbers.
     Args:
-        structure (Structure): Pymatgen Structure class object
+        structure (Structure):
+            Pymatgen Structure class object
     """
     lattice = list(structure.lattice.matrix)
     positions = structure.frac_coords.tolist()
@@ -35,10 +84,11 @@ def structure_to_spglib_cell(structure):
 
 def spglib_cell_to_structure(cell):
     """
-    Returns a pymatgen Structure class object from spglib cell tuple.
+    Return a pymatgen Structure class object from spglib cell tuple.
     Args:
-        cell (3 tuple): Lattice parameters, atomic positions in fractional
-                        coordinates, and corresponding
+        cell (3 tuple):
+            Lattice parameters, atomic positions in fractional coordinates,
+            and corresponding atom numbers
     """
     species = [symbols_to_atom[i] for i in cell[2]]
     return Structure(cell[0], species, cell[1])
@@ -46,26 +96,29 @@ def spglib_cell_to_structure(cell):
 
 def find_spglib_standard_conventional(structure, symprec=1e-02):
     """
-    Returns a standard conventional unit cell.
+    Return a standard conventional unit cell.
     Args:
-        structure (Structure): Pymatgen Structure class object
-        symprec (float): distance tolerance in cartesian coordinates
-                         Unit is compatible with the cell.
+        structure (Structure):
+            Pymatgen Structure class object
+        symprec (float):
+            Distance tolerance in cartesian coordinates Unit is compatible with
+            the cell.
     """
     cell = structure_to_spglib_cell(structure)
-    return spglib_cell_to_structure(spglib.standardize_cell(cell,
-                                                            to_primitive=False,
-                                                            no_idealize=False,
-                                                            symprec=symprec))
+    return spglib_cell_to_structure(
+        spglib.standardize_cell(cell, to_primitive=False, no_idealize=False,
+                                symprec=symprec))
 
 
 def find_spglib_standard_primitive(structure, symprec=1e-02):
     """
-    Returns a primitive unit cell.
+    Return a primitive unit cell.
     Args:
-        structure (Structure): Pymatgen Structure class object
-        symprec (float): distance tolerance in cartesian coordinates
-                         Unit is compatible with the cell.
+        structure (Structure):
+            Pymatgen Structure class object
+        symprec (float):
+            Distance tolerance in cartesian coordinates Unit is compatible with
+            the cell.
     """
     cell = structure_to_spglib_cell(structure)
     return spglib_cell_to_structure(spglib.find_primitive(cell, symprec))
@@ -73,12 +126,15 @@ def find_spglib_standard_primitive(structure, symprec=1e-02):
 
 def find_hpkot_primitive(structure, symprec=1e-02, angle_tolerance=-1.0):
     """
-    Returns a hpkot primitive unit cell.
+    Return a hpkot primitive unit cell.
     Args:
-        structure (Structure): Pymatgen Structure class object
-        symprec (float): distance tolerance in cartesian coordinates
-                         Unit is compatible with the cell.
-        angle_tolerance (float): angle tolerance used for symmetry analysis.
+        structure (Structure):
+            Pymatgen Structure class object
+        symprec (float):
+            Distance tolerance in cartesian coordinates Unit is compatible with
+            the cell.
+        angle_tolerance (float):
+            Angle tolerance used for symmetry analysis.
     """
     cell = structure_to_spglib_cell(structure)
     res = seekpath.get_explicit_k_path(structure=cell, symprec=symprec,
@@ -91,17 +147,22 @@ def structure_to_seekpath(structure, time_reversal=True, ref_distance=0.025,
                           recipe='hpkot', threshold=1.e-7, symprec=1e-02,
                           angle_tolerance=-1.0):
     """
-    Returns the full information for the band path of the given Structure class
+    Return the full information for the band path of the given Structure class
     object generated by seekpath.
     Args:
-        structure (Structure): Pymatgen Structure class object
-        time_reversal (bool): If the time reversal symmetry exists
-        ref_distance (float): distance for the k-point mesh.
-        threshold (float): to use to verify if we are in edge case
-                          (see seekpath)
-        symprec (float): distance tolerance in cartesian coordinates
-                         Unit is compatible with the cell.
-        angle_tolerance (float): angle tolerance used for symmetry analysis.
+        structure (Structure):
+            Pymatgen Structure class object
+        time_reversal (bool):
+            If the time reversal symmetry exists
+        ref_distance (float):
+            Distance for the k-point mesh.
+        threshold (float):
+            To use to verify if we are in edge case (see seekpath).
+        symprec (float):
+            Distance tolerance in cartesian coordinates Unit is compatible with
+            the cell.
+        angle_tolerance (float):
+            Angle tolerance used for symmetry analysis.
     """
     cell = structure_to_spglib_cell(structure)
     res = seekpath.get_explicit_k_path(cell,
@@ -123,9 +184,10 @@ def structure_to_seekpath(structure, time_reversal=True, ref_distance=0.025,
 
 def seekpath_to_hpkot_structure(res):
     """
-    Returns a pymatgen Structure class object from seekpath res dictionary.
+    Return a pymatgen Structure class object from seekpath res dictionary.
     Args:
-        res (dict): seekpath res dictionary.
+        res (dict):
+            seekpath res dictionary.
     """
     lattice = res["primitive_lattice"]
     element_types = res["primitive_types"]
@@ -136,14 +198,18 @@ def seekpath_to_hpkot_structure(res):
 
 def perturb_neighbors(structure, center, cutoff, distance):
     """
-    Returns the structure with randomly perturbed atoms near the input point in
+    Return the structure with randomly perturbed atoms near the input point in
     structure.
 
     Args:
-        structure (Structure): pmg Structure/IStructure class object
-        center (3x1 array): Fractional coordinates of a central position.
-        cutoff (float): Radius of a sphere in which atoms are perturbed [A].
-        distance (float): Max distance for the perturbation [A].
+        structure (Structure):
+            pmg Structure class object
+        center (3x1 array):
+            Fractional coordinates of a central position.
+        cutoff (float):
+            Radius of a sphere in which atoms are perturbed.
+        distance (float):
+            Max distance for the perturbation.
     """
     if type(center) == list and len(center) == 3:
         cartesian_coords = structure.lattice.get_cartesian_coords(center)

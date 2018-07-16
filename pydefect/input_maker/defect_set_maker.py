@@ -216,9 +216,9 @@ class DefectInputSetMaker(metaclass=ABCMeta):
         defect_initial_setting (DefectInitialSetting):
             DefectInitialSetting class object.
         keywords (list):
-            Specify a type of defects.
+            Specify regular expression to narrow the defects considered.
         particular_defects (list):
-            It specifies (a) particular defect(s).
+            Specifies particular defect to be considered.
 
     Parameters in use:
         in_pattern (str):
@@ -226,9 +226,6 @@ class DefectInputSetMaker(metaclass=ABCMeta):
         out_pattern (str):
             Pattern for screening out_name
     """
-
-    # TODO: keywords here and filtering_words in vasp_defect_set_maker must be
-    #       unified.
     def __init__(self, defect_initial_setting, keywords=None,
                  particular_defects=None, force_overwrite=False):
 

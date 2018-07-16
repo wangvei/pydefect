@@ -11,6 +11,8 @@ from monty.json import MontyEncoder
 from monty.serialization import loadfn
 
 import pydefect.database.atom as atom
+from pydefect.util.structure import get_symmetry_dataset, get_point_group, \
+    get_rotations
 from pydefect.core.irreducible_site import IrreducibleSite
 
 __author__ = "Yu Kumagai"
@@ -332,14 +334,13 @@ class DefectInitialSetting:
         symmetrized_structure = \
             SpacegroupAnalyzer(s, symprec=symprec).get_symmetrized_structure()
 
-        # Electronegativity and oxidation states for constituents and dopants
-        electronegativity = {}
-        oxidation_states = {}
-
         symbol_set = s.symbol_set
         dopant_symbol_set = tuple(dopants)
         element_set = symbol_set + dopant_symbol_set
 
+        # Electronegativity and oxidation states for constituents and dopants
+        electronegativity = {}
+        oxidation_states = {}
         for element in element_set:
             electronegativity[element] = get_electronegativity(element)
             oxidation_states[element] = get_oxidation_state(element)
@@ -354,6 +355,11 @@ class DefectInitialSetting:
         equiv_sites = symmetrized_structure.equivalent_sites
         last_index = 0
 
+        lattice = symmetrized_structure.lattice.matrix
+        sym_dataset = get_symmetry_dataset(symmetrized_structure)
+        full_rotations = sym_dataset["rotations"]
+        translations = sym_dataset["translations"]
+
         for i, equiv_site in enumerate(equiv_sites):
             # set element name of equivalent site
             element = equiv_site[0].species_string
@@ -367,12 +373,21 @@ class DefectInitialSetting:
             # to keep the consistency of the IrreducibleSite object.
             repr_coords = list(equiv_site[0].frac_coords)
             irreducible_name = element + str(num_irreducible_sites[element])
+            wyckoff = sym_dataset["wyckoffs"][first_index]
 
+            rotations = get_rotations(repr_coords, lattice, full_rotations,
+                                      translations, symprec)
+            point_group = get_point_group(rotations)
+
+            coordination = {}
             irreducible_sites.append(IrreducibleSite(irreducible_name,
                                                      element,
                                                      first_index,
                                                      last_index,
-                                                     repr_coords))
+                                                     repr_coords,
+                                                     wyckoff,
+                                                     point_group,
+                                                     coordination))
 
         # E.g., antisite_configs = [["Mg, "O"], ...]
         antisite_configs = []

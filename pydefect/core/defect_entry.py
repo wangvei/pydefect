@@ -57,6 +57,9 @@ class DefectEntry:
         charge (int):
             Charge state of the defect
     """
+    # TODO: Add the site symmetry information.
+    # TODO: Add the number of equivalent sites in the primitive unitcell
+
     def __init__(self, name, initial_structure, removed_atoms, inserted_atoms,
                  element_diff, charge):
         self._name = name

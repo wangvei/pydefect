@@ -784,7 +784,7 @@ def vasp_defect_set(args):
         from_defect_in(poscar=args.dposcar, defect_in_file=args.defect_in)
 
     VaspDefectInputSetMaker(defect_initial_setting=defect_initial_setting,
-                            filtering_words=args.filtering,
+                            keywords=args.filtering,
                             particular_defects=args.add,
                             incar=args.incar,
                             kpoints=args.kpoints,

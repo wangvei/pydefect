@@ -28,18 +28,24 @@ class IrreducibleSite:
             Last index of irreducible_name.
         representative_coords (list):
             Representative coordinates, namely the position of first_index
-
-    TODO1: Add the site symmetry information.
-    TODO2: Add the number of equivalent sites in the primitive unitcell
-    TODO3: Add the coordination numbers
+        wyckoff (str):
+            A wyckoff letter
+        site_symmetry (str):
+            Site symmetry:
+        coordination (dict):
+            Coordination environment. An example is
+            {"Mg": 1.92, "Mg": 1.95, "Mg": 2.01, "Al": 1.82, "Al":1.95}
     """
     def __init__(self, irreducible_name, element, first_index, last_index,
-                 representative_coords):
+                 representative_coords, wyckoff, site_symmetry, coordination):
         self._irreducible_name = irreducible_name
         self._element = element
         self._first_index = first_index
         self._last_index = last_index
         self._repr_coords = representative_coords
+        self._wyckoff = wyckoff
+        self._site_symmetry = site_symmetry
+        self._coordination = coordination
 
     def __eq__(self, other):
         if other is None or type(self) != type(other):
@@ -49,14 +55,18 @@ class IrreducibleSite:
     @classmethod
     def from_dict(cls, d):
         return cls(d["irreducible_name"], d["element"], d["first_index"],
-                   d["last_index"], d["repr_coords"])
+                   d["last_index"], d["repr_coords"], d["wyckoff"],
+                   d["site_symmetry"], d["coordination"])
 
     def as_dict(self):
         d = {"irreducible_name": self._irreducible_name,
              "element": self._element,
              "first_index": self._first_index,
              "last_index": self._last_index,
-             "repr_coords": self._repr_coords}
+             "repr_coords": self._repr_coords,
+             "wyckoff": self._wyckoff,
+             "site_symmetry": self._site_symmetry,
+             "coordination": self._coordination}
         return d
 
     @property
@@ -78,6 +88,18 @@ class IrreducibleSite:
     @property
     def repr_coords(self):
         return self._repr_coords
+
+    @property
+    def wyckoff(self):
+        return self._wyckoff
+
+    @property
+    def site_symmetry(self):
+        return self._site_symmetry
+
+    @property
+    def coordination(self):
+        return self._coordination
 
     @property
     def num_atoms(self):
