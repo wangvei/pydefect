@@ -9,7 +9,7 @@ from pymatgen.core.structure import Structure
 
 from pydefect.input_maker.defect_set_maker import get_int_from_string, parse_defect_name, print_already_exist, \
     print_is_being_constructed, is_name_selected, select_defect_names, \
-    DefectMaker
+    DefectEntryMaker
 
 from pydefect.core.defect_entry import DefectEntry
 from pydefect.core.irreducible_site import IrreducibleSite
@@ -143,8 +143,8 @@ class DefectMakerTest(unittest.TestCase):
 
     def test_vacancies(self):
         vac1_d = \
-            DefectMaker("Va_Mg1_-2", self.structure, self.irreducible_sites,
-                        self.interstitial_coords)
+            DefectEntryMaker("Va_Mg1_-2", self.structure, self.irreducible_sites,
+                             self.interstitial_coords)
         self.assertEqual(vac1_d.defect.as_dict(), self.test_d.as_dict())
 
 

@@ -35,7 +35,7 @@ class SupercellTest(unittest.TestCase):
 
     def test_recommended_supercell(self):
         s3 = Supercells(self.structure,
-                        primitive=False,
+                        conventional=False,
                         max_num_atoms=200,
                         min_num_atoms=50,
                         isotropy_criterion=1.1)

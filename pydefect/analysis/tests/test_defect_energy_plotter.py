@@ -95,9 +95,10 @@ class DefectEnergiesTest(unittest.TestCase):
         dp = DefectEnergyPlotter(self.defect_energies, self.dc2)
 #        plt = dp.plot_energy(filtering_words=["Va_O[0-9]+"],
         plt = dp.plot_energy(show_transition_levels=True,
-                             show_Fermi_level=False,
+                             show_fermi_level=True,
                              show_all_lines=True)
         plt.show()
+#        plt.savefig(fname="energy.eps")
 
 if __name__ == "__main__":
     unittest.main()
