@@ -4,9 +4,10 @@ import numpy as np
 import os
 import unittest
 
-from pydefect.util.structure import get_symmetry_dataset, structure_to_spglib_cell, \
-    spglib_cell_to_structure, find_hpkot_primitive, structure_to_seekpath, \
-    perturb_neighbors, NotStandardizedPrimitiveError
+from pydefect.util.structure import get_symmetry_dataset, get_point_group_from_dataset,\
+    structure_to_spglib_cell, spglib_cell_to_structure, find_hpkot_primitive, \
+    structure_to_seekpath, get_coordination_environment, get_coordination_distances, perturb_neighbors, \
+    NotStandardizedPrimitiveError
 from pymatgen.core.structure import Structure
 
 __author__ = "Yu Kumagai"
@@ -23,12 +24,24 @@ test_dir = os.path.join(os.path.dirname(__file__), "..", "..", "..",
 class GetSymmetryDatasetTest(unittest.TestCase):
 
     def setUp(self):
-        self.structure = Structure.from_file("POSCAR-MgO64atoms")
+        self.structure = Structure.from_file("POSCAR-MgSe300atoms")
 
     def test(self):
-        get_symmetry_dataset(self.structure)
-        rotations = sym_dataset["rotations"]
-        translations = sym_dataset["translations"]
+        dataset = get_symmetry_dataset(self.structure, symprec=0.1)
+        print(dataset)
+
+class GetPointGroupFromDatasetTest(unittest.TestCase):
+
+    def setUp(self):
+        structure = Structure.from_file("POSCAR-MgSe300atoms")
+        self.sym_dataset = get_symmetry_dataset(structure, symprec=0.1)
+        self.lattice = structure.lattice.matrix
+
+    def test(self):
+        coords = [0.133333, 0.066667, 0.166252]
+
+        print(get_point_group_from_dataset(self.sym_dataset, coords,
+                                           self.lattice, symprec=0.1))
 
 
 class StructureToSpglibCellTest(unittest.TestCase):
@@ -128,6 +141,21 @@ class StructureToSeekpathTest(unittest.TestCase):
         np.testing.assert_equal(expected, res["explicit_kpoints_rel"][-1])
         self.assertEqual("X", res["explicit_kpoints_labels"][-1])
 
+
+class GetCoordinationDistanceTest(unittest.TestCase):
+    def setUp(self):
+        self.structure = Structure.from_file("POSCAR-Sn2Nb2O7")
+
+    def test_get_coordination_environment(self):
+        print(get_coordination_environment(self.structure, 0))
+        # print(get_coordination_environment(self.structure, 4))
+        # print(get_coordination_environment(self.structure, 8))
+        # print(get_coordination_environment(self.structure, 16))
+
+    def test_get_neighbors(self):
+        a = get_coordination_distances(self.structure, 0)
+        for k, v in a.items():
+            print(k + ": " + " ".join([str(round(i, 2)) for i in v]))
 
 class PerturbNeighborsTest(unittest.TestCase):
 

@@ -31,13 +31,14 @@ class IrreducibleSite:
         wyckoff (str):
             A wyckoff letter
         site_symmetry (str):
-            Site symmetry:
-        coordination (dict):
+            Site symmetry.
+        coordination_distances (dict):
             Coordination environment. An example is
-            {"Mg": 1.92, "Mg": 1.95, "Mg": 2.01, "Al": 1.82, "Al":1.95}
+            {"Mg": [1.92, 1.95, 2.01], "Al": [1.82, 1.95]}
     """
     def __init__(self, irreducible_name, element, first_index, last_index,
-                 representative_coords, wyckoff, site_symmetry, coordination):
+                 representative_coords, wyckoff=None, site_symmetry=None,
+                 coordination_distances=None):
         self._irreducible_name = irreducible_name
         self._element = element
         self._first_index = first_index
@@ -45,7 +46,7 @@ class IrreducibleSite:
         self._repr_coords = representative_coords
         self._wyckoff = wyckoff
         self._site_symmetry = site_symmetry
-        self._coordination = coordination
+        self._coordination_distances = coordination_distances
 
     def __eq__(self, other):
         if other is None or type(self) != type(other):
@@ -56,7 +57,7 @@ class IrreducibleSite:
     def from_dict(cls, d):
         return cls(d["irreducible_name"], d["element"], d["first_index"],
                    d["last_index"], d["repr_coords"], d["wyckoff"],
-                   d["site_symmetry"], d["coordination"])
+                   d["site_symmetry"], d["coordination_distances"])
 
     def as_dict(self):
         d = {"irreducible_name": self._irreducible_name,
@@ -66,7 +67,7 @@ class IrreducibleSite:
              "repr_coords": self._repr_coords,
              "wyckoff": self._wyckoff,
              "site_symmetry": self._site_symmetry,
-             "coordination": self._coordination}
+             "coordination_distances": self._coordination_distances}
         return d
 
     @property
@@ -98,8 +99,8 @@ class IrreducibleSite:
         return self._site_symmetry
 
     @property
-    def coordination(self):
-        return self._coordination
+    def coordination_distances(self):
+        return self._coordination_distances
 
     @property
     def num_atoms(self):

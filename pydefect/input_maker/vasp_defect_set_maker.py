@@ -6,7 +6,7 @@ import shutil
 from pydefect.core.defect_entry import get_num_atoms_for_elements
 from pydefect.vasp_util.util import get_num_electrons_from_potcar
 from pydefect.core.supercell_dft_results import defect_center
-from pydefect.input_maker.defect_set_maker import DefectMaker, \
+from pydefect.input_maker.defect_set_maker import DefectEntryMaker, \
     DefectInputSetMaker, print_is_being_removed, print_already_exist, \
     print_is_being_constructed
 from pydefect.input_maker.vasp_input_maker import potcar_dir, make_potcar
@@ -78,7 +78,7 @@ class VaspDefectInputSetMaker(DefectInputSetMaker):
             # POSCAR-DisplacedInitial: POSCAR with perturbation near the defect
             # POSCAR: POSCAR-DisplacedInitial when neighboring atoms are
             #         perturbed, otherwise POSCAR-Initial
-            d = DefectMaker(
+            d = DefectEntryMaker(
                 defect_name,
                 self._defect_initial_setting.structure,
                 self._defect_initial_setting.irreducible_sites,

@@ -873,7 +873,7 @@ def vasp_input_maker(args):
 def recommend_supercell(args):
     structure = Structure.from_file(args.poscar)
     supercells = Supercells(structure=structure,
-                            primitive=args.primitive,
+                            conventional=args.primitive,
                             max_num_atoms=args.max_num_atoms,
                             min_num_atoms=args.min_num_atoms,
                             isotropy_criterion=args.criterion)

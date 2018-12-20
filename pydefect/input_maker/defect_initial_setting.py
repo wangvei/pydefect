@@ -11,8 +11,8 @@ from monty.json import MontyEncoder
 from monty.serialization import loadfn
 
 import pydefect.database.atom as atom
-from pydefect.util.structure import get_symmetry_dataset, get_point_group, \
-    get_rotations
+from pydefect.util.structure import get_symmetry_dataset, \
+    get_point_group_from_dataset, get_coordination_distances
 from pydefect.core.irreducible_site import IrreducibleSite
 
 __author__ = "Yu Kumagai"
@@ -110,6 +110,8 @@ class DefectInitialSetting:
     Args:
         structure (Structure):
             pmg Structure class object for perfect supercell
+        space_group_symbol (str):
+            space group symbol
         irreducible_sites (list):
             List of IrreducibleSite class objects
         dopant_configs (Nx2 list):
@@ -142,12 +144,13 @@ class DefectInitialSetting:
     # TODO: Add the coordination information.
     # TODO: Add the site symmetry.
 
-    def __init__(self, structure, irreducible_sites, dopant_configs,
-                 antisite_configs, interstitial_coords, included, excluded,
-                 distance, cutoff, symprec, oxidation_states,
-                 electronegativity):
+    def __init__(self, structure, space_group_symbol, irreducible_sites,
+                 dopant_configs, antisite_configs, interstitial_coords,
+                 included, excluded, distance, cutoff, symprec,
+                 oxidation_states, electronegativity):
 
         self._structure = structure
+        self._space_group_symbol= space_group_symbol
         self._irreducible_sites = irreducible_sites
         self._dopant_configs = dopant_configs
         # dopant element names are derived from in_name of dopant_configs.
@@ -181,11 +184,11 @@ class DefectInitialSetting:
         for i in d["irreducible_sites"]:
             irreducible_sites.append(IrreducibleSite.from_dict(i))
 
-        return cls(d["structure"], irreducible_sites, d["dopant_configs"],
-                   d["antisite_configs"], d["interstitial_coords"],
-                   d["included"], d["excluded"], d["distance"],
-                   d["cutoff"], d["symprec"], d["oxidation_states"],
-                   d["electronegativity"])
+        return cls(d["structure"], d["space_group_symbol"], irreducible_sites,
+                   d["dopant_configs"], d["antisite_configs"],
+                   d["interstitial_coords"], d["included"], d["excluded"],
+                   d["distance"], d["cutoff"], d["symprec"],
+                   d["oxidation_states"], d["electronegativity"])
 
     @classmethod
     def load_json(cls, filename):
@@ -210,6 +213,7 @@ class DefectInitialSetting:
                 Oxidation state: 2
         """
         structure = Structure.from_file(poscar)
+        space_group_symbol = None
         irreducible_sites = []
         antisite_configs = []
         interstitial_coords = []
@@ -228,12 +232,31 @@ class DefectInitialSetting:
 
                 if not line:
                     continue
-
+                elif line[0] == "Space":
+                    space_group_symbol = line[2]
                 elif line[0] == "Irreducible":
                     irreducible_name = line[2]
                     # remove index from irreducible_name, e.g., "Mg1" --> "Mg"
                     element = ''. \
                         join([i for i in irreducible_name if not i.isdigit()])
+                    wyckoff = di.readline().split()[2]
+                    site_symmetry = di.readline().split()[2]
+
+                    def get_distances(string):
+                        print(string)
+                        distances = {}
+                        for i in string:
+                            if i[-1] == ":":
+                                distances[i[:-1]] = []
+                                key = i[:-1]
+                            else:
+                                distances[key].append(float(i))
+                        return distances
+                    print(di.readline().split())
+                    import sys
+                    sys.exit()
+                    coordination_distances = \
+                        get_distances(di.readline().split()[1:])
                     first_index, last_index = \
                         [int(i) for i in di.readline().split()[2].split("..")]
                     representative_coords = \
@@ -243,7 +266,10 @@ class DefectInitialSetting:
                                         element,
                                         first_index,
                                         last_index,
-                                        representative_coords))
+                                        representative_coords,
+                                        wyckoff,
+                                        site_symmetry,
+                                        coordination_distances))
                     electronegativity[element] = float(di.readline().split()[1])
                     oxidation_states[element] = int(di.readline().split()[2])
 
@@ -286,10 +312,10 @@ class DefectInitialSetting:
                 else:
                     raise NotSupportedFlagError(l + " is not supported!")
 
-        return cls(structure, irreducible_sites, dopant_configs,
-                   antisite_configs, interstitial_coords, included, excluded,
-                   distance, cutoff, symprec, oxidation_states,
-                   electronegativity)
+        return cls(structure, space_group_symbol, irreducible_sites,
+                   dopant_configs, antisite_configs, interstitial_coords,
+                   included, excluded, distance, cutoff, symprec,
+                   oxidation_states, electronegativity)
 
     @classmethod
     def from_basic_settings(cls, poscar, dopants=None,
@@ -331,8 +357,10 @@ class DefectInitialSetting:
         if dopants is None:
             dopants = []
         s = Structure.from_file(poscar).get_sorted_structure()
-        symmetrized_structure = \
-            SpacegroupAnalyzer(s, symprec=symprec).get_symmetrized_structure()
+        space_group_analyzer = SpacegroupAnalyzer(s, symprec=symprec)
+        symmetrized_structure = space_group_analyzer.get_symmetrized_structure()
+
+        space_group_symbol = space_group_analyzer.get_space_group_symbol()
 
         symbol_set = s.symbol_set
         dopant_symbol_set = tuple(dopants)
@@ -356,9 +384,7 @@ class DefectInitialSetting:
         last_index = 0
 
         lattice = symmetrized_structure.lattice.matrix
-        sym_dataset = get_symmetry_dataset(symmetrized_structure)
-        full_rotations = sym_dataset["rotations"]
-        translations = sym_dataset["translations"]
+        sym_dataset = get_symmetry_dataset(symmetrized_structure, symprec)
 
         for i, equiv_site in enumerate(equiv_sites):
             # set element name of equivalent site
@@ -375,19 +401,20 @@ class DefectInitialSetting:
             irreducible_name = element + str(num_irreducible_sites[element])
             wyckoff = sym_dataset["wyckoffs"][first_index]
 
-            rotations = get_rotations(repr_coords, lattice, full_rotations,
-                                      translations, symprec)
-            point_group = get_point_group(rotations)
+            simplified_point_group = \
+                get_point_group_from_dataset(sym_dataset, repr_coords, lattice,
+                                             symprec)[0]
+            coordination_distances = \
+                get_coordination_distances(symmetrized_structure, first_index)
 
-            coordination = {}
             irreducible_sites.append(IrreducibleSite(irreducible_name,
                                                      element,
                                                      first_index,
                                                      last_index,
                                                      repr_coords,
                                                      wyckoff,
-                                                     point_group,
-                                                     coordination))
+                                                     simplified_point_group,
+                                                     coordination_distances))
 
         # E.g., antisite_configs = [["Mg, "O"], ...]
         antisite_configs = []
@@ -431,16 +458,17 @@ class DefectInitialSetting:
         else:
             interstitial_coords = []
 
-        return cls(symmetrized_structure, irreducible_sites, dopant_configs,
-                   antisite_configs, interstitial_coords, included, excluded,
-                   distance, cutoff, symprec, oxidation_states,
-                   electronegativity)
+        return cls(symmetrized_structure, space_group_symbol, irreducible_sites,
+                   dopant_configs, antisite_configs, interstitial_coords,
+                   included, excluded, distance, cutoff, symprec,
+                   oxidation_states, electronegativity)
 
     def as_dict(self):
         """
         Dictionary representation of DefectInitialSetting class object.
         """
         d = {"structure":           self._structure,
+             "space_group_symbol":  self._space_group_symbol,
              "irreducible_sites":   [i.as_dict()
                                      for i in self._irreducible_sites],
              "dopant_configs":      self._dopant_configs,
@@ -526,10 +554,19 @@ class DefectInitialSetting:
                 Name of defect.in type file.
         """
         with open(defect_in_file, 'w') as di:
+            di.write("   Space group: {}\n\n".format(self._space_group_symbol))
 
             for e in self._irreducible_sites:
                 di.write("   Irreducible element: {}\n".format(
                     e.irreducible_name))
+                di.write("        Wyckoff letter: {}\n".format(
+                    e.wyckoff))
+                di.write("         Site symmetry: {}\n".format(
+                    e.site_symmetry))
+                c = ""
+                for k, v in e.coordination_distances.items():
+                    c += k + ": " + " ".join([str(round(i, 2)) for i in v]) + " "
+                di.write("          Coordination: {}\n".format(c))
                 di.write("      Equivalent atoms: {}\n".format(
                     str(e.first_index) + ".." + str(e.last_index)))
                 di.write("Fractional coordinates: %9.7f  %9.7f  %9.7f\n" %

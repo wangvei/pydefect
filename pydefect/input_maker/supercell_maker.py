@@ -107,14 +107,14 @@ class Supercell:
 
 
 class Supercells:
-    def __init__(self, structure, primitive=False, max_num_atoms=400,
+    def __init__(self, structure, conventional=False, max_num_atoms=400,
                  min_num_atoms=50, isotropy_criterion=0.12):
         """
         Constructs a set of supercells satisfying a criterion.
         Args:
             structure (pmg structure class object):
                 Unitcell structure
-            primitive (bool):
+            conventional (bool):
                 True: Only the conventional cell is expanded.
                 False: Both conventional and primitive cells are expanded.
             max_num_atoms (int):
@@ -133,12 +133,12 @@ class Supercells:
             calc_isotropy (float):
                 Isotropic value.
         """
-        if primitive is False:
+        if conventional is False:
             uc_structure = find_spglib_standard_conventional(structure)
-            # check if the conventional cell is same as the primitive cell.
+            # check if the conventional cell is same as the conventional cell.
             primitive = find_spglib_standard_primitive(structure)
             if uc_structure.num_sites == primitive.num_sites:
-                print("The conventional cell is same as the primitive cell.")
+                print("The conventional cell is same as the conventional cell.")
                 self._is_primitive = True
             else:
                 self._is_primitive = False

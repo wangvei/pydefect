@@ -121,7 +121,7 @@ def select_defect_names(name_set, keywords):
     return list(set(names))
 
 
-class DefectMaker:
+class DefectEntryMaker:
     """
     Constructs a single DefectEntry class object from a given defect_name.
 

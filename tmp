@@ -11,21 +11,23 @@
      105 pydefect/analysis/chempotdiag/tests/test_gas.py
       91 pydefect/analysis/chempotdiag/tests/test_vertex.py
      399 pydefect/analysis/chempotdiag/vertex.py
-     299 pydefect/analysis/defect_concentration.py
-     211 pydefect/analysis/defect_energies.py
-     219 pydefect/analysis/defect_plotter.py
-      62 pydefect/analysis/defect_structure.py
+     298 pydefect/analysis/defect_concentration.py
+     178 pydefect/analysis/defect_eigenvalues.py
+     228 pydefect/analysis/defect_energies.py
+     228 pydefect/analysis/defect_energy_plotter.py
+      64 pydefect/analysis/defect_structure.py
      127 pydefect/analysis/test_files/defect_property.py
-     114 pydefect/analysis/tests/test_defect_concentration.py
-      82 pydefect/analysis/tests/test_defect_energies.py
-     104 pydefect/analysis/tests/test_defect_plotter.py
+     113 pydefect/analysis/tests/test_defect_concentration.py
+      64 pydefect/analysis/tests/test_defect_eigenvalues.py
+      86 pydefect/analysis/tests/test_defect_energies.py
+     104 pydefect/analysis/tests/test_defect_energy_plotter.py
       81 pydefect/analysis/tests/test_defect_structure.py
        0 pydefect/core/__init__.py
      644 pydefect/core/correction.py
-     268 pydefect/core/defect_entry.py
-      86 pydefect/core/irreducible_site.py
+     271 pydefect/core/defect_entry.py
+     110 pydefect/core/irreducible_site.py
       85 pydefect/core/prior_info.py
-     306 pydefect/core/supercell_dft_results.py
+     385 pydefect/core/supercell_dft_results.py
        0 pydefect/core/tests/__init__.py
      420 pydefect/core/tests/test_correction.py
      109 pydefect/core/tests/test_defect_entry.py
@@ -35,15 +37,15 @@
      950 pydefect/database/atom.py
      476 pydefect/database/kpt_centering.py
        0 pydefect/input_maker/__init__.py
-     604 pydefect/input_maker/defect_initial_setting.py
-     259 pydefect/input_maker/defect_set_maker.py
+     658 pydefect/input_maker/defect_initial_setting.py
+     264 pydefect/input_maker/defect_set_maker.py
       90 pydefect/input_maker/recommend_supercell_ase_cythonized/ase_generation_supercell.py
        8 pydefect/input_maker/recommend_supercell_ase_cythonized/setup.py
-     268 pydefect/input_maker/supercell_maker.py
+     208 pydefect/input_maker/supercell_maker.py
        0 pydefect/input_maker/tests/__init__.py
-     185 pydefect/input_maker/tests/test_defect_initial_setting.py
+     187 pydefect/input_maker/tests/test_defect_initial_setting.py
      152 pydefect/input_maker/tests/test_defect_set_maker.py
-      47 pydefect/input_maker/tests/test_supercell_maker.py
+      46 pydefect/input_maker/tests/test_supercell_maker.py
       80 pydefect/input_maker/tests/test_vasp_defect_set_maker.py
      116 pydefect/input_maker/tests/test_vasp_input_maker.py
      119 pydefect/input_maker/tests_backup/test_defect_in.py
@@ -51,15 +53,15 @@
      109 pydefect/input_maker/tests_backup/test_vasp_input_maker.py
      134 pydefect/input_maker/vasp_defect_set_maker.py
      662 pydefect/input_maker/vasp_input_maker.py
-    1235 pydefect/main.py
+    1301 pydefect/main.py
        0 pydefect/util/__init__.py
      162 pydefect/util/carrier_concentration.py
       34 pydefect/util/math.py
       50 pydefect/util/modify_structure_position.py
-     167 pydefect/util/structure.py
+     298 pydefect/util/structure.py
       34 pydefect/util/tests/test_carrier_concentration.py
       42 pydefect/util/tests/test_math.py
-     138 pydefect/util/tests/test_structure.py
+     176 pydefect/util/tests/test_structure.py
        0 pydefect/vasp_util/__init__.py
        8 pydefect/vasp_util/script/__init__.py
       73 pydefect/vasp_util/script/calc_band_center.py
@@ -72,7 +74,7 @@
       27 pydefect/vasp_util/script/tests/test_calc_band_center.py
       71 pydefect/vasp_util/script/tests/test_plot_band_structure.py
       82 pydefect/vasp_util/script/tests/test_plot_dos.py
-      56 pydefect/vasp_util/script/vasp_process_analyzer.py
+      61 pydefect/vasp_util/script/vasp_process_analyzer.py
        8 pydefect/vasp_util/tests/__init__.py
       26 pydefect/vasp_util/tests/test_util.py
       49 pydefect/vasp_util/util.py
@@ -80,4 +82,4 @@
        0 test_files/__init__.py
       19 test_files/analysis/chempotdiag/dft_data/list_test.py
        0 test_files/input_maker/__init__.py
-   14444 total
+   15062 total

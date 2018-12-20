@@ -1,14 +1,15 @@
 # -*- coding: utf-8 -*-
 
-from collections import OrderedDict
+from collections import defaultdict
 
 import numpy as np
 import seekpath
 import spglib
-from pymatgen import Structure
-from pymatgen.analysis.structure_matcher import StructureMatcher
 
-from pydefect.database.atom import symbols_to_atom
+from pymatgen import Structure
+from pymatgen.core.periodic_table import Element
+
+from pydefect.database.atom import symbols_to_atom, charge
 from pydefect.util.math import normalized_random_3d_vector, random_vector
 
 __author__ = "Yu Kumagai"
@@ -20,45 +21,61 @@ __status__ = "Development"
 __date__ = "April 4, 2018"
 
 
-def get_symmetry_dataset(structure):
+def get_symmetry_dataset(structure, symprec):
     """
     Args:
         structure (Structure):
             Pymatgen Structure class object
     """
     cell = structure_to_spglib_cell(structure)
-    print(cell[0])
-    return spglib.get_symmetry_dataset(cell)
+    return spglib.get_symmetry_dataset(cell, symprec=symprec)
 
 
-    # lattice = cell[0]
-    # rotations = dataset["rotations"]
-    # translations = dataset["translations"]
-    # rotations = _get_site_symmetry([0, 0, 0], lattice, rotations, translations,
-    #                                symprec=0.01)
-    # print(rotations)
-    # print(get_point_group(rotations))
+def get_point_group_from_dataset(sym_dataset, coords, lattice, symprec):
+    """
+    Args:
+        sym_dataset (dict):
+            spglib get_symmetry_dataset.
+        coords (list):
+            Fractional coordinates.
+        lattice (numpy.array):
+            3x3 numpy array
+        symprec (float):
+            Distance tolerance in cartesian coordinates Unit is compatible with
+            the cell.
+    """
+    full_rotations = sym_dataset["rotations"]
+    translations = sym_dataset["translations"]
+    rotations = get_rotations(coords, lattice, full_rotations, translations,
+                              symprec)
+    return get_point_group_from_rotations(rotations)
 
-#    print(len(rotations))
 
-
-# def get_site_symmetry_from_atom_index(cell, dataset, index, symprec=0.01):
-#     lattice = cell[0]
-#     pos = cell[1][index]
-#     dataset = get_symmetry_dataset()
-
-
-def get_point_group(rotations):
+def get_point_group_from_rotations(rotations):
     ptg = spglib.get_pointgroup(rotations)
     return ptg[0].strip(), ptg[2]
 
 
-def get_rotations(pos, lattice, rotations, translations, symprec):
+def get_rotations(coords, lattice, rotations, translations, symprec):
+    """
+    Args:
+        coords (list):
+            Cartesian coordinates.
+        lattice (numpy.array):
+            3x3 numpy array
+        rotations (dict):
+            list of 3x3 rotation matrix.
+        translations (dict):
+            list of 3 translation column.
+        symprec (float):
+            Distance tolerance in cartesian coordinates Unit is compatible with
+            the cell.
+    """
     site_symmetries = []
 
     for r, t in zip(rotations, translations):
-        rot_pos = np.dot(pos, r.T) + t
-        diff = pos - rot_pos
+        rot_pos = np.dot(coords, r.T) + t
+        diff = coords - rot_pos
         diff -= np.rint(diff)
         diff = np.dot(diff, lattice)
         if np.linalg.norm(diff) < symprec:
@@ -196,6 +213,60 @@ def seekpath_to_hpkot_structure(res):
     return Structure(lattice, species, positions)
 
 
+def get_coordination_environment(structure, index, factor=1.2):
+    """
+    Args:
+        structure (Structure):
+            pmg Structure class object
+        index (int):
+            The atomic index
+        factor (float):
+            Multiple number of the distance of the sum of the averaged ionic
+            radii that is used to detect the coordination.
+
+    Return:
+        coords (dict):
+            values are tuples of Element object and distance.
+            example  {'O': [(PeriodicSite: O (0.0000, 0.0000, -2.1234)
+            [-0.5000, -0.5000, 0.5000], 2.123447), ...
+    """
+    element = structure.sites[index].specie
+    c = charge[element.symbol]
+    ionic_radius = element.ionic_radii[c]
+    coords = []
+
+    for e in structure.types_of_specie:
+        c2 = charge[e.symbol]
+
+        if c * c2 >= 0:
+            continue
+
+        another_ionic_radius = e.ionic_radii[c2]
+
+        cutoff = (ionic_radius + another_ionic_radius) * factor
+        neighbors = structure.get_neighbors(structure.sites[index], cutoff)
+        for site in neighbors:
+            if site[0].specie == e:
+                coords.append(site)
+
+    return coords
+
+
+def get_coordination_distances(structure, index, factor=1.2):
+    """
+    Return:
+        coords (dict):
+            example {"Mg": [1.92, 1.73], "Al": [2.01, 2.11]}
+    """
+    coordination_environment = \
+        get_coordination_environment(structure, index, factor)
+    coordination_distances = defaultdict(list)
+    for ce in coordination_environment:
+        coordination_distances[ce[0].species_string].append(ce[1])
+
+    return coordination_distances
+
+
 def perturb_neighbors(structure, center, cutoff, distance):
     """
     Return the structure with randomly perturbed atoms near the input point in
@@ -204,14 +275,14 @@ def perturb_neighbors(structure, center, cutoff, distance):
     Args:
         structure (Structure):
             pmg Structure class object
-        center (3x1 array):
+        center (list):
             Fractional coordinates of a central position.
         cutoff (float):
             Radius of a sphere in which atoms are perturbed.
         distance (float):
             Max distance for the perturbation.
     """
-    if type(center) == list and len(center) == 3:
+    if len(center) == 3:
         cartesian_coords = structure.lattice.get_cartesian_coords(center)
         neighbors = structure.get_sites_in_sphere(
             cartesian_coords, cutoff, include_index=True)
