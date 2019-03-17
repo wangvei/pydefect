@@ -99,7 +99,7 @@ class DefectEntry:
     def from_yaml(cls, filename, tolerance=0.1):
         """
         An example of the yaml file.
-            name: 2Va_O1+Mg_i_2
+            name: 2Va_O1 + Mg_i_2
             initial_structure: POSCAR
             perfect_structure: ../../defects/perfect/POSCAR
             charge: 2 (optional, otherwise calc from INCAR and POTCAR)

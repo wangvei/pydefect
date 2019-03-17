@@ -7,7 +7,7 @@ import re
 from pymatgen.core.periodic_table import Element
 from pymatgen.core.structure import Structure
 
-from pydefect.core.defect_entry import DefectEntry
+from core.defect_entry import DefectEntry
 
 __author__ = "Yu Kumagai"
 __copyright__ = "Copyright 2017, Oba group"
@@ -262,3 +262,77 @@ class DefectInputSetMaker(metaclass=ABCMeta):
     @abstractmethod
     def _make_defect_input(self, defect_name):
         pass
+
+
+import os
+import shutil
+
+from core.defect_entry import get_num_atoms_for_elements
+from vasp_util.util import get_num_electrons_from_potcar
+from core.supercell_dft_results import defect_center
+from input_maker.vasp_input_maker import make_potcar
+from util.structure import perturb_neighbors
+
+
+class DefectStructureSetMaker(DefectInputSetMaker):
+    """
+    Args:
+        defect_initial_setting (DefectInitialSetting):
+            DefectInitialSetting class object.
+        keywords (list):
+            Specify regular expression to narrow the defects considered.
+        particular_defects (list):
+            Specifies particular defect to be considered.
+
+    Parameters in use:
+        in_pattern (str):
+            Pattern for screening in_name
+        out_pattern (str):
+            Pattern for screening out_name
+    """
+
+    def __init__(self, defect_initial_setting, keywords=None,
+                 particular_defects=None, force_overwrite=False):
+
+        # make self._defect_initial_setting and self._defect_name_set
+        super().__init__(defect_initial_setting, keywords,
+                         particular_defects, force_overwrite)
+
+        self.structures = {}
+        self.unperturebed_structures = {}
+
+        self.make_input()
+
+    def _make_perfect_input(self):
+        self.structures["perfect"] = self._defect_initial_setting.structure
+#        self.unperturebed_structures["perfect"] = \
+#            self._defect_initial_setting.structure
+
+    def _make_defect_input(self, defect_name):
+
+        # Constructs three POSCAR-type files
+        # POSCAR-Initial: POSCAR with a defect
+        # POSCAR-DisplacedInitial: POSCAR with perturbation near the defect
+        # POSCAR: POSCAR-DisplacedInitial when neighboring atoms are
+        #         perturbed, otherwise POSCAR-Initial
+        d = DefectEntryMaker(
+            defect_name,
+            self._defect_initial_setting.structure,
+            self._defect_initial_setting.irreducible_sites,
+            self._defect_initial_setting.interstitial_coords).defect
+        d.to_json_file(os.path.join(defect_name, "defect_entry.json"))
+
+        if self._defect_initial_setting.distance == 0.0:
+            self.structures[defect_name] = d.initial_structure
+        else:
+            center = defect_center(d)
+            perturbed_defect_structure, perturbed_sites = \
+                perturb_neighbors(d.initial_structure,
+                                  center,
+                                  self._defect_initial_setting.cutoff,
+                                  self._defect_initial_setting.distance)
+
+            displaced = [True if i in perturbed_sites else False
+                         for i in range(len(perturbed_defect_structure))]
+            perturbed_defect_structure.add_site_property("displaced", displaced)
+            self.structures[defect_name] = perturbed_defect_structure

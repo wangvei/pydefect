@@ -780,9 +780,7 @@ def initial_setting(args):
 
 
 def vasp_defect_set(args):
-    defect_initial_setting = DefectInitialSetting. \
-        from_defect_in(poscar=args.dposcar, defect_in_file=args.defect_in)
-
+    defect_initial_setting = DefectInitialSetting.from_defect_in(poscar=args.dposcar, defect_in_file=args.defect_in)
     VaspDefectInputSetMaker(defect_initial_setting=defect_initial_setting,
                             keywords=args.filtering,
                             particular_defects=args.add,

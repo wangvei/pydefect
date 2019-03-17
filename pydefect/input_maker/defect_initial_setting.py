@@ -243,7 +243,6 @@ class DefectInitialSetting:
                     site_symmetry = di.readline().split()[2]
 
                     def get_distances(string):
-                        print(string)
                         distances = {}
                         for i in string:
                             if i[-1] == ":":
@@ -252,9 +251,6 @@ class DefectInitialSetting:
                             else:
                                 distances[key].append(float(i))
                         return distances
-                    print(di.readline().split())
-                    import sys
-                    sys.exit()
                     coordination_distances = \
                         get_distances(di.readline().split()[1:])
                     first_index, last_index = \

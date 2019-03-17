@@ -138,7 +138,7 @@ class Supercells:
             # check if the conventional cell is same as the conventional cell.
             primitive = find_spglib_standard_primitive(structure)
             if uc_structure.num_sites == primitive.num_sites:
-                print("The conventional cell is same as the conventional cell.")
+                print("The primitive cell is same as the conventional cell.")
                 self._is_primitive = True
             else:
                 self._is_primitive = False

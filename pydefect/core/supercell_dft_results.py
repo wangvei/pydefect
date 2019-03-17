@@ -15,8 +15,8 @@ from pymatgen.io.vasp.outputs import Outcar, Vasprun
 from pymatgen.electronic_structure.core import Spin
 
 from pydefect.core.defect_entry import DefectEntry
-from pydefect.vasp_util.script.vasp_process_analyzer \
-    import VaspNotConvergedError
+from pydefect.vasp_util.script.vasp_process_analyzer import VaspNotConvergedError
+
 
 __author__ = "Yu Kumagai"
 __copyright__ = "Copyright 2017, Oba group"

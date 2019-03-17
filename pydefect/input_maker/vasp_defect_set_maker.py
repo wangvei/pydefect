@@ -3,14 +3,14 @@
 import os
 import shutil
 
-from pydefect.core.defect_entry import get_num_atoms_for_elements
-from pydefect.vasp_util.util import get_num_electrons_from_potcar
-from pydefect.core.supercell_dft_results import defect_center
-from pydefect.input_maker.defect_set_maker import DefectEntryMaker, \
+from core.defect_entry import get_num_atoms_for_elements
+from vasp_util.util import get_num_electrons_from_potcar
+from core.supercell_dft_results import defect_center
+from input_maker.defect_set_maker import DefectEntryMaker, \
     DefectInputSetMaker, print_is_being_removed, print_already_exist, \
     print_is_being_constructed
-from pydefect.input_maker.vasp_input_maker import potcar_dir, make_potcar
-from pydefect.util.structure import perturb_neighbors
+from input_maker.vasp_input_maker import potcar_dir, make_potcar
+from util.structure import perturb_neighbors
 
 __author__ = "Yu Kumagai"
 __copyright__ = "Copyright 2017, Oba group"

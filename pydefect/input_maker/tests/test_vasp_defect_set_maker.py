@@ -6,9 +6,9 @@ import unittest
 
 from pymatgen.core.structure import Structure
 
-from pydefect.input_maker.vasp_defect_set_maker import VaspDefectInputSetMaker
-from pydefect.core.irreducible_site import IrreducibleSite
-from pydefect.input_maker.defect_initial_setting import DefectInitialSetting
+from input_maker.vasp_defect_set_maker import VaspDefectInputSetMaker
+from core.irreducible_site import IrreducibleSite
+from input_maker.defect_initial_setting import DefectInitialSetting
 
 __author__ = "Yu Kumagai"
 __copyright__ = "Copyright 2017, Oba group"
@@ -20,6 +20,7 @@ __date__ = "December 4, 2017"
 
 test_dir = os.path.join(os.path.dirname(__file__), "..", "..", "..",
                         "test_files", "input_maker")
+
 
 class VaspDefectInputSetMakerTest(unittest.TestCase):
 
