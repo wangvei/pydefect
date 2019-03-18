@@ -40,8 +40,10 @@ class DefectEntry:
         name (str):
             Name of a defect without charge. This is used when analyzing defect
             formation energy.
-        initial_structure (Structure):
+        defect_structure (Structure):
             Structure with a defect before the structure optimization.
+        perturbed_defect_structure (Structure):
+            Initial structure with perturbation of neighboring atoms.
         removed_atoms (dict):
             Keys: Atom indices removed from the perfect supercell.
                   The index begins from 0.
@@ -51,23 +53,28 @@ class DefectEntry:
             Atom indices inserted in the supercell after removing atoms.
             The index begins from 0.
             For vacancies, set [].
-        element_diff (dict):
+        changes_of_num_elements (dict):
             Keys: Element names
             Values: Change of the numbers of elements wrt perfect supercell.
         charge (int):
-            Charge state of the defect
+            Charge state of the defect. Charge is also added to the structure.
     """
     # TODO: Add the site symmetry information.
     # TODO: Add the number of equivalent sites in the primitive unitcell
 
-    def __init__(self, name, initial_structure, removed_atoms, inserted_atoms,
-                 element_diff, charge):
+    def __init__(self, name, defect_structure, perturbed_defect_structure,
+                 removed_atoms, inserted_atoms, changes_of_num_elements, charge,
+                 initial_symmetry, multiplicity, perturbed_sites):
         self._name = name
-        self._initial_structure = initial_structure
+        self._defect_structure = defect_structure
+        self._perturbed_defect_structure = perturbed_defect_structure
         self._removed_atoms = removed_atoms
         self._inserted_atoms = inserted_atoms
-        self._element_diff = element_diff
+        self._changes_of_num_elements = changes_of_num_elements
         self._charge = charge
+        self._initial_symmetry = initial_symmetry
+        self._multiplicity = multiplicity
+        self._perturbed_sites = perturbed_sites
 
     def __eq__(self, other):
         if other is None or type(self) != type(other):
@@ -75,12 +82,17 @@ class DefectEntry:
         return self.as_dict() == other.as_dict()
 
     def __str__(self):
-        outs = ["name:" + str(self._name),
-                "removed_atoms:" + str(self._removed_atoms),
-                "inserted_atoms:" + str(self._inserted_atoms),
-                "element_diff:" + str(self._element_diff),
-                "charge:" + str(self._charge),
-                "structure: \n" + str(self._initial_structure)]
+        outs = ["name: " + str(self._name),
+                "initial_symmetry: " + str(self._initial_symmetry),
+                "multiplicity: " + str(self._multiplicity),
+                "removed_atoms: " + str(self._removed_atoms),
+                "inserted_atoms: " + str(self._inserted_atoms),
+                "changes_of_num_element: " + str(self._changes_of_num_elements),
+                "charge: " + str(self._charge),
+                "defect_structure: \n" + str(self._defect_structure),
+                "perturbed_defect_structure: \n" +
+                str(self._perturbed_defect_structure),
+                "perturbed_sites: \n" + str(self._perturbed_sites)]
         return "\n".join(outs)
 
     @classmethod
@@ -92,78 +104,82 @@ class DefectEntry:
         removed_atoms = {int(k): v for k, v in d["removed_atoms"].items()}
         element_diff = {k: int(v) for k, v in d["element_diff"].items()}
 
-        return cls(d["name"], d["initial_structure"], removed_atoms,
-                   d["inserted_atoms"], element_diff, d["charge"])
+        return cls(d["name"], d["initial_structure"],
+                   d["perturbed_initial_structure"], removed_atoms,
+                   d["inserted_atoms"], element_diff, d["charge"],
+                   d["initial_symmetry"], d["multiplicity"],
+                   d["perturbed_sites"])
 
-    @classmethod
-    def from_yaml(cls, filename, tolerance=0.1):
-        """
-        An example of the yaml file.
-            name: 2Va_O1 + Mg_i_2
-            initial_structure: POSCAR
-            perfect_structure: ../../defects/perfect/POSCAR
-            charge: 2 (optional, otherwise calc from INCAR and POTCAR)
-            tolerance: 0.2 (optional)
-        """
+    # TODO: add perturbed_structure
+    # @classmethod
+    # def from_yaml(cls, filename, tolerance=0.1):
+    #     """
+    #     An example of the yaml file.
+    #         name: 2Va_O1 + Mg_i_2
+    #         initial_structure: POSCAR
+    #         perfect_structure: ../../defects/perfect/POSCAR
+    #         charge: 2 (optional, otherwise calc from INCAR and POTCAR)
+    #         tolerance: 0.2 (optional)
+    #     """
 
-        abs_dir = os.path.split(os.path.abspath(filename))[0]
+        # abs_dir = os.path.split(os.path.abspath(filename))[0]
 
-        with open(filename, "r") as yaml_file:
-            yaml_data = yaml.safe_load(yaml_file)
+        # with open(filename, "r") as yaml_file:
+        #     yaml_data = yaml.safe_load(yaml_file)
 
-        if "tolerance" in yaml_data.keys():
-            tolerance = yaml_data["tolerance"]
+        # if "tolerance" in yaml_data.keys():
+        #     tolerance = yaml_data["tolerance"]
 
-        element_diff = element_diff_from_poscar_files(
-            os.path.join(abs_dir, yaml_data["initial_structure"]),
-            os.path.join(abs_dir, yaml_data["perfect_structure"]))
+        # element_diff = element_diff_from_poscar_files(
+        #     os.path.join(abs_dir, yaml_data["initial_structure"]),
+        #     os.path.join(abs_dir, yaml_data["perfect_structure"]))
 
-        defect_structure = Structure.from_file(
-            os.path.join(abs_dir, yaml_data["initial_structure"]))
-        perfect_structure = Structure.from_file(
-            os.path.join(abs_dir, yaml_data["perfect_structure"]))
+        # defect_structure = Structure.from_file(
+        #     os.path.join(abs_dir, yaml_data["initial_structure"]))
+        # perfect_structure = Structure.from_file(
+        #     os.path.join(abs_dir, yaml_data["perfect_structure"]))
 
-        # set name
-        if "name" in yaml_data.keys():
-            name = yaml_data["name"]
-        else:
-            _, name = os.path.split(os.getcwd())
-            print("name", name, "is set from the directory name.")
+        # # set name
+        # if "name" in yaml_data.keys():
+        #     name = yaml_data["name"]
+        # else:
+        #     _, name = os.path.split(os.getcwd())
+        #     print("name", name, "is set from the directory name.")
 
-        # set charge state
-        if "charge" in yaml_data.keys():
-            charge = yaml_data["charge"]
-        else:
-            nions = get_num_atoms_for_elements(defect_structure)
-            charge = get_defect_charge_from_vasp(nions=nions)
-            print("charge", charge, "is set from vasp input files.")
+        # # set charge state
+        # if "charge" in yaml_data.keys():
+        #     charge = yaml_data["charge"]
+        # else:
+        #     nions = get_num_atoms_for_elements(defect_structure)
+        #     charge = get_defect_charge_from_vasp(nions=nions)
+        #     print("charge", charge, "is set from vasp input files.")
 
-        inserted_atoms = [i for i in range(defect_structure.num_sites)]
-        removed_atoms = {}
+        # inserted_atoms = [i for i in range(defect_structure.num_sites)]
+        # removed_atoms = {}
 
-        for i, p_site in enumerate(perfect_structure):
-            for j in inserted_atoms:
-                d_site = defect_structure[j]
-                distance = p_site.distance(d_site)
-                # check distance and species for comparison
-                if distance < tolerance and p_site.specie == d_site.specie:
-                    inserted_atoms.remove(j)
-                    break
-            # *else* block is active if *for j* loop is not broken.
-            # else is not recommended in effective python as it's confusing.
-            else:
-                removed_atoms[i] = list(p_site.frac_coords)
+        # for i, p_site in enumerate(perfect_structure):
+        #     for j in inserted_atoms:
+        #         d_site = defect_structure[j]
+        #         distance = p_site.distance(d_site)
+        #         # check distance and species for comparison
+        #         if distance < tolerance and p_site.specie == d_site.specie:
+        #             inserted_atoms.remove(j)
+        #             break
+        #     # *else* block is active if *for j* loop is not broken.
+        #     # else is not recommended in effective python as it's confusing.
+        #     else:
+        #         removed_atoms[i] = list(p_site.frac_coords)
 
-        # check the consistency of the removed and inserted atoms
-        if not (sum([i for i in element_diff.values() if i > 0])
-                == len(inserted_atoms)
-                and sum([-i for i in element_diff.values() if i < 0])
-                == len(removed_atoms)):
-            raise ImproperInputStructureError(
-                "Atoms in two structures are not mapped in the tolerance.")
+        # # check the consistency of the removed and inserted atoms
+        # if not (sum([i for i in element_diff.values() if i > 0])
+        #         == len(inserted_atoms)
+        #         and sum([-i for i in element_diff.values() if i < 0])
+        #         == len(removed_atoms)):
+        #     raise ImproperInputStructureError(
+        #         "Atoms in two structures are not mapped in the tolerance.")
 
-        return cls(name, defect_structure, removed_atoms, inserted_atoms,
-                   element_diff, charge)
+        # return cls(name, defect_structure, removed_atoms, inserted_atoms,
+        #            element_diff, charge, None, None)
 
     @classmethod
     def load_json(cls, filename="defect_entry.json"):
@@ -177,8 +193,12 @@ class DefectEntry:
         return self._name
 
     @property
+    def perturbed_initial_structure(self):
+        return self._perturbed_defect_structure
+
+    @property
     def initial_structure(self):
-        return self._initial_structure
+        return self._defect_structure
 
     @property
     def removed_atoms(self):
@@ -190,7 +210,7 @@ class DefectEntry:
 
     @property
     def element_diff(self):
-        return self._element_diff
+        return self._changes_of_num_elements
 
     @property
     def charge(self):
@@ -206,7 +226,7 @@ class DefectEntry:
                 len(mapping) = 63
 
         """
-        total_nions = (sum(get_num_atoms_for_elements(self._initial_structure))
+        total_nions = (sum(get_num_atoms_for_elements(self._defect_structure))
                        - len(self._inserted_atoms)
                        + len(self._removed_atoms))
 
@@ -226,10 +246,10 @@ class DefectEntry:
         Dict representation of DefectInput class object.
         """
         d = {"name": self._name,
-             "initial_structure": self._initial_structure,
+             "initial_structure": self._defect_structure,
              "removed_atoms": self._removed_atoms,
              "inserted_atoms": self._inserted_atoms,
-             "element_diff": self._element_diff,
+             "element_diff": self._changes_of_num_elements,
              "charge": self._charge}
         return d
 
@@ -247,11 +267,11 @@ class DefectEntry:
     #     This atom is assumed not to displace during the structure
     #     optimization, and so used for analyzing local defect structure.
     #     """
-        # radius = max(self._initial_structure.lattice.abc) * 2
-        # num_sites = len(self._initial_structure.sites)
+        # radius = max(self._defect_structure.lattice.abc) * 2
+        # num_sites = len(self._defect_structure.sites)
         # shortest_distances = np.full(num_sites, radius, dtype=float)
 
-        # distance_set = self._initial_structure.get_sites_in_sphere(
+        # distance_set = self._defect_structure.get_sites_in_sphere(
         #     self._defect_coords, radius, include_index=True)
 
         # for d in distance_set:
