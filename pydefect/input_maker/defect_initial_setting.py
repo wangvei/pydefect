@@ -10,9 +10,10 @@ from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
 from monty.json import MontyEncoder
 from monty.serialization import loadfn
 
-import pydefect.database.atom as atom
-from pydefect.util.structure import get_symmetry_dataset, \
+from obadb.util.structure_handler import get_symmetry_dataset, \
     get_point_group_from_dataset, get_coordination_distances
+
+import pydefect.database.atom as atom
 from pydefect.core.irreducible_site import IrreducibleSite
 
 __author__ = "Yu Kumagai"

@@ -4,7 +4,8 @@ import numpy as np
 from copy import deepcopy
 
 from pymatgen.core.structure import Structure
-from pydefect.util.structure import find_spglib_standard_conventional, \
+
+from obadb.util.structure_handler import find_spglib_standard_conventional, \
     find_spglib_standard_primitive
 
 __author__ = "Yu Kumagai"
@@ -205,4 +206,3 @@ class Supercells:
 
 class SupercellSizeError(Exception):
     pass
-

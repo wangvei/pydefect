@@ -14,6 +14,8 @@ import ruamel.yaml as yaml
 from monty.serialization import loadfn
 from monty.io import zopen
 
+from obadb.util.structure_handler import structure_to_seekpath, find_hpkot_primitive
+
 from pymatgen.io.vasp import PotcarSingle, Potcar, Kpoints, Incar
 from pymatgen.core.structure import Structure
 from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
@@ -25,7 +27,6 @@ from pydefect.input_maker.defect_initial_setting import DefectInitialSetting, \
 from pydefect.database.kpt_centering import kpt_centering
 from pydefect.database.atom import symbols_to_atom, u_parameter, \
     unoccupied_bands
-from pydefect.util.structure import structure_to_seekpath, find_hpkot_primitive
 
 __author__ = "Yu Kumagai"
 __copyright__ = "Copyright 2017, Oba group"
