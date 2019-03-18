@@ -121,6 +121,98 @@ def select_defect_names(name_set, keywords):
     return list(set(names))
 
 
+def make_defect_entry(defect_name, structure, irreducible_sites,
+                      interstitial_coords, perturbation_radius, distance):
+    """
+    Constructs a single DefectEntry class object from a given defect_name.
+
+    Args:
+        defect_name (str):
+            defect name in PyDefect manner, e.g., "Va_Mg2_-2".
+        structure (Structure):
+            Structure class object for the *perfect* supercell.
+        irreducible_sites ([IrreducibleSite]):
+            List of the IrreducibleSite object.
+        interstitial_coords (Nx3 list):
+            coordinates of interstitial sites,
+            e.g., [[0, 0, 0], [0.1, 0.1, 0.1], ..]
+
+    Parameters in use:
+        in_name" (str):
+            Inserted element name. "Va" is used for vacancies.
+        out_name" (str):
+            Removed site name. "in", where n is an integer, is used for
+            interstitials. E.g., "i1".
+        charge (int):
+            DefectSupercell charge state
+        removed_atom_index (int):
+            Removed atom index from the perfect structure.
+    """
+
+    defect_structure = deepcopy(structure)
+    in_name, out_name, charge = parse_defect_name(defect_name)
+    name = in_name + "_" + out_name
+
+    changes_of_num_elements = {}
+    # -------------------- analyze out_name --------------------------------
+    removed_atoms = {}
+    # interstitial
+    if re.match(r'^i[0-9]+$', out_name):
+        interstitial_index = get_int_from_string(out_name)
+        try:
+            defect_coords = interstitial_coords[interstitial_index - 1]
+        except ValueError:
+            print("#{} interstitial not defined".format(interstitial_index))
+    else:
+        for i in irreducible_sites:
+            if out_name == i.irreducible_name:
+                changes_of_num_elements[i.element] = -1
+                removed_index = i.first_index - 1
+                defect_coords = i.repr_coords
+                removed_atoms[removed_index] = i.repr_coords
+                break
+        try:
+            defect_structure.remove_sites([removed_index])
+        except ValueError:
+            print("{} in {} is improper.".format(out_name, defect_name))
+
+    # -------------------- analyze in_name ---------------------------------
+    inserted_atoms = []
+
+    # This block needs to be run after finishing analyze_out_name because
+    # defect coordinates is needed when inserting an in_name atom.
+    if in_name == "Va":
+        pass
+    elif Element.is_valid_symbol(in_name):
+        # There may be multiple irreducible sites for inserted element,
+        # e.g., Mg1 and Mg2, element of in_name is inserted to just before
+        # the same elements, otherwise to the 1st index.
+        changes_of_num_elements[in_name] = 1
+        if in_name in defect_structure.symbol_set:
+            inserted_index = \
+                min(defect_structure.indices_from_symbol(in_name))
+            inserted_atoms.append(inserted_index)
+        else:
+            inserted_index = 0
+            inserted_atoms = [0]
+        defect_structure.insert(inserted_index, in_name, defect_coords)
+    else:
+        raise ValueError("{} in {} is improper.".format(out_name,
+                                                        defect_name))
+
+    if perturbation_radius:
+        perturbed_defect_structure, perturbed_sites = \
+            perturb_neighbors(defect_structure, defect_coords,
+                              perturbation_radius, distance)
+    else:
+        perturbed_defect_structure = defect_structure
+        perturbed_sites = []
+
+    return DefectEntry(name, defect_structure, perturbed_defect_structure,
+                       removed_atoms, inserted_atoms, changes_of_num_elements,
+                       charge, i)
+
+
 class DefectEntryMaker:
     """
     Constructs a single DefectEntry class object from a given defect_name.
@@ -150,7 +242,6 @@ class DefectEntryMaker:
     def __init__(self, defect_name, structure, irreducible_sites,
                  interstitial_coords):
 
-        # deepcopy is required for modifying the original structure.
         defect_structure = deepcopy(structure)
         in_name, out_name, charge = parse_defect_name(defect_name)
         name = in_name + "_" + out_name
@@ -255,11 +346,11 @@ class DefectInputSetMaker(metaclass=ABCMeta):
             else:
                 self._make_defect_input(d)
 
-    @abstractmethod
+#    @abstractmethod
     def _make_perfect_input(self):
         pass
 
-    @abstractmethod
+#    @abstractmethod
     def _make_defect_input(self, defect_name):
         pass
 
@@ -267,11 +358,11 @@ class DefectInputSetMaker(metaclass=ABCMeta):
 import os
 import shutil
 
-from core.defect_entry import get_num_atoms_for_elements
-from vasp_util.util import get_num_electrons_from_potcar
-from core.supercell_dft_results import defect_center
-from input_maker.vasp_input_maker import make_potcar
-from util.structure import perturb_neighbors
+from pydefect.core.defect_entry import get_num_atoms_for_elements
+from pydefect.vasp_util.util import get_num_electrons_from_potcar
+from pydefect.core.supercell_dft_results import defect_center
+from pydefect.input_maker.vasp_input_maker import make_potcar
+from pydefect.util.structure import perturb_neighbors
 
 
 class DefectStructureSetMaker(DefectInputSetMaker):
@@ -305,8 +396,6 @@ class DefectStructureSetMaker(DefectInputSetMaker):
 
     def _make_perfect_input(self):
         self.structures["perfect"] = self._defect_initial_setting.structure
-#        self.unperturebed_structures["perfect"] = \
-#            self._defect_initial_setting.structure
 
     def _make_defect_input(self, defect_name):
 

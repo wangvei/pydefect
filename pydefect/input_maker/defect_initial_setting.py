@@ -142,9 +142,6 @@ class DefectInitialSetting:
             substitutional defects.
     """
 
-    # TODO: Add the coordination information.
-    # TODO: Add the site symmetry.
-
     def __init__(self, structure, space_group_symbol, irreducible_sites,
                  dopant_configs, antisite_configs, interstitial_coords,
                  included, excluded, distance, cutoff, symprec,
