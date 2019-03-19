@@ -163,7 +163,7 @@ class DefectEntrySetMakerTest(unittest.TestCase):
     def test_mgo(self):
         desm = DefectEntrySetMaker(defect_initial_setting=self._mgo,
                                    particular_defects=["Sc_Mg1_1", "Sc_Mg1_0"])
-        des = desm.defect_entries
+        des = desm._defect_entries
 
         for de in des:
             print(de)

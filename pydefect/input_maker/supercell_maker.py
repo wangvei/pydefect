@@ -130,7 +130,7 @@ class Supercells:
 
         if conventional:
             conventional = find_spglib_standard_conventional(structure)
-            primitive = find_spglib_standard_primitive(structure)
+            primitive = find_spglib_standard_primitive(structure)[0]
             if conventional.num_sites == primitive.num_sites:
                 logger.info("Primitive cell is same as conventional cell.")
                 self._is_conventional_based = False
@@ -138,7 +138,7 @@ class Supercells:
                 self._is_conventional_based = True
             unitcell = conventional
         else:
-            unitcell = find_spglib_standard_primitive(structure)
+            unitcell = find_spglib_standard_primitive(structure)[0]
             self._is_conventional_based = False
 
         self._sorted_unitcell = unitcell.get_sorted_structure()

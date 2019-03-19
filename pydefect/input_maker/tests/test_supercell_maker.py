@@ -36,10 +36,10 @@ class SupercellTest(unittest.TestCase):
     def test_recommended_supercell(self):
         s3 = Supercells(self.structure,
                         conventional=False,
-                        max_num_atoms=200,
+                        max_num_atoms=500,
                         min_num_atoms=50,
                         isotropy_criterion=1.1)
-        s = s3.sorted_by_isotropy()[0]
+        s = s3.sorted_by_num_atoms()[-1]
 
         s.supercell_structure.to(filename="POSCAR-MgO-recommended_supercell")
         print(s.comment)
