@@ -33,9 +33,12 @@ from pydefect.vasp_util.script.plot_dos import get_dos_plot
 from pydefect.analysis.defect_energies import DefectEnergies, Defect
 from pydefect.analysis.defect_concentration import DefectConcentration
 from pydefect.analysis.defect_energy_plotter import DefectEnergyPlotter
+from pydefect.util.utils import get_logger
 
 __version__ = "0.0.1"
 __date__ = "13.July.2018"
+
+logger = get_logger(__name__)
 
 # Following defaults determine the condition of automatic defect calculations.
 # electronegativity difference for antisites and substitutional impurities
@@ -169,7 +172,6 @@ def main():
 
     parser_vasp_poscar_maker.set_defaults(func=vasp_poscar_maker)
 
-
     # -- recommend_supercell ---------------------------------------------------
     parser_recommend_supercell = subparsers.add_parser(
         name="recommend_supercell",
@@ -180,11 +182,9 @@ def main():
     parser_recommend_supercell.add_argument(
         "-p", dest="poscar", type=str, default="POSCAR")
     parser_recommend_supercell.add_argument(
-        "-ucp", dest="ucposcar", type=str, default="UCPOSCAR")
-    parser_recommend_supercell.add_argument(
         "-sp", dest="sposcar", type=str, default="SPOSCAR")
     parser_recommend_supercell.add_argument(
-        "--criterion", dest="criterion", type=float, default=0.12,
+        "-c", "--criterion", dest="criterion", type=float, default=0.12,
         help="Isotropy criterion.")
     parser_recommend_supercell.add_argument(
         "--min_num_atoms", dest="min_num_atoms", type=int, default=50,
@@ -194,7 +194,7 @@ def main():
         help="Maximum number of atoms")
     parser_recommend_supercell.add_argument(
         "-pr", "--primitive", dest="primitive", action="store_true",
-        help="Set if the supercell is expanded with primitive cell.")
+        help="Set when the supercell is expanded based on the primitive cell.")
     parser_recommend_supercell.add_argument(
         "-s", "--smallest_isotropy", dest="smallest_isotropy",
         action="store_true",
@@ -202,7 +202,7 @@ def main():
              "supercell.")
     parser_recommend_supercell.add_argument(
         "-set", dest="set", action="store_true",
-        help="Output a set of the supercells satisfying the criterion.")
+        help="Output all the supercells satisfying the criterion.")
 
     parser_recommend_supercell.set_defaults(func=recommend_supercell)
 
@@ -613,7 +613,8 @@ def initial_setting(args):
 
 
 def vasp_defect_set(args):
-    defect_initial_setting = DefectInitialSetting.from_defect_in(poscar=args.dposcar, defect_in_file=args.defect_in)
+    defect_initial_setting = DefectInitialSetting.from_defect_in(
+        poscar=args.dposcar, defect_in_file=args.defect_in)
     VaspDefectInputSetMaker(defect_initial_setting=defect_initial_setting,
                             keywords=args.filtering,
                             particular_defects=args.add,
@@ -703,36 +704,39 @@ def vasp_input_maker(args):
 
 def recommend_supercell(args):
     structure = Structure.from_file(args.poscar)
-    supercells = Supercells(structure=structure,
-                            conventional=args.primitive,
-                            max_num_atoms=args.max_num_atoms,
-                            min_num_atoms=args.min_num_atoms,
-                            isotropy_criterion=args.criterion)
-    if supercells.converged:
-        supercells.unitcell_structure.to(filename=args.ucposcar)
+    s = Supercells(structure=structure,
+                   conventional=not args.primitive,
+                   max_num_atoms=args.max_num_atoms,
+                   min_num_atoms=args.min_num_atoms,
+                   isotropy_criterion=args.criterion)
+    supercells = s.supercells
+
+    if supercells:
         if args.set:
-            print(len(supercells.supercells))
-            for s in supercells.supercells:
-
-                if supercells.is_primitive:
-                    cell = "p"
-                else:
+            logger.info("The number of supercells:" + str(len(supercells)))
+            for supercell in supercells:
+                if s.is_conventional_based:
                     cell = "c"
-                multi = \
-                    cell + "x".join([str(list(s.multi)[i]) for i in range(3)])
+                else:
+                    cell = "p"
+                multi = cell + "x".join([str(list(supercell.multi)[i])
+                                         for i in range(3)])
+                isotropy = round(supercell.isotropy, 2)
 
-                name = args.sposcar + "_" + multi + "_" + str(s.num_atoms)
-                s.to_poscar(filename=name)
+                name = \
+                    args.sposcar + "_" + multi + "_" + \
+                    str(supercell.num_atoms) + "_" + str(isotropy)
+                supercell.to_poscar(filename=name)
         else:
             if args.smallest_isotropy:
-                s = supercells.sorted_by_isotropy()[0]
+                supercell = supercells.sorted_by_isotropy()[0]
             else:
-                s = supercells.sorted_by_atoms()[0]
-            s.to_poscar(filename=args.sposcar)
+                supercell = supercells.sorted_by_num_atoms()[0]
+            supercell.to_poscar(filename=args.sposcar)
 
     else:
-        print("Any supercell does not satisfy the criterion.")
-        print("Increase the criterion if needed")
+        logger.warning("Any supercell does not satisfy the criterion.")
+        logger.warning("Increase the criterion if needed")
 
 
 def defect_entry(args):
