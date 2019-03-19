@@ -139,7 +139,7 @@ class DefectEntrySetMaker:
     def __init__(self, defect_initial_setting, keywords=None,
                  particular_defects=None):
 
-        self._structure = defect_initial_setting.structure
+        self._perfect_structure = defect_initial_setting.structure
         self._irreducible_sites = defect_initial_setting.irreducible_sites
         self._interstitial_coords = defect_initial_setting.interstitial_coords
         self._cutoff = defect_initial_setting.cutoff
@@ -158,9 +158,9 @@ class DefectEntrySetMaker:
                 defect_all_name_set.append("perfect")
                 defect_name_set = defect_all_name_set
 
-        self.defect_entries = []
+        self._defect_entries = []
         for d in defect_name_set:
-            self.defect_entries.append(self.make_defect_entry(d))
+            self._defect_entries.append(self.make_defect_entry(d))
 
     def make_defect_entry(self, defect_name):
         """
@@ -182,7 +182,7 @@ class DefectEntrySetMaker:
                 Removed atom index from the perfect structure.
         """
 
-        defect_structure = deepcopy(self._structure)
+        defect_structure = deepcopy(self._perfect_structure)
         in_name, out_name, charge = parse_defect_name(defect_name)
         name = in_name + "_" + out_name
 
@@ -218,7 +218,7 @@ class DefectEntrySetMaker:
         # -------------------- analyze in_name ---------------------------------
         inserted_atoms = []
 
-        # This block needs to be run after finishing analyze_out_name because
+        # This block must be after finishing analyze_out_name because
         # defect coordinates is needed when inserting an in_name atom.
         if in_name == "Va":
             pass
@@ -255,3 +255,10 @@ class DefectEntrySetMaker:
                            changes_of_num_elements, charge, initial_symmetry,
                            multiplicity, perturbed_sites)
 
+    @property
+    def perfect_structure(self):
+        return self._perfect_structure
+
+    @property
+    def defect_entries(self):
+        return self._defect_entries
