@@ -11,12 +11,7 @@ from obadb.util.structure_handler import find_spglib_standard_conventional, \
 from pydefect.util.utils import get_logger
 
 __author__ = "Yu Kumagai"
-__copyright__ = "Copyright 2018, Oba group"
-__version__ = "0.1"
 __maintainer__ = "Yu Kumagai"
-__email__ = "yuuukuma@gmail.com"
-__status__ = "Development"
-__date__ = "May 15, 2018"
 
 logger = get_logger(__name__)
 
@@ -112,7 +107,7 @@ class Supercell:
 
 
 class Supercells:
-    def __init__(self, structure, conventional=False, max_num_atoms=400,
+    def __init__(self, structure, conventional=True, max_num_atoms=400,
                  min_num_atoms=50, isotropy_criterion=0.12):
         """
         Constructs a set of supercells satisfying a criterion.
@@ -120,8 +115,8 @@ class Supercells:
             structure (pmg structure class object):
                 Unitcell structure
             conventional (bool):
-                True: Only the primitive cell is expanded.
-                False: Both conventional and primitive cells are expanded.
+                Conventional cell is expanded when True, otherwise primitive
+                cell is expanded.
             max_num_atoms (int):
                 Maximum number of atoms in the supercell.
             min_num_atoms (int):
@@ -131,39 +126,31 @@ class Supercells:
                 Isotropy is defined as the mean absolute deviation of the
                 lattice constants from the averaged lattice constant.
                 np.sum(np.abs(abc - average_abc) / average_abc) / 3
-
-        Return:
-            supercell structure (Supercell):
-                Supercell class object
-            unitcell structure (Structure):
-                pmg Structure class object for the based unitcell.
-            multi (3x3 numpy array):
-                Shape of the supercell
-            calc_isotropy (float):
-                Isotropic value.
         """
-        if conventional is False:
-            unitcell = find_spglib_standard_conventional(structure)
-            # check if the conventional cell is same as the conventional cell.
+
+        if conventional:
+            conventional = find_spglib_standard_conventional(structure)
             primitive = find_spglib_standard_primitive(structure)
-            if unitcell.num_sites == primitive.num_sites:
+            if conventional.num_sites == primitive.num_sites:
                 logger.info("Primitive cell is same as conventional cell.")
-                self._is_primitive = True
+                self._is_conventional_based = False
             else:
-                self._is_primitive = False
+                self._is_conventional_based = True
+            unitcell = conventional
         else:
             unitcell = find_spglib_standard_primitive(structure)
-            self._is_primitive = True
+            self._is_conventional_based = False
 
         self._sorted_unitcell = unitcell.get_sorted_structure()
-        multi = np.ones(3, dtype="int8")
         abc = np.array(self._sorted_unitcell.lattice.abc)
         num_atoms_in_unitcell = self._sorted_unitcell.num_sites
 
         if max_num_atoms < num_atoms_in_unitcell:
-            raise SupercellSizeError("Number of atoms in the unitcell is "
-                                     "smaller than the maximum number of "
-                                     "atoms in the supercell")
+            raise TooLargeUnitcellError("Number of atoms in the unitcell is "
+                                        "smaller than the maximum number of "
+                                        "atoms in the supercell")
+
+        multi = np.ones(3, dtype="int8")
         self._supercells = []
 
         for i in range(int(max_num_atoms / num_atoms_in_unitcell)):
@@ -171,22 +158,19 @@ class Supercells:
             if num_atoms > max_num_atoms:
                 break
 
-            # The supercell indices within 1.05a, where a is the shortest
-            # supercell lattice length, are incremented.
-            isotropy = Supercell.calc_supercell_isotropy(unitcell,
+            isotropy = Supercell.calc_supercell_isotropy(self._sorted_unitcell,
                                                          multi)
             if isotropy < isotropy_criterion and num_atoms >= min_num_atoms:
-                self._supercells.append(Supercell(unitcell, multi))
+                self._supercells.append(Supercell(self._sorted_unitcell, multi))
 
             super_abc = multi * abc
+            # multi indices within 1.05a, where a is the shortest supercell
+            # lattice length, are incremented.
             for j in range(3):
                 if super_abc[j] / min(super_abc) < 1.05:
                     multi[j] += 1
 
-        if self._supercells:
-            self._converged = True
-        else:
-            self._converged = False
+        self._are_supercells = True if self._supercells else False
 
     def sorted_by_num_atoms(self):
         return sorted(deepcopy(self._supercells),
@@ -197,21 +181,17 @@ class Supercells:
                       key=lambda x: (x.isotropy, x.num_atoms))
 
     @property
-    def supercells(self):
-        return self._supercells
+    def are_supercells(self):
+        return self._are_supercells
 
     @property
-    def converged(self):
-        return self._converged
-
-    @property
-    def is_primitive(self):
-        return self._is_primitive
+    def is_conventional_based(self):
+        return self._is_conventional_based
 
     @property
     def unitcell_structure(self):
         return self._sorted_unitcell
 
 
-class SupercellSizeError(Exception):
+class TooLargeUnitcellError(Exception):
     pass
