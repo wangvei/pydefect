@@ -181,8 +181,8 @@ class Supercells:
                       key=lambda x: (x.isotropy, x.num_atoms))
 
     @property
-    def are_supercells(self):
-        return self._are_supercells
+    def supercells(self):
+        return self._supercells
 
     @property
     def is_conventional_based(self):
