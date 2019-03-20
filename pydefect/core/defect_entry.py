@@ -40,9 +40,9 @@ class DefectEntry:
         name (str):
             Name of a defect without charge. This is used when analyzing defect
             formation energy.
-        defect_structure (Structure):
+        initial_structure (Structure):
             Structure with a defect before the structure optimization.
-        perturbed_defect_structure (Structure):
+        perturbed_initial_structure (Structure):
             Initial structure with perturbation of neighboring atoms.
         removed_atoms (dict):
             Keys: Atom indices removed from the perfect supercell.
@@ -59,15 +59,13 @@ class DefectEntry:
         charge (int):
             Charge state of the defect. Charge is also added to the structure.
     """
-    # TODO: Add the site symmetry information.
-    # TODO: Add the number of equivalent sites in the primitive unitcell
 
-    def __init__(self, name, defect_structure, perturbed_defect_structure,
+    def __init__(self, name, initial_structure, perturbed_initial_structure,
                  removed_atoms, inserted_atoms, changes_of_num_elements, charge,
                  initial_symmetry, multiplicity, perturbed_sites):
         self._name = name
-        self._defect_structure = defect_structure
-        self._perturbed_defect_structure = perturbed_defect_structure
+        self._initial_structure = initial_structure
+        self._perturbed_initial_structure = perturbed_initial_structure
         self._removed_atoms = removed_atoms
         self._inserted_atoms = inserted_atoms
         self._changes_of_num_elements = changes_of_num_elements
@@ -89,9 +87,9 @@ class DefectEntry:
                 "inserted_atoms: " + str(self._inserted_atoms),
                 "changes_of_num_element: " + str(self._changes_of_num_elements),
                 "charge: " + str(self._charge),
-                "defect_structure: \n" + str(self._defect_structure),
-                "perturbed_defect_structure: \n" +
-                str(self._perturbed_defect_structure),
+                "initial_structure: \n" + str(self._initial_structure),
+                "perturbed_initial_structure: \n" +
+                str(self._perturbed_initial_structure),
                 "perturbed_sites: \n" + str(self._perturbed_sites)]
         return "\n".join(outs)
 
@@ -194,11 +192,15 @@ class DefectEntry:
 
     @property
     def perturbed_initial_structure(self):
-        return self._perturbed_defect_structure
+        return self._perturbed_initial_structure
+
+    @property
+    def perturbed_sites(self):
+        return self._perturbed_sites
 
     @property
     def initial_structure(self):
-        return self._defect_structure
+        return self._initial_structure
 
     @property
     def removed_atoms(self):
@@ -226,7 +228,7 @@ class DefectEntry:
                 len(mapping) = 63
 
         """
-        total_nions = (sum(get_num_atoms_for_elements(self._defect_structure))
+        total_nions = (sum(get_num_atoms_for_elements(self._initial_structure))
                        - len(self._inserted_atoms)
                        + len(self._removed_atoms))
 
@@ -246,11 +248,15 @@ class DefectEntry:
         Dict representation of DefectInput class object.
         """
         d = {"name": self._name,
-             "initial_structure": self._defect_structure,
+             "initial_structure": self._initial_structure,
+             "perturbed_initial_structure": self._perturbed_initial_structure,
              "removed_atoms": self._removed_atoms,
              "inserted_atoms": self._inserted_atoms,
              "element_diff": self._changes_of_num_elements,
-             "charge": self._charge}
+             "charge": self._charge,
+             "initial_symmetry": self._initial_symmetry,
+             "multiplicity": self._multiplicity,
+             "perturbed_sites": self._perturbed_sites}
         return d
 
     def to_json_file(self, filename="defect_entry.json"):
@@ -267,11 +273,11 @@ class DefectEntry:
     #     This atom is assumed not to displace during the structure
     #     optimization, and so used for analyzing local defect structure.
     #     """
-        # radius = max(self._defect_structure.lattice.abc) * 2
-        # num_sites = len(self._defect_structure.sites)
+        # radius = max(self._initial_structure.lattice.abc) * 2
+        # num_sites = len(self._initial_structure.sites)
         # shortest_distances = np.full(num_sites, radius, dtype=float)
 
-        # distance_set = self._defect_structure.get_sites_in_sphere(
+        # distance_set = self._initial_structure.get_sites_in_sphere(
         #     self._defect_coords, radius, include_index=True)
 
         # for d in distance_set:
