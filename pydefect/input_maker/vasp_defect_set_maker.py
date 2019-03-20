@@ -7,8 +7,8 @@ from pydefect.core.defect_entry import get_num_atoms_for_elements
 from pydefect.vasp_util.util import get_num_electrons_from_potcar
 from pydefect.core.supercell_dft_results import defect_center
 from pydefect.input_maker.defect_set_maker import DefectEntryMaker, \
-    DefectInputSetMaker, print_is_being_removed, print_already_exist, \
-    print_is_being_constructed
+    DefectInputSetMaker, log_is_being_removed, log_already_exist, \
+    log_is_being_constructed
 from pydefect.input_maker.vasp_input_maker import potcar_dir, make_potcar
 from pydefect.util.structure import perturb_neighbors
 
@@ -43,13 +43,13 @@ class VaspDefectInputSetMaker(DefectInputSetMaker):
 
         if self._force_overwrite:
             if os.path.exists("perfect"):
-                print_is_being_removed("perfect")
+                log_is_being_removed("perfect")
                 shutil.rmtree("perfect")
 
         if os.path.exists("perfect"):
-            print_already_exist("perfect")
+            log_already_exist("perfect")
         else:
-            print_is_being_constructed("perfect")
+            log_is_being_constructed("perfect")
             os.makedirs("perfect")
             self._defect_initial_setting.structure.to(
                 filename=os.path.join("perfect", "POSCAR"))
@@ -64,13 +64,13 @@ class VaspDefectInputSetMaker(DefectInputSetMaker):
         # TODO: check if the defect_name is proper or not.
         if self._force_overwrite:
             if os.path.exists(defect_name):
-                print_is_being_removed(defect_name)
+                log_is_being_removed(defect_name)
                 shutil.rmtree(defect_name)
 
         if os.path.exists(defect_name):
-            print_already_exist(defect_name)
+            log_already_exist(defect_name)
         else:
-            print_is_being_constructed(defect_name)
+            log_is_being_constructed(defect_name)
             os.makedirs(defect_name)
 
             # Constructs three POSCAR-type files

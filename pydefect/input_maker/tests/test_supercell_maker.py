@@ -26,12 +26,12 @@ class SupercellTest(unittest.TestCase):
     def test_init1(self):
         multi = [2, 1, 1]
         s1 = Supercell(structure=self.structure, multi=multi, comment='')
-        s1.supercell_structure.to(filename="PPOSCAR-MgO-2x1x1")
+        s1.structure.to(filename="PPOSCAR-MgO-2x1x1")
 
     def test_init2(self):
         multi = [[-1, 1, 1], [1, -1, 1], [1, 1, -1]]
         s2 = Supercell(structure=self.structure, multi=multi, comment='')
-        s2.supercell_structure.to(filename="PPOSCAR-MgO-conv")
+        s2.structure.to(filename="PPOSCAR-MgO-conv")
 
     def test_recommended_supercell(self):
         s3 = Supercells(self.structure,
@@ -41,6 +41,6 @@ class SupercellTest(unittest.TestCase):
                         isotropy_criterion=1.1)
         s = s3.sorted_by_num_atoms()[-1]
 
-        s.supercell_structure.to(filename="POSCAR-MgO-recommended_supercell")
+        s.structure.to(filename="POSCAR-MgO-recommended_supercell")
         print(s.comment)
 

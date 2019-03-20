@@ -27,6 +27,26 @@ __status__ = "Development"
 __date__ = "December 4, 2017"
 
 
+def defect_center_from_coords(inserted_atom_coords, removed_atom_coords, structure):
+    """
+    """
+    defect_coords = inserted_atom_coords + removed_atom_coords
+    # First defect_coords is used as a base point under periodic boundary
+    # condition. Here, we are aware of the case when two defect positions
+    # are, e.g., [0.01, 0.01, 0.01] and [0.99, 0.99, 0.99].
+    base = defect_coords[0]
+    shortest_defect_coords = []
+
+    for dc in defect_coords:
+        diff = min_distance_under_pbc(
+            np.array(base), np.array(dc), structure.lattice.matrix)[1]
+        shortest_defect_coords.append(dc + diff)
+
+    # np.array([[0, 0.1, 0.2], [0.3, 0.4, 0.5]]).transpose() =
+    # np.array([[0, 0.3], [0.1, 0.4], [0.2, 0.5]])
+    return [np.mean(i) for i in np.array(shortest_defect_coords).transpose()]
+
+
 def defect_center(defect_entry, structure=None):
     """
     Return a fractional coordinates of the defect center that is calculated
@@ -49,22 +69,8 @@ def defect_center(defect_entry, structure=None):
                                  for k in defect_entry.inserted_atoms])
     removed_atom_coords = list(defect_entry.removed_atoms.values())
 
-    defect_coords = inserted_atom_coords + removed_atom_coords
-
-    # First defect_coords is used as a base point under periodic boundary
-    # condition. Here, we are aware of the case when two defect positions
-    # are, e.g., [0.01, 0.01, 0.01] and [0.99, 0.99, 0.99].
-    base = defect_coords[0]
-    shortest_defect_coords = []
-
-    for dc in defect_coords:
-        diff = min_distance_under_pbc(
-            np.array(base), np.array(dc), structure.lattice.matrix)[1]
-        shortest_defect_coords.append(dc + diff)
-
-    # np.array([[0, 0.1, 0.2], [0.3, 0.4, 0.5]]).transpose() =
-    # np.array([[0, 0.3], [0.1, 0.4], [0.2, 0.5]])
-    return [np.mean(i) for i in np.array(shortest_defect_coords).transpose()]
+    return defect_center_from_coords(inserted_atom_coords, removed_atom_coords,
+                                     structure)
 
 
 def min_distance_under_pbc(frac1, frac2, lattice_parameters):

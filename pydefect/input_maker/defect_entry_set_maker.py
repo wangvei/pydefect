@@ -4,10 +4,11 @@ from copy import deepcopy
 import re
 
 from pymatgen.core.periodic_table import Element
-from pymatgen.core.structure import Structure
 
 from pydefect.core.defect_entry import DefectEntry
 from pydefect.util.structure import perturb_neighbors
+from pydefect.core.supercell_dft_results import defect_center_from_coords
+
 
 __author__ = "Yu Kumagai"
 __maintainer__ = "Yu Kumagai"
@@ -148,15 +149,9 @@ class DefectEntrySetMaker:
         if particular_defects:
             defect_name_set = particular_defects
         else:
-            defect_all_name_set = defect_initial_setting.make_defect_name_set()
+            defect_name_set = defect_initial_setting.make_defect_name_set()
             if keywords:
-                defect_name_set = \
-                    select_defect_names(defect_all_name_set, keywords)
-                if "perfect" in keywords:
-                    defect_name_set.append("perfect")
-            else:
-                defect_all_name_set.append("perfect")
-                defect_name_set = defect_all_name_set
+                defect_name_set = select_defect_names(defect_name_set, keywords)
 
         self._defect_entries = []
         for d in defect_name_set:
@@ -240,8 +235,15 @@ class DefectEntrySetMaker:
                                                             defect_name))
 
         if self._cutoff:
+            inserted_atom_coords = list([self._perfect_structure.frac_coords[k]
+                                         for k in inserted_atoms])
+            removed_atom_coords = list(removed_atoms.values())
+            center = defect_center_from_coords(inserted_atom_coords,
+                                               removed_atom_coords,
+                                               self._perfect_structure)
+
             perturbed_defect_structure, perturbed_sites = \
-                perturb_neighbors(defect_structure, defect_coords,
+                perturb_neighbors(defect_structure, center,
                                   self._cutoff, self._distance)
         else:
             perturbed_defect_structure = defect_structure

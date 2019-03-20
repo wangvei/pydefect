@@ -7,6 +7,7 @@ import re
 from pymatgen.core.periodic_table import Element
 from pymatgen.core.structure import Structure
 
+from pydefect.util.utils import get_logger
 from pydefect.core.defect_entry import DefectEntry
 
 __author__ = "Yu Kumagai"
@@ -16,6 +17,8 @@ __maintainer__ = "Yu Kumagai"
 __email__ = "yuuukuma@gmail.com"
 __status__ = "Development"
 __date__ = "December 4, 2017"
+
+logger = get_logger(__name__)
 
 
 def get_int_from_string(x):
@@ -49,31 +52,31 @@ def parse_defect_name(defect_name):
     return in_name, out_name, charge
 
 
-def print_is_being_removed(name):
+def log_is_being_removed(name):
     """
     Shows the message.
     Args:
         name (str): a string
     """
-    print("{:>10} is being removed.".format(name))
+    logger.warning("{:>10} is being removed.".format(name))
 
 
-def print_already_exist(name):
+def log_already_exist(name):
     """
     Shows the message.
     Args:
         name (str): a string
     """
-    print("{:>10} already exists, so nothing is done.".format(name))
+    logger.warning("{:>10} already exists, so nothing is done.".format(name))
 
 
-def print_is_being_constructed(name):
+def log_is_being_constructed(name):
     """
     Shows the message.
     Args:
         name (str): a string
     """
-    print("{:>10} is being constructed.".format(name))
+    logger.warning("{:>10} is being constructed.".format(name))
 
 
 def is_name_selected(name, keywords):

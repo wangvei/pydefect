@@ -5,6 +5,7 @@ import argparse
 from glob import glob
 import os
 from os.path import join
+import shutil
 import warnings
 
 from pymatgen.core.structure import Structure
@@ -16,7 +17,6 @@ from pydefect.input_maker.defect_initial_setting \
 from pydefect.input_maker.supercell_maker import Supercell, Supercells
 from pydefect.input_maker.vasp_input_maker \
     import make_hpkot_primitive_poscar, MakeIncar, make_kpoints, make_potcar
-from pydefect.input_maker.vasp_defect_set_maker import VaspDefectInputSetMaker
 from pydefect.core.defect_entry import DefectEntry
 from pydefect.core.supercell_dft_results import SupercellDftResults
 from pydefect.vasp_util.script.vasp_process_analyzer \
@@ -24,8 +24,10 @@ from pydefect.vasp_util.script.vasp_process_analyzer \
     vasp_convergence_electronic
 from pydefect.core.unitcell_dft_results import UnitcellDftResults
 from pydefect.core.correction import Ewald, Correction
-from pydefect.analysis.chempotdiag.chem_pot_diag \
-    import ChemPotDiag
+
+from obadb.analyzer.chempotdiag.chem_pot_diag import ChemPotDiag
+#from pydefect.analysis.chempotdiag.chem_pot_diag \
+#    import ChemPotDiag
 from pydefect.analysis.chempotdiag.make_inputs import make_vasp_inputs_from_mp
 from pydefect.vasp_util.script.plot_band_structure import ModBSPlotter, \
     VaspBandStructureSymmLine
@@ -34,6 +36,9 @@ from pydefect.analysis.defect_energies import DefectEnergies, Defect
 from pydefect.analysis.defect_concentration import DefectConcentration
 from pydefect.analysis.defect_energy_plotter import DefectEnergyPlotter
 from pydefect.util.utils import get_logger
+
+from pydefect.input_maker.defect_set_maker import log_is_being_removed, log_already_exist, log_is_being_constructed
+
 
 __version__ = "0.0.1"
 __date__ = "13.July.2018"
@@ -112,65 +117,62 @@ def main():
 
     #    groups = parser_input.add_mutually_exclusive_group(required=True)
     parser_initial.set_defaults(func=initial_setting)
-    # -- vasp_defect_set_maker -------------------------------------------------
-    parser_vasp_defect_set = subparsers.add_parser(
-        name="vasp_defect_set",
+
+    # -- vasp_set_maker -------------------------------------------------
+    parser_vasp_set = subparsers.add_parser(
+        name="vasp_set",
+        description="Tools for configuring vasp files for a defect calculation. "
+                    "One needs to make .pydefect.yaml for potcar setup.",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+        aliases=['vsm'])
+
+    parser_vasp_set.add_argument(
+        "-p", dest="poscar", type=str, default="POSCAR")
+    parser_vasp_set.add_argument(
+        "-c", "--charge", dest="charge", type=int, help="Charge.")
+    parser_vasp_set.add_argument(
+        "-x", "--xc", dest="xc", default="pbesol", type=str,
+        help="XC interaction treatment.")
+    parser_vasp_set.add_argument(
+        "-k", "--kpt_density", dest="kpt_density", default=2, type=float,
+        help="K-points density.")
+    parser_vasp_set.add_argument(
+        "-d", "--prev_dir", dest="prev_dir", type=str, help=".")
+
+    parser_vasp_set.set_defaults(func=vasp_set)
+
+    # -- vasp_poscar_set_maker -------------------------------------------------
+    parser_vasp_poscar_set = subparsers.add_parser(
+        name="vasp_poscar_set",
         description="Tools for configuring vasp defect_set files for a set of "
                     "defect calculations. One needs to set "
                     ".pydefect.yaml for potcar setup.",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-        aliases=['vds'])
+        aliases=['vps'])
 
-    parser_vasp_defect_set.add_argument(
+    parser_vasp_poscar_set.add_argument(
         "--defect_in", dest="defect_in", default="defect.in", type=str,
         help="defect.in-type file name.")
-    parser_vasp_defect_set.add_argument(
+    parser_vasp_poscar_set.add_argument(
         "--dposcar", dest="dposcar", default="DPOSCAR", type=str,
         help="DPOSCAR-type file name.")
-    parser_vasp_defect_set.add_argument(
+    parser_vasp_poscar_set.add_argument(
         "--incar", dest="incar", default="INCAR", type=str,
         help="INCAR-type file name.")
-    parser_vasp_defect_set.add_argument(
+    parser_vasp_poscar_set.add_argument(
         "--kpoints", dest="kpoints", default="KPOINTS", type=str,
         help="KPOINTS-type file name.")
-    parser_vasp_defect_set.add_argument(
+    parser_vasp_poscar_set.add_argument(
         "-f", "--filtering", dest="filtering", type=str, default=None,
         nargs="+", help="Filtering kwargs.")
-    parser_vasp_defect_set.add_argument(
+    parser_vasp_poscar_set.add_argument(
         "--add", dest="add", type=str, default=None, nargs="+",
         help="Particular defect names to be added.")
-    parser_vasp_defect_set.add_argument(
+    parser_vasp_poscar_set.add_argument(
         "--force_overwrite", dest="force_overwrite", action="store_true",
         help="Set if the existing folders are overwritten.")
 
-    parser_vasp_defect_set.set_defaults(func=vasp_defect_set)
-
-    # -- vasp_poscar_maker ----------------------------------------------------
-    parser_vasp_poscar_maker = subparsers.add_parser(
-        name="vasp_poscar_maker",
-        description="Tools for configuring vasp POSCAR file. By default, "
-                    "standardized primitive cell is generated.",
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-        aliases=['vpsm'])
-
-    parser_vasp_poscar_maker.add_argument(
-        "-p", dest="poscar", type=str, default="POSCAR")
-    parser_vasp_poscar_maker.add_argument(
-        "-pp", dest="pposcar", type=str, default="PPOSCAR")
-    parser_vasp_poscar_maker.add_argument(
-        "-sp", dest="sposcar", type=str, default="SPOSCAR")
-    parser_vasp_poscar_maker.add_argument(
-        "--supercell", "-s", dest="supercell", type=int, nargs="+",
-        help="Construct a supercell.")
-    parser_vasp_poscar_maker.add_argument(
-        "--symprec", dest="symprec", type=float, default=_SYMPREC,
-        help="Set precision used for symmetry analysis [A].")
-    parser_vasp_poscar_maker.add_argument(
-        "--angle_tolerance", dest="angle_tolerance", type=float,
-        default=_ANGLE_TOLERANCE,
-        help="Set the angle_tolerance used for symmetry analysis.")
-
-    parser_vasp_poscar_maker.set_defaults(func=vasp_poscar_maker)
+    parser_vasp_poscar_set.set_defaults(func=vasp_poscar_set)
 
     # -- recommend_supercell ---------------------------------------------------
     parser_recommend_supercell = subparsers.add_parser(
@@ -606,70 +608,62 @@ def initial_setting(args):
         print_dopant_info(args.print_dopant)
     else:
         defect_setting = DefectInitialSetting.from_basic_settings(
-            args.poscar, args.dopants, args.interstitial_coords,
-            args.is_antisite, args.en_diff, args.included, args.excluded,
-            args.distance, args.cutoff, args.symprec)
+            Structure.from_file(args.poscar), args.dopants,
+            args.interstitial_coords, args.is_antisite, args.en_diff,
+            args.included, args.excluded, args.distance, args.cutoff,
+            args.symprec)
         defect_setting.to()
 
 
-def vasp_defect_set(args):
-    defect_initial_setting = DefectInitialSetting.from_defect_in(
+def vasp_set(args):
+    from obadb.vasp.oba_set_main import ObaSet
+    kwargs = {"task": "defect",
+              "xc": args.xc,
+              "charge": args.charge,
+              "kpt_density": args.kpt_density,
+              "standardize_structure": False}
+    structure = Structure.from_file(args.poscar)
+    obrs = ObaSet.make_input(structure, **kwargs)
+    obrs.write_input(".")
+
+
+def vasp_poscar_set(args):
+    from pydefect.input_maker.defect_entry_set_maker import DefectEntrySetMaker
+    dis = DefectInitialSetting.from_defect_in(
         poscar=args.dposcar, defect_in_file=args.defect_in)
-    VaspDefectInputSetMaker(defect_initial_setting=defect_initial_setting,
-                            keywords=args.filtering,
-                            particular_defects=args.add,
-                            incar=args.incar,
-                            kpoints=args.kpoints,
-                            force_overwrite=args.force_overwrite)
+    desm = DefectEntrySetMaker(dis)
+    perfect_structure = desm.perfect_structure
+    defect_entries = desm.defect_entries
 
+    def make_dir_poscar(name, poscar_string):
+        if args.force_overwrite:
+            if os.path.exists(name):
+                log_is_being_removed(name)
+                shutil.rmtree(name)
 
-def vasp_kpoints_maker(args):
-    make_kpoints(task=args.task,
-                 poscar=args.poscar,
-                 num_split_kpoints=args.num_split_kpoints,
-                 is_metal=args.is_metal,
-                 kpts_shift=args.kpts_shift,
-                 kpts_density_opt=args.kpts_density_opt,
-                 kpts_density_defect=args.kpts_density_defect,
-                 factor_dos=args.factor_dos,
-                 factor_metal=args.factor_metal,
-                 prior_info=args.prior_info,
-                 is_magnetization=args.is_magnetization)
+        if os.path.exists(name):
+            log_already_exist(name)
+        else:
+            log_is_being_constructed(name)
+            os.makedirs(name)
+            filename = os.path.join(name, "POSCAR")
+            with open(filename, 'w') as fw:
+                for line in poscar_string:
+                    fw.write(line)
 
+    # perfect
+    perfect_poscar_str = perfect_structure.to(fmt="poscar").splitlines(True)
+    make_dir_poscar("perfect", perfect_poscar_str)
 
-def vasp_incar_maker(args):
-    MakeIncar(task=args.task,
-              functional=args.functional,
-              poscar=args.poscar,
-              potcar=args.potcar,
-              hfscreen=args.hfscreen,
-              aexx=args.aexx,
-              is_metal=args.is_metal,
-              is_magnetization=args.is_magnetization,
-              ldau=args.ldau,
-              defect_in=args.defect_in,
-              prior_info=args.prior_info,
-              my_incar_setting=args.my_setting_file)
+    # defects
+    for de in defect_entries:
 
+        poscar_str = de.perturbed_initial_structure.to(fmt="poscar").splitlines(True)
+        for i in de.perturbed_sites:
+            poscar_str[i + 8] = poscar_str[i + 8][:-1] + "  Disp\n"
 
-def vasp_poscar_maker(args):
-    if args.supercell:
-        structure = Structure.from_file(args.poscar)
-        Supercell(structure=structure, multi=args.supercell). \
-            to_poscar(filename=args.sposcar)
-    else:
-        make_hpkot_primitive_poscar(poscar=args.poscar,
-                                    pposcar=args.pposcar,
-                                    symprec=args.symprec,
-                                    angle_tolerance=args.angle_tolerance)
-
-
-def vasp_potcar_maker(args):
-    if args.elements:
-        make_potcar(args.elements)
-    elif args.poscar:
-        elements = Structure.from_file(args.poscar).symbol_set
-        make_potcar(elements)
+        make_dir_poscar(de.name, poscar_str)
+        de.to_json_file(os.path.join(de.name, "defect_entry.json"))
 
 
 def vasp_input_maker(args):
@@ -721,7 +715,7 @@ def recommend_supercell(args):
                     cell = "p"
                 multi = cell + "x".join([str(list(supercell.multi)[i])
                                          for i in range(3)])
-                isotropy = round(supercell.isotropy, 2)
+                isotropy = round(supercell.isotropy, 4)
 
                 name = \
                     args.sposcar + "_" + multi + "_" + \
@@ -729,9 +723,9 @@ def recommend_supercell(args):
                 supercell.to_poscar(filename=name)
         else:
             if args.smallest_isotropy:
-                supercell = supercells.sorted_by_isotropy()[0]
+                supercell = s.sorted_by_isotropy()[0]
             else:
-                supercell = supercells.sorted_by_num_atoms()[0]
+                supercell = s.sorted_by_num_atoms()[0]
             supercell.to_poscar(filename=args.sposcar)
 
     else:
@@ -822,12 +816,14 @@ def supercell_dft_results(args):
 
 
 def unitcell_dft_results(args):
+
     try:
         dft_results = UnitcellDftResults.load_json(filename=args.json_file)
-    except IOError:
-        raise FileNotFoundError("JSON for the unitcell info was not found.")
+    except:
+        dft_results = UnitcellDftResults()
 
     if args.print:
+        dft_results = UnitcellDftResults.load_json(filename=args.json_file)
         print(dft_results)
         return None
 

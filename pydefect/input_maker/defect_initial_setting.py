@@ -312,7 +312,7 @@ class DefectInitialSetting:
                    oxidation_states, electronegativity)
 
     @classmethod
-    def from_basic_settings(cls, poscar, dopants=None,
+    def from_basic_settings(cls, structure, dopants=None,
                             flattened_interstitial_coords=None,
                             is_antisite=True, en_diff=_EN_DIFF, included="",
                             excluded="", distance=_DISTANCE, cutoff=_CUTOFF,
@@ -321,8 +321,8 @@ class DefectInitialSetting:
         Generates DefectInitialSetting object with default settings.
 
         Args:
-            poscar (str):
-                POSCAR type file name used for supercell defect calculations
+            structure (Structure/IStructure):
+                Structure used for supercell defect calculations
             dopants (list):
                 Dopant element names, e.g., ["Al", "N"]
             flattened_interstitial_coords (list):
@@ -350,7 +350,7 @@ class DefectInitialSetting:
 
         if dopants is None:
             dopants = []
-        s = Structure.from_file(poscar).get_sorted_structure()
+        s = structure.get_sorted_structure()
         space_group_analyzer = SpacegroupAnalyzer(s, symprec=symprec)
         symmetrized_structure = space_group_analyzer.get_symmetrized_structure()
 

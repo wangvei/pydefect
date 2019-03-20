@@ -162,7 +162,7 @@ class DefectInitialSettingTest(unittest.TestCase):
     def test_from_basic_settings(self):
         mgo_from_basic_settings = \
             DefectInitialSetting.from_basic_settings(
-                poscar=os.path.join(test_dir, "POSCAR-MgO64atoms"),
+                structure=Structure.from_file(os.path.join(test_dir, "POSCAR-MgO64atoms")),
                 dopants=["Al", "N"],
                 flattened_interstitial_coords=[0.1, 0.1, 0.1, 0.2, 0.2, 0.2],
                 is_antisite=True,

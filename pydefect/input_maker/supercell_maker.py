@@ -51,7 +51,7 @@ class Supercell:
         return cls(structure, multi)
 
     def to_poscar(self, filename):
-        poscar_str = self.supercell_structure.to(fmt="poscar").splitlines(True)
+        poscar_str = self.structure.to(fmt="poscar").splitlines(True)
         poscar_str[0] = self.comment
         with open(filename, 'w') as fw:
             for line in poscar_str:
@@ -73,7 +73,7 @@ class Supercell:
         return cls.calc_isotropy(super_abc)
 
     @staticmethod
-    def supercell_comment(multi, isotropy_value):
+    def supercell_comment(multi, isotropy):
 
         if multi.shape == (3, 3):
             multi_str = ' '.join([str(int(i)) for i in multi.flatten()])
@@ -83,14 +83,14 @@ class Supercell:
             multi_str = str(multi)
 
         return 'multi: ' + multi_str + ', ' + 'isotropy: ' + \
-               str(round(isotropy_value, 3)) + '\n'
+               str(round(isotropy, 4)) + '\n'
 
     @property
     def multi(self):
         return self._multi
 
     @property
-    def supercell_structure(self):
+    def structure(self):
         return self._supercell_structure
 
     @property
@@ -174,11 +174,11 @@ class Supercells:
 
     def sorted_by_num_atoms(self):
         return sorted(deepcopy(self._supercells),
-                      key=lambda x: (x.num_atoms, x.isotropy))
+                      key=lambda x: (x.num_atoms, round(x.isotropy, 4)))
 
     def sorted_by_isotropy(self):
         return sorted(deepcopy(self._supercells),
-                      key=lambda x: (x.isotropy, x.num_atoms))
+                      key=lambda x: (round(x.isotropy, 4), x.num_atoms))
 
     @property
     def supercells(self):
