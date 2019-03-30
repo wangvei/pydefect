@@ -107,12 +107,12 @@ class DefectEntry(MSONable):
         """ Constructs a DefectEntry class object from a dictionary.
         """
         # The keys need to be converted to integers.
+        # When using the MSONable, the key may need to be string.
         removed_atoms = {int(k): v for k, v in d["removed_atoms"].items()}
-        changes_of_num_elements = {k: int(v) for k, v in d["changes_of_num_elements"].items()}
 
         return cls(d["name"], d["initial_structure"],
                    d["perturbed_initial_structure"], removed_atoms,
-                   d["inserted_atoms"], changes_of_num_elements, d["charge"],
+                   d["inserted_atoms"], d["changes_of_num_elements"], d["charge"],
                    d["initial_symmetry"], d["multiplicity"],
                    d["perturbed_sites"])
 
@@ -193,7 +193,7 @@ class DefectEntry(MSONable):
         """
         Constructs a DefectEntry class object from a json file.
         """
-        return cls.from_dict(loadfn(filename))
+        return loadfn(filename)
 
     @property
     def atom_mapping_to_perfect(self):
@@ -219,22 +219,6 @@ class DefectEntry(MSONable):
             mapping.insert(i, None)
 
         return mapping
-
-    def as_dict(self):
-        """
-        Dict representation of DefectInput class object.
-        """
-        d = {"name": self.name,
-             "initial_structure": self.initial_structure,
-             "perturbed_initial_structure": self.perturbed_initial_structure,
-             "removed_atoms": self.removed_atoms,
-             "inserted_atoms": self.inserted_atoms,
-             "changes_of_num_elements": self.changes_of_num_elements,
-             "charge": self.charge,
-             "initial_symmetry": self.initial_symmetry,
-             "multiplicity": self.multiplicity,
-             "perturbed_sites": self.perturbed_sites}
-        return d
 
     def to_json_file(self, filename="defect_entry.json"):
         """
