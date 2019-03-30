@@ -112,7 +112,8 @@ class DefectEntryTest(unittest.TestCase):
         tmp_file = tempfile.NamedTemporaryFile()
         self._MgO_Va_O1_2.to_json_file(tmp_file.name)
         defect_entry_from_json = DefectEntry.load_json(tmp_file.name)
-        self.assertTrue(defect_entry_from_json == self._MgO_Va_O1_2)
+        print(self._MgO_Va_O1_2.as_dict())
+        self.assertTrue(defect_entry_from_json.as_dict() == self._MgO_Va_O1_2.as_dict())
 
 
     def test_atom_mapping_to_perfect(self):
