@@ -124,20 +124,31 @@ def main():
         description="Tools for configuring vasp files for a defect calculation. "
                     "One needs to make .pydefect.yaml for potcar setup.",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-        aliases=['vsm'])
+        aliases=['vs'])
 
     parser_vasp_set.add_argument(
         "-p", dest="poscar", type=str, default="POSCAR")
     parser_vasp_set.add_argument(
         "-c", "--charge", dest="charge", type=int, help="Charge.")
     parser_vasp_set.add_argument(
+        "-t", "--task", dest="task", default="defect", type=str,
+        help="The task name.")
+    parser_vasp_set.add_argument(
         "-x", "--xc", dest="xc", default="pbesol", type=str,
         help="XC interaction treatment.")
     parser_vasp_set.add_argument(
         "-k", "--kpt_density", dest="kpt_density", default=2, type=float,
         help="K-points density.")
+#    parser_vasp_set.add_argument(
+#        "-d", "--prev_dir", dest="prev_dir", type=str,
+#        help="Previous directory that is parsed for setting input.")
     parser_vasp_set.add_argument(
-        "-d", "--prev_dir", dest="prev_dir", type=str, help=".")
+        "-is", "--incar_settings", dest="incar_settings", type=str,
+        default=None, nargs="+",
+        help="INCAR settings written as -is IVDW 12 ISPIN 2.")
+    parser_vasp_set.add_argument(
+        "-pi", "--prior_info", dest="prior_info", type=str, default=None,
+        help="Prior info file.")
 
     parser_vasp_set.set_defaults(func=vasp_set)
 
@@ -230,20 +241,6 @@ def main():
         help="Print DefectEntry class object information.")
 
     parser_defect_entry.set_defaults(func=defect_entry)
-    # -- check_convergence -----------------------------------------------------
-    parser_check_convergence = subparsers.add_parser(
-        name="check_convergence",
-        description="Tools for checking the vasp calculation results",
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-        aliases=['sr'])
-
-    parser_check_convergence.add_argument(
-        "-c", "--convergence", dest="convergence", action="store_true",
-        help="Check convergence of vasp calc at electronic and ionic steps.")
-    parser_check_convergence.add_argument(
-        "--dirs", dest="dirs", nargs="+", type=str,
-        help="Directory names.")
-    parser_check_convergence.set_defaults(func=check_convergence)
 
     # -- supercell_dft_results -------------------------------------------------
     parser_supercell_results = subparsers.add_parser(
@@ -471,67 +468,6 @@ def main():
 
     parser_chempotdiag.set_defaults(func=chempotdiag)
 
-    # -- plot_band -----------------------------------------------------------
-    parser_plot_band = subparsers.add_parser(
-        name="plot_band",
-        description="Tools for plotting band structures",
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-        aliases=['pb'])
-    parser_plot_band.add_argument(
-        "-v", dest="vasprun", nargs="+", type=str)
-    parser_plot_band.add_argument(
-        "-v2", dest="vasprun2", nargs="+", type=str)
-    parser_plot_band.add_argument(
-        "-k", dest="kpoints", nargs="+", type=str)
-    parser_plot_band.add_argument(
-        "-y", dest="y_range", nargs="+", type=float)
-    parser_plot_band.add_argument(
-        "-f", dest="filename", type=str, help="pdf file name.")
-    parser_plot_band.add_argument(
-        "-a", dest="absolute", action="store_false",
-        help="Show in the absolute energy scale.")
-    parser_plot_band.add_argument(
-        "-l", dest="legend", action="store_false",
-        help="Not show the legend.")
-
-    parser_plot_band.set_defaults(func=plot_band)
-
-    # -- plot_dos -----------------------------------------------------------
-    parser_plot_dos = subparsers.add_parser(
-        name="plot_dos",
-        description="Tools for plotting density of states",
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-        aliases=['pd'])
-    parser_plot_dos.add_argument(
-        "-v", dest="vasprun", type=str)
-    parser_plot_dos.add_argument(
-        "-s", dest="sites", nargs="+", type=int, default=None,
-        help="The site index that starts from 1.")
-    parser_plot_dos.add_argument(
-        "-o", dest="orbital", action="store_false",
-        help="Switch off the orbital decomposition.")
-    parser_plot_dos.add_argument(
-        "-x", dest="x_range", nargs="+", type=float, default=None,
-        help="Set energy minimum and maximum.")
-    parser_plot_dos.add_argument(
-        "-y", dest="ymaxs", nargs="+", type=float, default=None,
-        help="Set max values of y ranges. Support two ways." +
-             "1st: total_max, each_atom" +
-             "2nd: total_max, 1st_atom, 2nd_atom, ...")
-    parser_plot_dos.add_argument(
-        "-f", dest="filename", type=str, help="pdf file name.")
-    parser_plot_dos.add_argument(
-        "-a", dest="absolute", action="store_false",
-        help="Show in the absolute energy scale.")
-    parser_plot_dos.add_argument(
-        "-l", dest="legend", action="store_false",
-        help="Not show the legend.")
-    parser_plot_dos.add_argument(
-        "--symprec", dest="symprec", type=float, default=_SYMPREC,
-        help="Set precision used for symmetry analysis [A].")
-
-    parser_plot_dos.set_defaults(func=plot_dos)
-
     # -- plot_energy -----------------------------------------------------------
     parser_plot_energy = subparsers.add_parser(
         name="plot_energy",
@@ -617,11 +553,38 @@ def initial_setting(args):
 
 def vasp_set(args):
     from obadb.vasp.oba_set_main import ObaSet
-    kwargs = {"task": "defect",
+
+    user_incar_settings = {}
+    if args.incar_settings:
+        if len(args.incar_settings) % 2 != 0:
+            raise ValueError("Invalid INCAR settings {}".
+                             format(args.incar_settings))
+        for i in range(int(len(args.incar_settings) / 2)):
+            tag = args.incar_settings[2 * i]
+            value = args.incar_settings[2 * i + 1]
+            if value[0].upper() == "T":
+                value = True
+            elif value[0].upper() == "F":
+                value = False
+            elif value[0].isdigit():
+                try:
+                    value = int(value)
+                except:
+                    value = float(value)
+            user_incar_settings[tag] = value
+
+    kwargs = {"task": args.task,
               "xc": args.xc,
               "charge": args.charge,
               "kpt_density": args.kpt_density,
-              "standardize_structure": False}
+              "user_incar_settings": user_incar_settings}
+
+    if args.prior_info:
+        from pydefect.core.prior_info import PriorInfo
+        prior_info = PriorInfo.load_json(args.prior_info)
+        kwargs["is_magnetization"] = prior_info.is_magnetic
+        kwargs["band_gap"] = prior_info.band_gap
+
     structure = Structure.from_file(args.poscar)
     obrs = ObaSet.make_input(structure, **kwargs)
     obrs.write_input(".")
@@ -662,8 +625,9 @@ def vasp_poscar_set(args):
         for i in de.perturbed_sites:
             poscar_str[i + 8] = poscar_str[i + 8][:-1] + "  Disp\n"
 
-        make_dir_poscar(de.name, poscar_str)
-        de.to_json_file(os.path.join(de.name, "defect_entry.json"))
+        defect_name = de.name + "_" + str(de.charge)
+        make_dir_poscar(defect_name, poscar_str)
+        de.to_json_file(os.path.join(defect_name, "defect_entry.json"))
 
 
 def vasp_input_maker(args):
@@ -739,50 +703,6 @@ def defect_entry(args):
         defect_entry_from_yaml.to_json_file("defect_entry.json")
     elif args.print:
         print(DefectEntry.load_json(args.json))
-
-
-def check_convergence(args):
-    for d in args.dirs:
-        if os.path.isdir(d) is False:
-            warnings.warn(message=d + " does not exist, so nothing is done.")
-        else:
-            check = check_vasp_output(d,
-                                      contcar_name=args.poscar,
-                                      outcar_name=args.outcar,
-                                      vasprun_name=args.vasprun)
-            if check["all"]:
-                if vasp_convergence_ionic(d, args.vasprun):
-                    ionic = "Y"
-                else:
-                    ionic = "N"
-                if vasp_convergence_electronic(d, args.vasprun):
-                    electronic = "Y"
-                else:
-                    electronic = "N"
-                print("{:>20}  ionic:{:>3}  electronic:{:>3}".
-                      format(d, ionic, electronic))
-            else:
-                contcar = "Y"
-                outcar = "Y"
-                vasprun = "Y"
-
-                if check["contcar"] is None:
-                    contcar = "NA"
-                elif check["contcar"] is False:
-                    contcar = "N"
-
-                if check["outcar"] is None:
-                    outcar = "NA"
-                elif check["outcar"] is False:
-                    outcar = "N"
-
-                if check["vasprun"] is None:
-                    vasprun = "NA"
-                elif check["vasprun"] is False:
-                    vasprun = "N"
-
-            print("{:>20}  CONTCAR:{:>3}  OUTCAR:{:>3}, vasprun:{:>3}".
-                  format(d, contcar, outcar, vasprun))
 
 
 def supercell_dft_results(args):
@@ -1022,47 +942,6 @@ def chempotdiag(args):
             if args.remarked_compound is None:
                 raise ValueError("remarked_compound is needed to dump yaml")
             cp.dump_vertices_yaml(os.getcwd(), args.remarked_compound)
-
-
-def plot_band(args):
-    bands = []
-    for k, v in zip(args.kpoints, args.vasprun):
-        bands.append(VaspBandStructureSymmLine(k, v))
-
-    band = get_reconstructed_band_structure(bands)
-    bs_plotter = ModBSPlotter(band)
-
-    if not args.vasprun2:
-        p = bs_plotter.get_plot(zero_to_efermi=args.absolute,
-                                ylim=args.y_range,
-                                legend=args.legend)
-    else:
-        bands2 = []
-        for k, v in zip(args.kpoints, args.vasprun2):
-            bands2.append(VaspBandStructureSymmLine(k, v))
-
-        band2 = get_reconstructed_band_structure(bands2)
-        bs_plotter2 = ModBSPlotter(band2)
-        p = bs_plotter2.plot_compare(bs_plotter,
-                                     legend=args.legend,
-                                     zero_to_efermi=args.absolute)
-
-    if args.filename:
-        p.savefig(args.filename, format="pdf")
-    else:
-        p.show()
-
-
-def plot_dos(args):
-    dos = get_dos_plot(vasprun_file=args.vasprun, sites=args.sites,
-                       orbital=args.orbital, xlim=args.x_range,
-                       ymaxs=args.ymaxs, zero_at_efermi=args.absolute,
-                       legend=args.legend, symprec=args.symprec)
-
-    if args.filename:
-        dos.savefig(args.filename, format="pdf")
-    else:
-        dos.show()
 
 
 def plot_energy(args):
