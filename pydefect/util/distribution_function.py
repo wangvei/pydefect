@@ -7,7 +7,7 @@ from scipy.constants import physical_constants
 EV = physical_constants['Boltzmann constant in eV/K'][0]
 
 
-def fermi_dirac_dist(energy, fermi_level, temperature):
+def fermi_dirac_distribution(energy, fermi_level, temperature):
 
     if (energy - fermi_level) / (EV * temperature) < 100:
         return np.reciprocal(
@@ -16,12 +16,12 @@ def fermi_dirac_dist(energy, fermi_level, temperature):
         return 0.0
 
 
-def bose_einstein_dist(energy, fermi_level, temperature):
+def bose_einstein_distribution(energy, fermi_level, temperature):
     return np.reciprocal(
         np.exp((energy - fermi_level) / (EV * temperature)) - 1)
 
 
-def maxwell_boltzmann_dist(energy, temperature):
+def maxwell_boltzmann_distribution(energy, temperature):
     return np.exp(- energy / (EV * temperature))
 
 
