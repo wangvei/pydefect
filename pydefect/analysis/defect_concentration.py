@@ -9,7 +9,7 @@ from monty.serialization import loadfn
 from collections import defaultdict
 
 from pydefect.core.unitcell_dft_results import UnitcellDftResults
-from pydefect.util.distribution_function import maxwell_boltzmann_dist
+from pydefect.util.distribution_function import maxwell_boltzmann_distribution
 from pydefect.analysis.carrier_concentration import CarrierConcentration
 
 
@@ -70,7 +70,7 @@ def calc_defect_carrier_concentration(energies, temperature, e_f, vbm, cbm, tota
             degree_of_freedom = num_sites[name] * num_mag_conf
 
             energy = energies[name][charge] + e_f * charge
-            c[charge] = maxwell_boltzmann_dist(energy, temperature) / volume \
+            c[charge] = maxwell_boltzmann_distribution(energy, temperature) / volume \
                         * degree_of_freedom
 
         if original_concentration is None:

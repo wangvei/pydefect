@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 import numpy as np
 from matplotlib import pyplot as plt
-from pydefect.util.distribution_function import fermi_dirac_dist
+from pydefect.util.distribution_function import fermi_dirac_distribution
 
 __author__ = "Yu Kumagai"
 __maintainer__ = "Yu Kumagai"
@@ -79,7 +79,7 @@ class CarrierConcentration:
         fermi_level.
         """
         mesh_distance = total_dos[1][1] - total_dos[1][0]
-        n = sum(fermi_dirac_dist(e, fermi_level, temperature) * td
+        n = sum(fermi_dirac_distribution(e, fermi_level, temperature) * td
                 for td, e in zip(total_dos[0], total_dos[1])
                 if e >= cbm - threshold)
         return n * mesh_distance / volume
@@ -91,7 +91,7 @@ class CarrierConcentration:
         fermi_level.
         """
         mesh_distance = total_dos[1][1] - total_dos[1][0]
-        p = sum(fermi_dirac_dist(fermi_level, e, temperature) * td
+        p = sum(fermi_dirac_distribution(fermi_level, e, temperature) * td
                 for td, e in zip(total_dos[0], total_dos[1])
                 if e <= vbm + threshold)
         return p * mesh_distance / volume
