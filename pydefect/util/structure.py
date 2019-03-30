@@ -21,7 +21,7 @@ __status__ = "Development"
 __date__ = "April 4, 2018"
 
 
-def perturb_neighbors(structure, center, cutoff, distance):
+def perturb_neighboring_atoms(structure, center, cutoff, distance):
     """
     Return the structure with randomly perturbed atoms near the input point in
     structure.
