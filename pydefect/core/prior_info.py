@@ -4,19 +4,14 @@ import json
 from monty.serialization import loadfn
 
 __author__ = "Yu Kumagai"
-__copyright__ = "Copyright 2018, Oba group"
-__version__ = "0.1"
 __maintainer__ = "Yu Kumagai"
-__email__ = "yuuukuma@gmail.com"
-__status__ = "Development"
-__date__ = "May 15, 2018"
 
 
 class PriorInfo:
 
     def __init__(self, energy_per_atom=None, band_gap=None,
                  total_magnetization=None, data_source=None,
-                 is_molecule=None, mag_threshold=0.001, band_gap_threshold=0.1):
+                 is_molecule=None, mag_threshold=0.01, band_gap_threshold=0.1):
         self._energy_per_atom = energy_per_atom
         self._band_gap = band_gap
         self._total_magnetization = total_magnetization
@@ -71,15 +66,12 @@ class PriorInfo:
 
     @property
     def is_magnetic(self):
-        if self._total_magnetization > self._mag_threshold:
-            return True
+        return self._total_magnetization > self._mag_threshold
 
     @property
     def is_band_gap(self):
-        if self._band_gap > self._band_gap_threshold:
-            return True
+        return self._band_gap > self._band_gap_threshold
 
     @property
     def is_metal(self):
-        if self._band_gap < self._band_gap_threshold:
-            return True
+        return self._band_gap < self._band_gap_threshold
