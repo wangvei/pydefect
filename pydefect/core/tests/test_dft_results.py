@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+from copy import deepcopy
 import numpy as np
 import os
 import tempfile
@@ -128,14 +129,19 @@ class SupercellDftResultsTest(unittest.TestCase):
         name = "Va_O1"
         initial_structure = Structure.from_file(
             os.path.join(test_dir, "MgO/defects/Va_O1_2", "POSCAR"))
+        perturbed_initial_structure = deepcopy(initial_structure)
         removed_atoms = {8: [0.25, 0.25, 0.25]}
         inserted_atoms = {}
         changes_of_num_elements = {"O": -1}
         charge = 2
+        initial_symmetry = "Oh"
+        multiplicity = 4
+        perturbed_sites = []
 
         self._defect_entry_MgO_Va_O1_2 = \
-            DefectEntry(name, initial_structure, removed_atoms, inserted_atoms,
-                        changes_of_num_elements, charge)
+            DefectEntry(name, initial_structure, perturbed_initial_structure, removed_atoms, inserted_atoms,
+                        changes_of_num_elements, charge,initial_symmetry,
+                        multiplicity, perturbed_sites)
 
     def test_print(self):
         print(self._MgO_Va_O1_2)
@@ -169,6 +175,7 @@ class SupercellDftResultsTest(unittest.TestCase):
 
     def test_dict(self):
         MgO_Va_O1_2_fd = SupercellDftResults.from_dict(self.d_from_vasp_files)
+        print(MgO_Va_O1_2_fd)
         np.testing.assert_equal(MgO_Va_O1_2_fd.eigenvalues[Spin.up],
                                 self._MgO_Va_O1_2.eigenvalues[Spin.up])
 
@@ -278,7 +285,7 @@ class UnitcellDftResultsTest(unittest.TestCase):
 
 # #        tmp_file = tempfile.NamedTemporaryFile()
 # #        self.unitcell.to_json_file(tmp_file.name)
-#         self.unitcell.to_json_file("aaa")
+        self.unitcell.to_json_file("aaa")
         unitcell_from_json = UnitcellDftResults.load_json("aaa")
 #        unitcell_from_json = UnitcellDftResults.load_json(tmp_file.name)
         print(vars(unitcell_from_json))

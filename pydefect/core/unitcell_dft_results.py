@@ -3,10 +3,11 @@
 import json
 import numpy as np
 import os
+import logging
 import warnings
 
 from collections import defaultdict
-from monty.json import MontyEncoder
+from monty.json import MontyEncoder, MSONable
 from monty.serialization import loadfn
 
 from pymatgen.io.vasp.outputs import Outcar, Vasprun, Poscar
@@ -14,15 +15,12 @@ from pymatgen.electronic_structure.core import Spin
 
 
 __author__ = "Yu Kumagai"
-__copyright__ = "Copyright 2017, Oba group"
-__version__ = "0.1"
 __maintainer__ = "Yu Kumagai"
-__email__ = "yuuukuma@gmail.com"
-__status__ = "Development"
-__date__ = "December 4, 2017"
+
+logger = logging.getLogger(__name__)
 
 
-class UnitcellDftResults:
+class UnitcellDftResults(MSONable):
     """
     DFT results for a unitcell.
     Args:
@@ -36,8 +34,6 @@ class UnitcellDftResults:
     def __init__(self, band_edge=None, static_dielectric_tensor=None,
                  ionic_dielectric_tensor=None, total_dos=None, volume=None):
         """ """
-        if band_edge is None:
-            band_edge = [None, None]
         self._band_edge = band_edge
         self._static_dielectric_tensor = static_dielectric_tensor
         self._ionic_dielectric_tensor = ionic_dielectric_tensor
@@ -54,8 +50,13 @@ class UnitcellDftResults:
         def xstr(s):
             return 'None' if s is None else str(s)
 
-        outs = ["vbm (eV): " + xstr(self._band_edge[0]),
-                "cbm (eV): " + xstr(self._band_edge[1]),
+        if self._band_edge is None:
+            band_edge = [None, None]
+        else:
+            band_edge = self._band_edge
+
+        outs = ["vbm (eV): " + xstr(band_edge[0]),
+                "cbm (eV): " + xstr(band_edge[1]),
                 "static dielectric tensor:",
                 xstr(self._static_dielectric_tensor),
                 "ionic dielectric tensor:",
@@ -72,88 +73,55 @@ class UnitcellDftResults:
         return "\n".join(outs)
 
     @classmethod
-    def from_dict(cls, d):
-        """
-        Constructs a class object from a dictionary.
-        """
-        return cls(d["band_edge"], d["static_dielectric_tensor"],
-                   d["ionic_dielectric_tensor"], d["total_dos"], d["volume"])
-
-    @classmethod
     def load_json(cls, filename):
         """
         Constructs a class object from a json file.
-        defaultdict is imperative to keep the backward compatibility.
-        For instance, when one adds new attributes, they do not exist in old
-        json files. Then, the corresponding values are set to None.
         """
-        dd = defaultdict(lambda: None, loadfn(filename))
-        return cls.from_dict(dd)
+        return loadfn(filename)
 
-    # getter
+    @staticmethod
+    def warning_message(name, attr):
+        if attr is None:
+            logger.warning("Attribute {}: is not set yet.".format(name))
+            return None
+        return attr
+
     @property
     def band_edge(self):
-        if self._band_edge is None:
-            warnings.warn(message="Band edges are not set yet.")
-            return None
-        else:
-            return self._band_edge
+        return self.warning_message("band edge", self._band_edge)
 
     @property
     def static_dielectric_tensor(self):
-        if self._static_dielectric_tensor is None:
-            print("Static dielectric tensor is not set yet.")
-            return None
-        else:
-            return self._static_dielectric_tensor
+        return self.warning_message("static dielectric tensor",
+                                    self._static_dielectric_tensor)
 
     @property
     def ionic_dielectric_tensor(self):
-        if self._ionic_dielectric_tensor is None:
-            print("Ionic dielectric tensor is not set yet.")
-            return None
-        else:
-            return self._ionic_dielectric_tensor
+        return self.warning_message("ionic dielectric tensor",
+                                    self._ionic_dielectric_tensor)
 
     @property
     def total_dielectric_tensor(self):
-        if self._static_dielectric_tensor is None:
-            print("Static dielectric tensor is not set yet.")
-            return None
-        elif self._ionic_dielectric_tensor is None:
-            print("Ionic dielectric tensor is not set yet.")
-            return None
+        if self.static_dielectric_tensor and self.ionic_dielectric_tensor:
+            return self._static_dielectric_tensor + self._ionic_dielectric_tensor
         else:
-            return self._static_dielectric_tensor + \
-                   self._ionic_dielectric_tensor
+            return None
 
     @property
     def total_dos(self):
-        if self._total_dos is None:
-            print("Total density of states is not set yet.")
-            return None
-        else:
-            return self._total_dos
+        return self.warning_message("total dos", self._total_dos)
 
     @property
     def volume(self):
-        if self._volume is None:
-            print("Volume is not set yet.")
-            return None
-        else:
-            return self._volume
+        return self.warning_message("volume", self._volume)
 
     def is_set_all(self):
-        if self._band_edge is not None and \
-           self._static_dielectric_tensor is not None and \
-           self._ionic_dielectric_tensor is not None and \
-           self._total_dos is not None and \
-           self._volume is not None:
-            return True
-        else:
-            return False
+        return not any([self._band_edge,
+                        self._static_dielectric_tensor,
+                        self._ionic_dielectric_tensor,
+                        self._total_dos,
+                        self._volume])
 
-    # setter
     @band_edge.setter
     def band_edge(self, band_edge):
         self._band_edge = band_edge
@@ -235,19 +203,6 @@ class UnitcellDftResults:
     def set_volume_from_vasp(self, directory_path, contcar_name="CONTCAR"):
         contcar = Poscar.from_file(os.path.join(directory_path, contcar_name))
         self._volume = contcar.structure.volume
-
-    def as_dict(self):
-        """
-        Dict representation of DefectInitialSetting class object.
-        """
-
-        d = {"band_edge":                self.band_edge,
-             "static_dielectric_tensor": self.static_dielectric_tensor,
-             "ionic_dielectric_tensor":  self.ionic_dielectric_tensor,
-             "total_dos":                self.total_dos,
-             "volume":                   self.volume}
-
-        return d
 
     def to_json_file(self, filename):
         """

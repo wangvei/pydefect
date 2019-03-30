@@ -155,26 +155,26 @@ class SupercellDftResults:
             fermi_level (float):
                Fermi level in the absolute scale.
         """
-        self._final_structure = final_structure
-        self._total_energy = total_energy
-        self._magnetization = magnetization
-        self._eigenvalues = eigenvalues
-        self._kpoints = kpoints
-        self._kpoint_weights = kpoint_weights
-        self._electrostatic_potential = electrostatic_potential
-        self._eigenvalue_properties = eigenvalue_properties
-        self._volume = volume
-        self._fermi_level = fermi_level
+        self.final_structure = final_structure
+        self.total_energy = total_energy
+        self.magnetization = magnetization
+        self.eigenvalues = eigenvalues
+        self.kpoints = kpoints
+        self.kpoint_weights = kpoint_weights
+        self.electrostatic_potential = electrostatic_potential
+        self.eigenvalue_properties = eigenvalue_properties
+        self.volume = volume
+        self.fermi_level = fermi_level
 
     def __str__(self):
-        outs = ["total energy (eV): " + str(self._total_energy),
-                "total magnetization (\mu_B): " + str(self._magnetization),
-                "electrostatic potential: " + str(self._electrostatic_potential),
-                "eigenvalues_properties: " + str(self._eigenvalue_properties),
-                "final structure: \n" + str(self._final_structure),
-                "volume: \n" + str(self._volume),
-                "Fermi level (eV): \n" + str(self._fermi_level),
-                "K points \n" + str(self._kpoints)]
+        outs = ["total energy (eV): " + str(self.total_energy),
+                "total magnetization (\mu_B): " + str(self.magnetization),
+                "electrostatic potential: " + str(self.electrostatic_potential),
+                "eigenvalues_properties: " + str(self.eigenvalue_properties),
+                "final structure: \n" + str(self.final_structure),
+                "volume: \n" + str(self.volume),
+                "Fermi level (eV): \n" + str(self.fermi_level),
+                "K points \n" + str(self.kpoints)]
         return "\n".join(outs)
 
     @classmethod
@@ -275,17 +275,17 @@ class SupercellDftResults:
         """
         # Spin object must be converted to string for to_json_file.
         eigenvalues = {str(spin): v.tolist()
-                       for spin, v in self._eigenvalues.items()}
-        d = {"final_structure":         self._final_structure,
-             "total_energy":            self._total_energy,
-             "magnetization":           self._magnetization,
+                       for spin, v in self.eigenvalues.items()}
+        d = {"final_structure":         self.final_structure,
+             "total_energy":            self.total_energy,
+             "magnetization":           self.magnetization,
              "eigenvalues":             eigenvalues,
-             "kpoints":                 self._kpoints,
-             "kpoint_weights":          self._kpoint_weights,
-             "electrostatic_potential": self._electrostatic_potential,
-             "eigenvalue_properties":   self._eigenvalue_properties,
-             "volume":                  self._volume,
-             "fermi_level":             self._fermi_level}
+             "kpoints":                 self.kpoints,
+             "kpoint_weights":          self.kpoint_weights,
+             "electrostatic_potential": self.electrostatic_potential,
+             "eigenvalue_properties":   self.eigenvalue_properties,
+             "volume":                  self.volume,
+             "fermi_level":             self.fermi_level}
         return d
 
     def to_json_file(self, filename):
@@ -295,46 +295,6 @@ class SupercellDftResults:
         with open(filename, 'w') as fw:
             json.dump(self.as_dict(), fw, indent=2, cls=MontyEncoder)
 
-    @property
-    def eigenvalues(self):
-        return self._eigenvalues
-
-    @property
-    def kpoints(self):
-        return self._kpoints
-
-    @property
-    def kpoint_weights(self):
-        return self._kpoint_weights
-
-    @property
-    def final_structure(self):
-        return self._final_structure
-
-    @property
-    def total_energy(self):
-        return self._total_energy
-
-    @property
-    def magnetization(self):
-        return self._magnetization
-
-    @property
-    def electrostatic_potential(self):
-        return self._electrostatic_potential
-
-    @property
-    def eigenvalue_properties(self):
-        return self._eigenvalue_properties
-
-    @property
-    def volume(self):
-        return self._volume
-
-    @property
-    def fermi_level(self):
-        return self._fermi_level
-
     def relative_total_energy(self, referenced_dft_results):
         """
         Return a relative total energy w.r.t. referenced supercell.
@@ -343,7 +303,7 @@ class SupercellDftResults:
             referenced_dft_results (SupercellDftResults):
                 SupercellDftResults object for referenced supercell dft results.
         """
-        return self._total_energy - referenced_dft_results.total_energy
+        return self.total_energy - referenced_dft_results.total_energy
 
     def relative_potential(self, referenced_dft_results, defect_entry):
         """
