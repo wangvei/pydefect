@@ -205,8 +205,8 @@ def make_defect_entry(defect_name, structure, irreducible_sites,
 
     if perturbation_radius:
         perturbed_defect_structure, perturbed_sites = \
-            perturb_neighbors(defect_structure, defect_coords,
-                              perturbation_radius, distance)
+            perturb_neighboring_atoms(defect_structure, defect_coords,
+                                      perturbation_radius, distance)
     else:
         perturbed_defect_structure = defect_structure
         perturbed_sites = []
@@ -365,7 +365,7 @@ from pydefect.core.defect_entry import get_num_atoms_for_elements
 from pydefect.vasp_util.util import get_num_electrons_from_potcar
 from pydefect.core.supercell_dft_results import defect_center
 from pydefect.input_maker.vasp_input_maker import make_potcar
-from pydefect.util.structure import perturb_neighbors
+from pydefect.util.structure import perturb_neighboring_atoms
 
 
 class DefectStructureSetMaker(DefectInputSetMaker):
@@ -419,10 +419,10 @@ class DefectStructureSetMaker(DefectInputSetMaker):
         else:
             center = defect_center(d)
             perturbed_defect_structure, perturbed_sites = \
-                perturb_neighbors(d.initial_structure,
-                                  center,
-                                  self._defect_initial_setting.cutoff,
-                                  self._defect_initial_setting.distance)
+                perturb_neighboring_atoms(d.initial_structure,
+                                          center,
+                                          self._defect_initial_setting.cutoff,
+                                          self._defect_initial_setting.distance)
 
             displaced = [True if i in perturbed_sites else False
                          for i in range(len(perturbed_defect_structure))]

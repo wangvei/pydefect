@@ -2,22 +2,20 @@
 
 import math
 import numpy as np
-import json
 import warnings
 
-from monty.json import MontyEncoder
 from monty.serialization import loadfn
 
 from collections import defaultdict
 
 from pydefect.core.unitcell_dft_results import UnitcellDftResults
-from pydefect.util.carrier_concentration import maxwell_boltzmann_dist, \
-    CarrierConcentration
+from pydefect.util.distribution_function import maxwell_boltzmann_dist
+from pydefect.analysis.carrier_concentration import CarrierConcentration
 
 
-def calc_concentration(energies, temperature, e_f, vbm, cbm, total_dos,
-                       num_sites, volume, magnetization,
-                       original_concentration):
+def calc_defect_carrier_concentration(energies, temperature, e_f, vbm, cbm, total_dos,
+                                      num_sites, volume, magnetization,
+                                      original_concentration):
     """
     Calculates the carrier and defect concentration at a given temperature and
     Fermi level. When original_concentration is given, defect concentration at
@@ -136,9 +134,9 @@ def calc_equilibrium_concentration(energies, temperature, vbm, cbm, total_dos,
     interval = e_f
     for iteration in range(max_iteration):
         p, n, defect_concentration = \
-            calc_concentration(energies, temperature, e_f, vbm, cbm, total_dos,
-                               num_sites, volume, magnetization,
-                               original_concentration)
+            calc_defect_carrier_concentration(energies, temperature, e_f, vbm, cbm, total_dos,
+                                              num_sites, volume, magnetization,
+                                              original_concentration)
         total_defect_charge = \
             sum([sum([c * e for c, e in defect_concentration[d].items()])
                  for d in defect_concentration])
@@ -243,7 +241,7 @@ class DefectConcentration:
             original_concentration = previous_concentration.concentration
 
         if e_f:
-            p, n, c = calc_concentration(
+            p, n, c = calc_defect_carrier_concentration(
                 energies, temperature, e_f, vbm, cbm, total_dos, num_sites,
                 volume, magnetization, original_concentration)
         else:

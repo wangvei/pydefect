@@ -6,7 +6,7 @@ import re
 from pymatgen.core.periodic_table import Element
 
 from pydefect.core.defect_entry import DefectEntry
-from pydefect.util.structure import perturb_neighbors
+from pydefect.util.structure import perturb_neighboring_atoms
 from pydefect.core.supercell_dft_results import defect_center_from_coords
 
 
@@ -243,8 +243,8 @@ class DefectEntrySetMaker:
                                                self._perfect_structure)
 
             perturbed_defect_structure, perturbed_sites = \
-                perturb_neighbors(defect_structure, center,
-                                  self._cutoff, self._distance)
+                perturb_neighboring_atoms(defect_structure, center,
+                                          self._cutoff, self._distance)
         else:
             perturbed_defect_structure = defect_structure
             perturbed_sites = []

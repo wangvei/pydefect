@@ -1,34 +1,15 @@
-#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-
 import numpy as np
-from scipy.constants import physical_constants
-import matplotlib.pyplot as plt
+from matplotlib import pyplot as plt
+from pydefect.util.distribution_function import fermi_dirac_dist
 
-EV = physical_constants['Boltzmann constant in eV/K'][0]
-
-
-def fermi_dirac_dist(energy, fermi_level, temperature):
-
-    if (energy - fermi_level) / (EV * temperature) < 100:
-        return np.reciprocal(
-            np.exp((energy - fermi_level) / (EV * temperature)) + 1)
-    else:
-        return 0.0
-
-
-def bose_einstein_dist(energy, fermi_level, temperature):
-    return np.reciprocal(
-        np.exp((energy - fermi_level) / (EV * temperature)) - 1)
-
-
-def maxwell_boltzmann_dist(energy, temperature):
-    return np.exp(- energy / (EV * temperature))
+__author__ = "Yu Kumagai"
+__maintainer__ = "Yu Kumagai"
 
 
 class CarrierConcentration:
     """
-    Carrier calc_concentration
+    Carrier calc_defect_carrier_concentration
     """
 
     def __init__(self, temperature, vbm, cbm, fermi_levels, ns, ps):
@@ -94,7 +75,7 @@ class CarrierConcentration:
     @staticmethod
     def n(temperature, fermi_level, total_dos, cbm, volume, threshold=0.05):
         """
-        Calculate the electron carrier calc_concentration at the given absolute
+        Calculate the electron carrier calc_defect_carrier_concentration at the given absolute
         fermi_level.
         """
         mesh_distance = total_dos[1][1] - total_dos[1][0]
@@ -106,7 +87,7 @@ class CarrierConcentration:
     @staticmethod
     def p(temperature, fermi_level, total_dos, vbm, volume, threshold=0.05):
         """
-        Calculate the hole carrier calc_concentration at the given absolute
+        Calculate the hole carrier calc_defect_carrier_concentration at the given absolute
         fermi_level.
         """
         mesh_distance = total_dos[1][1] - total_dos[1][0]

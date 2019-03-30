@@ -1,11 +1,9 @@
 # -*- coding: utf-8 -*-
 
-import numpy as np
 import os
 import unittest
 
-from pydefect.util.carrier_concentration import fermi_dirac_dist, \
-    bose_einstein_dist, maxwell_boltzmann_dist, CarrierConcentration
+from pydefect.analysis.carrier_concentration import CarrierConcentration
 from pydefect.core.unitcell_dft_results import UnitcellDftResults
 
 __author__ = "Yu Kumagai"

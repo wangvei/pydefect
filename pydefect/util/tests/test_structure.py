@@ -6,7 +6,7 @@ import unittest
 
 from pydefect.util.structure import get_symmetry_dataset, get_point_group_from_dataset,\
     structure_to_spglib_cell, spglib_cell_to_structure, find_hpkot_primitive, \
-    structure_to_seekpath, get_coordination_environment, get_coordination_distances, perturb_neighbors, \
+    structure_to_seekpath, get_coordination_environment, get_coordination_distances, perturb_neighboring_atoms, \
     NotStandardizedPrimitiveError
 from pymatgen.core.structure import Structure
 
@@ -119,7 +119,7 @@ class PerturbNeighborsTest(unittest.TestCase):
 
         # TODO: test the displacement distances
         perturbed_defect_structure, perturbed_sites = \
-            perturb_neighbors(structure, center, cutoff, distance)
+            perturb_neighboring_atoms(structure, center, cutoff, distance)
         true_perturbed_sites = [0, 40, 44, 48, 50, 56, 57]
         self.assertEqual(perturbed_sites, true_perturbed_sites)
 
@@ -168,7 +168,7 @@ class PerturbNeighborsTest(unittest.TestCase):
 
         # TODO: test the displacement distances
         perturbed_defect_structure, perturbed_sites = \
-            perturb_neighbors(structure, center, cutoff, distance)
+            perturb_neighboring_atoms(structure, center, cutoff, distance)
         true_perturbed_sites = [0, 40, 44, 48, 50, 56, 57]
         self.assertEqual(perturbed_sites, true_perturbed_sites)
 
