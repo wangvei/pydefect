@@ -4,9 +4,7 @@ import json
 import numpy as np
 import os
 import logging
-import warnings
 
-from collections import defaultdict
 from monty.json import MontyEncoder, MSONable
 from monty.serialization import loadfn
 
@@ -18,6 +16,42 @@ __author__ = "Yu Kumagai"
 __maintainer__ = "Yu Kumagai"
 
 logger = logging.getLogger(__name__)
+
+
+def check_attribute(name, attr):
+    if attr is None:
+        logger.warning("{}: is None.".format(name))
+        return None
+    return attr
+
+
+def make_symmetric_matrix(d):
+    """
+    d (list or float):
+        len(d) == 1: Suppose cubic system
+        len(d) == 3: Suppose tetragonal or orthorhombic system
+        len(d) == 6: Suppose the other system
+    """
+    if isinstance(d, float):
+        tensor = np.array([[d, 0, 0], [0, d, 0], [0, 0, d]])
+    elif len(d) == 1:
+        tensor = np.array([[d[0], 0, 0], [0, d[0], 0], [0, 0, d[0]]])
+    elif len(d) == 3:
+        tensor = np.array([[d[0], 0, 0], [0, d[1], 0], [0, 0, d[2]]])
+    elif len(d) == 6:
+        from pymatgen.util.num import make_symmetric_matrix_from_upper_tri
+        """ 
+        Given a symmetric matrix in upper triangular matrix form as flat array 
+        indexes as:
+        [A_xx,A_yy,A_zz,A_xy,A_xz,A_yz]
+        This will generate the full matrix:
+        [[A_xx,A_xy,A_xz],[A_xy,A_yy,A_yz],[A_xz,A_yz,A_zz]
+        """
+        tensor = make_symmetric_matrix_from_upper_tri(d)
+    else:
+        ValueError("{} is not valid for making symmetric matrix".format(d))
+
+    return tensor
 
 
 class UnitcellDftResults(MSONable):
@@ -79,41 +113,39 @@ class UnitcellDftResults(MSONable):
         """
         return loadfn(filename)
 
-    @staticmethod
-    def warning_message(name, attr):
-        if attr is None:
-            logger.warning("Attribute {}: is not set yet.".format(name))
-            return None
-        return attr
-
     @property
     def band_edge(self):
-        return self.warning_message("band edge", self._band_edge)
+        return check_attribute("band edge", self._band_edge)
 
     @property
     def static_dielectric_tensor(self):
-        return self.warning_message("static dielectric tensor",
-                                    self._static_dielectric_tensor)
+        return check_attribute("static dielectric tensor",
+                               self._static_dielectric_tensor)
 
     @property
     def ionic_dielectric_tensor(self):
-        return self.warning_message("ionic dielectric tensor",
-                                    self._ionic_dielectric_tensor)
+        return check_attribute("ionic dielectric tensor",
+                               self._ionic_dielectric_tensor)
 
     @property
     def total_dielectric_tensor(self):
-        if self.static_dielectric_tensor and self.ionic_dielectric_tensor:
-            return self._static_dielectric_tensor + self._ionic_dielectric_tensor
-        else:
+        try:
+            return (np.array(self.static_dielectric_tensor) +
+                    np.array(self.ionic_dielectric_tensor)).tolist()
+        except:
             return None
 
     @property
     def total_dos(self):
-        return self.warning_message("total dos", self._total_dos)
+        """
+        :return:
+            total_dos (list): [energy: list, dos: list]
+        """
+        return check_attribute("total dos", self._total_dos)
 
     @property
     def volume(self):
-        return self.warning_message("volume", self._volume)
+        return check_attribute("volume", self._volume)
 
     def is_set_all(self):
         return not any([self._band_edge,
@@ -128,45 +160,11 @@ class UnitcellDftResults(MSONable):
 
     @static_dielectric_tensor.setter
     def static_dielectric_tensor(self, d):
-        """
-        d (list):
-            len(d) == 1: Suppose cubic system
-            len(d) == 3: Suppose tetragonal or orthorhombic system
-            len(d) == 6: Suppose the other system
-        """
-        if len(d) == 1:
-            self._static_dielectric_tensor = \
-                np.array([[d[0], 0, 0],
-                          [0, d[0], 0],
-                          [0, 0, d[0]]])
-        elif len(d) == 3:
-            self._static_dielectric_tensor = \
-                np.array([[d[0], 0, 0],
-                          [0, d[1], 0],
-                          [0, 0, d[2]]])
-        elif len(d) == 6:
-            self._static_dielectric_tensor = \
-                np.array([[d[0], d[1], d[2]],
-                          [d[1], d[3], d[4]],
-                          [d[2], d[4], d[5]]])
+        self._static_dielectric_tensor = make_symmetric_matrix(d)
 
     @ionic_dielectric_tensor.setter
     def ionic_dielectric_tensor(self, d):
-        if len(d) == 1:
-            self._ionic_dielectric_tensor = \
-                np.array([[d[0], 0, 0],
-                          [0, d[0], 0],
-                          [0, 0, d[0]]])
-        elif len(d) == 3:
-            self._ionic_dielectric_tensor = \
-                np.array([[d[0], 0, 0],
-                          [0, d[1], 0],
-                          [0, 0, d[2]]])
-        else:
-            self._ionic_dielectric_tensor = \
-                np.array([[d[0], d[1], d[2]],
-                          [d[1], d[3], d[4]],
-                          [d[2], d[4], d[5]]])
+        self._ionic_dielectric_tensor = make_symmetric_matrix(d)
 
     @total_dos.setter
     def total_dos(self, total_dos):
@@ -196,15 +194,15 @@ class UnitcellDftResults(MSONable):
     def set_total_dos_from_vasp(self, directory_path,
                                 vasprun_name="vasprun.xml"):
         vasprun = Vasprun(os.path.join(directory_path, vasprun_name))
-        dos, ene = vasprun.tdos.densities, vasprun.tdos.energies
+        dos, energies = vasprun.tdos.densities, vasprun.tdos.energies
         # only non-magnetic
-        self._total_dos = np.vstack([dos[Spin.up], ene])
+        self._total_dos = np.vstack([dos[Spin.up], energies])
 
     def set_volume_from_vasp(self, directory_path, contcar_name="CONTCAR"):
         contcar = Poscar.from_file(os.path.join(directory_path, contcar_name))
         self._volume = contcar.structure.volume
 
-    def to_json_file(self, filename):
+    def to_json_file(self, filename="unitcell.json"):
         """
         Returns a json file, named unitcell.json.
         """
