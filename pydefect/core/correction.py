@@ -20,17 +20,12 @@ from pydefect.core.supercell_dft_results import distance_list, defect_center
 
 
 """
-This module provides functions used to correct error of defect formation energy
-due to finite supercell-size effect.
+This module provides functions used to correct defect formation energies
+with finite supercell-size dependencies.
 """
 
-__author__ = "Akira Takahashi"
-__copyright__ = "Copyright 2017, Oba group"
-__version__ = "0.1"
-__maintainer__ = "Akira Takahashi"
-__email__ = "takahashi.akira.36m@gmail.com"
-__status__ = "Development"
-__date__ = "December 8, 2017"
+__author__ = "Akira Takahashi, Yu Kumagai"
+__maintainer__ = "Akira Takahashi, Yu Kumagai"
 
 
 def calc_distance_two_planes(lattice_vectors):
@@ -299,82 +294,54 @@ class Correction:
                 "electro_static_pot({2}), model_pot differs({3}) differ.".
                 format(len(symbols_without_defect), len(distances_from_defect),
                        len(difference_electrostatic_pot), len(model_pot)))
-        self._method = method
-        self._ewald = ewald
-        self._lattice_energy = lattice_energy
-        self._diff_ave_pot = diff_ave_pot
-        self._alignment_correction_energy = alignment_correction_energy
-        self._symbols_without_defect = symbols_without_defect
-        self._distances_from_defect = list(distances_from_defect)
-        self._difference_electrostatic_pot = list(difference_electrostatic_pot)
-        self._model_pot = list(model_pot)
-        self._manually_set_correction_energy = manually_set_energy
-
-    @property
-    def method(self):
-        return self._method
-
-    @property
-    def ewald(self):
-        return self._ewald
-
-    @property
-    def manually_set_correction_energy(self):
-        return self._manually_set_correction_energy
-
-    @manually_set_correction_energy.setter
-    def manually_set_correction_energy(self, value):
-        self._manually_set_correction_energy = value
-
-    @property
-    def lattice_energy(self):
-        return self._lattice_energy
+        self.method = method
+        self.ewald = ewald
+        self.lattice_energy = lattice_energy
+        self.diff_ave_pot = diff_ave_pot
+        self.alignment_correction_energy = alignment_correction_energy
+        self.symbols_without_defect = symbols_without_defect
+        self.distances_from_defect = list(distances_from_defect)
+        self.difference_electrostatic_pot = list(difference_electrostatic_pot)
+        self.model_pot = list(model_pot)
+        self.manually_set_correction_energy = manually_set_energy
 
     @property
     def point_charge_correction_energy(self):
-        return - self._lattice_energy
-
-    @property
-    def diff_ave_pot(self):
-        return self._diff_ave_pot
-
-    @property
-    def alignment_correction_energy(self):
-        return self._alignment_correction_energy
+        return - self.lattice_energy
 
     @property
     def total_correction_energy(self):
         return self.point_charge_correction_energy \
                + self.alignment_correction_energy \
-               + self._manually_set_correction_energy
+               + self.manually_set_correction_energy
 
     @property
     def symbols_without_defect(self):
-        return list(self._symbols_without_defect)
+        return list(self.symbols_without_defect)
 
     @property
     def distances_from_defect(self):
-        return list(self._distances_from_defect)
+        return list(self.distances_from_defect)
 
     @property
     def difference_electrostatic_pot(self):
-        return list(self._difference_electrostatic_pot)
+        return list(self.difference_electrostatic_pot)
 
     @property
     def model_pot(self):
-        return list(self._model_pot)
+        return list(self.model_pot)
 
     @property
     def max_sphere_radius(self):
-        lattice_vectors = self._ewald.lattice_matrix
+        lattice_vectors = self.ewald.lattice_matrix
         return calc_max_sphere_radius(lattice_vectors)
 
     # TODO: if remote connect and can't be display figure by X,
     # matplotlib maybe raise exception.
     def plot_distance_vs_potential(self, file_name=None):
-        property_without_defect = list(zip(self._symbols_without_defect,
-                                           self._distances_from_defect,
-                                           self._difference_electrostatic_pot))
+        property_without_defect = list(zip(self.symbols_without_defect,
+                                           self.distances_from_defect,
+                                           self.difference_electrostatic_pot))
         property_without_defect = sorted(property_without_defect,
                                          key=itemgetter(0))
         # points_dictionary is like {"Mg": [-0.22, -0.7,...], # "O":[...]}
@@ -393,18 +360,18 @@ class Correction:
             color = tuple(np.array([0, gradation, 1-gradation]))
             ax.scatter(x_set, y_set, c=color, marker="x", label=symbol)
         # model potential
-        ax.scatter(self._distances_from_defect, self._model_pot,
+        ax.scatter(self.distances_from_defect, self.model_pot,
                    c=(1, 0, 0), marker=".", label="model potential")
         # difference between model potential and electrostatic potential
         diff_model_electrostatic = \
-            np.array(self._difference_electrostatic_pot) -\
-            np.array(self._model_pot)
-        ax.scatter(self._distances_from_defect, diff_model_electrostatic,
+            np.array(self.difference_electrostatic_pot) - \
+            np.array(self.model_pot)
+        ax.scatter(self.distances_from_defect, diff_model_electrostatic,
                    c=(1, 1, 1), marker="o", label="model - electrostatic",
                    linewidth="0.6", edgecolors="black"
                    )
         # potential difference
-        point_x = [self.max_sphere_radius, max(self._distances_from_defect)]
+        point_x = [self.max_sphere_radius, max(self.distances_from_defect)]
         point_y = [self.diff_ave_pot, self.diff_ave_pot]
         ax.plot(point_x, point_y,
                 c=(0, 0, 0), label="potential difference")
@@ -420,18 +387,18 @@ class Correction:
         """
         Returns (dict):
         """
-        d = {"method": str(self._method),
-             "ewald": self._ewald,
-             "lattice_energy": self._lattice_energy,
-             "diff_ave_pot": self._diff_ave_pot,
-             "alignment": self._alignment_correction_energy,
-             "symbols_without_defect": self._symbols_without_defect,
-             "distances_from_defect": list(self._distances_from_defect),
+        d = {"method": str(self.method),
+             "ewald": self.ewald,
+             "lattice_energy": self.lattice_energy,
+             "diff_ave_pot": self.diff_ave_pot,
+             "alignment": self.alignment_correction_energy,
+             "symbols_without_defect": self.symbols_without_defect,
+             "distances_from_defect": list(self.distances_from_defect),
              "difference_electrostatic_pot":
-                 list(self._difference_electrostatic_pot),
-             "model_pot": list(self._model_pot),
+                 list(self.difference_electrostatic_pot),
+             "model_pot": list(self.model_pot),
              "manually_set_correction_energy":
-                 self._manually_set_correction_energy}
+                 self.manually_set_correction_energy}
         return d
 
     @classmethod
@@ -453,8 +420,6 @@ class Correction:
         Args:
             filename (str):
 
-        Returns:
-
         """
         with open(filename, 'w') as fw:
             json.dump(self.as_dict(), fw, indent=2, cls=MontyEncoder)
@@ -462,7 +427,6 @@ class Correction:
     @classmethod
     def load_json(cls, filename):
         """
-        Constructs a DefectEntry class object from a json file.
         """
         return cls.from_dict(loadfn(filename))
 
@@ -637,6 +601,7 @@ class Correction:
                 pot_diff.append(a - m)
         ave_pot_diff = float(np.mean(pot_diff))
         alignment = -ave_pot_diff * charge
+
         return cls(CorrectionMethod.extended_fnv,
                    ewald, lattice_energy, ave_pot_diff, alignment,
                    symbols_without_defect, distances_from_defect, diff_ep,
