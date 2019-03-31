@@ -7,7 +7,7 @@ from pymatgen.core.structure import Structure
 
 from pydefect.input_maker.defect_initial_setting import extended_range, \
     get_electronegativity, get_oxidation_state, print_dopant_info, \
-    element_set, DefectInitialSetting
+    DefectInitialSetting
 from pydefect.core.irreducible_site import IrreducibleSite
 
 __author__ = "Yu Kumagai"
@@ -41,7 +41,7 @@ class GetElectronegativityTest(unittest.TestCase):
 
     def test_fail(self):
         fake_element = "Yk"
-        expected = None
+        expected = 0
         self.assertEqual(get_electronegativity(fake_element), expected)
 
 
@@ -53,7 +53,7 @@ class GetOxidationStateTest(unittest.TestCase):
 
     def test_fail(self):
         fake_element = "Yk"
-        expected = None
+        expected = 0
         self.assertEqual(get_oxidation_state(fake_element), expected)
 
 
@@ -62,13 +62,13 @@ class PrintDopantInfoTest(unittest.TestCase):
     pass
 
 
-class ElementSetTest(unittest.TestCase):
-    def test(self):
-        mgo_from_defect_in = \
-            DefectInitialSetting.from_defect_in(
-                poscar=os.path.join(test_dir, "POSCAR-MgO64atoms"),
-                defect_in_file=os.path.join(test_dir, "defect.in.example"))
-        print(element_set(mgo_from_defect_in))
+# class ElementSetTest(unittest.TestCase):
+#     def test(self):
+#         mgo_from_defect_in = \
+#             DefectInitialSetting.from_defect_in(
+#                 poscar=os.path.join(test_dir, "POSCAR-MgO64atoms"),
+#                 defect_in_file=os.path.join(test_dir, "defect.in.example"))
+#         print(element_set(mgo_from_defect_in))
 
 
 class DefectInitialSettingTest(unittest.TestCase):
@@ -85,19 +85,19 @@ class DefectInitialSettingTest(unittest.TestCase):
 
         space_group_symbol = "Fm-3m"
 
-        coodination_distances_Mg = {"O": [2.1234465, 2.1234465, 2.1234465,
-                                          2.1234465, 2.1234465, 2.1234465]}
-        coodination_distances_O = {"Mg": [2.1234465, 2.1234465, 2.1234465,
-                                          2.1234465, 2.1234465, 2.1234465]}
+        coordination_distances_Mg = {"O": [2.12, 2.12, 2.12,
+                                          2.12, 2.12, 2.12]}
+        coordination_distances_O = {"Mg": [2.12, 2.12, 2.12,
+                                          2.12, 2.12, 2.12]}
 
         Mg1 = IrreducibleSite(irreducible_name="Mg1",
                               element="Mg",
                               first_index=1,
                               last_index=32,
-                              representative_coords=[0, 0, 0],
+                              representative_coords=[0.0, 0.0, 0.0],
                               wyckoff="a",
                               site_symmetry="m-3m",
-                              coordination_distances=coodination_distances_Mg)
+                              coordination_distances=coordination_distances_Mg)
         O1 = IrreducibleSite(irreducible_name="O1",
                              element="O",
                              first_index=33,
@@ -105,7 +105,7 @@ class DefectInitialSettingTest(unittest.TestCase):
                              representative_coords=[0.25, 0.25, 0.25],
                              wyckoff="b",
                              site_symmetry="m-3m",
-                             coordination_distances=coodination_distances_O)
+                             coordination_distances=coordination_distances_O)
         irreducible_sites = [Mg1, O1]
 
         dopant_configs = [["Al", "Mg"], ["Al", "O"], ["N", "Mg"], ["N", "O"]]
@@ -116,40 +116,42 @@ class DefectInitialSettingTest(unittest.TestCase):
         distance = 0.15
         cutoff = 2.0
         symprec = 0.001
+        angle_tolerance = 5
         oxidation_states = {"Mg": 2, "O": -2, "Al": 3, "N": -3}
         electronegativity = {"Mg": 1.31, "O": 3.44, "Al": 1.61, "N": 3.04}
 
-        self._mgo = DefectInitialSetting(structure,
-                                         space_group_symbol,
-                                         irreducible_sites,
-                                         dopant_configs,
-                                         antisite_configs,
-                                         interstitial_coords,
-                                         included,
-                                         excluded,
-                                         distance,
-                                         cutoff,
-                                         symprec,
-                                         oxidation_states,
-                                         electronegativity)
+        self.MgO = DefectInitialSetting(structure,
+                                        space_group_symbol,
+                                        irreducible_sites,
+                                        dopant_configs,
+                                        antisite_configs,
+                                        interstitial_coords,
+                                        included,
+                                        excluded,
+                                        distance,
+                                        cutoff,
+                                        symprec,
+                                        angle_tolerance,
+                                        oxidation_states,
+                                        electronegativity)
 
     def test_dict(self):
         # object -> dict -> object
-        mgo_dict = self._mgo.as_dict()
+        mgo_dict = self.MgO.as_dict()
         mgo_from_dict = DefectInitialSetting.from_dict(mgo_dict)
-
-        # irreducible_sites usually return pointers, __eq__ is overloaded in
-        # defect_initial_setting.py. So, no problem for comparison.
-        self.assertTrue(vars(mgo_from_dict) == vars(self._mgo))
+        # Note: irreducible_sites usually return pointers, so __eq__ is
+        # overloaded in DefectInitialSetting.
+        self.assertTrue(mgo_from_dict == self.MgO)
+        self.MgO.to()
 
     def test_to_json_file(self):
-        # object -> json file -> object
+        # round trip test
         with tempfile.NamedTemporaryFile() as fp:
             tmp_json = fp.name
-            self._mgo.to_json_file(tmp_json)
+            self.MgO.to_json_file(tmp_json)
             mgo_from_json = DefectInitialSetting.load_json(tmp_json)
             print(vars(mgo_from_json))
-            self.assertTrue(vars(mgo_from_json) == vars(self._mgo))
+            self.assertTrue(mgo_from_json == self.MgO)
 
     def test_from_defect_in(self):
         mgo_from_defect_in = \
@@ -157,7 +159,7 @@ class DefectInitialSettingTest(unittest.TestCase):
                 poscar=os.path.join(test_dir, "POSCAR-MgO64atoms"),
                 defect_in_file=os.path.join(test_dir, "defect.in.example"))
 
-        self.assertTrue(vars(mgo_from_defect_in) == vars(self._mgo))
+        self.assertTrue(mgo_from_defect_in == self.MgO)
 
     def test_from_basic_settings(self):
         mgo_from_basic_settings = \
@@ -175,7 +177,7 @@ class DefectInitialSettingTest(unittest.TestCase):
 
         print(mgo_from_basic_settings.irreducible_sites[0].site_symmetry)
 
-#        self.assertTrue(mgo_from_basic_settings == self._mgo)
+#        self.assertTrue(mgo_from_basic_settings == self.MgO)
 
     def test_make_defect_name_set(self):
         # Sequence of expected is changed for easy view. Thus, sort is needed
@@ -193,7 +195,7 @@ class DefectInitialSettingTest(unittest.TestCase):
              'N_Mg1_-4', 'N_Mg1_-3', 'N_Mg1_-2', 'N_Mg1_-1', 'N_Mg1_0',
              'N_O1_-1', 'N_O1_0', 'Va_O1_-1', 'Va_O1_-2']
 
-        actual = self._mgo.make_defect_name_set()
+        actual = self.MgO.make_defect_name_set()
         self.assertEqual(sorted(actual), sorted(expected))
 
 

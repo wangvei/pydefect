@@ -239,7 +239,7 @@ class DefectStructureSetMakerTest(unittest.TestCase):
     #     if os.path.exists(test_vo_mgo_dir):
     #         shutil.rmtree(test_vo_mgo_dir)
     #     # Note that the type of filtering_words is list.
-    #     VaspDefectInputSetMaker(defect_initial_setting=self._mgo,
+    #     VaspDefectInputSetMaker(defect_initial_setting=self.MgO,
     #                             keywords=["perfect", "Va_O"])
 
 if __name__ == "__main__":
