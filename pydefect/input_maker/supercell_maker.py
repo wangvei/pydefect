@@ -19,36 +19,43 @@ logger = get_logger(__name__)
 class Supercell:
     def __init__(self, structure, multi, comment=None):
         """
-        Constructs a supercell based on a multi 3x3 matrix.
+        Constructs a supercell based on a given multiplicity.
         Args:
             structure (Structure):
                 Original structure to be expanded.
-            multi (3x3 numpy array ,list, or a scalar):
+            multi (3x3 list, list or a scalar):
                 The matrix to be used for expanding the unitcell.
             comment (str):
                 Any comment.
         """
-        if len(multi) == 9:
+        print(multi)
+        if len(multi) == 1:
+            multi_str = str(multi)
+        elif len(multi) == 9:
             multi = np.reshape(multi, (3, 3))
+            multi_str = ' '.join([str(int(i)) for i in multi])
         elif len(multi) == 3:
             multi = np.array(multi)
+            if isinstance(multi[0], list) and len(multi[0]) == 3:
+                multi_str = ' '.join([str(int(i)) for i in multi.flatten()])
+            else:
+                multi_str = ' '.join([str(int(i)) for i in multi])
+        else:
+             ValueError("Multiplicity: {} is not proper. 1, 3, or 9 numbers"
+                       " are accepted.")
 
         s = structure * multi
-        self._multi = multi
-        self._supercell_structure = s.get_sorted_structure()
-        self._isotropy = self.calc_supercell_isotropy(structure, multi)
-        self._num_atoms = self._supercell_structure.num_sites
+        self.multi = multi
+        print(s)
+        self.structure = s.get_sorted_structure()
+        self.isotropy = calc_isotropy(self.structure, multi)
+        self.num_atoms = self.structure.num_sites
 
         if comment is None:
-            self._comment = \
-                self.supercell_comment(multi, self._isotropy)
+            self.comment = 'multi: ' + multi_str + ', ' + 'isotropy: ' + \
+                           str(round(self.isotropy, 4)) + '\n'
         else:
-            self._comment = comment
-
-    @classmethod
-    def from_poscar(cls, poscar, multi):
-        structure = Structure.from_file(poscar)
-        return cls(structure, multi)
+            self.comment = comment
 
     def to_poscar(self, filename):
         poscar_str = self.structure.to(fmt="poscar").splitlines(True)
@@ -57,53 +64,18 @@ class Supercell:
             for line in poscar_str:
                 fw.write(line)
 
-    @staticmethod
-    def calc_isotropy(abc):
-        """
-        Isotropy is defined as the mean absolute deviation of the lattice
-        constants from the averaged lattice constant.
-        """
-        average_abc = np.mean(abc)
-        return np.sum(np.abs(abc - average_abc) / average_abc) / 3
 
-    @classmethod
-    def calc_supercell_isotropy(cls, structure, multi):
-        abc = structure.lattice.abc
-        super_abc = multi * abc
-        return cls.calc_isotropy(super_abc)
-
-    @staticmethod
-    def supercell_comment(multi, isotropy):
-
-        if multi.shape == (3, 3):
-            multi_str = ' '.join([str(int(i)) for i in multi.flatten()])
-        elif multi.shape == (3,):
-            multi_str = ' '.join([str(int(i)) for i in multi])
-        else:
-            multi_str = str(multi)
-
-        return 'multi: ' + multi_str + ', ' + 'isotropy: ' + \
-               str(round(isotropy, 4)) + '\n'
-
-    @property
-    def multi(self):
-        return self._multi
-
-    @property
-    def structure(self):
-        return self._supercell_structure
-
-    @property
-    def num_atoms(self):
-        return self._num_atoms
-
-    @property
-    def isotropy(self):
-        return self._isotropy
-
-    @property
-    def comment(self):
-        return self._comment
+def calc_isotropy(structure, multi):
+    """
+    Isotropy is defined as the mean absolute deviation of the lattice
+    constants from the averaged lattice constant.
+    Return
+        isotropy (float):
+    """
+    abc = structure.lattice.abc
+    super_abc = multi * abc
+    average_abc = np.mean(super_abc)
+    return np.sum(np.abs(super_abc - average_abc) / average_abc) / 3
 
 
 class Supercells:
@@ -133,13 +105,13 @@ class Supercells:
             primitive = find_spglib_standard_primitive(structure)[0]
             if conventional.num_sites == primitive.num_sites:
                 logger.info("Primitive cell is same as conventional cell.")
-                self._is_conventional_based = False
+                self.is_conventional_based = False
             else:
-                self._is_conventional_based = True
+                self.is_conventional_based = True
             unitcell = conventional
         else:
             unitcell = find_spglib_standard_primitive(structure)[0]
-            self._is_conventional_based = False
+            self.is_conventional_based = False
 
         self._sorted_unitcell = unitcell.get_sorted_structure()
         abc = np.array(self._sorted_unitcell.lattice.abc)
@@ -151,17 +123,17 @@ class Supercells:
                                         "atoms in the supercell")
 
         multi = np.ones(3, dtype="int8")
-        self._supercells = []
+        self.supercells = []
 
         for i in range(int(max_num_atoms / num_atoms_in_unitcell)):
             num_atoms = multi.prod() * num_atoms_in_unitcell
             if num_atoms > max_num_atoms:
                 break
 
-            isotropy = Supercell.calc_supercell_isotropy(self._sorted_unitcell,
-                                                         multi)
+            isotropy = calc_isotropy(self._sorted_unitcell, multi)
+            m = deepcopy(multi).tolist()
             if isotropy < isotropy_criterion and num_atoms >= min_num_atoms:
-                self._supercells.append(Supercell(self._sorted_unitcell, multi))
+                self.supercells.append(Supercell(self._sorted_unitcell, m))
 
             super_abc = multi * abc
             # multi indices within 1.05a, where a is the shortest supercell
@@ -170,23 +142,15 @@ class Supercells:
                 if super_abc[j] / min(super_abc) < 1.05:
                     multi[j] += 1
 
-        self._are_supercells = True if self._supercells else False
+        self._are_supercells = True if self.supercells else False
 
     def sorted_by_num_atoms(self):
-        return sorted(deepcopy(self._supercells),
+        return sorted(deepcopy(self.supercells),
                       key=lambda x: (x.num_atoms, round(x.isotropy, 4)))
 
     def sorted_by_isotropy(self):
-        return sorted(deepcopy(self._supercells),
+        return sorted(deepcopy(self.supercells),
                       key=lambda x: (round(x.isotropy, 4), x.num_atoms))
-
-    @property
-    def supercells(self):
-        return self._supercells
-
-    @property
-    def is_conventional_based(self):
-        return self._is_conventional_based
 
     @property
     def unitcell_structure(self):
