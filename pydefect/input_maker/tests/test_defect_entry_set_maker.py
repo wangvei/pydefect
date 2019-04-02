@@ -163,7 +163,7 @@ class DefectEntrySetMakerTest(unittest.TestCase):
     def test_mgo(self):
         desm = DefectEntrySetMaker(defect_initial_setting=self._mgo,
                                    particular_defects=["Sc_Mg1_1", "Sc_Mg1_0"])
-        des = desm._defect_entries
+        des = desm.defect_entries
 
         for de in des:
             print(de)
@@ -180,7 +180,7 @@ class DefectEntrySetMakerTest(unittest.TestCase):
         # O1 = IrreducibleSite(irreducible_name="O1", element="O",
         #                      first_index=33, last_index=64,
         #                      representative_coords=[0.25, 0.25, 0.25])
-        # self.irreducible_sites = [Mg1, O1]
+        # self._irreducible_sites = [Mg1, O1]
         # self.interstitial_coords = [[0.1, 0.1, 0.1], [0.2, 0.2, 0.2]]
 
         # name = "Va_Mg1"
@@ -196,7 +196,7 @@ class DefectEntrySetMakerTest(unittest.TestCase):
 
     # def test_vacancies(self):
     #     vac1_d = \
-    #         DefectEntryMaker("Va_Mg1_-2", self.structure, self.irreducible_sites,
+    #         DefectEntryMaker("Va_Mg1_-2", self.structure, self._irreducible_sites,
     #                          self.interstitial_coords)
     #     self.assertEqual(vac1_d.defect.as_dict(), self.test_d.as_dict())
 

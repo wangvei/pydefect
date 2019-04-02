@@ -139,7 +139,7 @@ class DefectInitialSettingTest(unittest.TestCase):
         # object -> dict -> object
         mgo_dict = self.MgO.as_dict()
         mgo_from_dict = DefectInitialSetting.from_dict(mgo_dict)
-        # Note: irreducible_sites usually return pointers, so __eq__ is
+        # Note: _irreducible_sites usually return pointers, so __eq__ is
         # overloaded in DefectInitialSetting.
         self.assertTrue(mgo_from_dict == self.MgO)
         self.MgO.to()

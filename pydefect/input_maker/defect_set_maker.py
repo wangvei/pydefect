@@ -98,7 +98,7 @@ def is_name_selected(name, keywords):
         e.g., "Va_O1_2",  "Mg_O1_0"
     """
 
-    if type(keywords) is not list:
+    if not isinstance(keywords, list):
         raise TypeError("The type of keywords is not list.")
 
     for p in keywords:
@@ -364,7 +364,6 @@ import shutil
 from pydefect.core.defect_entry import get_num_atoms_for_elements
 from pydefect.vasp_util.util import get_num_electrons_from_potcar
 from pydefect.core.supercell_dft_results import defect_center
-from pydefect.input_maker.vasp_input_maker import make_potcar
 from pydefect.util.structure import perturb_neighboring_atoms
 
 

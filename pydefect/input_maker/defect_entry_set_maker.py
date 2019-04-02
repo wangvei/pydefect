@@ -3,15 +3,19 @@
 from copy import deepcopy
 import re
 
+
 from pymatgen.core.periodic_table import Element
 
 from pydefect.core.defect_entry import DefectEntry
 from pydefect.util.structure import perturb_neighboring_atoms
+from pydefect.util.utils import get_logger
 from pydefect.core.supercell_dft_results import defect_center_from_coords
 
 
 __author__ = "Yu Kumagai"
 __maintainer__ = "Yu Kumagai"
+
+logger = get_logger(__name__)
 
 
 def get_int_from_string(x):
@@ -46,30 +50,27 @@ def parse_defect_name(defect_name):
 
 
 def print_is_being_removed(name):
-    """
-    Shows the message.
+    """ Shows the message for conveying a directory is being removed.
     Args:
-        name (str): a string
+        name (str): a directory name
     """
-    print("{:>10} is being removed.".format(name))
+    logger.warning("{:>10} is being removed.".format(name))
 
 
 def print_already_exist(name):
-    """
-    Shows the message.
+    """ Shows the message for conveying a directory already exists.
     Args:
-        name (str): a string
+        name (str): a directory name
     """
-    print("{:>10} already exists, so nothing is done.".format(name))
+    logger.warning("{:>10} already exists, so nothing is done.".format(name))
 
 
 def print_is_being_constructed(name):
-    """
-    Shows the message.
+    """ Shows the message for conveying a directory is being constructed.
     Args:
-        name (str): a string
+        name (str): a directory name
     """
-    print("{:>10} is being constructed.".format(name))
+    logger.info("{:>10} is being constructed.".format(name))
 
 
 def is_name_selected(name, keywords):
@@ -91,12 +92,11 @@ def is_name_selected(name, keywords):
         e.g., "Va_O1_2",  "Mg_O1_0"
     """
 
-    if type(keywords) is not list:
+    if not isinstance(keywords, list):
         raise TypeError("The type of keywords is not list.")
 
     for p in keywords:
-        if re.search(p, name):
-            return True
+        return re.search(p, name)
 
     return False
 
@@ -140,7 +140,7 @@ class DefectEntrySetMaker:
     def __init__(self, defect_initial_setting, keywords=None,
                  particular_defects=None):
 
-        self._perfect_structure = defect_initial_setting.structure
+        self.perfect_structure = defect_initial_setting.structure
         self._irreducible_sites = defect_initial_setting.irreducible_sites
         self._interstitial_coords = defect_initial_setting.interstitial_coords
         self._cutoff = defect_initial_setting.cutoff
@@ -153,9 +153,9 @@ class DefectEntrySetMaker:
             if keywords:
                 defect_name_set = select_defect_names(defect_name_set, keywords)
 
-        self._defect_entries = []
+        self.defect_entries = []
         for d in defect_name_set:
-            self._defect_entries.append(self.make_defect_entry(d))
+            self.defect_entries.append(self.make_defect_entry(d))
 
     def make_defect_entry(self, defect_name):
         """
@@ -177,7 +177,7 @@ class DefectEntrySetMaker:
                 Removed atom index from the perfect structure.
         """
 
-        defect_structure = deepcopy(self._perfect_structure)
+        defect_structure = deepcopy(self.perfect_structure)
         in_name, out_name, charge = parse_defect_name(defect_name)
         name = in_name + "_" + out_name
 
@@ -235,12 +235,12 @@ class DefectEntrySetMaker:
                                                             defect_name))
 
         if self._cutoff:
-            inserted_atom_coords = list([self._perfect_structure.frac_coords[k]
+            inserted_atom_coords = list([self.perfect_structure.frac_coords[k]
                                          for k in inserted_atoms])
             removed_atom_coords = list(removed_atoms.values())
             center = defect_center_from_coords(inserted_atom_coords,
                                                removed_atom_coords,
-                                               self._perfect_structure)
+                                               self.perfect_structure)
 
             perturbed_defect_structure, perturbed_sites = \
                 perturb_neighboring_atoms(defect_structure, center,
@@ -257,10 +257,3 @@ class DefectEntrySetMaker:
                            changes_of_num_elements, charge, initial_symmetry,
                            multiplicity, perturbed_sites)
 
-    @property
-    def perfect_structure(self):
-        return self._perfect_structure
-
-    @property
-    def defect_entries(self):
-        return self._defect_entries

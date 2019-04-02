@@ -19,12 +19,7 @@ from pydefect.vasp_util.script.vasp_process_analyzer import VaspNotConvergedErro
 
 
 __author__ = "Yu Kumagai"
-__copyright__ = "Copyright 2017, Oba group"
-__version__ = "0.1"
 __maintainer__ = "Yu Kumagai"
-__email__ = "yuuukuma@gmail.com"
-__status__ = "Development"
-__date__ = "December 4, 2017"
 
 
 def defect_center_from_coords(inserted_atom_coords, removed_atom_coords, structure):

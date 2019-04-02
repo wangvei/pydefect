@@ -11,12 +11,7 @@ from pymatgen.io.vasp import Vasprun
 from pydefect.vasp_util.script.plot_dos import ModDosPlotter
 
 __author__ = "Yu Kumagai"
-__copyright__ = "Copyright 2018, Oba group"
-__version__ = "0.1"
 __maintainer__ = "Yu Kumagai"
-__email__ = "yuuukuma@gmail.com"
-__status__ = "Development"
-__date__ = "May 15, 2018"
 
 
 def calc_o2p_band_center(vasprun_file):
