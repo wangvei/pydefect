@@ -589,7 +589,7 @@ atomic_jmol_colors = {
     'Mt': (235, 0, 38)}
 
 # Pauling from wikipedia
-electronegativity = {
+electronegativity_list = {
     'H' :  2.20,
     'D' :  2.20,
     'Li':  0.98,
