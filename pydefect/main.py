@@ -572,20 +572,12 @@ def vasp_poscar_set(args):
 
 def recommend_supercell(args):
     structure = Structure.from_file(args.poscar)
+    overwritten_args = overwrite_default_args(Supercells, args)
 
-    full_args = inspect.getfullargspec(Supercells)
-    num_args_with_default = len(full_args.args) - len(full_args.defaults)
-    args_with_default = full_args.args[num_args_with_default:]
-
-    supercell_args = {}
-    for a in args_with_default:
-        if hasattr(args, a):
-            if getattr(args, a) is not None:
-                supercell_args[a] = getattr(args, a)
     if args.primitive:
-        supercell_args["conventional"] = False
+        overwritten_args["conventional"] = False
 
-    s = Supercells(structure, **supercell_args)
+    s = Supercells(structure, **overwritten_args)
 
     if s.supercells:
         if args.set:
