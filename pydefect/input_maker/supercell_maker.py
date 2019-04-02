@@ -28,7 +28,6 @@ class Supercell:
             comment (str):
                 Any comment.
         """
-        print(multi)
         if len(multi) == 1:
             multi_str = str(multi)
         elif len(multi) == 9:
@@ -45,15 +44,15 @@ class Supercell:
                        " are accepted.")
 
         s = structure * multi
-        self.multi = multi
-        print(s)
         self.structure = s.get_sorted_structure()
-        self.isotropy = calc_isotropy(self.structure, multi)
+
+        self.multi = multi
+        self.isotropy = calc_isotropy(structure, multi)
         self.num_atoms = self.structure.num_sites
 
         if comment is None:
             self.comment = 'multi: ' + multi_str + ', ' + 'isotropy: ' + \
-                           str(round(self.isotropy, 4)) + '\n'
+                           str(self.isotropy) + '\n'
         else:
             self.comment = comment
 
@@ -75,7 +74,7 @@ def calc_isotropy(structure, multi):
     abc = structure.lattice.abc
     super_abc = multi * abc
     average_abc = np.mean(super_abc)
-    return np.sum(np.abs(super_abc - average_abc) / average_abc) / 3
+    return round(np.sum(np.abs(super_abc - average_abc) / average_abc) / 3, 4)
 
 
 class Supercells:
@@ -113,9 +112,9 @@ class Supercells:
             unitcell = find_spglib_standard_primitive(structure)[0]
             self.is_conventional_based = False
 
-        self._sorted_unitcell = unitcell.get_sorted_structure()
-        abc = np.array(self._sorted_unitcell.lattice.abc)
-        num_atoms_in_unitcell = self._sorted_unitcell.num_sites
+        self.unitcell = unitcell.get_sorted_structure()
+        abc = np.array(self.unitcell.lattice.abc)
+        num_atoms_in_unitcell = self.unitcell.num_sites
 
         if max_num_atoms < num_atoms_in_unitcell:
             raise TooLargeUnitcellError("Number of atoms in the unitcell is "
@@ -130,10 +129,10 @@ class Supercells:
             if num_atoms > max_num_atoms:
                 break
 
-            isotropy = calc_isotropy(self._sorted_unitcell, multi)
+            isotropy = calc_isotropy(self.unitcell, multi)
             m = deepcopy(multi).tolist()
             if isotropy < isotropy_criterion and num_atoms >= min_num_atoms:
-                self.supercells.append(Supercell(self._sorted_unitcell, m))
+                self.supercells.append(Supercell(self.unitcell, m))
 
             super_abc = multi * abc
             # multi indices within 1.05a, where a is the shortest supercell
@@ -142,19 +141,23 @@ class Supercells:
                 if super_abc[j] / min(super_abc) < 1.05:
                     multi[j] += 1
 
-        self._are_supercells = True if self.supercells else False
-
+    @property
     def sorted_by_num_atoms(self):
         return sorted(deepcopy(self.supercells),
-                      key=lambda x: (x.num_atoms, round(x.isotropy, 4)))
-
-    def sorted_by_isotropy(self):
-        return sorted(deepcopy(self.supercells),
-                      key=lambda x: (round(x.isotropy, 4), x.num_atoms))
+                      key=lambda x: (x.num_atoms, x.isotropy))
 
     @property
-    def unitcell_structure(self):
-        return self._sorted_unitcell
+    def sorted_by_isotropy(self):
+        return sorted(deepcopy(self.supercells),
+                      key=lambda x: (x.isotropy, x.num_atoms))
+
+    @property
+    def min_natom_cell(self):
+        return self.sorted_by_num_atoms[0]
+
+    @property
+    def min_iso_cell(self):
+        return self.sorted_by_isotropy[0]
 
 
 class TooLargeUnitcellError(Exception):
