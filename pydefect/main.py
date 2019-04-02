@@ -34,16 +34,36 @@ from pydefect.analysis.defect_energies import DefectEnergies, Defect
 from pydefect.analysis.defect_concentration import DefectConcentration
 from pydefect.analysis.defect_energy_plotter import DefectEnergyPlotter
 from pydefect.util.utils import get_logger
-
+from pydefect.input_maker.defect_entry_set_maker import DefectEntrySetMaker
 from pydefect.input_maker.defect_set_maker import log_is_being_removed, log_already_exist, log_is_being_constructed
-from pydefect.core.config \
-    import ELECTRONEGATIVITY_DIFFERENCE, DISPLACEMENT_DISTANCE, CUTOFF_RADIUS, \
-    SYMMETRY_TOLERANCE, ANGLE_TOL
 
 __version__ = "0.0.1"
 __date__ = "13.July.2018"
 
 logger = get_logger(__name__)
+
+
+def overwrite_default_args(class_method, main_args):
+    """ Use the defaults in class.classmethod
+
+    Args:
+        class_method (classmethod): classmethod. When using __init__, class is fine.
+        main_args (dict): Args set by main
+
+    Return:
+        args (dict): Overwritten args by options
+    """
+    full_args = inspect.getfullargspec(class_method)
+    num_args_with_default = len(full_args.args) - len(full_args.defaults)
+    args_with_default = full_args.args[num_args_with_default:]
+
+    args = {}
+    for a in args_with_default:
+        if hasattr(main_args, a):
+            if getattr(main_args, a) is not None:
+                args[a] = getattr(main_args, a)
+
+    return args
 
 
 def main():
@@ -73,74 +93,42 @@ def main():
         "-p", "--poscar", dest="poscar", default="SPOSCAR", type=str,
         help="POSCAR-type file name for the supercell.")
     parser_initial.add_argument(
-        "-d", "--dopants", dest="dopants", default="", nargs="+", type=str,
+        "-d", "--dopants", dest="dopants", nargs="+", type=str,
         help="Dopant elements, e.g., Ga In.")
     parser_initial.add_argument(
-        "-i", dest="interstitial_coords", nargs="+", default=None, type=float,
+        "-i", dest="interstitial_coords", nargs="+", type=float,
         help="Interstitial coordinates. Eg., 0.5 0.5 0.5.")
     parser_initial.add_argument(
         "-a", "--antisite", dest="is_antisite", action="store_false",
         help="Set if antisite defects are not considered.")
     parser_initial.add_argument(
-        "-e", dest="en_diff", type=float, default=ELECTRONEGATIVITY_DIFFERENCE,
-        help="Criterion of the electronegativity difference that determines "
+        "-e", dest="en_diff", type=float,
+        help="Criterion of the electronegativity_list difference that determines "
              "antisites and/or substituted impurities.")
     parser_initial.add_argument(
-        "--included", dest="included", type=str, default="", nargs="+",
+        "--included", dest="included", type=str, nargs="+",
         help="Exceptionally included defects. E.g., Va_O2_-1.")
     parser_initial.add_argument(
-        "--excluded", dest="excluded", type=str, default="", nargs="+",
+        "--excluded", dest="excluded", type=str, nargs="+",
         help="Exceptionally excluded defects. E.g., Va_O2_0.")
     parser_initial.add_argument(
-        "--distance", dest="distance", type=float, default=DISPLACEMENT_DISTANCE,
+        "--distance", dest="distance", type=float,
         help="Displacement distance. 0 means that random displacement is not "
              "considered.")
     parser_initial.add_argument(
-        "--cutoff", dest="cutoff", type=float, default=CUTOFF_RADIUS,
+        "--cutoff", dest="cutoff", type=float,
         help="Set the cutoff radius [A] in which atoms are displaced.")
     parser_initial.add_argument(
-        "--symprec", dest="symprec", type=float, default=SYMMETRY_TOLERANCE,
+        "--symprec", dest="symprec", type=float,
         help="Set precision used for symmetry analysis [A].")
     parser_initial.add_argument(
-        "--print_dopant", dest="print_dopant", default=None, type=str,
+        "--angle_tol", dest="angle_tolerance", type=float,
+        help="Set precision used for symmetry analysis.")
+    parser_initial.add_argument(
+        "--print_dopant", dest="print_dopant", type=str,
         help="Print dopant information that can be added a posteriori.")
-
     #    groups = parser_input.add_mutually_exclusive_group(required=True)
     parser_initial.set_defaults(func=initial_setting)
-
-    # -- vasp_set_maker -------------------------------------------------
-    parser_vasp_set = subparsers.add_parser(
-        name="vasp_set",
-        description="Tools for configuring vasp files for a defect calculation. "
-                    "One needs to make .pydefect.yaml for potcar setup.",
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-        aliases=['vs'])
-
-    parser_vasp_set.add_argument(
-        "-p", dest="poscar", type=str, default="POSCAR")
-    parser_vasp_set.add_argument(
-        "-c", "--charge", dest="charge", type=int, help="Charge.")
-    parser_vasp_set.add_argument(
-        "-t", "--task", dest="task", default="defect", type=str,
-        help="The task name.")
-    parser_vasp_set.add_argument(
-        "-x", "--xc", dest="xc", default="pbesol", type=str,
-        help="XC interaction treatment.")
-    parser_vasp_set.add_argument(
-        "-k", "--kpt_density", dest="kpt_density", default=2, type=float,
-        help="K-points density.")
-#    parser_vasp_set.add_argument(
-#        "-d", "--prev_dir", dest="prev_dir", type=str,
-#        help="Previous directory that is parsed for setting input.")
-    parser_vasp_set.add_argument(
-        "-is", "--incar_settings", dest="incar_settings", type=str,
-        default=None, nargs="+",
-        help="INCAR settings written as -is IVDW 12 ISPIN 2.")
-    parser_vasp_set.add_argument(
-        "-pi", "--prior_info", dest="prior_info", type=str, default=None,
-        help="Prior info file.")
-
-    parser_vasp_set.set_defaults(func=vasp_set)
 
     # -- vasp_poscar_set_maker -------------------------------------------------
     parser_vasp_poscar_set = subparsers.add_parser(
@@ -533,55 +521,17 @@ def initial_setting(args):
     if args.print_dopant:
         print_dopant_info(args.print_dopant)
     else:
-        defect_setting = DefectInitialSetting.from_basic_settings(
-            Structure.from_file(args.poscar), args.dopants,
-            args.interstitial_coords, args.is_antisite, args.en_diff,
-            args.included, args.excluded, args.distance, args.cutoff,
-            args.symprec)
+        structure = Structure.from_file(args.poscar)
+        overwritten_args = \
+            overwrite_default_args(DefectInitialSetting.from_basic_settings,
+                                   args)
+        defect_setting = \
+            DefectInitialSetting.from_basic_settings(structure,
+                                                     **overwritten_args)
         defect_setting.to()
 
 
-def vasp_set(args):
-    from obadb.vasp.oba_set_main import ObaSet
-
-    user_incar_settings = {}
-    if args.incar_settings:
-        if len(args.incar_settings) % 2 != 0:
-            raise ValueError("Invalid INCAR settings {}".
-                             format(args.incar_settings))
-        for i in range(int(len(args.incar_settings) / 2)):
-            tag = args.incar_settings[2 * i]
-            value = args.incar_settings[2 * i + 1]
-            if value[0].upper() == "T":
-                value = True
-            elif value[0].upper() == "F":
-                value = False
-            elif value[0].isdigit():
-                try:
-                    value = int(value)
-                except:
-                    value = float(value)
-            user_incar_settings[tag] = value
-
-    kwargs = {"task": args.task,
-              "xc": args.xc,
-              "charge": args.charge,
-              "kpt_density": args.kpt_density,
-              "user_incar_settings": user_incar_settings}
-
-    if args.prior_info:
-        from pydefect.core.prior_info import PriorInfo
-        prior_info = PriorInfo.load_json(args.prior_info)
-        kwargs["is_magnetization"] = prior_info.is_magnetic
-        kwargs["band_gap"] = prior_info.band_gap
-
-    structure = Structure.from_file(args.poscar)
-    obrs = ObaSet.make_input(structure, **kwargs)
-    obrs.write_input(".")
-
-
 def vasp_poscar_set(args):
-    from pydefect.input_maker.defect_entry_set_maker import DefectEntrySetMaker
     dis = DefectInitialSetting.from_defect_in(
         poscar=args.dposcar, defect_in_file=args.defect_in)
     desm = DefectEntrySetMaker(dis)

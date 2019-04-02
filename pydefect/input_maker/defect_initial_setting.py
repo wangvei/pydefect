@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 from collections import defaultdict
 import json
-import warnings
 
 from pymatgen.core.periodic_table import Element
 from pymatgen.core.structure import Structure
@@ -13,7 +12,7 @@ from monty.serialization import loadfn
 from obadb.util.structure_handler import get_symmetry_dataset, \
     get_point_group_from_dataset, get_coordination_distances
 
-from pydefect.database.atom import electronegativity, charge
+from pydefect.database.atom import electronegativity_list, charge
 from pydefect.util.utils import get_logger
 from pydefect.core.irreducible_site import IrreducibleSite
 from pydefect.core.config \
@@ -49,7 +48,7 @@ def extended_range(i):
 
 def get_electronegativity(element):
     try:
-        return electronegativity[element]
+        return electronegativity_list[element]
     except KeyError:
         logger.warning("Electronegativity of " + element + " is unavailable, " +
                        "so set to 0.")
@@ -66,8 +65,10 @@ def get_oxidation_state(element):
 
 
 def print_dopant_info(dopant):
-    """
-    This method is used to add dopant information a posteriori.
+    """ Print dopant info.
+    This method is used to add dopant info a posteriori.
+    Args:
+        dopant (str): Dopant element name e.g., Mg
     """
     if Element.is_valid_symbol(dopant):
         electronegativity = get_electronegativity(dopant)
@@ -86,7 +87,7 @@ def print_dopant_info(dopant):
 #     """
 #     e_set = set()
 
-    # for i in defect_initial_setting.irreducible_sites:
+    # for i in defect_initial_setting._irreducible_sites:
     #     e_set.add(i.element)
 
     # for a in defect_initial_setting.antisite_configs:
@@ -163,7 +164,7 @@ class DefectInitialSetting:
         if other is None or type(self) != type(other):
             raise TypeError
         # "return self.__dict__ == other.__dict__" is inapplicable,
-        # because irreducible_sites returns pointers.
+        # because _irreducible_sites returns pointers.
         # print(self.as_dict())
         # print(other.as_dict())
         return self.as_dict() == other.as_dict()
@@ -173,9 +174,9 @@ class DefectInitialSetting:
         """
         Constructs a DefectInitialSetting class object from a dictionary.
         """
-        # Expansion of irreducible_sites is necessary.
+        # Expansion of _irreducible_sites is necessary.
         irreducible_sites = []
-        for i in d["irreducible_sites"]:
+        for i in d["_irreducible_sites"]:
             irreducible_sites.append(IrreducibleSite.from_dict(i))
 
         return cls(d["structure"], d["space_group_symbol"], irreducible_sites,
@@ -356,7 +357,6 @@ class DefectInitialSetting:
             angle_tolerance (float):
                 Angle precision used for symmetry analysis.
         """
-
         if dopants is None:
             dopants = []
         s = structure.get_sorted_structure()
@@ -381,7 +381,7 @@ class DefectInitialSetting:
         # num_irreducible_sites["Mg"] = 2 means Mg has 2 inequivalent sites
         num_irreducible_sites = defaultdict(int)
 
-        # irreducible_sites (list): a set of IrreducibleSite class objects
+        # _irreducible_sites (list): a set of IrreducibleSite class objects
         irreducible_sites = []
 
         # equivalent_sites: Equivalent site indices from SpacegroupAnalyzer.
@@ -466,7 +466,7 @@ class DefectInitialSetting:
         return cls(symmetrized_structure, space_group_symbol, irreducible_sites,
                    dopant_configs, antisite_configs, interstitial_coords,
                    included, excluded, distance, cutoff, symprec,
-                   oxidation_states, electronegativity)
+                   angle_tolerance, oxidation_states, electronegativity)
 
     def as_dict(self):
         """
@@ -474,7 +474,7 @@ class DefectInitialSetting:
         """
         d = {"structure":           self.structure,
              "space_group_symbol":  self.space_group_symbol,
-             "irreducible_sites":   [i.as_dict()
+             "_irreducible_sites":   [i.as_dict()
                                      for i in self.irreducible_sites],
              "dopant_configs":      self.dopant_configs,
              "antisite_configs":    self.antisite_configs,
