@@ -8,7 +8,7 @@ from itertools import combinations
 from pymatgen import MPRester, Composition, Structure
 from pymatgen.io.vasp import Poscar
 
-from pydefect.analysis.chempotdiag.chem_pot_diag import molecule_file_names
+from pydefect.analysis.chempotdiag.chem_pot_diag import molecule_directory
 from pydefect.analysis.chempotdiag.gas import Gas
 
 
@@ -44,27 +44,21 @@ def make_vasp_inputs_from_mp(elements,
     if not os.path.isdir(dir_path):
         raise NotADirectoryError(dir_path + " is not directory.")
     mp_rester = MPRester(api_key)
-    # make directory
-    chem_sys = "-".join(elements)
-    # chem_sys_dir = os.path.join(dir_path, chem_sys)
-    # if not os.path.exists(chem_sys_dir):
-    #    os.mkdir(os.path.join(dir_path, chem_sys))
 
     # get molecules
     molecules_formula_list = []
     if adds_molecule:
-        molecules_elements = [m.composition for m in Gas]
-        for me, file_name in zip(molecules_elements, molecule_file_names):
+        for g in Gas:
+            me = g.composition
             if set([str(e) for e in me.elements]) < set(elements):
                 molecules_formula_list.append(me.reduced_formula)
                 comp_name = str(me)
-                name_dict = {"N1 H3": "NH3", "N1 O2": "NO2", "O1 H2": "H2O"}
-                if comp_name in name_dict.keys():
-                    comp_name = name_dict[comp_name]
                 dirname = comp_name + molecule_dir_name
                 if not os.path.exists(dirname):
                     os.mkdir(dirname)
-                    shutil.copyfile(file_name+"/POSCAR", dirname+"/POSCAR")
+                    shutil.copyfile("{}/{}/POSCAR".
+                                    format(molecule_directory, str(g)),
+                                    dirname+"/POSCAR")
 
     # get from mp
     for i in range(len(elements)):
