@@ -1,0 +1,9 @@
+{
+  "@module": "pydefect.core.unitcell_dft_results",
+  "@class": "UnitcellDftResults",
+  "band_edge": null,
+  "static_dielectric_tensor": null,
+  "ionic_dielectric_tensor": null,
+  "total_dos": null,
+  "volume": null
+}
