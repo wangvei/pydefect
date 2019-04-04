@@ -409,7 +409,7 @@ def main():
                                          "-> O2: 1e+5(Pa), N2: 20000(Pa)")
     parser_chempotdiag.add_argument("-t", "--temperature",
                                     dest="temperature", type=float,
-                                    default=293.15,
+                                    default=298.15,
                                     help="temperature of system (unit: K)"
                                          "e.g. -t 3000 -> 3000(K)")
 

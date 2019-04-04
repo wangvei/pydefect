@@ -19,8 +19,6 @@ from pydefect.analysis.chempotdiag.vertex \
     import Vertex, VertexOnBoundary, VerticesList
 
 molecule_directory = os.path.dirname(__file__) + "/molecules"
-molecule_file_names = glob(molecule_directory + "/*/")
-molecules = [f.split("/")[-2] for f in molecule_file_names]
 
 
 # TODO: Need to write test
