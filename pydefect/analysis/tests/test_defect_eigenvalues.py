@@ -10,7 +10,7 @@ from copy import deepcopy
 from pydefect.analysis.defect_energies import Defect
 from pydefect.analysis.defect_eigenvalues import DefectEigenvalue
 from pydefect.analysis.chempotdiag.chem_pot_diag import ChemPotDiag
-from pydefect.core.correction import Correction
+from pydefect.core.correction import ExtendedFnvCorrection
 from pydefect.core.supercell_dft_results import SupercellDftResults
 from pydefect.core.unitcell_dft_results import UnitcellDftResults
 from pydefect.core.defect_entry import DefectEntry
@@ -44,7 +44,7 @@ class DefectEigenvalueTest(unittest.TestCase):
             SupercellDftResults.load_json(
                 os.path.join(d, "dft_results.json"))
         correction = \
-            Correction.load_json(os.path.join(d, "correction.json"))
+            ExtendedFnvCorrection.load_json(os.path.join(d, "correction.json"))
 
         defect = Defect(defect_entry=defect_entry,
                         dft_results=dft_results,

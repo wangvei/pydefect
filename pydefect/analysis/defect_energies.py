@@ -92,7 +92,7 @@ class DefectEnergies:
 
             # calculate four terms for a defect formation energy.
             relative_energy = d.dft_results.relative_total_energy(perfect)
-            correction_energy = d.correction.total_correction_energy
+            correction_energy = d.correction.correction_energy
             element_interchange_energy = \
                 - sum([v * (relative_chem_pot.elem_coords[k] + standard_e[k])
                        for k, v in element_diff.items()])
