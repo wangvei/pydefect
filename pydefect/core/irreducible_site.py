@@ -35,9 +35,16 @@ class IrreducibleSite(MSONable):
         magmom (float):
             Local magnetic moment.
     """
-    def __init__(self, irreducible_name, element, first_index, last_index,
-                 representative_coords, wyckoff=None, site_symmetry=None,
-                 coordination_distances=None, magmom=None):
+    def __init__(self,
+                 irreducible_name: str,
+                 element: str,
+                 first_index: int,
+                 last_index: int,
+                 representative_coords: list,
+                 wyckoff: str = None,
+                 site_symmetry: str = None,
+                 coordination_distances: dict = None,
+                 magmom: float = None):
         self.irreducible_name = irreducible_name
         self.element = element
         self.first_index = first_index
@@ -52,9 +59,14 @@ class IrreducibleSite(MSONable):
     # in the DefectInitialSetting.
     @classmethod
     def from_dict(cls, d):
-        return cls(d["irreducible_name"], d["element"], d["first_index"],
-                   d["last_index"], d["representative_coords"], d["wyckoff"],
-                   d["site_symmetry"], d["coordination_distances"])
+        return cls(d["irreducible_name"],
+                   d["element"],
+                   d["first_index"],
+                   d["last_index"],
+                   d["representative_coords"],
+                   d["wyckoff"],
+                   d["site_symmetry"],
+                   d["coordination_distances"])
 
     def as_dict(self):
         d = {"irreducible_name": self.irreducible_name,
