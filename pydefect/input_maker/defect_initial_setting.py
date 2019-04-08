@@ -22,7 +22,6 @@ from pydefect.core.config \
 __author__ = "Yu Kumagai"
 __maintainer__ = "Yu Kumagai"
 
-
 logger = get_logger(__name__)
 
 
@@ -470,7 +469,6 @@ class DefectInitialSetting:
 
     def as_dict(self):
         """
-        Dictionary representation of DefectInitialSetting class object.
         """
         d = {"structure":           self.structure,
              "space_group_symbol":  self.space_group_symbol,

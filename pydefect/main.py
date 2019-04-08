@@ -3,7 +3,7 @@
 
 import argparse
 from glob import glob
-import inspect
+from inspect import signature
 import os
 from os.path import join
 import shutil
@@ -22,7 +22,7 @@ from pydefect.vasp_util.script.vasp_process_analyzer \
     import check_vasp_output, vasp_convergence_ionic, \
     vasp_convergence_electronic
 from pydefect.core.unitcell_dft_results import UnitcellDftResults
-from pydefect.core.correction import Ewald, Correction
+from pydefect.core.correction import Ewald, ExtendedFnvCorrection
 
 from obadb.analyzer.chempotdiag.chem_pot_diag import ChemPotDiag
 #from pydefect.analysis.chempotdiag.chem_pot_diag \
@@ -53,9 +53,14 @@ def overwrite_default_args(class_method, main_args):
     Return:
         args (dict): Overwritten args by options
     """
-    full_args = inspect.getfullargspec(class_method)
-    num_args_with_default = len(full_args.args) - len(full_args.defaults)
-    args_with_default = full_args.args[num_args_with_default:]
+    from inspect import _empty
+
+    args_with_default = []
+    sig = signature(class_method)
+
+    for name, param in sig.parameters.items():
+        if param.default != _empty:
+            args_with_default.append(name)
 
     args = {}
     for a in args_with_default:
@@ -730,22 +735,22 @@ def correction(args):
     for directory in dirs:
         json_to_make = join(directory, "correction.json")
         if os.path.exists(json_to_make) and not args.force_overwrite:
-            print("{} exists. Correction was not done.".format(json_to_make))
+            print("{} exists. ExtendedFnvCorrection was not done.".format(json_to_make))
             continue
         print("correcting {0} ...".format(directory))
         try:
             entry = DefectEntry.load_json(join(directory, "defect_entry.json"))
             defect_dft_data = SupercellDftResults.load_json(
                 join(directory, "dft_results.json"))
-            c = Correction.compute_alignment_by_extended_fnv(entry,
-                                                             defect_dft_data,
-                                                             perfect_dft_data,
-                                                             unitcell_dft_data,
-                                                             ewald_data)
+            c = ExtendedFnvCorrection.compute_alignment_by_extended_fnv(entry,
+                                                                        defect_dft_data,
+                                                                        perfect_dft_data,
+                                                                        unitcell_dft_data,
+                                                                        ewald_data)
             c.plot_distance_vs_potential(join(directory, "potential.eps"))
             c.to_json_file(join(directory, "correction.json"))
         except Exception as e:
-            warnings.warn("Correction for {0} is failed. "
+            warnings.warn("ExtendedFnvCorrection for {0} is failed. "
                           "The calculation for {0} is skipped."
                           "Exception type and message is {1}, {2}".
                           format(directory, type(e), e.args))
@@ -859,7 +864,7 @@ def plot_energy(args):
         try:
             e = DefectEntry.load_json(join(d, "defect_entry.json"))
             r = SupercellDftResults.load_json(join(d, "dft_results.json"))
-            c = Correction.load_json(join(d, "correction.json"))
+            c = ExtendedFnvCorrection.load_json(join(d, "correction.json"))
             defects.append(Defect(defect_entry=e, dft_results=r, correction=c))
         except:
             warnings.warn(message="Parsing data in " + d + " is failed.")
