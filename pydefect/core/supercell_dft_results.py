@@ -10,16 +10,22 @@ import warnings
 from monty.json import MontyEncoder
 from monty.serialization import loadfn
 
+from xml.etree.cElementTree import ParseError
+
 from pymatgen.io.vasp.inputs import Poscar
 from pymatgen.io.vasp.outputs import Outcar, Vasprun
 from pymatgen.electronic_structure.core import Spin
 
 from pydefect.core.defect_entry import DefectEntry
+from pydefect.util.utils import get_logger
 from pydefect.vasp_util.script.vasp_process_analyzer import VaspNotConvergedError
 
 
 __author__ = "Yu Kumagai"
 __maintainer__ = "Yu Kumagai"
+
+
+logger = get_logger(__name__)
 
 
 def defect_center_from_coords(inserted_atom_coords, removed_atom_coords, structure):
@@ -175,7 +181,7 @@ class SupercellDftResults:
     @classmethod
     def from_vasp_files(cls, directory_path, contcar_name="CONTCAR",
                         outcar_name="OUTCAR", vasprun_name="vasprun.xml",
-                        continue_forcedly=False):
+                        force_parsing=False):
         """
         Construct class object from vasp output files.
         Args:
@@ -187,51 +193,66 @@ class SupercellDftResults:
                 Name of the OUTCAR file.
             vasprun_name (str):
                 Name of the vasprun.xml file.
-            continue_forcedly (bool):
+            force_parsing (bool):
                 Whether to continue parsing the results even though the
                 electronic and/or ionic steps are not converged.
         """
-
-        filename = os.path.join(directory_path, contcar_name)
-        try:
-            contcar = Poscar.from_file(filename)
-        except IOError:
-            print("Parsing {] failed.".format(filename))
-
-        filename = os.path.join(directory_path, outcar_name)
-        try:
-            outcar = Outcar(os.path.join(filename))
-        except IOError:
-            print("Parsing {] failed.".format(filename))
+        final_structure = None
+        total_energy = None
+        magnetization = None
+        eigenvalues = None
+        kpoints = None
+        kpoint_weights = None
+        electrostatic_potential = None
+        eigenvalue_properties = None
+        volume = None
+        fermi_level = None
 
         filename = os.path.join(directory_path, vasprun_name)
         try:
             vasprun = Vasprun(os.path.join(directory_path, vasprun_name))
-        except IOError:
-            print("Parsing {] failed.".format(filename))
+            eigenvalues = vasprun.eigenvalues
+            kpoints = vasprun.actual_kpoints
+            kpoint_weights = vasprun.actual_kpoints_weights
+            eigenvalue_properties = vasprun.eigenvalue_band_properties
+            fermi_level = vasprun.efermi
+        except ParseError:
+            logger.warning("Parsing {} failed.".format(filename))
+        except FileNotFoundError:
+            logger.warning("File {} does not exist.".format(filename))
 
         # Check if the electronic and ionic steps are converged.
         def managing(continue_or_not, message):
             if continue_or_not:
-                raise warnings.warn(message)
+                logger.warning(message)
             else:
                 raise VaspNotConvergedError(message)
 
         if vasprun.converged_electronic is False:
-            managing(continue_forcedly, "Electronic step is not converged.")
+            managing(force_parsing, "Electronic step is not converged.")
         if vasprun.converged_ionic is False:
-            managing(continue_forcedly, "Ionic step is not converged.")
+            managing(force_parsing, "Ionic step is not converged.")
 
-        final_structure = contcar.structure
-        total_energy = outcar.final_energy
-        magnetization = outcar.total_mag
-        eigenvalues = vasprun.eigenvalues
-        kpoints = vasprun.actual_kpoints
-        kpoint_weights = vasprun.actual_kpoints_weights
-        electrostatic_potential = outcar.electrostatic_potential
-        eigenvalue_properties = vasprun.eigenvalue_band_properties
-        volume = contcar.structure.volume
-        fermi_level = vasprun.efermi
+        filename = os.path.join(directory_path, contcar_name)
+        try:
+            contcar = Poscar.from_file(filename)
+            final_structure = contcar.structure
+            volume = contcar.structure.volume
+        except ParseError:
+            logger.warning("Parsing {} failed.".format(filename))
+        except FileNotFoundError:
+            logger.warning("File {} does not exist.".format(filename))
+
+        filename = os.path.join(directory_path, outcar_name)
+        try:
+            outcar = Outcar(os.path.join(filename))
+            total_energy = outcar.final_energy
+            magnetization = outcar.total_mag
+            electrostatic_potential = outcar.electrostatic_potential
+        except ParseError:
+            logger.warning("Parsing {} failed.".format(filename))
+        except FileNotFoundError:
+            logger.warning("File {} does not exist.".format(filename))
 
         return cls(final_structure, total_energy, magnetization, eigenvalues,
                    kpoints, kpoint_weights, electrostatic_potential,
@@ -247,10 +268,16 @@ class SupercellDftResults:
         for spin, v in d["eigenvalues"].items():
             eigenvalues[Spin(int(spin))] = np.array(v)
 
-        return cls(d["final_structure"], d["total_energy"], d["magnetization"],
-                   eigenvalues, d["kpoints"], d["kpoint_weights"],
-                   d["electrostatic_potential"], d["eigenvalue_properties"],
-                   d["volume"], d["fermi_level"])
+        return cls(final_structure=d["final_structure"],
+                   total_energy=d["total_energy"],
+                   magnetization=d["magnetization"],
+                   eigenvalues=eigenvalues,
+                   kpoints=d["kpoints"],
+                   kpoint_weights=d["kpoint_weights"],
+                   electrostatic_potential=d["electrostatic_potential"],
+                   eigenvalue_properties=d["eigenvalue_properties"],
+                   volume=d["volume"],
+                   fermi_level=d["fermi_level"])
 
     @classmethod
     def load_json(cls, filename):
@@ -308,8 +335,9 @@ class SupercellDftResults:
         Args:
             referenced_dft_results (SupercellDftResults):
                 SupercellDftResults object for referenced supercell dft results.
+                Usually it is for perfect supercell.
             defect_entry (DefectEntry):
-                DefectEntry class object.
+                DefectEntry class object corresponding the SupercellDftResuts.
         """
         mapping = defect_entry.atom_mapping_to_perfect
         relative_potential = []
@@ -319,10 +347,10 @@ class SupercellDftResults:
             if p_atom is None:
                 relative_potential.append(None)
             else:
-                ep_defect = self.electrostatic_potential[d_atom]
-                ep_perfect = \
+                potential_defect = self.electrostatic_potential[d_atom]
+                potential_perfect = \
                     referenced_dft_results.electrostatic_potential[p_atom]
-                relative_potential.append(ep_defect - ep_perfect)
+                relative_potential.append(potential_defect - potential_perfect)
 
         return relative_potential
 

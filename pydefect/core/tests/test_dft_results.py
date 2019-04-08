@@ -291,7 +291,8 @@ class UnitcellDftResultsTest(PymatgenTest):
         tmp_file = tempfile.NamedTemporaryFile()
         self.MgO_unitcell.to_json_file(tmp_file.name)
         unitcell_from_json = UnitcellDftResults.load_json(tmp_file.name)
-        self.assertEqual(unitcell_from_json, self.MgO_unitcell)
+        self.assertEqual(unitcell_from_json.as_dict(),
+                         self.MgO_unitcell.as_dict())
 
     def test_print(self):
         print(self.MgO_unitcell)

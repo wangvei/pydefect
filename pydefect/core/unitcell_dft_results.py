@@ -74,11 +74,6 @@ class UnitcellDftResults(MSONable):
         self._total_dos = total_dos
         self._volume = volume
 
-    def __eq__(self, other):
-        if other is None or type(self) != type(other):
-            raise TypeError
-        return self.__dict__ == other.__dict__
-
     def __str__(self):
 
         def xstr(s):
@@ -111,7 +106,7 @@ class UnitcellDftResults(MSONable):
         """
         Constructs a class object from a json file.
         """
-        return loadfn(filename)
+        return cls.from_dict(loadfn(filename))
 
     @property
     def band_edge(self):
@@ -132,7 +127,7 @@ class UnitcellDftResults(MSONable):
         try:
             return (np.array(self.static_dielectric_tensor) +
                     np.array(self.ionic_dielectric_tensor)).tolist()
-        except:
+        except TypeError:
             return None
 
     @property
