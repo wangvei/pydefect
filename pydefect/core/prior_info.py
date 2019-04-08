@@ -11,14 +11,27 @@ __maintainer__ = "Yu Kumagai"
 class PriorInfo(MSONable):
     """ Prior information used for input of first-principles calculations
 
+    Prior information is used to change the input parameters in first-principles
+    calculations
+
     Args:
-        energy_per_atom (float):
-        band_gap (float)
+        energy_per_atom (float): Energy per atom calculated in the data_source.
+        band_gap (float): Band gap calculated in the data_source.
+        total_magnetization (float): Total magnetization in the data_source.
+        data_source (str): The data source
+        is_molecule (bool): Whether the system is molecule or not.
+        mag_threshold (float): Threshold to judge if the system is magnetic.
+        band_gap_threshold (float): Threshold to judge if the system is metal.
 
     """
-    def __init__(self, energy_per_atom=None, band_gap=None,
-                 total_magnetization=None, data_source=None,
-                 is_molecule=None, mag_threshold=0.01, band_gap_threshold=0.1):
+    def __init__(self,
+                 energy_per_atom: float = None,
+                 band_gap: float = None,
+                 total_magnetization: float = None,
+                 data_source: str = None,
+                 is_molecule: bool = None,
+                 mag_threshold: float = 0.01,
+                 band_gap_threshold: float = 0.1):
         self.energy_per_atom = energy_per_atom
         self.band_gap = band_gap
         self.total_magnetization = total_magnetization
@@ -33,7 +46,7 @@ class PriorInfo(MSONable):
 
     @classmethod
     def load_json(cls, filename="prior_info.json"):
-        return loadfn(filename)
+        return cls.from_dict(loadfn(filename))
 
     @property
     def is_magnetic(self):
