@@ -64,7 +64,7 @@ class DefectEntryTest(unittest.TestCase):
         inserted_atoms = [8]
         changes_of_num_elements = {"O": -2, "Mg": 1}
         charge = 2
-        initial_symmetry = "C1"
+        initial_symmetry = "mmm"
         multiplicity = 8
         perturbed_sites = []
 
@@ -74,16 +74,11 @@ class DefectEntryTest(unittest.TestCase):
                         changes_of_num_elements, charge, initial_symmetry,
                         multiplicity, perturbed_sites)
 
-    def test_dict(self):
-        # object -> dict -> object
-        d = self._MgO_Va_O1_2.as_dict()
-        defect_entry_from_dict = DefectEntry.from_dict(d)
-        self.assertTrue(defect_entry_from_dict == self._MgO_Va_O1_2)
-
-    # def test_from_yaml(self):
-    #     defect_entry_from_yaml = DefectEntry.from_yaml(
-    #         os.path.join(test_dir, "defect_entry-2Va_O1-Mg_i1_2.yaml"))
-    #     self.assertTrue(defect_entry_from_yaml == self._MgO_complex)
+    def test_from_yaml(self):
+        defect_entry_from_yaml = DefectEntry.from_yaml(
+            os.path.join(test_dir, "defect_entry-2Va_O1-Mg_i1_2.yaml"))
+        self.assertTrue(
+            defect_entry_from_yaml.as_dict() == self._MgO_complex.as_dict())
 
     # def test_from_simpler_yaml(self):
     #     simpler_dir = os.path.join(test_dir, "MgO/defects/2Va_O1-Mg_i1_2")
@@ -104,7 +99,8 @@ class DefectEntryTest(unittest.TestCase):
         """ round trip test of as_dict and from_dict
         """
         Va_O1_2_from_dict = DefectEntry.from_dict(self._MgO_Va_O1_2.as_dict())
-        self.assertTrue(Va_O1_2_from_dict == self._MgO_Va_O1_2)
+        self.assertTrue(Va_O1_2_from_dict.as_dict() ==
+                        self._MgO_Va_O1_2.as_dict())
 
     def test_json(self):
         """ round trip test of to_json and from_json
@@ -112,18 +108,17 @@ class DefectEntryTest(unittest.TestCase):
         tmp_file = tempfile.NamedTemporaryFile()
         self._MgO_Va_O1_2.to_json_file(tmp_file.name)
         defect_entry_from_json = DefectEntry.load_json(tmp_file.name)
-        print(self._MgO_Va_O1_2.as_dict())
-        self.assertTrue(defect_entry_from_json.as_dict() == self._MgO_Va_O1_2.as_dict())
-
+        self.assertTrue(defect_entry_from_json.as_dict() ==
+                        self._MgO_Va_O1_2.as_dict())
 
     def test_atom_mapping_to_perfect(self):
         expected = [0, 1, 2, 3, 4, 5, 6, 7, 9, 10, 11, 12, 13, 14, 15]
         actual = self._MgO_Va_O1_2.atom_mapping_to_perfect
         self.assertTrue(actual == expected)
 
-#        expected = [0, 1, 2, 3, 4, 5, 6, 7, 10, 11, 12, 13, 14, 15, None]
-#        actual = self._MgO_complex.atom_mapping_to_perfect
-#        self.assertTrue(actual == expected)
+        expected = [0, 1, 2, 3, 4, 5, 6, 7, None, 10, 11, 12, 13, 14, 15]
+        actual = self._MgO_complex.atom_mapping_to_perfect
+        self.assertTrue(actual == expected)
 
 
 if __name__ == "__main__":
