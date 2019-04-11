@@ -49,7 +49,7 @@ class CarrierConcentration:
         Calculates defect formation energies.
         Args:
             temperature (float):
-            unitcell (UnitcellDftResults):
+            unitcell (UnitcellCalcResults):
             e_range (list):
         """
         volume = unitcell.volume * 10 ** -24  # [A^3] -> [cm^3]

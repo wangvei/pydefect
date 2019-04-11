@@ -8,7 +8,7 @@ from monty.serialization import loadfn
 
 from collections import defaultdict
 
-from pydefect.core.unitcell_dft_results import UnitcellDftResults
+from pydefect.core.unitcell_calc_results import UnitcellCalcResults
 from pydefect.util.distribution_function import maxwell_boltzmann_distribution
 from pydefect.analysis.carrier_concentration import CarrierConcentration
 
@@ -40,7 +40,7 @@ def calc_defect_carrier_concentration(energies, temperature, e_f, vbm, cbm, tota
         volume (float):
             Volume in cm-3.
         magnetization (dict):
-            Magnetization in \mu_B. magnetization[defect][charge]
+            Magnetization in \mu_B. total_magnetization[defect][charge]
         original_concentration (defaultdict):
             Original defect concentration in cm-3 used for calculating the
             concentration by quench. original_concentration[name][charge]
@@ -64,7 +64,7 @@ def calc_defect_carrier_concentration(energies, temperature, e_f, vbm, cbm, tota
 
             m = magnetization[name][charge]
             if abs(m - round(m)) > 0.01:
-                warnings.warn("The magnetization of {} in {} is {}, and not "
+                warnings.warn("The total_magnetization of {} in {} is {}, and not "
                               "almost integer".format(name, charge, m))
             num_mag_conf = round(m) + 1
             degree_of_freedom = num_sites[name] * num_mag_conf
@@ -116,7 +116,7 @@ def calc_equilibrium_concentration(energies, temperature, vbm, cbm, total_dos,
         volume (float):
             Volume in cm-3.
         magnetization (dict):
-            Magnetization in \mu_B. magnetization[defect][charge]
+            Magnetization in \mu_B. total_magnetization[defect][charge]
         original_concentration (defaultdict):
             Original defect concentration in cm-3 used for calculating the
             concentration by quench. original_concentration[name][charge]
@@ -211,7 +211,7 @@ class DefectConcentration:
                 DefectEnergies object used for calculating concentration.
             temperature (float):
                 Temperature in K.
-            unitcell (UnitcellDftResults):
+            unitcell (UnitcellCalcResults):
                 UnitcellDftResults object for volume and total_dos
             num_sites_filename (str):
                 Yaml file name for the number of sites in a given volume like
@@ -291,6 +291,3 @@ class DefectConcentration:
     def concentration(self):
         return self._concentration
 
-
-class NoConvergenceError(Exception):
-    pass

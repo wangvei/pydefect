@@ -49,12 +49,12 @@ def make_symmetric_matrix(d):
         """
         tensor = make_symmetric_matrix_from_upper_tri(d)
     else:
-        ValueError("{} is not valid for making symmetric matrix".format(d))
+        raise ValueError("{} is not valid for making symmetric matrix".format(d))
 
     return tensor
 
 
-class UnitcellDftResults(MSONable):
+class UnitcellCalcResults(MSONable):
     """
     DFT results for a unitcell.
     Args:
@@ -65,14 +65,20 @@ class UnitcellDftResults(MSONable):
         volume (float):
     """
 
-    def __init__(self, band_edge=None, static_dielectric_tensor=None,
-                 ionic_dielectric_tensor=None, total_dos=None, volume=None):
+    def __init__(self,
+                 band_edge=None,
+                 static_dielectric_tensor=None,
+                 ionic_dielectric_tensor=None,
+                 total_dos=None,
+                 volume=None,
+                 is_direct=None):
         """ """
         self._band_edge = band_edge
         self._static_dielectric_tensor = static_dielectric_tensor
         self._ionic_dielectric_tensor = ionic_dielectric_tensor
         self._total_dos = total_dos
         self._volume = volume
+        self.is_direct = is_direct
 
     def __str__(self):
 
@@ -101,12 +107,25 @@ class UnitcellDftResults(MSONable):
 
         return "\n".join(outs)
 
+    # @classmethod
+    # def from_dict(cls, d):
+    #     """
+    #     Construct a class object from a dictionary.
+    #     """
+
+        # return cls(band_edge=d["band_edge"],
+        #            static_dielectric_tensor=d["static_dielectric_tensor"],
+        #            ionic_dielectric_tensor=d["ionic_dielectric_tensor"],
+        #            total_dos=d["total_dos"],
+        #            volume=d["volume"] )
+
     @classmethod
     def load_json(cls, filename):
         """
         Constructs a class object from a json file.
         """
-        return cls.from_dict(loadfn(filename))
+        # This returns the UnitcellCalcResults object
+        return loadfn(filename)
 
     @property
     def band_edge(self):
@@ -173,7 +192,7 @@ class UnitcellDftResults(MSONable):
     def set_band_edge_from_vasp(self, directory_path,
                                 vasprun_name="vasprun.xml"):
         vasprun = Vasprun(os.path.join(directory_path, vasprun_name))
-        _, cbm, vbm, _ = vasprun.eigenvalue_band_properties
+        _, cbm, vbm, self.is_direct = vasprun.eigenvalue_band_properties
         self._band_edge = [vbm, cbm]
 
     def set_static_dielectric_tensor_from_vasp(self, directory_path,

@@ -17,7 +17,7 @@ class PriorInfo(MSONable):
     Args:
         energy_per_atom (float): Energy per atom calculated in the data_source.
         band_gap (float): Band gap calculated in the data_source.
-        total_magnetization (float): Total magnetization in the data_source.
+        total_magnetization (float): Total total_magnetization in the data_source.
         data_source (str): The data source
         is_molecule (bool): Whether the system is molecule or not.
         mag_threshold (float): Threshold to judge if the system is magnetic.

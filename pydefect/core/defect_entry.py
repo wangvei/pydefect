@@ -3,23 +3,22 @@
 from copy import deepcopy
 import itertools
 import json
-
-
+import numpy as np
 import os
 import ruamel.yaml as yaml
+
+from pydefect.util.error_classes import ImproperInputStructureError
 from pydefect.util.utils import get_logger
 from pydefect.vasp_util.util import element_diff_from_poscar_files, \
     get_defect_charge_from_vasp
-
-from obadb.util.structure_handler import get_symmetry_dataset, \
-    get_point_group_from_dataset, get_coordination_distances
 
 from pymatgen.core.structure import Structure
 from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
 from monty.json import MontyEncoder, MSONable
 from monty.serialization import loadfn
 
-from pydefect.core.config import ANGLE_TOL
+from pydefect.core.config import DEFECT_SYMMETRY_TOLERANCE, ANGLE_TOL
+from pydefect.util.structure import defect_center_from_coords
 
 __author__ = "Yu Kumagai"
 __maintainer__ = "Yu Kumagai"
@@ -53,9 +52,10 @@ class DefectEntry(MSONable):
                  inserted_atoms: list,
                  changes_of_num_elements: dict,
                  charge: int,
-                 initial_symmetry: str,
-                 multiplicity: int,
-                 perturbed_sites: list):
+                 initial_site_symmetry: str,
+                 initial_symmetry_multiplicity: int,
+                 perturbed_sites: list,
+                 num_equiv_sites: int = None):
         """
         Args:
             name (str):
@@ -78,28 +78,31 @@ class DefectEntry(MSONable):
                 Values: Change of the numbers of elements wrt perfect supercell.
             charge (int):
                 Charge state of the defect. Charge is also added to the structure.
-            initial_symmetry (str):
+            initial_site_symmetry (str):
                 Initial site symmetry such as D4h.
-            multiplicity (int):
-                Site multiplicity or number of equivalent sites in the given structure.
+            initial_symmetry_multiplicity (int):
+                Symmetry multiplicity in the initial structure.
             perturbed_sites (list):
                 Indices of the perturbed site for reducing the symmetry
+            num_equiv_sites (int):
+                Number of equivalent sites in the given structure.
         """
         self.name = name
         self.initial_structure = initial_structure
         self.perturbed_initial_structure = perturbed_initial_structure
+        self.num_equiv_sites = num_equiv_sites
         self.removed_atoms = deepcopy(removed_atoms)
         self.inserted_atoms = list(inserted_atoms)
         self.changes_of_num_elements = deepcopy(changes_of_num_elements)
         self.charge = charge
-        self.initial_symmetry = initial_symmetry
-        self.multiplicity = multiplicity
+        self.initial_site_symmetry = initial_site_symmetry
+        self.initial_symmetry_multiplicity = initial_symmetry_multiplicity
         self.perturbed_sites = list(perturbed_sites)
 
     def __str__(self):
         outs = ["name: " + str(self.name),
-                "initial_symmetry: " + str(self.initial_symmetry),
-                "multiplicity: " + str(self.multiplicity),
+                "num_equiv_sites: " + str(self.num_equiv_sites),
+                "initial_site_symmetry: " + str(self.initial_site_symmetry),
                 "removed_atoms: " + str(self.removed_atoms),
                 "inserted_atoms: " + str(self.inserted_atoms),
                 "changes_of_num_element: " + str(self.changes_of_num_elements),
@@ -120,28 +123,29 @@ class DefectEntry(MSONable):
 
         print(d["perturbed_initial_structure"])
 
-        return cls(name=d["name"],
-                   initial_structure=d["initial_structure"],
-                   perturbed_initial_structure=d["perturbed_initial_structure"],
-                   removed_atoms=removed_atoms,
-                   inserted_atoms=d["inserted_atoms"],
-                   changes_of_num_elements=d["changes_of_num_elements"],
-                   charge=d["charge"],
-                   initial_symmetry=d["initial_symmetry"],
-                   multiplicity=d["multiplicity"],
-                   perturbed_sites=d["perturbed_sites"])
+        return cls(
+            name=d["name"],
+            initial_structure=d["initial_structure"],
+            perturbed_initial_structure=d["perturbed_initial_structure"],
+            removed_atoms=removed_atoms,
+            inserted_atoms=d["inserted_atoms"],
+            changes_of_num_elements=d["changes_of_num_elements"],
+            charge=d["charge"],
+            initial_site_symmetry=d["initial_site_symmetry"],
+            initial_symmetry_multiplicity=d["initial_symmetry_multiplicity"],
+            perturbed_sites=d["perturbed_sites"])
 
-    # TODO: add perturbed_structure
     @classmethod
-    def from_yaml(cls, filename, tolerance=0.1, angle_tolerance=ANGLE_TOL):
+    def from_yaml(cls, filename, tolerance=DEFECT_SYMMETRY_TOLERANCE,
+                  angle_tolerance=ANGLE_TOL):
         """
         An example of the yaml file.
-            name: 2Va_O1 + Mg_i_2
-            initial_structure: POSCAR
-            perturbed_initial_structure: POSCAR
+            name (optional): 2Va_O1 + Mg_i_2
+            initial_structure (optional): POSCAR
+            perturbed_initial_structure (optional): POSCAR
             perfect_structure: ../../defects/perfect/POSCAR
-            charge: 2 (optional, otherwise calc from INCAR and POTCAR)
-            tolerance: 0.2 (optional)
+            charge (optional, otherwise calc from INCAR and POTCAR): 2
+            tolerance (optional): 0.2
         """
 
         abs_dir = os.path.split(os.path.abspath(filename))[0]
@@ -155,12 +159,23 @@ class DefectEntry(MSONable):
             os.path.join(abs_dir, yaml_data["initial_structure"]),
             os.path.join(abs_dir, yaml_data["perfect_structure"]))
 
-        defect_structure = Structure.from_file(
-            os.path.join(abs_dir, yaml_data["initial_structure"]))
         perfect_structure = Structure.from_file(
             os.path.join(abs_dir, yaml_data["perfect_structure"]))
-        perturbed_defect_structure = Structure.from_file(
-            os.path.join(abs_dir, yaml_data["perturbed_initial_structure"]))
+        if "initial_structure" in yaml_data:
+            defect_structure = Structure.from_file(
+                os.path.join(abs_dir, yaml_data["initial_structure"]))
+        else:
+            defect_structure = None
+
+        if "perturbed_initial_structure" in yaml_data:
+            perturbed_defect_structure = Structure.from_file(
+                os.path.join(abs_dir, yaml_data["perturbed_initial_structure"]))
+        else:
+            perturbed_defect_structure = None
+
+        if defect_structure is None and perturbed_defect_structure is None:
+            raise ImproperInputStructureError(
+                "initial_structure/perturbed_initial_structure is necessary.")
 
         # set name
         if "name" in yaml_data.keys():
@@ -181,9 +196,10 @@ class DefectEntry(MSONable):
         inserted_atoms = [i for i in range(defect_structure.num_sites)]
         removed_atoms = {}
 
+
         for i, p_site in enumerate(perfect_structure):
             for j in inserted_atoms:
-                d_site = defect_structure[j]
+                d_site = s[j]
                 distance = p_site.distance(d_site)
                 # check distance and species for comparison
                 if distance < tolerance and p_site.specie == d_site.specie:
@@ -196,21 +212,32 @@ class DefectEntry(MSONable):
 
         # check the consistency of the removed and inserted atoms
         if len(perfect_structure) + len(inserted_atoms) \
-                - len(removed_atoms) != len(defect_structure):
+                - len(removed_atoms) != len(s):
             raise ImproperInputStructureError(
                 "Atoms are not properly mapped in the tolerance.")
 
+        # defect_structure is constructed if it does not exist.
+        if defect_structure is None:
+            defect_structure = deepcopy(perfect_structure)
+            for r in sorted(removed_atoms, reverse=True):
+                defect_structure.pop(r)
+            for i in sorted(inserted_atoms):
+                el = perturbed_defect_structure[i]
+                defect_structure.insert(i, el.specie, el.coords)
+
         perturbed_sites = []
-        for i, site in enumerate(defect_structure):
-            pd_site = defect_structure[i]
-            distance = site.distance(pd_site)
-            if 0.01 < distance < tolerance:
-                perturbed_sites.append(i)
+        if perturbed_defect_structure:
+            for i, site in enumerate(perturbed_defect_structure):
+                pd_site = defect_structure[i]
+                distance = site.distance(pd_site)
+                if 0.01 < distance < tolerance:
+                    perturbed_sites.append(i)
 
-        sga = SpacegroupAnalyzer(defect_structure, tolerance)
-        initial_symmetry = sga.get_point_group_symbol()
-        multiplicity = len(sga.get_point_group_operations())
+        sga = SpacegroupAnalyzer(defect_structure, tolerance, angle_tolerance)
+        initial_site_symmetry = sga.get_point_group_symbol()
+        initial_symmetry_multiplicity = len(sga.get_point_group_operations())
 
+        # TODO: calc num_equiv_sites
         return cls(name=name,
                    initial_structure=defect_structure,
                    perturbed_initial_structure=perturbed_defect_structure,
@@ -218,8 +245,8 @@ class DefectEntry(MSONable):
                    inserted_atoms=inserted_atoms,
                    changes_of_num_elements=element_diff,
                    charge=charge,
-                   initial_symmetry=initial_symmetry,
-                   multiplicity=multiplicity,
+                   initial_site_symmetry=initial_site_symmetry,
+                   initial_symmetry_multiplicity=initial_symmetry_multiplicity,
                    perturbed_sites=perturbed_sites)
 
     @classmethod
@@ -261,32 +288,22 @@ class DefectEntry(MSONable):
         with open(filename, 'w') as fw:
             json.dump(self.as_dict(), fw, indent=2, cls=MontyEncoder)
 
-    # TODO: remove bugs below
-    # def anchor_atom_index(self):
-    #     """
-    #     Returns an index of atom that is the farthest from the defect.
-    #     This atom is assumed not to displace during the structure
-    #     optimization, and so used for analyzing local defect structure.
-    #     """
-        # radius = max(self.initial_structure.lattice.abc) * 2
-        # num_sites = len(self.initial_structure.sites)
-        # shortest_distances = np.full(num_sites, radius, dtype=float)
+    @property
+    def defect_center(self):
+        inserted_atom_coords = [self.initial_structure[i] for i in self.inserted_atoms]
+        removed_atom_coords = [v for v in self.removed_atoms.values()]
+        return defect_center_from_coords(inserted_atom_coords, removed_atom_coords, self.initial_structure)
 
-        # distance_set = self.initial_structure.get_sites_in_sphere(
-        #     self._defect_coords, radius, include_index=True)
+    @property
+    def anchor_atom_index(self):
+        """
+        Returns an index of atom that is the farthest from the defect.
+        This atom is assumed not to displace during the structure
+        optimization, and so used for analyzing local defect structure.
+        """
+        distance_set = \
+            self.initial_structure.get_all_distances(self.defect_center,
+                                                     self.initial_structure.frac_coords)
 
-        # for d in distance_set:
-        #     atom_index = d[2]
-        #     if d[1] < shortest_distances[atom_index]:
-        #         shortest_distances[atom_index] = d[1]
-
-        # farthest_atom_index = np.argmax(shortest_distances)
-        # farthest_dist = shortest_distances[farthest_atom_index]
-
-        # return farthest_atom_index, farthest_dist
-
-
-class ImproperInputStructureError(Exception):
-    pass
-
+        return distance_set.index(max(distance_set))
 

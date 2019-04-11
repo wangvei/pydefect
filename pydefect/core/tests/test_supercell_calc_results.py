@@ -11,9 +11,10 @@ from pymatgen.electronic_structure.core import Spin
 from pymatgen.util.testing import PymatgenTest
 
 from pydefect.core.defect_entry import DefectEntry
-from pydefect.core.supercell_dft_results \
-    import defect_center, distances_from_point, SupercellDftResults
-from pydefect.core.unitcell_dft_results import UnitcellDftResults
+from pydefect.core.supercell_calc_results \
+    import SupercellCalcResults
+from pydefect.util.structure import defect_center, distances_from_point
+from pydefect.core.unitcell_calc_results import UnitcellCalcResults
 
 __author__ = "Yu Kumagai"
 __maintainer__ = "Yu Kumagai"
@@ -113,11 +114,11 @@ class SupercellDftResultsTest(unittest.TestCase):
         """ """
 
         self._MgO_Va_O1_2 = \
-            SupercellDftResults.from_vasp_files(
+            SupercellCalcResults.from_vasp_files(
                 os.path.join(test_dir, "MgO/defects/Va_O1_2"))
 
         self._MgO_perfect = \
-            SupercellDftResults.from_vasp_files(
+            SupercellCalcResults.from_vasp_files(
                 os.path.join(test_dir, "MgO/defects/perfect"))
 
         self.d_from_vasp_files = self._MgO_Va_O1_2.as_dict()
@@ -153,9 +154,9 @@ class SupercellDftResultsTest(unittest.TestCase):
         expected = -93.64519527
         self.assertEqual(self.d_from_vasp_files["total_energy"], expected)
 
-        # magnetization
+        # total_magnetization
         expected = 3.4e-06
-        self.assertEqual(self.d_from_vasp_files["magnetization"], expected)
+        self.assertEqual(self.d_from_vasp_files["total_magnetization"], expected)
 
         # eigenvalue: test only a single point
         expected = [-1.43572e+01, 1.0]
@@ -170,7 +171,7 @@ class SupercellDftResultsTest(unittest.TestCase):
                         expected)
 
     def test_dict(self):
-        MgO_Va_O1_2_fd = SupercellDftResults.from_dict(self.d_from_vasp_files)
+        MgO_Va_O1_2_fd = SupercellCalcResults.from_dict(self.d_from_vasp_files)
         print(MgO_Va_O1_2_fd)
         np.testing.assert_equal(MgO_Va_O1_2_fd.eigenvalues[Spin.up],
                                 self._MgO_Va_O1_2.eigenvalues[Spin.up])
@@ -178,7 +179,7 @@ class SupercellDftResultsTest(unittest.TestCase):
     def test_json(self):
         tmp_file = tempfile.NamedTemporaryFile()
         self._MgO_Va_O1_2.to_json_file(tmp_file.name)
-        MgO_Va_O1_2_from_json = SupercellDftResults.load_json(tmp_file.name)
+        MgO_Va_O1_2_from_json = SupercellCalcResults.load_json(tmp_file.name)
         np.testing.assert_equal(MgO_Va_O1_2_from_json.eigenvalues[Spin.up],
                                 self._MgO_Va_O1_2.eigenvalues[Spin.up])
 
@@ -205,97 +206,6 @@ class SupercellDftResultsTest(unittest.TestCase):
                         perfect_potential)]
 
         self.assertTrue(actual == expected)
-
-
-class UnitcellDftResultsTest(PymatgenTest):
-
-    def setUp(self):
-        """ """
-        self.unitcell = UnitcellDftResults(band_edge=None,
-                                           static_dielectric_tensor=None,
-                                           ionic_dielectric_tensor=None,
-                                           total_dos=None,
-                                           volume=None)
-
-        MgO_band_edges = [2.9978, 7.479]
-        MgO_static_dielectric_tensor = [[3.166727, 0, 0],
-                                        [0, 3.166727, 0],
-                                        [0, 0, 3.166727]]
-        MgO_ionic_dielectric_tensor = [[9.102401, 0, 0],
-                                       [0, 9.102448, 0],
-                                       [0, 0, 9.102542]]
-        MgO_fictitious_dos = [[0] * 301] * 2
-        MgO_fictitious_dos[1][300] = 23.3688
-
-        MgO_volume = 19.1659131591
-        self.MgO_unitcell = UnitcellDftResults(
-            band_edge=MgO_band_edges,
-            static_dielectric_tensor=MgO_static_dielectric_tensor,
-            ionic_dielectric_tensor=MgO_ionic_dielectric_tensor,
-            total_dos=MgO_fictitious_dos,
-            volume=MgO_volume)
-
-    def test_set_static_dielectric_tensor(self):
-        self.unitcell.static_dielectric_tensor = 3.166727
-        self.assertArrayAlmostEqual(self.unitcell.static_dielectric_tensor,
-                                    self.MgO_unitcell.static_dielectric_tensor)
-        self.unitcell.ionic_dielectric_tensor = [9.102401, 9.102448, 9.102542]
-        self.assertArrayAlmostEqual(self.unitcell.ionic_dielectric_tensor,
-                                    self.MgO_unitcell.ionic_dielectric_tensor)
-        # test upper triangle matrix form
-        self.unitcell.ionic_dielectric_tensor = [1, 2, 3, 4, 5, 6]
-        self.assertArrayAlmostEqual(self.unitcell.ionic_dielectric_tensor,
-                                    [[1, 4, 5], [4, 2, 6], [5, 6, 3]])
-
-    def test_band_edge(self):
-        self.unitcell.set_band_edge_from_vasp(
-            directory_path=os.path.join(test_dir,
-                                        "MgO/unitcell/structure_optimization"))
-        self.assertArrayAlmostEqual(self.unitcell.band_edge,
-                                    self.MgO_unitcell.band_edge)
-
-    def test_dielectric_constant(self):
-        self.unitcell.set_static_dielectric_tensor_from_vasp(
-            directory_path=os.path.join(test_dir,
-                                        "MgO/unitcell/dielectric_constants"))
-        self.unitcell.set_ionic_dielectric_tensor_from_vasp(
-            directory_path=os.path.join(test_dir,
-                                        "MgO/unitcell/dielectric_constants"))
-        self.assertArrayAlmostEqual(self.unitcell.static_dielectric_tensor,
-                                    self.MgO_unitcell.static_dielectric_tensor)
-        self.assertArrayAlmostEqual(self.unitcell.ionic_dielectric_tensor,
-                                    self.MgO_unitcell.ionic_dielectric_tensor)
-        MgO_total_dielectric_tensor = [[12.269128, 0, 0],
-                                       [0, 12.269175, 0],
-                                       [0, 0, 12.269269]]
-        self.assertArrayAlmostEqual(self.unitcell.total_dielectric_tensor,
-                                    MgO_total_dielectric_tensor)
-
-    def test_total_dos(self):
-        self.unitcell.set_total_dos_from_vasp(
-            directory_path=os.path.join(test_dir,
-                                        "MgO/unitcell/structure_optimization"))
-        # check length of dos
-        self.assertEqual(len(self.unitcell.total_dos[0]), 301)
-        # check 301st density of states
-        self.assertAlmostEqual(self.unitcell.total_dos[1][300],
-                               self.MgO_unitcell.total_dos[1][300])
-
-    def test_volume(self):
-        self.unitcell.set_volume_from_vasp(
-            directory_path=os.path.join(test_dir,
-                                        "MgO/unitcell/structure_optimization"))
-        self.assertAlmostEqual(self.unitcell.volume, self.MgO_unitcell.volume)
-
-    def test_dict_json(self):
-        tmp_file = tempfile.NamedTemporaryFile()
-        self.MgO_unitcell.to_json_file(tmp_file.name)
-        unitcell_from_json = UnitcellDftResults.load_json(tmp_file.name)
-        self.assertEqual(unitcell_from_json.as_dict(),
-                         self.MgO_unitcell.as_dict())
-
-    def test_print(self):
-        print(self.MgO_unitcell)
 
 
 if __name__ == "__main__":

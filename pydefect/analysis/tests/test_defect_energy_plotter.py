@@ -7,13 +7,13 @@ import tempfile
 import unittest
 from copy import deepcopy
 
-from pydefect.analysis.defect_energies import DefectEnergies, Defect
+from pydefect.analysis.defect_energy import DefectEnergies, Defect
 from pydefect.analysis.defect_concentration import DefectConcentration
 from pydefect.analysis.defect_energy_plotter import DefectEnergyPlotter
 from pydefect.analysis.chempotdiag.chem_pot_diag import ChemPotDiag
 from pydefect.core.correction import ExtendedFnvCorrection
-from pydefect.core.supercell_dft_results import SupercellDftResults
-from pydefect.core.unitcell_dft_results import UnitcellDftResults
+from pydefect.core.supercell_calc_results import SupercellCalcResults
+from pydefect.core.unitcell_calc_results import UnitcellCalcResults
 from pydefect.core.defect_entry import DefectEntry
 
 __author__ = "Yu Kumagai"
@@ -33,10 +33,10 @@ class DefectEnergiesTest(unittest.TestCase):
     def setUp(self):
         """ """
         unitcell_file = os.path.join(test_dir, "MgO/defects/unitcell.json")
-        unitcell = UnitcellDftResults.load_json(unitcell_file)
+        unitcell = UnitcellCalcResults.load_json(unitcell_file)
         perfect_file = os.path.join(test_dir,
                                     "MgO/defects/perfect/dft_results.json")
-        perfect = SupercellDftResults.load_json(perfect_file)
+        perfect = SupercellCalcResults.load_json(perfect_file)
 
         defect_dirs = ["Mg_O1_0", "Mg_O1_1", "Mg_O1_2", "Mg_O1_3", "Mg_O1_4",
                        "Mg_i1_0", "Mg_i1_1", "Mg_i1_2", "Va_O1_1", "Va_O1_2",
@@ -47,7 +47,7 @@ class DefectEnergiesTest(unittest.TestCase):
             defect_entry = \
                 DefectEntry.load_json(os.path.join(d, "defect_entry.json"))
             dft_results = \
-                SupercellDftResults.load_json(
+                SupercellCalcResults.load_json(
                     os.path.join(d, "dft_results.json"))
             correction = \
                 ExtendedFnvCorrection.load_json(os.path.join(d, "correction.json"))

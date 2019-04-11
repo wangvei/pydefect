@@ -7,10 +7,9 @@ import re
 from pymatgen.core.periodic_table import Element
 
 from pydefect.core.defect_entry import DefectEntry
-from pydefect.util.structure import perturb_neighboring_atoms
+from pydefect.util.structure import perturb_neighboring_atoms, \
+    defect_center_from_coords
 from pydefect.util.utils import get_logger
-from pydefect.core.supercell_dft_results import defect_center_from_coords
-
 
 __author__ = "Yu Kumagai"
 __maintainer__ = "Yu Kumagai"
@@ -42,35 +41,40 @@ def parse_defect_name(defect_name):
         out_name = d[1]
         charge = int(d[2])
     except ValueError:
-        print("DefectSupercell {} is improper.".format(defect_name))
+        raise ValueError("Defect name {} cannot be divided to three part.".
+                         format(defect_name))
 
     if not re.match(r'^[a-xA-Z]+[0-9]+$', out_name):
-        raise ValueError("Defect name {} is not proper.".format(defect_name))
+        raise ValueError("Defect name {} is not a proper style.".
+                         format(defect_name))
     return in_name, out_name, charge
 
 
-def print_is_being_removed(name):
-    """ Shows the message for conveying a directory is being removed.
+def log_is_being_removed(name):
+    """
+    Shows the message.
     Args:
-        name (str): a directory name
+        name (str): a string
     """
     logger.warning("{:>10} is being removed.".format(name))
 
 
-def print_already_exist(name):
-    """ Shows the message for conveying a directory already exists.
+def log_already_exist(name):
+    """
+    Shows the message.
     Args:
-        name (str): a directory name
+        name (str): a string
     """
     logger.warning("{:>10} already exists, so nothing is done.".format(name))
 
 
-def print_is_being_constructed(name):
-    """ Shows the message for conveying a directory is being constructed.
-    Args:
-        name (str): a directory name
+def log_is_being_constructed(name):
     """
-    logger.info("{:>10} is being constructed.".format(name))
+    Shows the message.
+    Args:
+        name (str): a string
+    """
+    logger.warning("{:>10} is being constructed.".format(name))
 
 
 def is_name_selected(name, keywords):
@@ -78,7 +82,7 @@ def is_name_selected(name, keywords):
     Returns if name is selected by selected_keywords.
      Args:
         name (str): Target name.
-        keywords (list): Keywords used for checking if name is selected or not.
+        keywords (str/list): Keywords used for checking if name is selected or not.
 
     When the following type names are given, constructs a set of defects.
         "Va"    --> A set of all the vacancies.
@@ -92,7 +96,9 @@ def is_name_selected(name, keywords):
         e.g., "Va_O1_2",  "Mg_O1_0"
     """
 
-    if not isinstance(keywords, list):
+    if isinstance(keywords, str):
+        keywords = [keywords]
+    elif not isinstance(keywords, list):
         raise TypeError("The type of keywords is not list.")
 
     for p in keywords:
@@ -103,10 +109,10 @@ def is_name_selected(name, keywords):
 
 def select_defect_names(name_set, keywords):
     """
-    Returns names selected by selected_keywords.
+    Returns names including one of keywords.
      Args:
         name_set (list): A set of names.
-        keywords (list): Keywords used for checking if name is selected or not.
+        keywords (str/list): Keywords used for checking if name is selected or not.
     """
     names = []
 
@@ -137,7 +143,9 @@ class DefectEntrySetMaker:
         out_pattern (str):
             Pattern for screening out_name
     """
-    def __init__(self, defect_initial_setting, keywords=None,
+    def __init__(self,
+                 defect_initial_setting,
+                 keywords=None,
                  particular_defects=None):
 
         self.perfect_structure = defect_initial_setting.structure
@@ -200,8 +208,8 @@ class DefectEntrySetMaker:
                 if out_name == i.irreducible_name:
                     changes_of_num_elements[i.element] = -1
                     removed_index = i.first_index - 1
-                    defect_coords = i.repr_coords
-                    removed_atoms[removed_index] = i.repr_coords
+                    defect_coords = i.representative_coords
+                    removed_atoms[removed_index] = i.representative_coords
                     initial_symmetry = i.site_symmetry
                     multiplicity = i.num_atoms
                     break

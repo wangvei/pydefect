@@ -11,12 +11,7 @@ from pydefect.util.utils import get_logger
 from pydefect.core.defect_entry import DefectEntry
 
 __author__ = "Yu Kumagai"
-__copyright__ = "Copyright 2017, Oba group"
-__version__ = "0.1"
 __maintainer__ = "Yu Kumagai"
-__email__ = "yuuukuma@gmail.com"
-__status__ = "Development"
-__date__ = "December 4, 2017"
 
 logger = get_logger(__name__)
 
@@ -45,7 +40,7 @@ def parse_defect_name(defect_name):
         out_name = d[1]
         charge = int(d[2])
     except ValueError:
-        print("DefectSupercell {} is improper.".format(defect_name))
+        print("Defect name {} cannot xxuuuve hh.".format(defect_name))
 
     if not re.match(r'^[a-xA-Z]+[0-9]+$', out_name):
         raise ValueError("Defect name {} is not proper.".format(defect_name))
@@ -171,8 +166,8 @@ def make_defect_entry(defect_name, structure, irreducible_sites,
             if out_name == i.irreducible_name:
                 changes_of_num_elements[i.element] = -1
                 removed_index = i.first_index - 1
-                defect_coords = i.repr_coords
-                removed_atoms[removed_index] = i.repr_coords
+                defect_coords = i.representative_coords
+                removed_atoms[removed_index] = i.representative_coords
                 break
         try:
             defect_structure.remove_sites([removed_index])
@@ -264,8 +259,8 @@ class DefectEntryMaker:
                 if out_name == i.irreducible_name:
                     changes_of_num_elements[i.element] = -1
                     removed_index = i.first_index - 1
-                    defect_coords = i.repr_coords
-                    removed_atoms[removed_index] = i.repr_coords
+                    defect_coords = i.rrepresentative_coords
+                    removed_atoms[removed_index] = i.representative_coords
                     break
             try:
                 defect_structure.remove_sites([removed_index])
@@ -363,8 +358,7 @@ import shutil
 
 from pydefect.core.defect_entry import get_num_atoms_for_elements
 from pydefect.vasp_util.util import get_num_electrons_from_potcar
-from pydefect.core.supercell_dft_results import defect_center
-from pydefect.util.structure import perturb_neighboring_atoms
+from pydefect.util.structure import perturb_neighboring_atoms, defect_center
 
 
 class DefectStructureSetMaker(DefectInputSetMaker):

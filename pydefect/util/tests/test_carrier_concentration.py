@@ -4,7 +4,7 @@ import os
 import unittest
 
 from pydefect.analysis.carrier_concentration import CarrierConcentration
-from pydefect.core.unitcell_dft_results import UnitcellDftResults
+from pydefect.core.unitcell_calc_results import UnitcellCalcResults
 
 __author__ = "Yu Kumagai"
 __copyright__ = "Copyright 2018, Oba group"
@@ -21,7 +21,7 @@ test_dir = os.path.join(os.path.dirname(__file__), "..", "..", "..",
 class CarrierConcentrationTest(unittest.TestCase):
 
     def setUp(self):
-        self.unitcell = UnitcellDftResults.load_json("unitcell_MgSe.json")
+        self.unitcell = UnitcellCalcResults.load_json("unitcell_MgSe.json")
         print(self.unitcell)
 
     def test(self):

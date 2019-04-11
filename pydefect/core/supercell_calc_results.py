@@ -1,262 +1,189 @@
 # -*- coding: utf-8 -*-
 
 from collections import defaultdict
-from itertools import product
 import json
 import numpy as np
 import os
-import warnings
 
-from monty.json import MontyEncoder
+from pathlib import Path
+
+from monty.json import MontyEncoder, MSONable
 from monty.serialization import loadfn
 
 from xml.etree.cElementTree import ParseError
 
-from pymatgen.io.vasp.inputs import Poscar
+from pymatgen.io.vasp.inputs import Poscar, Kpoints
 from pymatgen.io.vasp.outputs import Outcar, Vasprun
 from pymatgen.electronic_structure.core import Spin
+from pymatgen.core import Structure
 
 from pydefect.core.defect_entry import DefectEntry
 from pydefect.util.utils import get_logger
-from pydefect.vasp_util.script.vasp_process_analyzer import VaspNotConvergedError
-
 
 __author__ = "Yu Kumagai"
 __maintainer__ = "Yu Kumagai"
 
-
 logger = get_logger(__name__)
 
 
-def defect_center_from_coords(inserted_atom_coords, removed_atom_coords, structure):
-    """
-    """
-    defect_coords = inserted_atom_coords + removed_atom_coords
-    # First defect_coords is used as a base point under periodic boundary
-    # condition. Here, we are aware of the case when two defect positions
-    # are, e.g., [0.01, 0.01, 0.01] and [0.99, 0.99, 0.99].
-    base = defect_coords[0]
-    shortest_defect_coords = []
-
-    for dc in defect_coords:
-        diff = min_distance_under_pbc(
-            np.array(base), np.array(dc), structure.lattice.matrix)[1]
-        shortest_defect_coords.append(dc + diff)
-
-    # np.array([[0, 0.1, 0.2], [0.3, 0.4, 0.5]]).transpose() =
-    # np.array([[0, 0.3], [0.1, 0.4], [0.2, 0.5]])
-    return [np.mean(i) for i in np.array(shortest_defect_coords).transpose()]
-
-
-def defect_center(defect_entry, structure=None):
-    """
-    Return a fractional coordinates of the defect center that is calculated
-    by averaging the coordinates of vacancies and interstitials.
-    When len(defect_coords) == 1, simply returns defect_coords[0].
-    First defect_coords is used as a base point when the periodic boundary
-    condition is considered.
-
-    Args:
-        structure (Structure):
-            pmg Structure class object for perfect supercell
-        defect_entry (DefectEntry):
-            Related DefectEntry class object
-    """
-    # If structure is not given, initial_structure of defect_entry is used.
-    if structure is None:
-        structure = defect_entry.initial_structure
-
-    inserted_atom_coords = list([structure.frac_coords[k]
-                                 for k in defect_entry.inserted_atoms])
-    removed_atom_coords = list(defect_entry.removed_atoms.values())
-
-    return defect_center_from_coords(inserted_atom_coords, removed_atom_coords,
-                                     structure)
-
-
-def min_distance_under_pbc(frac1, frac2, lattice_parameters):
-    """
-    Return the shortest distance between two points in fractional coordinates
-    under periodic boundary condition.
-
-    Args:
-       frac1 (1x3 np.array):
-           1st fractional coordinates
-       frac2 (1x3 np.array):
-           2nd fractional coordinates
-       lattice_parameters (3x3 numpy array):
-           a, b, c lattice vectors
-    """
-    candidate = []
-    diff = np.dot(lattice_parameters, frac2 - frac1)
-
-    # (-1, -1, -1), (-1, -1, 0), ..., (1, 1, 1)
-    for index in product((-1, 0, 1), repeat=3):
-        index = np.array(index)
-        delta_diff = np.dot(lattice_parameters, index)
-        distance = np.linalg.norm(delta_diff + diff)
-        candidate.append([distance, index])
-
-    return min(candidate, key=lambda x: x[0])
-
-
-def distance_list(structure, coords):
-    """
-    Return a list of the shortest distances between a point and its images
-    under periodic boundary condition.
-    Args:
-       structure (Structure):
-           pmg structure class object
-       coords (1x3 numpy array):
-           Fractional coordinates
-    """
-    lattice_parameters = structure.lattice.matrix
-
-    return [min_distance_under_pbc(host, coords, lattice_parameters)[0]
-            for host in structure.frac_coords]
-
-
-def distances_from_point(structure, defect_entry):
-    """
-    Returns a list of distances at atomic sites from a defect center defined
-    by defect_entry. Note that in the case of an interstitial-type defect,
-    zero is also set to the interstitial site.
-
-    Args:
-        structure (Structure):
-            pmg Structure class object for perfect supercell
-        defect_entry (DefectEntry):
-            DefectEntry class object considered
-    """
-    return distance_list(structure, defect_center(defect_entry, structure))
-
-
-class SupercellDftResults:
+class SupercellCalcResults(MSONable):
     """
     A class holding DFT results for supercell systems both w/ and w/o a defect.
     """
 
-    def __init__(self, final_structure, total_energy, magnetization,
-                 eigenvalues, kpoints, kpoint_weights, electrostatic_potential,
-                 eigenvalue_properties, volume, fermi_level):
+    def __init__(self,
+                 final_structure: Structure,
+                 total_energy: float,
+                 total_magnetization: float,
+                 eigenvalues: np.array,
+                 kpoints: Kpoints,
+                 electrostatic_potential: list,
+                 eigenvalue_properties,
+                 volume: float,
+                 fermi_level: float,
+                 is_converged: bool):
         """
         Args:
             final_structure (Structure):
                 pmg Structure class object. Usually relaxed structures
             total_energy (float):
                 Final total energy in eV.
-            magnetization (float):
-                Total magnetization in \mu_B
+            total_magnetization (float):
+                Total total_magnetization in \mu_B
             eigenvalues (N_spin x N_kpoint x N_band np.array):
                 Numpy array for the electron eigenvalues in absolute scale.
-            kpoints (list):
-            kpoint_weights (list):
+            kpoints (Kpoints): 
+                parsed IBZKPT file.
             electrostatic_potential (list):
                 Atomic site electrostatic potential.
+            volume (float):
+                Volume of the supercell.
             fermi_level (float):
                Fermi level in the absolute scale.
+            is_converged (bool):
+                Whether the calculation is converged or not.
         """
         self.final_structure = final_structure
         self.total_energy = total_energy
-        self.magnetization = magnetization
+        self.total_magnetization = total_magnetization
         self.eigenvalues = eigenvalues
         self.kpoints = kpoints
-        self.kpoint_weights = kpoint_weights
         self.electrostatic_potential = electrostatic_potential
         self.eigenvalue_properties = eigenvalue_properties
         self.volume = volume
         self.fermi_level = fermi_level
+        self.is_converged = is_converged
 
     def __str__(self):
         outs = ["total energy (eV): " + str(self.total_energy),
-                "total magnetization (\mu_B): " + str(self.magnetization),
+                "total total_magnetization (mu_B): " + str(self.total_magnetization),
                 "electrostatic potential: " + str(self.electrostatic_potential),
                 "eigenvalues_properties: " + str(self.eigenvalue_properties),
                 "final structure: \n" + str(self.final_structure),
                 "volume: \n" + str(self.volume),
-                "Fermi level (eV): \n" + str(self.fermi_level),
-                "K points \n" + str(self.kpoints)]
+                "Fermi level (eV): \n" + str(self.fermi_level)]
+
+        if self.kpoints:
+            outs.append("IBZKPT is parsed \n")
         return "\n".join(outs)
 
     @classmethod
-    def from_vasp_files(cls, directory_path, contcar_name="CONTCAR",
-                        outcar_name="OUTCAR", vasprun_name="vasprun.xml",
-                        force_parsing=False):
+    def from_vasp_files(cls,
+                        directory_path: str,
+                        vasprun: str = None,
+                        ibzkpt: str = None,
+                        contcar: str = None,
+                        outcar: str = None):
         """
         Construct class object from vasp output files.
         Args:
             directory_path (str):
                 path to the directory storing calc results.
-            contcar_name (str):
-                Name of the converged CONTCAR file.
-            outcar_name (str):
-                Name of the OUTCAR file.
-            vasprun_name (str):
+            vasprun (str):
                 Name of the vasprun.xml file.
-            force_parsing (bool):
-                Whether to continue parsing the results even though the
-                electronic and/or ionic steps are not converged.
+            ibzkpt (str):
+                Name of the IBZKPT file.
+            contcar (str):
+                Name of the converged CONTCAR file.
+            outcar (str):
+                Name of the OUTCAR file.
         """
         final_structure = None
         total_energy = None
         magnetization = None
         eigenvalues = None
         kpoints = None
-        kpoint_weights = None
         electrostatic_potential = None
         eigenvalue_properties = None
         volume = None
         fermi_level = None
+        is_converged = None
 
-        filename = os.path.join(directory_path, vasprun_name)
+        p = Path(directory_path)
+
+        # get the names of the latest files in the directory_path
+        if vasprun is None:
+            vasprun = str(max(p.glob("**/*vasprun*"), key=os.path.getctime))
+        if ibzkpt is None:
+            ibzkpt = str(max(p.glob("**/*IBZKPT*"), key=os.path.getctime))
+        if contcar is None:
+            contcar = \
+                str(max(list(p.glob("**/*CONTCAR*")) +
+                        list(p.glob("**/*POSCAR*")), key=os.path.getctime))
+        if outcar is None:
+            outcar = str(max(p.glob("**/*OUTCAR*"), key=os.path.getctime))
+
+        def parse_file(classmethod_name, parsed_filename):
+            try:
+                logger.info("Parsing {}...".format(parsed_filename))
+                return classmethod_name(parsed_filename)
+            except ParseError:
+                logger.warning("Parsing {} failed.".format(parsed_filename))
+                raise ParseError
+            except FileNotFoundError:
+                logger.warning("File {} doesn't exist.".format(parsed_filename))
+                raise FileNotFoundError
+
         try:
-            vasprun = Vasprun(os.path.join(directory_path, vasprun_name))
+            vasprun = parse_file(Vasprun, vasprun)
             eigenvalues = vasprun.eigenvalues
-            kpoints = vasprun.actual_kpoints
-            kpoint_weights = vasprun.actual_kpoints_weights
             eigenvalue_properties = vasprun.eigenvalue_band_properties
             fermi_level = vasprun.efermi
-        except ParseError:
-            logger.warning("Parsing {} failed.".format(filename))
-        except FileNotFoundError:
-            logger.warning("File {} does not exist.".format(filename))
+            # Check if the electronic and ionic steps are converged.
+            if vasprun.converged_electronic is False:
+                logger.warning("Electronic step is not converged.")
+                is_converged = False
+            if vasprun.converged_ionic is False:
+                logger.warning("Electronic step is not converged.")
+                is_converged = False
+        except:
+            pass
 
-        # Check if the electronic and ionic steps are converged.
-        def managing(continue_or_not, message):
-            if continue_or_not:
-                logger.warning(message)
-            else:
-                raise VaspNotConvergedError(message)
-
-        if vasprun.converged_electronic is False:
-            managing(force_parsing, "Electronic step is not converged.")
-        if vasprun.converged_ionic is False:
-            managing(force_parsing, "Ionic step is not converged.")
-
-        filename = os.path.join(directory_path, contcar_name)
         try:
-            contcar = Poscar.from_file(filename)
+            kpoints = parse_file(Kpoints.from_file, ibzkpt)
+        except:
+            pass
+
+        try:
+            contcar = parse_file(Poscar.from_file, contcar)
             final_structure = contcar.structure
             volume = contcar.structure.volume
-        except ParseError:
-            logger.warning("Parsing {} failed.".format(filename))
-        except FileNotFoundError:
-            logger.warning("File {} does not exist.".format(filename))
+        except:
+            pass
 
-        filename = os.path.join(directory_path, outcar_name)
         try:
-            outcar = Outcar(os.path.join(filename))
+            outcar = parse_file(Outcar, outcar)
             total_energy = outcar.final_energy
             magnetization = outcar.total_mag
+            if not magnetization:
+                magnetization = 0.0
             electrostatic_potential = outcar.electrostatic_potential
-        except ParseError:
-            logger.warning("Parsing {} failed.".format(filename))
-        except FileNotFoundError:
-            logger.warning("File {} does not exist.".format(filename))
+        except:
+            pass
 
         return cls(final_structure, total_energy, magnetization, eigenvalues,
-                   kpoints, kpoint_weights, electrostatic_potential,
-                   eigenvalue_properties, volume, fermi_level)
+                   kpoints, electrostatic_potential, eigenvalue_properties,
+                   volume, fermi_level, is_converged)
 
     @classmethod
     def from_dict(cls, d):
@@ -270,14 +197,14 @@ class SupercellDftResults:
 
         return cls(final_structure=d["final_structure"],
                    total_energy=d["total_energy"],
-                   magnetization=d["magnetization"],
+                   magnetization=d["total_magnetization"],
                    eigenvalues=eigenvalues,
                    kpoints=d["kpoints"],
-                   kpoint_weights=d["kpoint_weights"],
                    electrostatic_potential=d["electrostatic_potential"],
                    eigenvalue_properties=d["eigenvalue_properties"],
                    volume=d["volume"],
-                   fermi_level=d["fermi_level"])
+                   fermi_level=d["fermi_level"],
+                   is_converged=d["is_converged"])
 
     @classmethod
     def load_json(cls, filename):
@@ -300,14 +227,14 @@ class SupercellDftResults:
                        for spin, v in self.eigenvalues.items()}
         d = {"final_structure":         self.final_structure,
              "total_energy":            self.total_energy,
-             "magnetization":           self.magnetization,
+             "total_magnetization":           self.total_magnetization,
              "eigenvalues":             eigenvalues,
              "kpoints":                 self.kpoints,
-             "kpoint_weights":          self.kpoint_weights,
              "electrostatic_potential": self.electrostatic_potential,
              "eigenvalue_properties":   self.eigenvalue_properties,
              "volume":                  self.volume,
-             "fermi_level":             self.fermi_level}
+             "fermi_level":             self.fermi_level,
+             "is_converged":            self.is_converged}
         return d
 
     def to_json_file(self, filename):
@@ -322,7 +249,7 @@ class SupercellDftResults:
         Return a relative total energy w.r.t. referenced supercell.
 
         Args:
-            referenced_dft_results (SupercellDftResults):
+            referenced_dft_results (SupercellCalcResults):
                 SupercellDftResults object for referenced supercell dft results.
         """
         return self.total_energy - referenced_dft_results.total_energy
@@ -333,7 +260,7 @@ class SupercellDftResults:
         Note that None is inserted for interstitial sites.
 
         Args:
-            referenced_dft_results (SupercellDftResults):
+            referenced_dft_results (SupercellCalcResults):
                 SupercellDftResults object for referenced supercell dft results.
                 Usually it is for perfect supercell.
             defect_entry (DefectEntry):

@@ -7,8 +7,8 @@ from numpy.testing import assert_array_equal, assert_array_almost_equal
 from pymatgen.util.testing import PymatgenTest
 
 from pydefect.core.correction import Ewald, ExtendedFnvCorrection
-from pydefect.core.supercell_dft_results import SupercellDftResults
-from pydefect.core.unitcell_dft_results import UnitcellDftResults
+from pydefect.core.supercell_calc_results import SupercellCalcResults
+from pydefect.core.unitcell_calc_results import UnitcellCalcResults
 from pydefect.core.defect_entry import DefectEntry
 
 __author__ = "Akira Takahashi"
@@ -217,10 +217,10 @@ expected_substitutional_distances_list = [
 class EwaldTest(unittest.TestCase):
 
     def setUp(self):
-        unitcell = UnitcellDftResults()
+        unitcell = UnitcellCalcResults()
         unitcell.set_static_dielectric_tensor_from_vasp(dirname_dielectric)
         unitcell.set_ionic_dielectric_tensor_from_vasp(dirname_dielectric)
-        perfect = SupercellDftResults.from_vasp_files(dirname_perfect)
+        perfect = SupercellCalcResults.from_vasp_files(dirname_perfect)
         self._structure = perfect.final_structure
         self._dielectric_tensor = unitcell.total_dielectric_tensor
 
@@ -247,11 +247,11 @@ class EwaldTest(unittest.TestCase):
 class CorrectionTest(unittest.TestCase):
 
     def setUp(self):
-        self._unitcell = UnitcellDftResults()
+        self._unitcell = UnitcellCalcResults()
         self._unitcell.set_static_dielectric_tensor_from_vasp(
             dirname_dielectric)
         self._unitcell.set_ionic_dielectric_tensor_from_vasp(dirname_dielectric)
-        self._perfect = SupercellDftResults.from_vasp_files(dirname_perfect)
+        self._perfect = SupercellCalcResults.from_vasp_files(dirname_perfect)
         self._structure = self._perfect.final_structure
         self._dielectric_tensor = self._unitcell.total_dielectric_tensor
         self._ewald = Ewald.load_json("ewald.json")
@@ -264,13 +264,13 @@ class CorrectionTest(unittest.TestCase):
         # self.ewald = \
         #     Ewald.from_optimization(self.perfect_structure, self.dielectric_tensor)
         self._vacancy_entry = DefectEntry.load_json(vac_defect_entry_json)
-        self._vacancy = SupercellDftResults.from_vasp_files(dirname_vacancy)
+        self._vacancy = SupercellCalcResults.from_vasp_files(dirname_vacancy)
 #        self._interstitial_entry = DefectEntry.load_json(int_defect_entry_json)
 #        self._interstitial = \
-#            SupercellDftResults.from_vasp_files(dirname_interstitial)
+#            SupercellCalcResults.from_vasp_files(dirname_interstitial)
 #        self._substitutional_entry = DefectEntry.load_json(sub_defect_entry_json)
 #        self._substitutional = \
-#            SupercellDftResults.from_vasp_files(dirname_substitutional)
+#            SupercellCalcResults.from_vasp_files(dirname_substitutional)
 
     def test_dict(self):
         vacancy_correction = \

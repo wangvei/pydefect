@@ -5,9 +5,9 @@ import numpy as np
 import matplotlib
 import matplotlib.pyplot as plt
 
-from pydefect.analysis.defect_energies import DefectEnergies
+from pydefect.analysis.defect_energy import DefectEnergies
 from pydefect.analysis.defect_concentration import DefectConcentration
-from pydefect.input_maker.defect_set_maker import is_name_selected
+from pydefect.input_maker._defect_set_maker import is_name_selected
 
 
 class DefectEnergyPlotter:

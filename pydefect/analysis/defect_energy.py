@@ -8,11 +8,45 @@ from monty.serialization import loadfn
 from collections import defaultdict, namedtuple
 from itertools import combinations
 
-from pydefect.core.supercell_dft_results import SupercellDftResults
-from pydefect.core.unitcell_dft_results import UnitcellDftResults
+from pydefect.core.supercell_calc_results import SupercellCalcResults
+from pydefect.core.unitcell_calc_results import UnitcellCalcResults
 
 Defect = namedtuple("Defect", ("defect_entry", "dft_results", "correction"))
 TransitionLevel = namedtuple("TransitionLevel", ("cross_points", "charges"))
+
+
+class DefectEnergy:
+    """ A class related to a defect formation energy.
+    """
+    def __init__(self,
+                 name: str,
+                 relative_total_energy: float,
+                 relative_potential: list,
+                 changes_of_num_elements: dict,
+                 charge: int,
+                 energy_correction: dict = None):
+        """
+        Args:
+            name (str):
+                Name of a defect
+            relative_total_energy (float):
+                Relative energy wrt the perfect supercell total energy.
+            relative_potential (float):
+                Relative potential wrt the perfect supercell one.
+            changes_of_num_elements (dict):
+                Keys: Element names
+                Values: Change of the numbers of elements wrt perfect supercell.
+            charge (int):
+                Charge state of the defect. Charge is also added to the structure.
+            energy_correction (dict):
+                Dict of key = (correction name) and value = (correction value)
+        """
+        self.name = name
+        self.relative_total_energy = relative_total_energy
+        self.relative_potential = relative_potential
+        self.changes_of_num_elements = changes_of_num_elements
+        self.charge = charge
+        self.energy_correction = energy_correction
 
 
 class DefectEnergies:
@@ -35,7 +69,7 @@ class DefectEnergies:
             supercell_cbm (float):
                 Conduction band minimum in the perfect supercell.
             magnetization (dict):
-                Magnetization in \mu_B. magnetization[defect][charge]
+                Magnetization in \mu_B. total_magnetization[defect][charge]
             title (str):
                 Title of the system.
         """
@@ -55,9 +89,9 @@ class DefectEnergies:
         Calculates defect formation energies.
         Note that all the energies are calculated at 0 eV in the absolute scale.
         Args:
-            unitcell (UnitcellDftResults):
-                UnitcellDftResults object for band edge.
-            perfect (SupercellDftResults):
+            unitcell (UnitcellCalcResults):
+                UnitcellCalcResults object for band edge.
+            perfect (SupercellCalcResults):
                 SupercellDftResults object of perfect supercell for band edge in
                 supercell.
             defects (list of namedtuple Defect):

@@ -22,7 +22,7 @@ from scipy.special import erfc
 from scipy.constants import elementary_charge, epsilon_0
 from scipy.stats import mstats
 
-from pydefect.core.supercell_dft_results import distance_list, defect_center
+from pydefect.util.structure import defect_center, distance_list
 
 """
 This module provides functions used to correct defect formation energies
@@ -449,9 +449,9 @@ class ExtendedFnvCorrection:
         """
         Args
             defect_entry(DefectEntry):
-            defect_dft(SupercellDftResults):
-            perfect_dft(SupercellDftResults):
-            unitcell_dft(UnitcellDftResults):
+            defect_dft(SupercellCalcResults):
+            perfect_dft(SupercellCalcResults):
+            unitcell_dft(UnitcellCalcResults):
             ewald(Ewald):
         """
         # search ewald
@@ -477,9 +477,9 @@ class ExtendedFnvCorrection:
         Corrects error of formation energy of point defect due to
         finite-supercell effect.
             defect_entry(DefectEntry):
-            defect_dft(SupercellDftResults):
-            perfect_dft(SupercellDftResults):
-            unitcell_dft(UnitcellDftResults):
+            defect_dft(SupercellCalcResults):
+            perfect_dft(SupercellCalcResults):
+            unitcell_dft(UnitcellCalcResults):
             ewald_param(Ewald):
         Returns (float): Corrected energy by extended FNV method.
         """
