@@ -141,7 +141,9 @@ class DefectInitialSettingTest(unittest.TestCase):
         mgo_from_dict = DefectInitialSetting.from_dict(mgo_dict)
         # Note: _irreducible_sites usually return pointers, so __eq__ is
         # overloaded in DefectInitialSetting.
-        self.assertTrue(mgo_from_dict == self.MgO)
+        print(mgo_from_dict.as_dict())
+        print(self.MgO.as_dict())
+        self.assertTrue(mgo_from_dict.as_dict() == self.MgO.as_dict())
         self.MgO.to()
 
     def test_to_json_file(self):
@@ -150,8 +152,7 @@ class DefectInitialSettingTest(unittest.TestCase):
             tmp_json = fp.name
             self.MgO.to_json_file(tmp_json)
             mgo_from_json = DefectInitialSetting.load_json(tmp_json)
-            print(vars(mgo_from_json))
-            self.assertTrue(mgo_from_json == self.MgO)
+            self.assertTrue(mgo_from_json.as_dict() == self.MgO.as_dict())
 
     def test_from_defect_in(self):
         mgo_from_defect_in = \
