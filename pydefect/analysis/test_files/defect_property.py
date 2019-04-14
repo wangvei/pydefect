@@ -74,16 +74,18 @@ class DefectProperty():
         try:
             charge = dirname.split("_")[-1]
         except:
-            print("The directory name is not proper."        
+            print("The directory name is not proper.")
             sys.exit(1)
 #        charge = -2 #TODO temporary
         return DefectProperty(structure, energy, atomic_site_pot, charge)
 
     def as_dict(self):
-        d = {"energy" : self.energy,
-             "structure" : self.structure,
+        d = {"@module":          self.__class__.__module__,
+             "@class":           self.__class__.__name__,
+             "energy" :          self.energy,
+             "structure" :       self.structure,
              "atomic_site_pot" : self.atomic_site_pot,
-             "charge" : charge}
+             "charge" :          self._charge}
         return d
 
     @classmethod
@@ -96,7 +98,8 @@ class DefectProperty():
         elif isinstance(st_item, dict):
             structure = Structure.from_dict(st_item)
         else:
-            raise TypeError("Failed to convert an element of dictionary named 'structure', or no item named 'structure' input. ")
+            raise TypeError("Failed to convert an element of dictionary named "
+                            "'structure', or no item named 'structure' input. ")
         return cls(energy=d["energy"],
                    structure=structure,
                    atomic_site_pot=d["atomic_site_pot"],

@@ -80,7 +80,7 @@ class FilterNameTest(unittest.TestCase):
     def test(self):
         self.assertTrue(is_name_selected("Va_O11_-2",
                                          keywords=["Va_O[0-9]+_-[0-9]+"]))
-#        self.assertFalse(is_name_selected("Mg_i1_0", keywords=["Va"]))
+#        self.assertFalse(is_name_matched("Mg_i1_0", keywords=["Va"]))
 
 
 class FilterNameSetTest(unittest.TestCase):

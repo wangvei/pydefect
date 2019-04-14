@@ -115,7 +115,7 @@ class ModBSPlotter(BSPlotter):
             ef = self._bs.efermi
             plt.axhline(ef, linewidth=0.5, color='k')
 
-        # X max range = last distance point
+        # X max range = last displacement_distance point
         x_max = data['distances'][-1][-1]
         plt.xlim(0, x_max)
 

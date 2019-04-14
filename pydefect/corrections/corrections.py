@@ -136,7 +136,9 @@ class Ewald:
         return 2 * ewald * self.prod_cutoff_fwhm
 
     def as_dict(self):
-        d = {"lattice_matrix":       [list(v) for v in self.lattice_matrix],
+        d = {"@module": self.__class__.__module__,
+             "@class":  self.__class__.__name__,
+             "lattice_matrix":       [list(v) for v in self.lattice_matrix],
              "dielectric_tensor":    [list(v) for v in self.dielectric_tensor],
              "ewald_param":                  self.ewald_param,
              "prod_cutoff_fwhm":             self.prod_cutoff_fwhm,
@@ -146,12 +148,13 @@ class Ewald:
 
     @classmethod
     def from_dict(cls, d):
-        return cls(lattice_matrix=d["lattice_matrix"],
-                   dielectric_tensor=d["dielectric_tensor"],
-                   ewald_param=d["ewald_param"],
-                   prod_cutoff_fwhm=d["prod_cutoff_fwhm"],
-                   real_neighbor_lattices=d["real_neighbor_lattices"],
-                   reciprocal_neighbor_lattices=d["reciprocal_neighbor_lattices"])
+        return cls(
+            lattice_matrix=d["lattice_matrix"],
+            dielectric_tensor=d["dielectric_tensor"],
+            ewald_param=d["ewald_param"],
+            prod_cutoff_fwhm=d["prod_cutoff_fwhm"],
+            real_neighbor_lattices=d["real_neighbor_lattices"],
+            reciprocal_neighbor_lattices=d["reciprocal_neighbor_lattices"])
 
     def to_json_file(self, filename):
         """
@@ -281,14 +284,14 @@ class Ewald:
         return lattices + shift
 
 
-# class Correction(ABC):
-#     @abstractmethod
-#     def correction_energy(self):
-#         pass
+class Correction(ABC):
+    @abstractmethod
+    def correction_energy(self):
+        pass
 
-    # @abstractmethod
-    # def manually_added_correction_energy(self):
-    #     pass
+    @abstractmethod
+    def manually_added_correction_energy(self):
+        pass
 
 
 # class PointCharge:
@@ -296,7 +299,7 @@ class Ewald:
     # def __init__(self, ewald, lattice_energy): pass
 
 
-class ExtendedFnvCorrection:
+class ExtendedFnvCorrection(Correction):
 
     def __init__(self, ewald, lattice_energy, diff_ave_pot,
                  alignment_correction_energy, symbols_without_defect,
@@ -400,7 +403,9 @@ class ExtendedFnvCorrection:
         """
         Returns (dict):
         """
-        d = {"ewald":                        self.ewald,
+        d = {"@module":                      self.__class__.__module__,
+             "@class":                       self.__class__.__name__,
+             "ewald":                        self.ewald,
              "lattice_energy":               self.lattice_energy,
              "diff_ave_pot":                 self.diff_ave_pot,
              "alignment":                    self.alignment_correction_energy,

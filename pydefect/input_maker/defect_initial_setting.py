@@ -3,7 +3,6 @@ from collections import defaultdict
 import json
 
 
-from pydefect.core.error_classes import NotSupportedFlagError
 from pymatgen.core.periodic_table import Element
 from pymatgen.core.structure import Structure
 from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
@@ -14,6 +13,7 @@ from monty.serialization import loadfn, dumpfn
 from obadb.util.structure_handler import get_symmetry_dataset, \
     get_point_group_from_dataset, get_coordination_distances
 
+from pydefect.core.error_classes import InvalidInputFileError
 from pydefect.database.atom import electronegativity_list, charge
 from pydefect.util.logger import get_logger
 from pydefect.core.irreducible_site import IrreducibleSite
@@ -82,96 +82,104 @@ def print_dopant_info(dopant):
         logger.warnings(dopant + " is not a proper element name.")
 
 
-# def element_set(defect_initial_setting):
-#     """
-#     Args: defect_initial_setting (DefectInitialSetting)
-#     """
-#     e_set = set()
-
-# for i in defect_initial_setting._irreducible_sites:
-#     e_set.add(i.element)
-
-# for a in defect_initial_setting.antisite_configs:
-#     e_set.add(a[0])
-
-# for d in defect_initial_setting.dopant_configs:
-#     e_set.add(d[0])
-
-# return e_set
+def get_distances(string):
+    distances = {}
+    key = None
+    # string = "Mg: 2.1 2.2 O: 2.3 2.4".split()
+    #          -> {"Mg": [2,1, 2.2], "O": [2.3, 2.4]
+    for i in string:
+        if i[-1] == ":":
+            distances[i[:-1]] = []
+            key = i[:-1]
+        else:
+            if key:
+                distances[key].append(float(i))
+            else:
+                raise ValueError("Invalid string {} for creating displacement_distance list".
+                                 format(string))
+    return distances
 
 
 class DefectInitialSetting(MSONable):
-    """
-    This class object holds full information used for setting of a series of
-    point defect calculations for a particular material.
-
-    Args:
-        structure (Structure):
-            pmg Structure class object for perfect supercell
-        space_group_symbol (str):
-            space group symbol
-        irreducible_sites (list):
-            List of IrreducibleSite class objects
-        dopant_configs (Nx2 list):
-            Dopant configurations, e.g., [["Al", Mg"], ["N", "O"]]
-        antisite_configs (Nx2 list):
-            Antisite configurations, e.g., [["Mg","O"], ["O", "Mg"]]
-        interstitial_coords (Nx3 list):
-            Coordinates for interstitial sites, e.g., [[0, 0, 0], [0, 0, 0.1]]
-        included (list):
-            Exceptionally added defects with charges,
-            e.g., ["Va_O1_-1", "Va_O1_-2"]
-        excluded (list):
-            Exceptionally removed defects with charges. If they don't exist,
-            this flag does nothing. e.g., ["Va_O1_1", "Va_O1_2"]
-        distance (float):
-            Maximum displacement in angstrom. 0 means random displacement is
-            switched off.
-        cutoff (float):
-            Cutoff radius in which atoms are displaced.
-        symprec (float):
-            Precision used for symmetry analysis.
-        angle_tolerance (float):
-            Angle tolerance for symmetry analysis in degree
-        oxidation_states (dict):
-            Oxidation states for relevant elements. Used to determine the
-            default defect charges.
-        electronegativity (dict):
-            Electronegativity for relevant elements. Used to determine the
-            substitutional defects.
+    """ Holds full information for creating a series of DefectEntry objects.
     """
 
     def __init__(self,
                  structure: Structure,
                  space_group_symbol: str,
                  transformation_matrix: list,
-                 origin_shift: list,
+                 cell_multiplicity: int,
                  irreducible_sites: list,
                  dopant_configs: list,
                  antisite_configs: list,
-                 interstitial_coords: list,
+                 interstitial_names: list,
                  included: list,
                  excluded: list,
-                 distance: float,
+                 displacement_distance: float,
                  cutoff: float,
                  symprec: float,
                  angle_tolerance: float,
                  oxidation_states: dict,
                  electronegativity: dict):
+        """
+        Args:
+            structure (Structure):
+                pmg Structure class object for perfect supercell
+            space_group_symbol (str):
+                space group symbol
+            transformation_matrix (list):
+                Diagonal component of transformation matrix.
+                Now the unitcell is expanded w/o rotations, so non-diagonal
+                components are zero.
+            cell_multiplicity (int):
+                How much is the supercell larger than the *primitive* cell.
+                This is used for calculating the defect concentration.
+                Note that (multiplicity of the symmetry) * cell_multiplicity
+                is the number of irreducible sites in the supercell.
+            irreducible_sites (list):
+                List of IrreducibleSite class objects
+            dopant_configs (Nx2 list):
+                Dopant configurations, e.g., [["Al", Mg"], ["N", "O"]]
+            antisite_configs (Nx2 list):
+                Antisite configurations, e.g., [["Mg","O"], ["O", "Mg"]]
+            interstitial_names (list):
+                Interstitial site namea written in intersitital.in file
+            included (list):
+                Exceptionally added defects with charges,
+                e.g., ["Va_O1_-1", "Va_O1_-2"]
+            excluded (list):
+                Exceptionally removed defects with charges. If they don't exist,
+                this flag does nothing. e.g., ["Va_O1_1", "Va_O1_2"]
+            displacement_distance (float):
+                Maximum displacement in angstrom. 0 means random displacement is
+                switched off.
+            cutoff (float):
+                Cutoff radius in which atoms are displaced.
+            symprec (float):
+                Precision used for symmetry analysis.
+            angle_tolerance (float):
+                Angle tolerance for symmetry analysis in degree
+            oxidation_states (dict):
+                Oxidation states for relevant elements. Used to determine the
+                default defect charges.
+            electronegativity (dict):
+                Electronegativity for relevant elements. Used to determine the
+                substitutional defects.
+        """
 
         self.structure = structure
         self.space_group_symbol = space_group_symbol
         self.transformation_matrix = transformation_matrix
-        self.origin_shift = origin_shift
+        self.cell_multiplicity = cell_multiplicity
         self.irreducible_sites = list(irreducible_sites)
         self.dopant_configs = list(dopant_configs)
         # dopant element names are derived from in_name of dopant_configs.
         self.dopants = set([d[0] for d in dopant_configs])
         self.antisite_configs = list(antisite_configs)
-        self.interstitial_coords = list(interstitial_coords)
+        self.interstitial_names = list(interstitial_names)
         self.included = list(included) if included else []
         self.excluded = list(excluded) if excluded else []
-        self.distance = distance
+        self.displacement_distance = displacement_distance
         self.cutoff = cutoff
         self.symprec = symprec
         self.angle_tolerance = angle_tolerance
@@ -180,21 +188,31 @@ class DefectInitialSetting(MSONable):
 
     @classmethod
     def from_dict(cls, d):
-        # Expansion of _irreducible_sites is necessary.
+        # Expansion of irreducible_sites is necessary.
         irreducible_sites = []
-        for i in d["_irreducible_sites"]:
+        for i in d["irreducible_sites"]:
             irreducible_sites.append(IrreducibleSite.from_dict(i))
 
         structure = d["structure"]
         if isinstance(structure, dict):
             structure = Structure.from_dict(structure)
 
-        return cls(structure, d["space_group_symbol"], irreducible_sites,
-                   d["dopant_configs"], d["antisite_configs"],
-                   d["interstitial_coords"], d["included"], d["excluded"],
-                   d["distance"], d["cutoff"], d["symprec"],
-                   d["angle_tolerance"], d["oxidation_states"],
-                   d["electronegativity"])
+        return cls(structure=structure,
+                   space_group_symbol=d["space_group_symbol"],
+                   transformation_matrix=d["transformation_matrix"],
+                   cell_multiplicity=d["cell_multiplicity"],
+                   irreducible_sites=irreducible_sites,
+                   dopant_configs=d["dopant_configs"],
+                   antisite_configs=d["antisite_configs"],
+                   interstitial_names=d["interstitial_names"],
+                   included=d["included"],
+                   excluded=d["excluded"],
+                   displacement_distance=d["displacement_distance"],
+                   cutoff=d["cutoff"],
+                   symprec=d["symprec"],
+                   angle_tolerance=d["angle_tolerance"],
+                   oxidation_states=d["oxidation_states"],
+                   electronegativity=d["electronegativity"])
 
     @classmethod
     def load_json(cls, filename):
@@ -218,7 +236,7 @@ class DefectInitialSetting(MSONable):
         space_group_symbol = None
         irreducible_sites = []
         antisite_configs = []
-        interstitial_coords = []
+        interstitial_names = []
         included = None
         excluded = None
         electronegativity = {}
@@ -244,16 +262,6 @@ class DefectInitialSetting(MSONable):
                     wyckoff = di.readline().split()[2]
                     site_symmetry = di.readline().split()[2]
 
-                    def get_distances(string):
-                        distances = {}
-                        for i in string:
-                            if i[-1] == ":":
-                                distances[i[:-1]] = []
-                                key = i[:-1]
-                            else:
-                                distances[key].append(float(i))
-                        return distances
-
                     coordination_distances = \
                         get_distances(di.readline().split()[1:])
                     first_index, last_index = \
@@ -272,16 +280,8 @@ class DefectInitialSetting(MSONable):
                     electronegativity[element] = float(di.readline().split()[1])
                     oxidation_states[element] = int(di.readline().split()[2])
 
-                elif line[0] == "Interstitial":
-                    # "Interstitial coordinates: 0 0 0
-                    # "Interstitial coordinates: 0.25 0.25 0.25"
-                    if len(line) == 5:
-                        interstitial_coords.append(
-                            [float(line[i]) for i in range(2, len(line))])
-                    elif len(line) != 2:
-                        logger.warning("The number of interstitial coordinates "
-                                       "is not a multiple of 3.")
-                        interstitial_coords = []
+                elif line[0] == "Interstitials:":
+                        interstitial_names = list(line[1:])
 
                 elif line[0] == "Antisite":
                     antisite_configs = [i.split("_") for i in line[2:]]
@@ -313,19 +313,20 @@ class DefectInitialSetting(MSONable):
                         excluded = line[2:]
 
                 else:
-                    raise NotSupportedFlagError(
+                    raise InvalidInputFileError(
                         "{} is not supported in defect.in!".format(line))
 
         return cls(structure, space_group_symbol, irreducible_sites,
-                   dopant_configs, antisite_configs, interstitial_coords,
+                   dopant_configs, antisite_configs, interstitial_names,
                    included, excluded, distance, cutoff, symprec,
                    angle_tolerance, oxidation_states, electronegativity)
 
     @classmethod
     def from_basic_settings(cls,
                             structure: Structure,
+                            transformation_matrix: list,
+                            cell_multiplicity: int,
                             dopants: list = None,
-                            flattened_interstitial_coords: list = None,
                             is_antisite: bool = True,
                             en_diff: float = ELECTRONEGATIVITY_DIFFERENCE,
                             included: list = None,
@@ -333,18 +334,20 @@ class DefectInitialSetting(MSONable):
                             distance: float = DISPLACEMENT_DISTANCE,
                             cutoff: float = CUTOFF_RADIUS,
                             symprec: float = SYMMETRY_TOLERANCE,
-                            angle_tolerance: float = ANGLE_TOL):
-        """
-        Generates DefectInitialSetting object with some default settings.
+                            angle_tolerance: float = ANGLE_TOL,
+                            interstitial_recommender: bool = False,
+                            interstitial_in_file: str = None):
+        """ Generates object with some default settings.
 
         Args:
             structure (Structure/IStructure):
                 Structure used for supercell defect calculations
+            transformation_matrix (list):
+                Diagonal component of transformation matrix.
+            cell_multiplicity (int):
+                How much is the supercell larger than the *primitive* cell.
             dopants (list):
                 Dopant element names, e.g., ["Al", "N"]
-            flattened_interstitial_coords (list):
-                Coordinates for interstitial sites. The number of elements needs
-                to be divided by 3. e.g., [0, 0, 0, 0.1, 0.1, 0.1]
             is_antisite (bool):
                 Whether to consider antisite defects.
             en_diff (float):
@@ -357,7 +360,7 @@ class DefectInitialSetting(MSONable):
                 Exceptionally removed defects with charges. If they don't exist,
                 this flag does nothing. e.g., ["Va_O1_1", "Va_O1_2"]
             distance (float):
-                Maximum displacement distance in angstrom. 0 means that random
+                Maximum displacement displacement_distance in angstrom. 0 means that random
                 displacement is not considered.
             cutoff (float):
                 Cutoff radius in which atoms are displaced.
@@ -365,10 +368,15 @@ class DefectInitialSetting(MSONable):
                 Distance precision used for symmetry analysis.
             angle_tolerance (float):
                 Angle precision used for symmetry analysis.
+            interstitial_recommender (list):
+                The recommender name for interstitial sites.
+            interstitial_in_file (str):
+                Name of interstitial.in file.
         """
         if dopants is None:
             dopants = []
         s = structure.get_sorted_structure()
+
         space_group_analyzer = \
             SpacegroupAnalyzer(s, symprec=symprec,
                                angle_tolerance=angle_tolerance)
@@ -390,7 +398,7 @@ class DefectInitialSetting(MSONable):
         # num_irreducible_sites["Mg"] = 2 means Mg has 2 inequivalent sites
         num_irreducible_sites = defaultdict(int)
 
-        # _irreducible_sites (list): a set of IrreducibleSite class objects
+        # irreducible_sites (list): a set of IrreducibleSite class objects
         irreducible_sites = []
 
         # equivalent_sites: Equivalent site indices from SpacegroupAnalyzer.
@@ -400,9 +408,6 @@ class DefectInitialSetting(MSONable):
         lattice = symmetrized_structure.lattice.matrix
         sym_dataset = get_symmetry_dataset(symmetrized_structure, symprec,
                                            angle_tolerance)
-
-        transformation_matrix = sym_dataset["transformation_matrix"]
-        origin_shift = sym_dataset["origin_shift"]
 
         for i, equiv_site in enumerate(equiv_sites):
             # set element name of equivalent site
@@ -463,43 +468,39 @@ class DefectInitialSetting(MSONable):
                 else:
                     electronegativity_not_defined(dopant, elem)
 
-        # Reshape interstitial_coords like [[0, 0, 0], [0.1, 0.1, 0.1]]
-        if flattened_interstitial_coords:
-            if len(flattened_interstitial_coords) % 3 == 0:
-                num_coords = int(len(flattened_interstitial_coords) / 3)
-                interstitial_coords = \
-                    [flattened_interstitial_coords[3 * i: 3 * i + 3]
-                     for i in range(num_coords)]
-            else:
-                raise ValueError("Number of interstitial coordinates must be "
-                                 "a multiple of 3.")
+        if interstitial_recommender:
+            # TODO: Implement the interstitial construction and write down
+            #  interstitial.in.
+            interstitial_names = []
         else:
-            interstitial_coords = []
+            interstitial_names = []
 
         return cls(symmetrized_structure, space_group_symbol,
-                   transformation_matrix, origin_shift, irreducible_sites,
-                   dopant_configs, antisite_configs, interstitial_coords,
+                   transformation_matrix, cell_multiplicity, irreducible_sites,
+                   dopant_configs, antisite_configs, interstitial_names,
                    included, excluded, distance, cutoff, symprec,
                    angle_tolerance, oxidation_states, electronegativity)
 
     def as_dict(self):
-        d = {"@module":             self.__class__.__module__,
-             "@class":              self.__class__.__name__,
-             "structure":           self.structure,
-             "space_group_symbol":  self.space_group_symbol,
-             "_irreducible_sites":  [i.as_dict()
-                                     for i in self.irreducible_sites],
-             "dopant_configs":      self.dopant_configs,
-             "antisite_configs":    self.antisite_configs,
-             "interstitial_coords": self.interstitial_coords,
-             "included":            self.included,
-             "excluded":            self.excluded,
-             "distance":            self.distance,
-             "cutoff":              self.cutoff,
-             "symprec":             self.symprec,
-             "angle_tolerance":     self.angle_tolerance,
-             "oxidation_states":    self.oxidation_states,
-             "electronegativity":   self.electronegativity}
+        d = {"@module":               self.__class__.__module__,
+             "@class":                self.__class__.__name__,
+             "structure":             self.structure,
+             "space_group_symbol":    self.space_group_symbol,
+             "transformation_matrix": self.transformation_matrix,
+             "cell_multiplicity":     self.cell_multiplicity,
+             "irreducible_sites":    [i.as_dict()
+                                       for i in self.irreducible_sites],
+             "dopant_configs":        self.dopant_configs,
+             "antisite_configs":      self.antisite_configs,
+             "interstitial_names":     self.interstitial_names,
+             "included":              self.included,
+             "excluded":              self.excluded,
+             "displacement_distance": self.displacement_distance,
+             "cutoff":                self.cutoff,
+             "symprec":               self.symprec,
+             "angle_tolerance":       self.angle_tolerance,
+             "oxidation_states":      self.oxidation_states,
+             "electronegativity":     self.electronegativity}
 
         return d
 
@@ -534,10 +535,9 @@ class DefectInitialSetting(MSONable):
         inserted_elements = \
             tuple(self.structure.symbol_set) + tuple(self.dopants)
         for e in inserted_elements:
-            os = self.oxidation_states[e]
-            for j in range(len(self.interstitial_coords)):
-                for o in extended_range(os):
-                    name_set.append(e + "_i" + str(j + 1) + "_" + str(o))
+            for o in extended_range(self.oxidation_states[e]):
+                for name in self.interstitial_names:
+                    name_set.append(e + "_" + name + "_" + str(o))
 
         # Antisites + Substituted dopants
         for in_elem, out_elem in self.antisite_configs + self.dopant_configs:
@@ -573,11 +573,10 @@ class DefectInitialSetting(MSONable):
         lines = list()
         lines.append("  Space group: {}\n".format(self.space_group_symbol))
 
-        lines.append("Transformation matrix:")
-        lines.append(" {0[0]:5.1f} {0[1]:5.1f} {0[2]:5.1f}".format(self.transformation_matrix[0]))
-        lines.append(" {0[0]:5.1f} {0[1]:5.1f} {0[2]:5.1f}".format(self.transformation_matrix[1]))
-        lines.append(" {0[0]:5.1f} {0[1]:5.1f} {0[2]:5.1f}".format(self.transformation_matrix[2]))
-        lines.append("Origin shift: {0[0]:6.4f} {0[1]:6.4f} {0[2]:6.4f}\n".format(self.origin_shift))
+        lines.append("Transformation matrix: {0[0]:2d} {0[1]:2d} {0[2]:2d}".
+                     format(self.transformation_matrix))
+
+        lines.append("Cell multiplicity: {}\n".format(self.cell_multiplicity))
 
         for e in self.irreducible_sites:
             lines.append("   Irreducible element: {}".format(
@@ -599,18 +598,13 @@ class DefectInitialSetting(MSONable):
             lines.append("       Oxidation state: {}\n".format(
                 self.oxidation_states[e.element]))
 
-        if self.interstitial_coords:
-            for i in self.interstitial_coords:
-                lines.append("Interstitial coordinates: %6.4f  %6.4f  %6.4f" %
-                             tuple(i))
-        else:
-            lines.append("Interstitial coordinates: ")
+        lines.append("Interstitials: " + " ".join(self.interstitial_names))
 
         if self.antisite_configs is not []:
-            line = "Antisite defects: "
-            line += ' '.join(i[0] + "_" + i[1] for i in self.antisite_configs) \
-                    + "\n"
-            lines.append(line)
+            lines.append("Antisite defects: " +
+                         ' '.join(i[0] + "_" + i[1]
+                                  for i in self.antisite_configs)
+                         + "\n")
 
         for d in self.dopants:
             if d not in self.structure.symbol_set:
@@ -620,17 +614,18 @@ class DefectInitialSetting(MSONable):
                 lines.append("  Oxidation state: {}\n".format(
                     self.oxidation_states[d]))
 
-        line = "Substituted defects: "
-        line += ' '.join(i[0] + "_" + i[1] for i in self.dopant_configs) + "\n"
-        lines.append(line)
+        lines.append("Substituted defects: " +
+                     ' '.join(i[0] + "_" + i[1] for i in self.dopant_configs)
+                     + "\n")
 
-        lines.append("Maximum Displacement: {}\n".format(self.distance))
+        lines.append("Maximum Displacement: {}\n".
+                     format(self.displacement_distance))
 
         lines.append("Exceptionally included: " +
                      ' '.join(i for i in self.included))
-
         lines.append("Exceptionally excluded: " +
                      ' '.join(i for i in self.excluded) + "\n")
+
         lines.append(
             "Cutoff region of atoms perturbed: {}".format(self.cutoff))
         lines.append("Symprec: {}".format(self.symprec))

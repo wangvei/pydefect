@@ -126,7 +126,7 @@ class SupercellDftResultsTest(unittest.TestCase):
         name = "Va_O1"
         initial_structure = Structure.from_file(
             os.path.join(test_dir, "MgO/defects/Va_O1_2", "POSCAR"))
-        perturbed_initial_structure = deepcopy(initial_structure)
+        perturbed_initial_structure = initial_structure.copy()
         removed_atoms = {8: [0.25, 0.25, 0.25]}
         inserted_atoms = {}
         changes_of_num_elements = {"O": -1}

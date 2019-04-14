@@ -1,8 +1,9 @@
 # -*- coding: utf-8 -*-
 
 from monty.json import MSONable
+from pydefect.core.error_classes import NoConvergenceError
 
-from typing import List, Union, Dict, Tuple, Iterator, Optional
+from typing import Union, Optional
 
 from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
 
@@ -12,6 +13,7 @@ from pydefect.core.unitcell_calc_results import UnitcellCalcResults
 from pydefect.analysis.defect_eigenvalues import DefectEigenvalue
 from pydefect.analysis.defect_structure import DefectStructure
 from pydefect.analysis.defect_energy import DefectEnergy
+from pydefect.corrections.corrections import Correction
 
 from pydefect.core.config import DEFECT_SYMMETRY_TOLERANCE, ANGLE_TOL
 
@@ -21,7 +23,6 @@ __maintainer__ = "Yu Kumagai"
 
 class DefectProperties(MSONable):
     """
-    A class holding DFT results for supercell systems both w/ and w/o a defect.
     """
 
     def __init__(self,
@@ -30,7 +31,8 @@ class DefectProperties(MSONable):
                  defect_eigenvalue: DefectEigenvalue,
                  defect_energy: DefectEnergy,
                  defect_structure: DefectStructure,
-                 is_shallow: Optional[bool] = None):
+                 corrections: list,
+                 is_shallow: Optional[bool] = None,):
         """
         Args:
             name (str):
@@ -48,18 +50,18 @@ class DefectProperties(MSONable):
         self.defect_eigenvalue = defect_eigenvalue
         self.defect_energy = defect_energy
         self.defect_structure = defect_structure
+        self._corrections = corrections
         self.is_shallow = is_shallow
 
     @classmethod
-    def from_files(cls,
-                   defect_entry: Union[str, DefectEntry],
-                   unitcell_results: Union[str, UnitcellCalcResults],
-                   perfect_results: Union[str, SupercellCalcResults],
-                   defect_results: Union[str, SupercellCalcResults],
-                   correct_energies: bool = True,
-                   find_deep_states: bool = True,
-                   tolerance: float = DEFECT_SYMMETRY_TOLERANCE,
-                   angle_tolerance: float = ANGLE_TOL):
+    def from_calc_results(cls,
+                          defect_entry: Union[str, DefectEntry],
+                          unitcell_results: Union[str, UnitcellCalcResults],
+                          perfect_results: Union[str, SupercellCalcResults],
+                          defect_results: Union[str, SupercellCalcResults],
+                          find_deep_states: bool = True,
+                          tolerance: float = DEFECT_SYMMETRY_TOLERANCE,
+                          angle_tolerance: float = ANGLE_TOL):
 
         if isinstance(perfect_results, str):
             perfect_results = SupercellCalcResults.load_json(perfect_results)
@@ -147,8 +149,15 @@ class DefectProperties(MSONable):
         return cls(name, is_converged, defect_eigenvalue, defect_energy,
                    defect_structure, is_shallow)
 
-    def set_corrections(self, correction_json): pass
+    @property
+    def corrections(self):
+        return self._corrections
+
+    @property.setter
+    def corrections(self, corrections):
+        if isinstance(corrections, list):
+            self._corrections.extend(list(corrections))
+        elif isinstance(corrections, Correction):
+            self._corrections.append(corrections)
 
 
-class NoConvergenceError(Exception):
-    pass

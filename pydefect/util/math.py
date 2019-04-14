@@ -26,10 +26,10 @@ def normalized_random_3d_vector():
 
 def random_vector(normed_vector, distance):
     """
-    Returns a vector scaled by distance * x, where 0<x<1.
+    Returns a vector scaled by displacement_distance * x, where 0<x<1.
 
     Args:
         normed_vector (3x1 array): Normed 3d vector.
-        distance (float): distance
+        distance (float): displacement_distance
     """
     return normed_vector * distance * np.random.random()

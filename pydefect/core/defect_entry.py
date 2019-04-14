@@ -3,12 +3,11 @@
 from copy import deepcopy
 import itertools
 import json
-import numpy as np
 import os
 import ruamel.yaml as yaml
 
-from pydefect.util.error_classes import ImproperInputStructureError
-from pydefect.util.utils import get_logger
+from pydefect.core.error_classes import ImproperInputStructureError
+from pydefect.util.logger import get_logger
 from pydefect.vasp_util.util import element_diff_from_poscar_files, \
     get_defect_charge_from_vasp
 
@@ -53,7 +52,6 @@ class DefectEntry(MSONable):
                  changes_of_num_elements: dict,
                  charge: int,
                  initial_site_symmetry: str,
-                 initial_symmetry_multiplicity: int,
                  perturbed_sites: list,
                  num_equiv_sites: int = None):
         """
@@ -80,8 +78,6 @@ class DefectEntry(MSONable):
                 Charge state of the defect. Charge is also added to the structure.
             initial_site_symmetry (str):
                 Initial site symmetry such as D4h.
-            initial_symmetry_multiplicity (int):
-                Symmetry multiplicity in the initial structure.
             perturbed_sites (list):
                 Indices of the perturbed site for reducing the symmetry
             num_equiv_sites (int):
@@ -96,7 +92,6 @@ class DefectEntry(MSONable):
         self.changes_of_num_elements = deepcopy(changes_of_num_elements)
         self.charge = charge
         self.initial_site_symmetry = initial_site_symmetry
-        self.initial_symmetry_multiplicity = initial_symmetry_multiplicity
         self.perturbed_sites = list(perturbed_sites)
 
     def __str__(self):
@@ -110,11 +105,12 @@ class DefectEntry(MSONable):
                 "initial_structure: \n" + str(self.initial_structure),
                 "perturbed_initial_structure: \n" +
                 str(self.perturbed_initial_structure),
-                "perturbed_sites: \n" + str(self.perturbed_sites)]
+                "perturbed_sites: " + str(self.perturbed_sites),
+                "num_equiv_sites: \n" + str(self.num_equiv_sites)]
         return "\n".join(outs)
 
     @classmethod
-    def from_dict(cls, d):
+    def from_dict(cls, d: dict):
         """ Constructs a DefectEntry class object from a dictionary.
         """
         # The keys need to be converted to integers.
@@ -132,8 +128,8 @@ class DefectEntry(MSONable):
             changes_of_num_elements=d["changes_of_num_elements"],
             charge=d["charge"],
             initial_site_symmetry=d["initial_site_symmetry"],
-            initial_symmetry_multiplicity=d["initial_symmetry_multiplicity"],
-            perturbed_sites=d["perturbed_sites"])
+            perturbed_sites=d["perturbed_sites"],
+            num_equiv_sites=d["num_equiv_sites"])
 
     @classmethod
     def from_yaml(cls, filename, tolerance=DEFECT_SYMMETRY_TOLERANCE,
@@ -196,12 +192,11 @@ class DefectEntry(MSONable):
         inserted_atoms = [i for i in range(defect_structure.num_sites)]
         removed_atoms = {}
 
-
         for i, p_site in enumerate(perfect_structure):
             for j in inserted_atoms:
                 d_site = s[j]
                 distance = p_site.distance(d_site)
-                # check distance and species for comparison
+                # check displacement_distance and species for comparison
                 if distance < tolerance and p_site.specie == d_site.specie:
                     inserted_atoms.remove(j)
                     break
@@ -235,7 +230,6 @@ class DefectEntry(MSONable):
 
         sga = SpacegroupAnalyzer(defect_structure, tolerance, angle_tolerance)
         initial_site_symmetry = sga.get_point_group_symbol()
-        initial_symmetry_multiplicity = len(sga.get_point_group_operations())
 
         # TODO: calc num_equiv_sites
         return cls(name=name,
@@ -246,7 +240,6 @@ class DefectEntry(MSONable):
                    changes_of_num_elements=element_diff,
                    charge=charge,
                    initial_site_symmetry=initial_site_symmetry,
-                   initial_symmetry_multiplicity=initial_symmetry_multiplicity,
                    perturbed_sites=perturbed_sites)
 
     @classmethod
@@ -290,9 +283,12 @@ class DefectEntry(MSONable):
 
     @property
     def defect_center(self):
-        inserted_atom_coords = [self.initial_structure[i] for i in self.inserted_atoms]
+        inserted_atom_coords = \
+            [self.initial_structure[i] for i in self.inserted_atoms]
         removed_atom_coords = [v for v in self.removed_atoms.values()]
-        return defect_center_from_coords(inserted_atom_coords, removed_atom_coords, self.initial_structure)
+        return defect_center_from_coords(inserted_atom_coords,
+                                         removed_atom_coords,
+                                         self.initial_structure)
 
     @property
     def anchor_atom_index(self):
@@ -302,8 +298,8 @@ class DefectEntry(MSONable):
         optimization, and so used for analyzing local defect structure.
         """
         distance_set = \
-            self.initial_structure.get_all_distances(self.defect_center,
-                                                     self.initial_structure.frac_coords)
+            self.initial_structure.get_all_distances(
+                self.defect_center, self.initial_structure.frac_coords)
 
         return distance_set.index(max(distance_set))
 

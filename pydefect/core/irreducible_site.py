@@ -7,9 +7,8 @@ __maintainer__ = "Yu Kumagai"
 
 
 class IrreducibleSite(MSONable):
-    """
-    This class object holds properties related to the symmetrically equivalent
-    atom set.
+    """ Holds properties related to the symmetrically equivalent atom set.
+
     Note1: atomic indices need to be sorted, meaning they can be written in a
            sequence, like 17..32
     Note2: first_index atom is assumed to represent the irreducible atoms.
@@ -69,7 +68,9 @@ class IrreducibleSite(MSONable):
                    d["coordination_distances"])
 
     def as_dict(self):
-        d = {"irreducible_name": self.irreducible_name,
+        d = {"@module": self.__class__.__module__,
+             "@class":  self.__class__.__name__,
+             "irreducible_name": self.irreducible_name,
              "element": self.element,
              "first_index": self.first_index,
              "last_index": self.last_index,

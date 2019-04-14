@@ -1,16 +1,12 @@
 # -*- coding: utf-8 -*-
 
-from collections import namedtuple
-import numpy as np
 import os
-import tempfile
 import unittest
-from copy import deepcopy
 
 from pydefect.analysis.defect_energy import DefectEnergies, Defect
 from pydefect.analysis.defect_concentration import DefectConcentration
 from pydefect.analysis.chempotdiag.chem_pot_diag import ChemPotDiag
-from pydefect.core.correction import ExtendedFnvCorrection
+from pydefect.corrections.corrections import ExtendedFnvCorrection
 from pydefect.core.supercell_calc_results import SupercellCalcResults
 from pydefect.core.unitcell_calc_results import UnitcellCalcResults
 from pydefect.core.defect_entry import DefectEntry

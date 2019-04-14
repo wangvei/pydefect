@@ -8,8 +8,9 @@ import unittest
 from pymatgen.core.structure import Structure
 
 from pydefect.input_maker.defect_entry_set_maker \
-    import get_int_from_string, parse_defect_name, print_already_exist, \
-    print_is_being_constructed, is_name_selected, select_defect_names
+    import get_int_from_string, parse_defect_name, log_is_being_removed, \
+    log_already_exist, log_is_being_constructed, is_name_matched, \
+    select_defect_names
 
 from pydefect.core.defect_entry import DefectEntry
 from pydefect.core.irreducible_site import IrreducibleSite
@@ -76,9 +77,11 @@ class PrintIsBeingConstructedTest(unittest.TestCase):
 
 class FilterNameTest(unittest.TestCase):
     def test(self):
-        self.assertTrue(is_name_selected("Va_O11_-2",
-                                         keywords=["Va_O[0-9]+_-[0-9]+"]))
-#        self.assertFalse(is_name_selected("Mg_i1_0", keywords=["Va"]))
+        self.assertTrue(is_name_matched("Va_O11_-2",
+                                        keywords=["Va_O[0-9]+_-[0-9]+"]))
+        self.assertFalse(is_name_matched("Mg_i1_0", keywords=["Va", "O_i1"]))
+        self.assertTrue(is_name_matched("Mg_i1_0", keywords=("Va", "Mg_i1")))
+        self.assertFalse(is_name_matched("Mg_i1_0", keywords="Va"))
 
 
 class FilterNameSetTest(unittest.TestCase):
@@ -104,6 +107,9 @@ class FilterNameSetTest(unittest.TestCase):
         actual_Va_O = select_defect_names(name_set, ["Va_O"])
         expected_Va_O = ['Va_O1_0', 'Va_O1_-1', 'Va_O1_-2', 'Va_O2_0']
 
+        actual_Va_O_0 = select_defect_names(name_set, ["Va_O[0-9]_0"])
+        expected_Va_O_0 = ['Va_O1_0', 'Va_O2_0']
+
         actual_Va_O1 = select_defect_names(name_set, ["Va_O1"])
         expected_Va_O1 = ['Va_O1_0', 'Va_O1_-1', 'Va_O1_-2']
 
@@ -111,6 +117,7 @@ class FilterNameSetTest(unittest.TestCase):
         self.assertEqual(sorted(actual__i), sorted(expected__i))
         self.assertEqual(sorted(actual_Va_and__i), sorted(expected_Va_and__i))
         self.assertEqual(sorted(actual_Va_O), sorted(expected_Va_O))
+        self.assertEqual(sorted(actual_Va_O_0), sorted(expected_Va_O_0))
         self.assertEqual(sorted(actual_Va_O1), sorted(expected_Va_O1))
 
 import os
@@ -180,7 +187,7 @@ class DefectEntrySetMakerTest(unittest.TestCase):
         # O1 = IrreducibleSite(irreducible_name="O1", element="O",
         #                      first_index=33, last_index=64,
         #                      representative_coords=[0.25, 0.25, 0.25])
-        # self._irreducible_sites = [Mg1, O1]
+        # self.irreducible_sites = [Mg1, O1]
         # self.interstitial_coords = [[0.1, 0.1, 0.1], [0.2, 0.2, 0.2]]
 
         # name = "Va_Mg1"
@@ -196,7 +203,7 @@ class DefectEntrySetMakerTest(unittest.TestCase):
 
     # def test_vacancies(self):
     #     vac1_d = \
-    #         DefectEntryMaker("Va_Mg1_-2", self.structure, self._irreducible_sites,
+    #         DefectEntryMaker("Va_Mg1_-2", self.structure, self.irreducible_sites,
     #                          self.interstitial_coords)
     #     self.assertEqual(vac1_d.defect.as_dict(), self.test_d.as_dict())
 

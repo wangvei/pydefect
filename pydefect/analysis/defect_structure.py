@@ -12,11 +12,11 @@ def get_neighbors_with_distance(structure, coords, neighbor_tolerance=1.1,
         structure (Structure):
         coords (3x1 array):
         neighbor_tolerance (float):
-            get sites whose distance < min_distance * neighbor_tolerance
-        initial_cutoff (float): initial cutoff distance when searching neighbors
+            get sites whose displacement_distance < min_distance * neighbor_tolerance
+        initial_cutoff (float): initial cutoff displacement_distance when searching neighbors
         is_frac (bool): Is coordinate fractional, not Cartesian
     Returns:
-        (list of (Site, distance))
+        (list of (Site, displacement_distance))
     """
 
     # conversion to Cartesian
@@ -54,13 +54,13 @@ def get_neighbors(structure, coords, neighbor_tolerance,
         structure (Structure):
         coords (3x1 array):
         neighbor_tolerance (float):
-            get sites whose distance < min_distance * neighbor_tolerance
+            get sites whose displacement_distance < min_distance * neighbor_tolerance
         initial_cutoff (float):
-            initial cutoff distance when searching neighbors
+            initial cutoff displacement_distance when searching neighbors
         is_frac (bool):
             Whether the coordinate is in fractional instead of cartesian
         include_self (bool):
-            Whether the sites whose distance < 1e-2 are included.
+            Whether the sites whose displacement_distance < 1e-2 are included.
     Returns:
         (list of Site)
     """

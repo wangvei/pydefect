@@ -3,10 +3,9 @@ import os
 import tempfile
 
 import numpy as np
-from numpy.testing import assert_array_equal, assert_array_almost_equal
-from pymatgen.util.testing import PymatgenTest
+from numpy.testing import assert_array_almost_equal
 
-from pydefect.core.correction import Ewald, ExtendedFnvCorrection
+from pydefect.corrections.corrections import Ewald, ExtendedFnvCorrection
 from pydefect.core.supercell_calc_results import SupercellCalcResults
 from pydefect.core.unitcell_calc_results import UnitcellCalcResults
 from pydefect.core.defect_entry import DefectEntry

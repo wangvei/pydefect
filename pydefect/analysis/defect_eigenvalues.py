@@ -187,8 +187,6 @@ class DefectEigenvalue(MSONable):
                 self.fermi_level < self.supercell_vbm:
             return False
 
-
-
     def __str__(self):
         pass
 

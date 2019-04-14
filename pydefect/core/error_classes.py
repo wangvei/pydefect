@@ -8,3 +8,14 @@ class ImproperInputStructureError(Exception):
     """Raised when the input structures are not proper."""
     pass
 
+
+class TooLargeUnitcellError(Exception):
+    pass
+
+
+class InvalidInputFileError(Exception):
+    pass
+
+
+class NoConvergenceError(Exception):
+    pass

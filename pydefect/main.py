@@ -10,19 +10,14 @@ import shutil
 import warnings
 
 from pymatgen.core.structure import Structure
-from pymatgen.electronic_structure.bandstructure \
-    import get_reconstructed_band_structure
 
 from pydefect.input_maker.defect_initial_setting \
     import print_dopant_info, DefectInitialSetting
-from pydefect.input_maker.supercell_maker import Supercell, Supercells
+from pydefect.input_maker.supercell_maker import Supercells
 from pydefect.core.defect_entry import DefectEntry
 from pydefect.core.supercell_calc_results import SupercellCalcResults
-from pydefect.vasp_util.script.vasp_process_analyzer \
-    import check_vasp_output, vasp_convergence_ionic, \
-    vasp_convergence_electronic
 from pydefect.core.unitcell_calc_results import UnitcellCalcResults
-from pydefect.core.correction import Ewald, ExtendedFnvCorrection
+from pydefect.corrections.corrections import Ewald, ExtendedFnvCorrection
 
 from obadb.analyzer.chempotdiag.chem_pot_diag import ChemPotDiag
 from obadb.vasp.input_set import ObaSet
@@ -30,18 +25,16 @@ from obadb.vasp.input_set import ObaSet
 #from pydefect.analysis.chempotdiag.chem_pot_diag \
 #    import ChemPotDiag
 from pydefect.analysis.chempotdiag.make_inputs import make_vasp_inputs_from_mp
-from pydefect.vasp_util.script.plot_band_structure import ModBSPlotter, \
-    VaspBandStructureSymmLine
 from pydefect.analysis.defect_energy import DefectEnergies, Defect
 from pydefect.analysis.defect_concentration import DefectConcentration
 from pydefect.analysis.defect_energy_plotter import DefectEnergyPlotter
-from pydefect.util.utils import get_logger
+from pydefect.util.logger import get_logger
 from pydefect.input_maker.defect_entry_set_maker \
     import DefectEntrySetMaker, log_is_being_removed, log_already_exist, \
     log_is_being_constructed
 
-__version__ = "0.0.1"
-__date__ = "13.July.2018"
+__author__ = "Yu Kumagai, Akira Takahashi"
+__maintainer__ = "Yu Kumagai, Akira Takahashi"
 
 logger = get_logger(__name__)
 
@@ -83,7 +76,8 @@ def main():
         epilog="""                                 
     Author: Yu Kumagai, Akira Takahashi
     Version: {}                                                                 
-    Last updated: {}""".format(__version__, __date__),
+    Last updated: {}""".format("0.0.1", "will be inserted"),
+#   Last updated: {}""".format(__version__, __date__),
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     #        allow_abbrev=False)
 
@@ -120,8 +114,8 @@ def main():
         "--excluded", dest="excluded", type=str, nargs="+",
         help="Exceptionally excluded defects. E.g., Va_O2_0.")
     parser_initial.add_argument(
-        "--distance", dest="distance", type=float,
-        help="Displacement distance. 0 means that random displacement is not "
+        "--displacement_distance", dest="displacement_distance", type=float,
+        help="Displacement displacement_distance. 0 means that random displacement is not "
              "considered.")
     parser_initial.add_argument(
         "--cutoff", dest="cutoff", type=float,
@@ -180,7 +174,9 @@ def main():
     parser_recommend_supercell.add_argument(
         "-p", dest="poscar", type=str, default="POSCAR")
     parser_recommend_supercell.add_argument(
-        "-sp", dest="sposcar", type=str, default="SPOSCAR")
+        "-s", dest="sposcar", type=str, default="SPOSCAR")
+    parser_recommend_supercell.add_argument(
+        "-u", dest="uposcar", type=str, default="UPOSCAR")
     parser_recommend_supercell.add_argument(
         "-c", "--criterion", dest="criterion", type=float,
         help="Isotropy criterion.")
@@ -529,11 +525,18 @@ def initial_setting(args):
         print_dopant_info(args.print_dopant)
     else:
         structure = Structure.from_file(args.poscar)
+        with open(args.poscar) as f:
+            first_line = f.readline()
+            transformation_matrix = [int(x) for x in first_line.split(":")[1].split(",")[0].split()]
+            cell_multiplicity = int(first_line.split(":")[2].split(",")[0].split()[0])
+
         overwritten_args = \
             overwrite_default_args(DefectInitialSetting.from_basic_settings,
                                    args)
         defect_setting = \
             DefectInitialSetting.from_basic_settings(structure,
+                                                     transformation_matrix,
+                                                     cell_multiplicity,
                                                      **overwritten_args)
         defect_setting.to()
 
@@ -619,8 +622,8 @@ def recommend_supercell(args):
                        str(supercell.num_atoms) + "_" + str(supercell.isotropy)
                 supercell.to_poscar(filename=name)
         else:
-            supercell = s.min_natom_cell if args.min_iso else s.min_iso_cell
-            supercell.to_poscar(filename=args.sposcar)
+            supercell = s.create_smallest_supercell if args.min_iso else s.create_most_isotropic_supercell
+            supercell.to_poscar(poscar_filename=args.sposcar, uposcar_filename=args.uposcar)
 
     else:
         logger.warning("Any supercell does not satisfy the criterion. Increase "

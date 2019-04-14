@@ -18,7 +18,7 @@ from pymatgen.electronic_structure.core import Spin
 from pymatgen.core import Structure
 
 from pydefect.core.defect_entry import DefectEntry
-from pydefect.util.utils import get_logger
+from pydefect.util.logger import get_logger
 
 __author__ = "Yu Kumagai"
 __maintainer__ = "Yu Kumagai"
@@ -225,9 +225,11 @@ class SupercellCalcResults(MSONable):
         # Spin object must be converted to string for to_json_file.
         eigenvalues = {str(spin): v.tolist()
                        for spin, v in self.eigenvalues.items()}
-        d = {"final_structure":         self.final_structure,
+        d = {"@module":                 self.__class__.__module__,
+             "@class":                  self.__class__.__name__,
+             "final_structure":         self.final_structure,
              "total_energy":            self.total_energy,
-             "total_magnetization":           self.total_magnetization,
+             "total_magnetization":     self.total_magnetization,
              "eigenvalues":             eigenvalues,
              "kpoints":                 self.kpoints,
              "electrostatic_potential": self.electrostatic_potential,

@@ -1,28 +1,19 @@
 # -*- coding: utf-8 -*-
-
-from collections import defaultdict
+import math
 from itertools import product
 
 from math import acos, pi
 import numpy as np
-import seekpath
-import spglib
+from pymatgen.io.vasp import Poscar
 from typing import Union
 
 from pymatgen import Structure
-from pymatgen.core.periodic_table import Element
 
-from pydefect.database.atom import symbols_to_atom, charge
 from pydefect.util.math import normalized_random_3d_vector, random_vector
-from pydefect.util.error_classes import ImproperInputStructureError
+from pydefect.core.error_classes import ImproperInputStructureError
 
 __author__ = "Yu Kumagai"
-__copyright__ = "Copyright 2018, Oba group"
-__version__ = "0.1"
 __maintainer__ = "Yu Kumagai"
-__email__ = "yuuukuma@gmail.com"
-__status__ = "Development"
-__date__ = "April 4, 2018"
 
 
 def perturb_neighboring_atoms(structure, center, cutoff, distance):
@@ -38,11 +29,10 @@ def perturb_neighboring_atoms(structure, center, cutoff, distance):
         cutoff (float):
             Radius of a sphere in which atoms are perturbed.
         distance (float):
-            Max distance for the perturbation.
+            Max displacement_distance for the perturbation.
     """
     if len(center) == 3:
-        from copy import deepcopy
-        perturbed_structure = deepcopy(structure)
+        perturbed_structure = structure.copy()
         cartesian_coords = structure.lattice.get_cartesian_coords(center)
         neighbors = structure.get_sites_in_sphere(
             cartesian_coords, cutoff, include_index=True)
@@ -153,7 +143,7 @@ def defect_center(defect_entry, structure=None):
 
 def min_distance_under_pbc(frac1, frac2, lattice_parameters):
     """
-    Return the shortest distance between two points in fractional coordinates
+    Return the shortest displacement_distance between two points in fractional coordinates
     under periodic boundary condition.
 
     Args:
@@ -206,3 +196,36 @@ def distances_from_point(structure, defect_entry):
             DefectEntry class object considered
     """
     return distance_list(structure, defect_center(defect_entry, structure))
+
+
+def fold_positions(structure):
+    """
+    Fold atomic positions with fractional coords less than 0 or larger than 1
+    into from 0 to 1.
+    For example, coords of site changes from [-0.3, 1.9, 0.5] to [0.7, 0.9, 0.5]
+
+    Args:
+        structure(Structure):
+
+    Returns:
+        Structure
+    """
+    for i, site in enumerate(structure):
+        modification_vector = [-math.floor(v) for v in site.frac_coords]
+        structure.translate_sites(i, modification_vector)
+    return structure
+
+
+def fold_positions_in_poscar(poscar):
+    """
+
+    Args:
+        poscar (Poscar):
+
+    Returns:
+        Poscar:
+
+    """
+    s = poscar.structure
+    fold_positions(s)
+    return Poscar(s)

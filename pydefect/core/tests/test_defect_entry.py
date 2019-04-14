@@ -41,7 +41,7 @@ class DefectEntryTest(unittest.TestCase):
         name = "Va_O1"
         initial_structure = Structure.from_file(
             os.path.join(test_dir, "POSCAR-MgO8atoms-Va_O1"))
-        perturbed_initial_structure = deepcopy(initial_structure)
+        perturbed_initial_structure = initial_structure.copy()
         removed_atoms = {8: [0.25, 0.25, 0.25]}
         inserted_atoms = []
         changes_of_num_elements = {"O": -1}
@@ -59,7 +59,7 @@ class DefectEntryTest(unittest.TestCase):
         name = "2Va_O1+Mg_i1_2"
         initial_structure = Structure.from_file(
             os.path.join(test_dir, "POSCAR-MgO8atoms-2Va_O1-Mg_i1_2"))
-        perturbed_initial_structure = deepcopy(initial_structure)
+        perturbed_initial_structure = initial_structure.copy()
         removed_atoms = {8: [0.25, 0.25, 0.25], 9: [0.25, 0.25, 0.75]}
         inserted_atoms = [8]
         changes_of_num_elements = {"O": -2, "Mg": 1}

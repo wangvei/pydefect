@@ -27,7 +27,7 @@ class PlotBandStructureTest(unittest.TestCase):
 #        print(dir(band_a))
 #        print(band_a.branches)
 #        print(band_a.bands)
-#        print(band_a.distance)
+#        print(band_a.displacement_distance)
 #        band_gap_a = band_a.get_band_gap()["distances"]
         bs_plotter_a = ModBSPlotter(band_a)
 #        data = bs_plotter_a.bs_plot_data()

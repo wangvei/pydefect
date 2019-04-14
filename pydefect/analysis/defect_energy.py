@@ -191,7 +191,9 @@ class DefectEnergies:
         Dict representation of the class object.
         """
 
-        d = {"defect_energies":   self._defect_energies,
+        d = {"@module":           self.__class__.__module__,
+             "@class":            self.__class__.__name__,
+             "defect_energies":   self._defect_energies,
              "transition_levels": self._transition_levels,
              "vbm":               self._vbm,
              "cbm":               self._cbm,

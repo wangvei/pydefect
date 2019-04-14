@@ -38,6 +38,6 @@ class RandomVectorTest(unittest.TestCase):
 
     def test(self):
         print("random_3d_vector: ", self.v)
-        print("distance: ", self.distance)
+        print("displacement_distance: ", self.distance)
         print("norm: ", np.linalg.norm(self.v))
         self.assertLessEqual(np.linalg.norm(self.v), self.distance)

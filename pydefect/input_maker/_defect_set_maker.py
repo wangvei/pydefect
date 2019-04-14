@@ -7,7 +7,7 @@ import re
 from pymatgen.core.periodic_table import Element
 from pymatgen.core.structure import Structure
 
-from pydefect.util.utils import get_logger
+from pydefect.util.logger import get_logger
 from pydefect.core.defect_entry import DefectEntry
 
 __author__ = "Yu Kumagai"
@@ -147,7 +147,7 @@ def make_defect_entry(defect_name, structure, irreducible_sites,
             Removed atom index from the perfect structure.
     """
 
-    defect_structure = deepcopy(structure)
+    defect_structure = structure.copy()
     in_name, out_name, charge = parse_defect_name(defect_name)
     name = in_name + "_" + out_name
 
@@ -240,7 +240,7 @@ class DefectEntryMaker:
     def __init__(self, defect_name, structure, irreducible_sites,
                  interstitial_coords):
 
-        defect_structure = deepcopy(structure)
+        defect_structure = structure.copy
         in_name, out_name, charge = parse_defect_name(defect_name)
         name = in_name + "_" + out_name
 
