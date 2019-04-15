@@ -27,8 +27,7 @@ logger = get_logger(__name__)
 
 
 class SupercellCalcResults(MSONable):
-    """
-    A class holding DFT results for supercell systems both w/ and w/o a defect.
+    """ Holds DFT results for supercell systems both w/ and w/o a defect.
     """
 
     def __init__(self,
@@ -76,7 +75,8 @@ class SupercellCalcResults(MSONable):
 
     def __str__(self):
         outs = ["total energy (eV): " + str(self.total_energy),
-                "total total_magnetization (mu_B): " + str(self.total_magnetization),
+                "total total_magnetization (mu_B): " +
+                str(self.total_magnetization),
                 "electrostatic potential: " + str(self.electrostatic_potential),
                 "eigenvalues_properties: " + str(self.eigenvalue_properties),
                 "final structure: \n" + str(self.final_structure),
@@ -108,17 +108,6 @@ class SupercellCalcResults(MSONable):
             outcar (str):
                 Name of the OUTCAR file.
         """
-        final_structure = None
-        total_energy = None
-        magnetization = None
-        eigenvalues = None
-        kpoints = None
-        electrostatic_potential = None
-        eigenvalue_properties = None
-        volume = None
-        fermi_level = None
-        is_converged = None
-
         p = Path(directory_path)
 
         # get the names of the latest files in the directory_path
@@ -144,42 +133,31 @@ class SupercellCalcResults(MSONable):
                 logger.warning("File {} doesn't exist.".format(parsed_filename))
                 raise FileNotFoundError
 
-        try:
-            vasprun = parse_file(Vasprun, vasprun)
-            eigenvalues = vasprun.eigenvalues
-            eigenvalue_properties = vasprun.eigenvalue_band_properties
-            fermi_level = vasprun.efermi
-            # Check if the electronic and ionic steps are converged.
-            if vasprun.converged_electronic is False:
-                logger.warning("Electronic step is not converged.")
-                is_converged = False
-            if vasprun.converged_ionic is False:
-                logger.warning("Electronic step is not converged.")
-                is_converged = False
-        except:
-            pass
+        is_converged = True
+        vasprun = parse_file(Vasprun, vasprun)
+        eigenvalues = vasprun.eigenvalues
+        eigenvalue_properties = vasprun.eigenvalue_band_properties
+        fermi_level = vasprun.efermi
+        # Check if the electronic and ionic steps are converged.
+        if vasprun.converged_electronic is False:
+            logger.warning("Electronic step is not converged.")
+            is_converged = False
+        if vasprun.converged_ionic is False:
+            logger.warning("Electronic step is not converged.")
+            is_converged = False
 
-        try:
-            kpoints = parse_file(Kpoints.from_file, ibzkpt)
-        except:
-            pass
+        kpoints = parse_file(Kpoints.from_file, ibzkpt)
 
-        try:
-            contcar = parse_file(Poscar.from_file, contcar)
-            final_structure = contcar.structure
-            volume = contcar.structure.volume
-        except:
-            pass
+        contcar = parse_file(Poscar.from_file, contcar)
+        final_structure = contcar.structure
+        volume = contcar.structure.volume
 
-        try:
-            outcar = parse_file(Outcar, outcar)
-            total_energy = outcar.final_energy
-            magnetization = outcar.total_mag
-            if not magnetization:
-                magnetization = 0.0
-            electrostatic_potential = outcar.electrostatic_potential
-        except:
-            pass
+        outcar = parse_file(Outcar, outcar)
+        total_energy = outcar.final_energy
+        magnetization = outcar.total_mag
+        if not magnetization:
+            magnetization = 0.0
+        electrostatic_potential = outcar.electrostatic_potential
 
         return cls(final_structure, total_energy, magnetization, eigenvalues,
                    kpoints, electrostatic_potential, eigenvalue_properties,

@@ -6,17 +6,16 @@ import json
 import os
 import ruamel.yaml as yaml
 
-from pydefect.core.error_classes import ImproperInputStructureError
-from pydefect.util.logger import get_logger
-from pydefect.vasp_util.util import element_diff_from_poscar_files, \
-    get_defect_charge_from_vasp
-
 from pymatgen.core.structure import Structure
 from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
 from monty.json import MontyEncoder, MSONable
 from monty.serialization import loadfn
 
-from pydefect.core.config import DEFECT_SYMMETRY_TOLERANCE, ANGLE_TOL
+from pydefect.core.error_classes import ImproperInputStructureError
+from pydefect.util.logger import get_logger
+from pydefect.util.structure import count_equivalent_clusters
+from pydefect.vasp_util.util import element_diff_from_poscar_files, \
+    get_defect_charge_from_vasp
 from pydefect.util.structure import defect_center_from_coords
 
 __author__ = "Yu Kumagai"
@@ -66,7 +65,7 @@ class DefectEntry(MSONable):
                 Keys: Atom indices removed from the perfect supercell.
                       The index begins from 0.
                       For interstitials, set {}.
-                Values: DefectSupercell coordinates
+                Values: Defect supercell coordinates
             inserted_atoms (list):
                 Atom indices inserted to the supercell.
                 Index is based on the defective supercell and begins from 0.
@@ -132,13 +131,25 @@ class DefectEntry(MSONable):
             num_equiv_sites=d["num_equiv_sites"])
 
     @classmethod
-    def from_yaml(cls, filename, tolerance=DEFECT_SYMMETRY_TOLERANCE,
-                  angle_tolerance=ANGLE_TOL):
-        """
+    def from_yaml(cls,
+                  filename: str,
+                  tolerance: float = 0.2,
+                  angle_tolerance: float = 10,
+                  perturbed_criterion: float = 0.1):
+        """Construct the DefectEntry object from perfect and defective POSCARs.
+
+        Note1: tolerance needs to be the same as the max displacement distance
+               for reducing the symmetry.
+        Note2: Only unrelaxed but perturbed defective POSCAR structure is
+               accepted.
+
+        filename (str): yaml filename.
+        tolerance (float): Tolerance to determine the same atom
+        angle_tolerance (float):
+
         An example of the yaml file.
             name (optional): 2Va_O1 + Mg_i_2
-            initial_structure (optional): POSCAR
-            perturbed_initial_structure (optional): POSCAR
+            defect_structure: POSCAR
             perfect_structure: ../../defects/perfect/POSCAR
             charge (optional, otherwise calc from INCAR and POTCAR): 2
             tolerance (optional): 0.2
@@ -152,28 +163,16 @@ class DefectEntry(MSONable):
         tolerance = yaml_data.get("tolerance", tolerance)
 
         element_diff = element_diff_from_poscar_files(
-            os.path.join(abs_dir, yaml_data["initial_structure"]),
+            os.path.join(abs_dir, yaml_data["defect_structure"]),
             os.path.join(abs_dir, yaml_data["perfect_structure"]))
 
+        # Perfect_structure, and perturbed and unperturbed initial_structures.
         perfect_structure = Structure.from_file(
             os.path.join(abs_dir, yaml_data["perfect_structure"]))
-        if "initial_structure" in yaml_data:
-            defect_structure = Structure.from_file(
-                os.path.join(abs_dir, yaml_data["initial_structure"]))
-        else:
-            defect_structure = None
+        defect_structure = Structure.from_file(
+            os.path.join(abs_dir, yaml_data["defect_structure"]))
 
-        if "perturbed_initial_structure" in yaml_data:
-            perturbed_defect_structure = Structure.from_file(
-                os.path.join(abs_dir, yaml_data["perturbed_initial_structure"]))
-        else:
-            perturbed_defect_structure = None
-
-        if defect_structure is None and perturbed_defect_structure is None:
-            raise ImproperInputStructureError(
-                "initial_structure/perturbed_initial_structure is necessary.")
-
-        # set name
+        # set defect name
         if "name" in yaml_data.keys():
             name = yaml_data["name"]
         else:
@@ -194,53 +193,58 @@ class DefectEntry(MSONable):
 
         for i, p_site in enumerate(perfect_structure):
             for j in inserted_atoms:
-                d_site = s[j]
+                d_site = defect_structure[j]
                 distance = p_site.distance(d_site)
                 # check displacement_distance and species for comparison
                 if distance < tolerance and p_site.specie == d_site.specie:
                     inserted_atoms.remove(j)
                     break
-            # *else* block is active if *for j* loop is not broken.
-            # else is not recommended in effective python as it's confusing.
             else:
                 removed_atoms[i] = list(p_site.frac_coords)
 
         # check the consistency of the removed and inserted atoms
         if len(perfect_structure) + len(inserted_atoms) \
-                - len(removed_atoms) != len(s):
+                - len(removed_atoms) != len(defect_structure):
             raise ImproperInputStructureError(
-                "Atoms are not properly mapped in the tolerance.")
+                "Atoms are not properly mapped within the tolerance.")
 
-        # defect_structure is constructed if it does not exist.
-        if defect_structure is None:
-            defect_structure = deepcopy(perfect_structure)
-            for r in sorted(removed_atoms, reverse=True):
-                defect_structure.pop(r)
-            for i in sorted(inserted_atoms):
-                el = perturbed_defect_structure[i]
-                defect_structure.insert(i, el.specie, el.coords)
+        inserted_atom_coords = \
+            [defect_structure[i].frac_coords for i in inserted_atoms]
+
+        pristine_defect_structure = deepcopy(perfect_structure)
+        for r in sorted(removed_atoms, reverse=True):
+            pristine_defect_structure.pop(r)
+        # inserted atoms are assumed to be at the positions in defect_structure.
+        for i in sorted(inserted_atoms):
+            el = defect_structure[i]
+            pristine_defect_structure.insert(i, el.specie, el.frac_coords)
 
         perturbed_sites = []
-        if perturbed_defect_structure:
-            for i, site in enumerate(perturbed_defect_structure):
-                pd_site = defect_structure[i]
-                distance = site.distance(pd_site)
-                if 0.01 < distance < tolerance:
-                    perturbed_sites.append(i)
+        for i, site in enumerate(defect_structure):
+            pd_site = defect_structure[i]
+            distance = site.distance(pd_site)
+            if perturbed_criterion < distance < tolerance:
+                perturbed_sites.append(i)
 
-        sga = SpacegroupAnalyzer(defect_structure, tolerance, angle_tolerance)
+        sga = SpacegroupAnalyzer(pristine_defect_structure, tolerance,
+                                 angle_tolerance)
         initial_site_symmetry = sga.get_point_group_symbol()
 
-        # TODO: calc num_equiv_sites
+        num_equiv_sites = \
+            count_equivalent_clusters(perfect_structure,
+                                      inserted_atom_coords,
+                                      list(removed_atoms.keys()))
+
         return cls(name=name,
-                   initial_structure=defect_structure,
-                   perturbed_initial_structure=perturbed_defect_structure,
+                   initial_structure=pristine_defect_structure,
+                   perturbed_initial_structure=defect_structure,
                    removed_atoms=removed_atoms,
                    inserted_atoms=inserted_atoms,
                    changes_of_num_elements=element_diff,
                    charge=charge,
                    initial_site_symmetry=initial_site_symmetry,
-                   perturbed_sites=perturbed_sites)
+                   perturbed_sites=perturbed_sites,
+                   num_equiv_sites=num_equiv_sites)
 
     @classmethod
     def load_json(cls, filename="defect_entry.json"):

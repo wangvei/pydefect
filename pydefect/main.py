@@ -607,7 +607,7 @@ def recommend_supercell(args):
     overwritten_args = overwrite_default_args(Supercells, args)
 
     if args.primitive:
-        overwritten_args["conventional"] = False
+        overwritten_args["is_conventional"] = False
 
     s = Supercells(structure, **overwritten_args)
 

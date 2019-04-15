@@ -1,16 +1,16 @@
 # -*- coding: utf-8 -*-
-import math
-from itertools import product
-
-from math import acos, pi
+from itertools import product, combinations, chain
+from math import acos, pi, floor
 import numpy as np
-from pymatgen.io.vasp import Poscar
 from typing import Union
 
-from pymatgen import Structure
+from pymatgen.io.vasp import Poscar
+from pymatgen.core import Structure, Lattice
+from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
 
 from pydefect.util.math import normalized_random_3d_vector, random_vector
 from pydefect.core.error_classes import ImproperInputStructureError
+from pydefect.core.config import SYMMETRY_TOLERANCE, ANGLE_TOL
 
 __author__ = "Yu Kumagai"
 __maintainer__ = "Yu Kumagai"
@@ -211,7 +211,7 @@ def fold_positions(structure):
         Structure
     """
     for i, site in enumerate(structure):
-        modification_vector = [-math.floor(v) for v in site.frac_coords]
+        modification_vector = [-floor(v) for v in site.frac_coords]
         structure.translate_sites(i, modification_vector)
     return structure
 
@@ -229,3 +229,152 @@ def fold_positions_in_poscar(poscar):
     s = poscar.structure
     fold_positions(s)
     return Poscar(s)
+
+
+def atomic_distances(lattice: Lattice,
+                     points: list
+                     ) -> np.array:
+    """ return a list of distances between the given points.
+    Args:
+        lattice (Lattice):
+        points (list):
+    """
+    distances = []
+    for a, b in combinations(points, 2):
+        distances.append(lattice.get_distance_and_image(a, b)[0])
+    return np.sort(np.array(distances))
+
+
+def create_saturated_interstitial_structure(structure: Structure,
+                                            inserted_atom_coords: list,
+                                            dist_tol: float = 0.1):
+    """ generates the sublattice for it based on the structure's space group.
+    Originally copied from pymatgen.analysis.defects.core
+
+    Args:
+        structure (Structure):
+        inserted_atom_coords (list):
+        dist_tol (float):
+            changing distance tolerance of saturated structure,
+            allowing for possibly overlapping sites
+            but ensuring space group is maintained
+
+    Returns:
+        Structure object decorated with interstitial site equivalents and
+        list of inserted atom indices.
+    """
+    sga = SpacegroupAnalyzer(structure)
+    sg_ops = sga.get_symmetry_operations()
+
+    saturated_defect_structure = structure.copy()
+    saturated_defect_structure.DISTANCE_TOLERANCE = dist_tol
+
+    lattice = saturated_defect_structure.lattice
+
+    from pymatgen.core.periodic_table import DummySpecie
+    from pymatgen.core.sites import PeriodicSite
+
+    print(inserted_atom_coords)
+
+    inserted_atom_indices = []
+    for i in inserted_atom_coords:
+        already_exist = False
+        for j, site in enumerate(saturated_defect_structure):
+            if lattice.get_distance_and_image(i, site.frac_coords)[0] < dist_tol:
+                inserted_atom_indices.append(j)
+                already_exist = True
+
+        if already_exist:
+            continue
+
+        for sgo in sg_ops:
+            if already_exist is False:
+                inserted_atom_indices.append(len(saturated_defect_structure))
+
+            new_interstitial_coords = sgo.operate(i[:])
+            poss_new_site = PeriodicSite(
+                    DummySpecie(),
+                    new_interstitial_coords,
+                    saturated_defect_structure.lattice)
+
+            already_exist = True
+
+            try:
+                # will raise value error if site already exists in structure
+                saturated_defect_structure.append(
+                            poss_new_site.specie, poss_new_site.frac_coords,
+                            validate_proximity=True)
+            except ValueError:
+                pass
+
+    # do final space group analysis to make sure symmetry not lowered by
+    # saturating defect structure
+    # saturated_sga = SpacegroupAnalyzer(saturated_defect_struct)
+    # print(saturated_defect_struct)
+
+    # if saturated_sga.get_space_group_number() != sga.get_space_group_number():
+    #     raise ValueError("Warning! Interstitial sublattice generation "
+    #                      "has changed space group symmetry. I recommend "
+    #                      "reducing dist_tol and trying again...")
+
+    return saturated_defect_structure, inserted_atom_indices
+
+
+def count_equivalent_clusters(perfect_structure: Structure,
+                              inserted_atom_coords: list,
+                              removed_atom_indices: list,
+                              symprec: float = SYMMETRY_TOLERANCE,
+                              angle_tolerance: float = ANGLE_TOL):
+    """Return a dict of atomic distances
+
+    Args:
+        perfect_structure (Structure): Supercell is assumed to big enough.
+        inserted_atom_coords (list):
+        removed_atom_indices (list):
+            Needs to begin from 0.
+        symprec (float):
+        angle_tolerance (float):
+
+    Returns:
+        count (int):
+
+    """
+    saturated_structure, inserted_atom_indices = \
+        create_saturated_interstitial_structure(
+            structure=perfect_structure.copy(),
+            inserted_atom_coords=inserted_atom_coords)
+
+    # make host site groups for removed_atoms
+    sga = SpacegroupAnalyzer(saturated_structure, symprec, angle_tolerance)
+    symmetrized_saturated_structure = sga.get_symmetrized_structure()
+    equiv_indices = symmetrized_saturated_structure.equivalent_indices
+    equiv_num_atoms = []
+
+    print("removed_atom_indices", removed_atom_indices)
+    print("inserted_atom_indices", inserted_atom_indices)
+
+    for i in equiv_indices:
+        atoms_from_i = \
+            [j for j in removed_atom_indices + inserted_atom_indices if j in i]
+        equiv_num_atoms.append(len(atoms_from_i))
+
+    orig_atom_indices = removed_atom_indices + inserted_atom_indices
+    orig_atom_frac_coords = \
+        [saturated_structure[i].frac_coords for i in orig_atom_indices]
+    orig_distances = atomic_distances(perfect_structure.lattice,
+                                      orig_atom_frac_coords)
+
+    groups = []
+    for i, num_atoms in enumerate(equiv_num_atoms):
+        groups.append(list(combinations(equiv_indices[i], num_atoms)))
+
+    count = 0
+    for i in product(*groups):
+        frac_coords = \
+            [saturated_structure[i].frac_coords for i in list(chain(*i))]
+        distances = atomic_distances(perfect_structure.lattice, frac_coords)
+
+        if all(abs(distances - orig_distances) < symprec):
+            count += 1
+
+    return count

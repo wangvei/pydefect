@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 
-from copy import deepcopy
 import re
 
 from pymatgen.core.periodic_table import Element
@@ -132,6 +131,7 @@ class DefectEntrySetMaker:
         out_pattern (str):
             Pattern for screening out_name
     """
+
     def __init__(self,
                  defect_initial_setting: DefectInitialSetting,
                  interstitial_in_file: str = None,
@@ -150,7 +150,6 @@ class DefectEntrySetMaker:
         """
         self.perfect_structure = defect_initial_setting.structure
         self.irreducible_sites = defect_initial_setting.irreducible_sites
-        self.interstitial_coords = defect_initial_setting.interstitial_coords
         self.cutoff = defect_initial_setting.cutoff
         self.displacement_distance = \
             defect_initial_setting.displacement_distance
@@ -204,8 +203,8 @@ class DefectEntrySetMaker:
             for i in self.interstitials:
                 if out_name == i.site_name:
                     defect_coords = i.representative_coords
-                    initial_symmetry = i.site_symmetry
-                    multiplicity = \
+                    initial_site_symmetry = i.site_symmetry
+                    num_equiv_sites = \
                         self.cell_multiplicity * i.symmetry_multiplicity
                     break
             else:
@@ -219,8 +218,8 @@ class DefectEntrySetMaker:
                     removed_index = i.first_index - 1
                     defect_coords = i.representative_coords
                     removed_atoms[removed_index] = i.representative_coords
-                    initial_symmetry = i.site_symmetry
-                    multiplicity = i.num_atoms
+                    initial_site_symmetry = i.site_symmetry
+                    num_equiv_sites = i.num_atoms
                     break
             else:
                 raise IndexError("{} in {} is improper.".format(out_name,
@@ -274,8 +273,13 @@ class DefectEntrySetMaker:
         defect_structure.set_charge(charge)
         perturbed_defect_structure.set_charge(charge)
 
-        return DefectEntry(name, defect_structure, perturbed_defect_structure,
-                           removed_atoms, inserted_atoms,
-                           changes_of_num_elements, charge, initial_symmetry,
-                           multiplicity, perturbed_sites)
-
+        return DefectEntry(name=name,
+                           initial_structure=defect_structure,
+                           perturbed_initial_structure=perturbed_defect_structure,
+                           removed_atoms=removed_atoms,
+                           inserted_atoms=inserted_atoms,
+                           changes_of_num_elements=changes_of_num_elements,
+                           charge=charge,
+                           initial_site_symmetry=initial_site_symmetry,
+                           perturbed_sites=perturbed_sites,
+                           num_equiv_sites=num_equiv_sites)

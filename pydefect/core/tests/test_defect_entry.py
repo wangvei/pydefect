@@ -46,14 +46,20 @@ class DefectEntryTest(unittest.TestCase):
         inserted_atoms = []
         changes_of_num_elements = {"O": -1}
         charge = 2
-        initial_symmetry = "Oh"
-        multiplicity = 4
+        initial_site_symmetry = "Oh"
+        num_equiv_sites = 4
         perturbed_sites = []
         self._MgO_Va_O1_2 = \
-            DefectEntry(name, initial_structure, perturbed_initial_structure,
-                        removed_atoms, inserted_atoms,
-                        changes_of_num_elements, charge, initial_symmetry,
-                        multiplicity, perturbed_sites)
+            DefectEntry(name=name,
+                        initial_structure=initial_structure,
+                        perturbed_initial_structure=perturbed_initial_structure,
+                        removed_atoms=removed_atoms,
+                        inserted_atoms=inserted_atoms,
+                        changes_of_num_elements=changes_of_num_elements,
+                        charge=charge,
+                        initial_site_symmetry=initial_site_symmetry,
+                        perturbed_sites=perturbed_sites,
+                        num_equiv_sites=num_equiv_sites)
 
         # DefectEntry class object for a complex defect
         name = "2Va_O1+Mg_i1_2"
@@ -64,19 +70,27 @@ class DefectEntryTest(unittest.TestCase):
         inserted_atoms = [8]
         changes_of_num_elements = {"O": -2, "Mg": 1}
         charge = 2
-        initial_symmetry = "mmm"
-        multiplicity = 8
+        initial_site_symmetry = "mmm"
         perturbed_sites = []
+        num_equiv_sites = 0
 
         self._MgO_complex = \
-            DefectEntry(name, initial_structure, perturbed_initial_structure,
-                        removed_atoms, inserted_atoms,
-                        changes_of_num_elements, charge, initial_symmetry,
-                        multiplicity, perturbed_sites)
+            DefectEntry(name=name,
+                        initial_structure=initial_structure,
+                        perturbed_initial_structure=perturbed_initial_structure,
+                        removed_atoms=removed_atoms,
+                        inserted_atoms=inserted_atoms,
+                        changes_of_num_elements=changes_of_num_elements,
+                        charge=charge,
+                        initial_site_symmetry=initial_site_symmetry,
+                        perturbed_sites=perturbed_sites,
+                        num_equiv_sites=num_equiv_sites)
 
     def test_from_yaml(self):
         defect_entry_from_yaml = DefectEntry.from_yaml(
             os.path.join(test_dir, "defect_entry-2Va_O1-Mg_i1_2.yaml"))
+        print(defect_entry_from_yaml)
+        print(self._MgO_complex)
         self.assertTrue(
             defect_entry_from_yaml.as_dict() == self._MgO_complex.as_dict())
 
