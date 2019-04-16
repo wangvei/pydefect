@@ -146,7 +146,7 @@ class DefectEntryMakerTest(unittest.TestCase):
         vac1_d = \
             DefectEntryMaker("Va_Mg1_-2", self.structure, self.irreducible_sites,
                              self.interstitial_coords)
-        self.assertEqual(vac1_d.defect.as_dict(), self.test_d.as_dict())
+        self.assertEqual(vac1_d.defect.as_dict, self.test_d.as_dict)
 
 import os
 import shutil

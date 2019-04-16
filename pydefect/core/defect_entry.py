@@ -85,13 +85,13 @@ class DefectEntry(MSONable):
         self.name = name
         self.initial_structure = initial_structure
         self.perturbed_initial_structure = perturbed_initial_structure
-        self.num_equiv_sites = num_equiv_sites
         self.removed_atoms = deepcopy(removed_atoms)
         self.inserted_atoms = list(inserted_atoms)
         self.changes_of_num_elements = deepcopy(changes_of_num_elements)
         self.charge = charge
         self.initial_site_symmetry = initial_site_symmetry
         self.perturbed_sites = list(perturbed_sites)
+        self.num_equiv_sites = num_equiv_sites
 
     def __str__(self):
         outs = ["name: " + str(self.name),
@@ -101,7 +101,6 @@ class DefectEntry(MSONable):
                 "inserted_atoms: " + str(self.inserted_atoms),
                 "changes_of_num_element: " + str(self.changes_of_num_elements),
                 "charge: " + str(self.charge),
-                "initial_structure: \n" + str(self.initial_structure),
                 "perturbed_initial_structure: \n" +
                 str(self.perturbed_initial_structure),
                 "perturbed_sites: " + str(self.perturbed_sites),
@@ -113,15 +112,23 @@ class DefectEntry(MSONable):
         """ Constructs a DefectEntry class object from a dictionary.
         """
         # The keys need to be converted to integers.
-        # When using the MSONable, the key may need to be string.
         removed_atoms = {int(k): v for k, v in d["removed_atoms"].items()}
 
-        print(d["perturbed_initial_structure"])
+        initial_structure = d["initial_structure"]
+        if isinstance(initial_structure, dict):
+            initial_structure = Structure.from_dict(initial_structure)
+
+        perturbed_initial_structure = d["perturbed_initial_structure"]
+        if isinstance(perturbed_initial_structure, dict):
+            perturbed_initial_structure = \
+                Structure.from_dict(perturbed_initial_structure)
+
+#        removed_atoms=d["removed_atoms"],
 
         return cls(
             name=d["name"],
-            initial_structure=d["initial_structure"],
-            perturbed_initial_structure=d["perturbed_initial_structure"],
+            initial_structure=initial_structure,
+            perturbed_initial_structure=perturbed_initial_structure,
             removed_atoms=removed_atoms,
             inserted_atoms=d["inserted_atoms"],
             changes_of_num_elements=d["changes_of_num_elements"],
@@ -135,7 +142,7 @@ class DefectEntry(MSONable):
                   filename: str,
                   tolerance: float = 0.2,
                   angle_tolerance: float = 10,
-                  perturbed_criterion: float = 0.1):
+                  perturbed_criterion: float = 0.001):
         """Construct the DefectEntry object from perfect and defective POSCARs.
 
         Note1: tolerance needs to be the same as the max displacement distance
@@ -178,7 +185,8 @@ class DefectEntry(MSONable):
         else:
             _, dirname = os.path.split(os.getcwd())
             name = "_".join(dirname.split("_")[:2])
-            logger.warning("name:", name, "is set from the directory name.")
+            logger.warning("name: {} is set from the directory name.".
+                           format(name))
 
         # set charge state
         if "charge" in yaml_data.keys():
@@ -186,7 +194,8 @@ class DefectEntry(MSONable):
         else:
             nions = get_num_atoms_for_elements(defect_structure)
             charge = get_defect_charge_from_vasp(nions=nions)
-            logger.warning("charge", charge, "is set from vasp input files.")
+            logger.warning("charge {} is set from vasp input files.".
+                           format(charge))
 
         inserted_atoms = [i for i in range(defect_structure.num_sites)]
         removed_atoms = {}
@@ -221,8 +230,8 @@ class DefectEntry(MSONable):
 
         perturbed_sites = []
         for i, site in enumerate(defect_structure):
-            pd_site = defect_structure[i]
-            distance = site.distance(pd_site)
+            pristine_defect_site = pristine_defect_structure[i]
+            distance = site.distance(pristine_defect_site)
             if perturbed_criterion < distance < tolerance:
                 perturbed_sites.append(i)
 
@@ -251,7 +260,8 @@ class DefectEntry(MSONable):
         """
         Constructs a DefectEntry class object from a json file.
         """
-        return cls.from_dict(loadfn(filename))
+        return loadfn(filename)
+#        return cls.from_dict(loadfn(filename))
 
     @property
     def atom_mapping_to_perfect(self):

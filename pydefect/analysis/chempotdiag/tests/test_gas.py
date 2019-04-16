@@ -14,7 +14,7 @@ class TestFundamentalFrequencies(unittest.TestCase):
                     {'Frequency': 1022, 'Degeneration': 1},
                     {'Frequency': 3577, 'Degeneration': 2},
                     {'Frequency': 1691, 'Degeneration': 2}]
-        actual = [f.as_dict() for f in nh3]
+        actual = [f.as_dict for f in nh3]
         self.assertListEqual(expected, actual)
 
 

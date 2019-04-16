@@ -2,6 +2,7 @@
 from itertools import product, combinations, chain
 from math import acos, pi, floor
 import numpy as np
+from tqdm import tqdm
 from typing import Union
 
 from pymatgen.io.vasp import Poscar
@@ -245,6 +246,32 @@ def atomic_distances(lattice: Lattice,
     return np.sort(np.array(distances))
 
 
+def check_distances(lattice: Lattice,
+                    points: list,
+                    orig_distances: np.array,
+                    symprec: float,
+                    ) -> bool:
+    """ return a list of distances between the given points.
+    Args:
+        lattice (Lattice):
+        points (list):
+        orig_distances (np.array):
+        symprec (float):
+    """
+    distances = []
+    for a, b in combinations(points, 2):
+        distance = lattice.get_distance_and_image(a, b)[0]
+        if any(abs(distance - orig_distances) < 0.0001):
+            distances.append(distance)
+        else:
+            return False
+
+    if all(abs(np.sort(np.array(distances)) - orig_distances) < symprec):
+        return True
+    else:
+        return False
+
+
 def create_saturated_interstitial_structure(structure: Structure,
                                             inserted_atom_coords: list,
                                             dist_tol: float = 0.1):
@@ -273,8 +300,6 @@ def create_saturated_interstitial_structure(structure: Structure,
 
     from pymatgen.core.periodic_table import DummySpecie
     from pymatgen.core.sites import PeriodicSite
-
-    print(inserted_atom_coords)
 
     inserted_atom_indices = []
     for i in inserted_atom_coords:
@@ -350,9 +375,6 @@ def count_equivalent_clusters(perfect_structure: Structure,
     equiv_indices = symmetrized_saturated_structure.equivalent_indices
     equiv_num_atoms = []
 
-    print("removed_atom_indices", removed_atom_indices)
-    print("inserted_atom_indices", inserted_atom_indices)
-
     for i in equiv_indices:
         atoms_from_i = \
             [j for j in removed_atom_indices + inserted_atom_indices if j in i]
@@ -369,12 +391,13 @@ def count_equivalent_clusters(perfect_structure: Structure,
         groups.append(list(combinations(equiv_indices[i], num_atoms)))
 
     count = 0
-    for i in product(*groups):
+    for i in tqdm(list(product(*groups))):
         frac_coords = \
             [saturated_structure[i].frac_coords for i in list(chain(*i))]
-        distances = atomic_distances(perfect_structure.lattice, frac_coords)
 
-        if all(abs(distances - orig_distances) < symprec):
+        if check_distances(perfect_structure.lattice, frac_coords,
+                           orig_distances, symprec):
             count += 1
 
     return count
+

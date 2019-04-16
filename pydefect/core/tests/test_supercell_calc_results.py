@@ -121,7 +121,7 @@ class SupercellDftResultsTest(unittest.TestCase):
             SupercellCalcResults.from_vasp_files(
                 os.path.join(test_dir, "MgO/defects/perfect"))
 
-        self.d_from_vasp_files = self._MgO_Va_O1_2.as_dict()
+        self.d_from_vasp_files = self._MgO_Va_O1_2.as_dict
 
         name = "Va_O1"
         initial_structure = Structure.from_file(

@@ -488,8 +488,8 @@ class DefectInitialSetting(MSONable):
              "space_group_symbol":    self.space_group_symbol,
              "transformation_matrix": self.transformation_matrix,
              "cell_multiplicity":     self.cell_multiplicity,
-             "irreducible_sites":    [i.as_dict()
-                                       for i in self.irreducible_sites],
+             "irreducible_sites":    [i.as_dict
+                                      for i in self.irreducible_sites],
              "dopant_configs":        self.dopant_configs,
              "antisite_configs":      self.antisite_configs,
              "interstitial_names":     self.interstitial_names,

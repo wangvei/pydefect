@@ -92,7 +92,7 @@ class DefectEntryTest(unittest.TestCase):
         print(defect_entry_from_yaml)
         print(self._MgO_complex)
         self.assertTrue(
-            defect_entry_from_yaml.as_dict() == self._MgO_complex.as_dict())
+            defect_entry_from_yaml.as_dict == self._MgO_complex.as_dict)
 
     # def test_from_simpler_yaml(self):
     #     simpler_dir = os.path.join(test_dir, "MgO/defects/2Va_O1-Mg_i1_2")
@@ -112,9 +112,11 @@ class DefectEntryTest(unittest.TestCase):
     def test_dict_roundtrip(self):
         """ round trip test of as_dict and from_dict
         """
-        Va_O1_2_from_dict = DefectEntry.from_dict(self._MgO_Va_O1_2.as_dict())
-        self.assertTrue(Va_O1_2_from_dict.as_dict() ==
-                        self._MgO_Va_O1_2.as_dict())
+        dict = self._MgO_Va_O1_2.as_dict()
+        Va_O1_2_from_dict = DefectEntry.from_dict(dict)
+        for i in dict.keys():
+            self.assertTrue(Va_O1_2_from_dict.as_dict()[i] ==
+                        self._MgO_Va_O1_2.as_dict()[i])
 
     def test_json(self):
         """ round trip test of to_json and from_json

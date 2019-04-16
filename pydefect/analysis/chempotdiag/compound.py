@@ -100,10 +100,10 @@ class Compound:
         if name is None:
             name = pmg_composition.reduced_formula
         if elements is None:
-            elements = list(pmg_composition.as_dict().keys())
+            elements = list(pmg_composition.as_dict.keys())
         composition_vector = np.zeros(len(elements))
         for i, element in enumerate(elements):
-            composition_vector[i] = pmg_composition.as_dict()[element]
+            composition_vector[i] = pmg_composition.as_dict[element]
         return cls(name, elements, composition_vector, energy, gas=gas)
 
     @property
