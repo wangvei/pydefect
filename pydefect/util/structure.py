@@ -21,9 +21,7 @@ __maintainer__ = "Yu Kumagai"
 
 
 def perturb_neighboring_atoms(structure, center, cutoff, distance):
-    """
-    Return the structure with randomly perturbed atoms near the input point in
-    structure.
+    """ Return the structure with randomly perturbed atoms near the center
 
     Args:
         structure (Structure):
@@ -46,6 +44,7 @@ def perturb_neighboring_atoms(structure, center, cutoff, distance):
     sites = []
     # Since translate_sites accepts only one vector, we need to iterate this.
     for i in neighbors:
+
         vector = random_vector(normalized_random_3d_vector(), distance)
         site = i[2]
         sites.append(site)
@@ -72,11 +71,11 @@ def get_displacements(final_structure: Structure,
             optimization, which is usually the farthest atom from a defect.
     """
     if len(final_structure) != len(initial_structure):
-        raise StructureError("The number of atoms are not the"
-                                          "same between two input structures.")
+        raise StructureError("The number of atoms are different between two "
+                             "input structures.")
     elif final_structure.lattice != initial_structure.lattice:
-        raise StructureError("The Lattice constants are different"
-                                          "between two input structures.")
+        raise StructureError("The Lattice constants are different between two "
+                             "input structures.")
 
     center = np.array(center)
 
@@ -127,8 +126,7 @@ def defect_center_from_coords(defect_coords: list,
     shortest_defect_coords = []
 
     for dc in defect_coords:
-        diff = min_distance_under_pbc(
-            np.array(base), np.array(dc), structure.lattice.matrix)[1]
+        diff = structure.lattice.get_distance_and_image(base, dc)[0]
         shortest_defect_coords.append(dc + diff)
 
     # np.array([[0, 0.1, 0.2], [0.3, 0.4, 0.5]]).transpose() =
@@ -137,9 +135,9 @@ def defect_center_from_coords(defect_coords: list,
 
 
 def defect_center(defect_entry, structure=None):
-    """
-    Return a fractional coordinates of the defect center that is calculated
-    by averaging the coordinates of vacancies and interstitials.
+    """ Return a fractional coordinates of the defect center.
+
+    It is calculated by averaging coordinates of vacancies and interstitials.
     When len(defect_coords) == 1, simply returns defect_coords[0].
     First defect_coords is used as a base point when the periodic boundary
     condition is considered.
@@ -162,53 +160,24 @@ def defect_center(defect_entry, structure=None):
     return defect_center_from_coords(defect_coords, structure)
 
 
-def min_distance_under_pbc(frac1, frac2, lattice_parameters):
-    """
-    Return the shortest displacement_distance between two points in fractional coordinates
-    under periodic boundary condition.
-
-    Args:
-       frac1 (1x3 np.array):
-           1st fractional coordinates
-       frac2 (1x3 np.array):
-           2nd fractional coordinates
-       lattice_parameters (3x3 numpy array):
-           a, b, c lattice vectors
-    """
-    candidate = []
-    diff = np.dot(lattice_parameters, frac2 - frac1)
-
-    # (-1, -1, -1), (-1, -1, 0), ..., (1, 1, 1)
-    for index in product((-1, 0, 1), repeat=3):
-        index = np.array(index)
-        delta_diff = np.dot(lattice_parameters, index)
-        distance = np.linalg.norm(delta_diff + diff)
-        candidate.append([distance, index])
-
-    return min(candidate, key=lambda x: x[0])
-
-
 def distance_list(structure, coords):
-    """
-    Return a list of the shortest distances between a point and its images
-    under periodic boundary condition.
+    """ Return a list of the shortest distances between a point and its images
+
     Args:
        structure (Structure):
            pmg structure class object
        coords (1x3 numpy array):
            Fractional coordinates
     """
-    lattice_parameters = structure.lattice.matrix
-
-    return [min_distance_under_pbc(host, coords, lattice_parameters)[0]
+    return [structure.lattice.get_distance_and_image(host, coords)[0]
             for host in structure.frac_coords]
 
 
 def distances_from_point(structure, defect_entry):
-    """
-    Returns a list of distances at atomic sites from a defect center defined
-    by defect_entry. Note that in the case of an interstitial-type defect,
-    zero is also set to the interstitial site.
+    """ Returns a list of distances at atomic sites from defect center
+
+    Note that in the case of an interstitial-type defect, zero is also set for
+    the interstitial site itself.
 
     Args:
         structure (Structure):
@@ -220,9 +189,8 @@ def distances_from_point(structure, defect_entry):
 
 
 def fold_positions(structure):
-    """
-    Fold atomic positions with fractional coords less than 0 or larger than 1
-    into from 0 to 1.
+    """ Fold atomic positions in fractional coords into from 0 to 1.
+
     For example, coords of site changes from [-0.3, 1.9, 0.5] to [0.7, 0.9, 0.5]
 
     Args:
@@ -238,7 +206,7 @@ def fold_positions(structure):
 
 
 def fold_positions_in_poscar(poscar):
-    """
+    """ Same as fold_positions but for poscar
 
     Args:
         poscar (Poscar):
@@ -256,6 +224,7 @@ def atomic_distances(lattice: Lattice,
                      points: list
                      ) -> np.array:
     """ return a list of distances between the given points.
+
     Args:
         lattice (Lattice):
         points (list):
@@ -271,8 +240,8 @@ def are_distances_same(lattice: Lattice,
                        compared_distances: np.array,
                        symprec: float,
                        ) -> bool:
-    """ whether the calculated inter-points distances are the same as the
-        compared distances.
+    """ whether the calculated inter-points distances are the same
+
     Args:
         lattice (Lattice):
         points (list):
@@ -358,9 +327,13 @@ def create_saturated_interstitial_structure(structure: Structure,
 def count_equivalent_clusters(perfect_structure: Structure,
                               inserted_atom_coords: list,
                               removed_atom_indices: list,
+                              displacement_distance: float,
                               symprec: float = SYMMETRY_TOLERANCE,
                               angle_tolerance: float = ANGLE_TOL):
     """Return a dict of atomic distances
+
+    NOTE: This can be calculated using mathematics more elegantly.
+          Symmetry of complex defect is direct product of each defect symmetry?
 
     Args:
         perfect_structure (Structure):
@@ -368,6 +341,7 @@ def count_equivalent_clusters(perfect_structure: Structure,
         inserted_atom_coords (list):
         removed_atom_indices (list):
             Needs to begin from 0.
+        displacement_distance (float)
         symprec (float):
         angle_tolerance (float):
 
@@ -375,6 +349,28 @@ def count_equivalent_clusters(perfect_structure: Structure,
         count (int):
 
     """
+    inserted_atom_coords = list(inserted_atom_coords)
+
+    # TODO: refactoring this part
+    # determine whether the removed atoms are substituted; then the removed
+    # sites shouldn't be considered as defect sites for counting multiplicity.
+    removed_atom_indices_tmp = []
+    for removed_atom_index in removed_atom_indices:
+        for inserted_atom_coord in inserted_atom_coords:
+
+            distance_and_image = \
+                perfect_structure.lattice.get_distance_and_image(
+                    inserted_atom_coord,
+                    perfect_structure[removed_atom_index].frac_coords)
+
+            distance = distance_and_image[0]
+            if distance < displacement_distance:
+                break
+        else:
+            removed_atom_indices_tmp.append(removed_atom_index)
+
+    removed_atom_indices = removed_atom_indices_tmp
+
     saturated_structure, inserted_atom_indices = \
         create_saturated_interstitial_structure(
             structure=perfect_structure.copy(),

@@ -258,8 +258,8 @@ class DefectEntrySetMaker:
             inserted_atom_coords = list([self.perfect_structure.frac_coords[k]
                                          for k in inserted_atoms])
             removed_atom_coords = list(removed_atoms.values())
-            center = defect_center_from_coords(inserted_atom_coords,
-                                               removed_atom_coords,
+            defect_coords = inserted_atom_coords + removed_atom_coords
+            center = defect_center_from_coords(defect_coords,
                                                self.perfect_structure)
 
             perturbed_defect_structure, perturbed_sites = \

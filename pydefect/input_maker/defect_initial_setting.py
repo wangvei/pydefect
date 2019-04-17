@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from collections import defaultdict
+from itertools import permutations
 import json
-
 
 from pymatgen.core.periodic_table import Element
 from pymatgen.core.structure import Structure
@@ -242,7 +242,7 @@ class DefectInitialSetting(MSONable):
         electronegativity = {}
         oxidation_states = {}
         dopant_configs = []
-        distance = None
+        displacement_distance = None
         cutoff = None
         symprec = None
 
@@ -254,6 +254,10 @@ class DefectInitialSetting(MSONable):
                     continue
                 elif line[0] == "Space":
                     space_group_symbol = line[2]
+                elif line[0] == "Transformation":
+                    transformation_matrix = [int(i) for i in line[2:]]
+                elif line[0] == "Cell":
+                    cell_multiplicity = int(line[2])
                 elif line[0] == "Irreducible":
                     irreducible_name = line[2]
                     # remove index from irreducible_name, e.g., "Mg1" --> "Mg"
@@ -295,7 +299,7 @@ class DefectInitialSetting(MSONable):
                     dopant_configs = [i.split("_") for i in line[2:]]
 
                 elif line[0] == "Maximum":
-                    distance = float(line[2])
+                    displacement_distance = float(line[2])
 
                 elif line[0] == "Cutoff":
                     cutoff = float(line[5])
@@ -316,10 +320,22 @@ class DefectInitialSetting(MSONable):
                     raise InvalidFileError(
                         "{} is not supported in defect.in!".format(line))
 
-        return cls(structure, space_group_symbol, irreducible_sites,
-                   dopant_configs, antisite_configs, interstitial_names,
-                   included, excluded, distance, cutoff, symprec,
-                   angle_tolerance, oxidation_states, electronegativity)
+        return cls(structure=structure,
+                   space_group_symbol=space_group_symbol,
+                   transformation_matrix=transformation_matrix,
+                   cell_multiplicity=cell_multiplicity,
+                   irreducible_sites=irreducible_sites,
+                   dopant_configs=dopant_configs,
+                   antisite_configs=antisite_configs,
+                   interstitial_names=interstitial_names,
+                   included=included,
+                   excluded=excluded,
+                   displacement_distance=displacement_distance,
+                   cutoff=cutoff,
+                   symprec=symprec,
+                   angle_tolerance=angle_tolerance,
+                   oxidation_states=oxidation_states,
+                   electronegativity=electronegativity)
 
     @classmethod
     def from_basic_settings(cls,
@@ -331,7 +347,7 @@ class DefectInitialSetting(MSONable):
                             en_diff: float = ELECTRONEGATIVITY_DIFFERENCE,
                             included: list = None,
                             excluded: list = None,
-                            distance: float = DISPLACEMENT_DISTANCE,
+                            displacement_distance: float = DISPLACEMENT_DISTANCE,
                             cutoff: float = CUTOFF_RADIUS,
                             symprec: float = SYMMETRY_TOLERANCE,
                             angle_tolerance: float = ANGLE_TOL,
@@ -359,7 +375,7 @@ class DefectInitialSetting(MSONable):
             excluded (list):
                 Exceptionally removed defects with charges. If they don't exist,
                 this flag does nothing. e.g., ["Va_O1_1", "Va_O1_2"]
-            distance (float):
+            displacement_distance (float):
                 Maximum displacement displacement_distance in angstrom. 0 means that random
                 displacement is not considered.
             cutoff (float):
@@ -442,17 +458,15 @@ class DefectInitialSetting(MSONable):
         # E.g., antisite_configs = [["Mg, "O"], ...]
         antisite_configs = []
         if is_antisite is True:
-            for elem1 in symbol_set:
-                for elem2 in symbol_set:
-                    if elem1 == elem2:
-                        continue
-                    elif elem1 in electronegativity and \
-                            elem2 in electronegativity:
-                        if abs(electronegativity[elem1] -
-                               electronegativity[elem2]) < en_diff:
-                            antisite_configs.append([elem1, elem2])
-                    else:
-                        electronegativity_not_defined(elem1, elem2)
+            for elem1, elem2 in permutations(symbol_set, 2):
+                if elem1 == elem2:
+                    continue
+                elif elem1 and elem2 in electronegativity:
+                    if abs(electronegativity[elem1] -
+                           electronegativity[elem2]) < en_diff:
+                        antisite_configs.append([elem1, elem2])
+                else:
+                    electronegativity_not_defined(elem1, elem2)
 
         # E.g., dopant_configs = [["Al", "Mg"], ...]
         dopant_configs = []
@@ -461,7 +475,7 @@ class DefectInitialSetting(MSONable):
                 logger.warning("Dopant " + dopant + " constitutes host.")
                 continue
             for elem in symbol_set:
-                if elem in electronegativity and dopant in electronegativity:
+                if elem and dopant in electronegativity:
                     if abs(electronegativity[elem] -
                            electronegativity[dopant]) < en_diff:
                         dopant_configs.append([dopant, elem])
@@ -475,11 +489,22 @@ class DefectInitialSetting(MSONable):
         else:
             interstitial_names = []
 
-        return cls(symmetrized_structure, space_group_symbol,
-                   transformation_matrix, cell_multiplicity, irreducible_sites,
-                   dopant_configs, antisite_configs, interstitial_names,
-                   included, excluded, distance, cutoff, symprec,
-                   angle_tolerance, oxidation_states, electronegativity)
+        return cls(structure=structure,
+                   space_group_symbol=space_group_symbol,
+                   transformation_matrix=transformation_matrix,
+                   cell_multiplicity=cell_multiplicity,
+                   irreducible_sites=irreducible_sites,
+                   dopant_configs=dopant_configs,
+                   antisite_configs=antisite_configs,
+                   interstitial_names=interstitial_names,
+                   included=included,
+                   excluded=excluded,
+                   displacement_distance=displacement_distance,
+                   cutoff=cutoff,
+                   symprec=symprec,
+                   angle_tolerance=angle_tolerance,
+                   oxidation_states=oxidation_states,
+                   electronegativity=electronegativity)
 
     def as_dict(self):
         d = {"@module":               self.__class__.__module__,

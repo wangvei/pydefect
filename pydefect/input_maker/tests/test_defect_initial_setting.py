@@ -175,7 +175,7 @@ class DefectInitialSettingTest(unittest.TestCase):
                 en_diff=4.0,
                 included=["Va_O1_-1", "Va_O1_-2"],
                 excluded=["Va_O1_1", "Va_O1_2"],
-                distance=0.15,
+                displacement_distance=0.15,
                 cutoff=2.0,
                 symprec=0.001)
 

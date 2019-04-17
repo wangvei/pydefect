@@ -25,17 +25,6 @@ __maintainer__ = "Yu Kumagai"
 logger = get_logger(__name__)
 
 
-def get_num_atoms_for_elements(structure):
-    """ Returns list of numbers of ions for each element
-
-    Example: Al1Mg31O32
-        return: [1, 31, 32]
-    """
-    symbol_list = [site.specie.symbol for site in structure]
-
-    return [len(tuple(a[1])) for a in itertools.groupby(symbol_list)]
-
-
 class DefectEntry(MSONable):
     """ Holds all the information related to initial setting of a single defect.
     """
@@ -93,7 +82,6 @@ class DefectEntry(MSONable):
 
     def __str__(self):
         outs = ["name: " + str(self.name),
-                "num_equiv_sites: " + str(self.num_equiv_sites),
                 "initial_site_symmetry: " + str(self.initial_site_symmetry),
                 "removed_atoms: " + str(self.removed_atoms),
                 "inserted_atoms: " + str(self.inserted_atoms),
@@ -134,26 +122,26 @@ class DefectEntry(MSONable):
     @classmethod
     def from_yaml(cls,
                   filename: str,
-                  tolerance: float = 0.2,
+                  displacement_distance: float = 0.2,
                   angle_tolerance: float = 10,
                   perturbed_criterion: float = 0.001):
         """Construct the DefectEntry object from perfect and defective POSCARs.
 
-        Note1: tolerance needs to be the same as the max displacement distance
+        Note1: displacement_distance needs to be the same as the max displacement distance
                for reducing the symmetry.
         Note2: Only unrelaxed but perturbed defective POSCAR structure is
                accepted.
 
         filename (str): yaml filename.
-        tolerance (float): Tolerance to determine the same atom
+        displacement_distance (float): Tolerance to determine the same atom
         angle_tolerance (float):
 
         An example of the yaml file.
             name (optional): 2Va_O1 + Mg_i_2
             defect_structure: POSCAR
             perfect_structure: ../../defects/perfect/POSCAR
-            charge (optional, otherwise calc from INCAR and POTCAR): 2
-            tolerance (optional): 0.2
+            charge (optional, if none, calculated from INCAR and POTCAR): 2
+            displacement_distance (optional): 0.2
         """
 
         abs_dir = os.path.split(os.path.abspath(filename))[0]
@@ -161,13 +149,13 @@ class DefectEntry(MSONable):
         with open(filename, "r") as yaml_file:
             yaml_data = yaml.safe_load(yaml_file)
 
-        tolerance = yaml_data.get("tolerance", tolerance)
+        displacement_distance = yaml_data.get("displacement_distance", displacement_distance)
 
         element_diff = element_diff_from_poscar_files(
             os.path.join(abs_dir, yaml_data["defect_structure"]),
             os.path.join(abs_dir, yaml_data["perfect_structure"]))
 
-        # Perfect_structure, and perturbed and unperturbed initial_structures.
+        # Perfect and perturbed defect structures.
         perfect_structure = Structure.from_file(
             os.path.join(abs_dir, yaml_data["perfect_structure"]))
         defect_structure = Structure.from_file(
@@ -186,8 +174,7 @@ class DefectEntry(MSONable):
         if "charge" in yaml_data.keys():
             charge = yaml_data["charge"]
         else:
-            nions = get_num_atoms_for_elements(defect_structure)
-            charge = get_defect_charge_from_vasp(nions=nions)
+            charge = get_defect_charge_from_vasp(structure=defect_structure)
             logger.warning("charge {} is set from vasp input files.".
                            format(charge))
 
@@ -199,7 +186,7 @@ class DefectEntry(MSONable):
                 d_site = defect_structure[j]
                 distance = p_site.distance(d_site)
                 # check displacement_distance and species for comparison
-                if distance < tolerance and p_site.specie == d_site.specie:
+                if distance < displacement_distance and p_site.specie == d_site.specie:
                     inserted_atoms.remove(j)
                     break
             else:
@@ -209,34 +196,45 @@ class DefectEntry(MSONable):
         if len(perfect_structure) + len(inserted_atoms) \
                 - len(removed_atoms) != len(defect_structure):
             raise StructureError(
-                "Atoms are not properly mapped within the tolerance.")
-
-        inserted_atom_coords = \
-            [defect_structure[i].frac_coords for i in inserted_atoms]
+                "Atoms are not properly mapped within the displacement_distance.")
 
         pristine_defect_structure = deepcopy(perfect_structure)
         for r in sorted(removed_atoms, reverse=True):
             pristine_defect_structure.pop(r)
-        # inserted atoms are assumed to be at the positions in defect_structure.
+        # If there is an atom near an inserted atom within the displacement_distance, the
+        # inserted atom is assumed to be replaced the original atom.
         for i in sorted(inserted_atoms):
-            el = defect_structure[i]
-            pristine_defect_structure.insert(i, el.specie, el.frac_coords)
+            inserted_atom = defect_structure[i]
+            for removed_frac_coords in removed_atoms.values():
+                if defect_structure.lattice.get_distance_and_image(
+                        inserted_atom.frac_coords, removed_frac_coords)[0] \
+                        < displacement_distance:
+                    pristine_defect_structure.insert(i, inserted_atom.specie,
+                                                     removed_frac_coords)
+                    break
+            else:
+                pristine_defect_structure.insert(i, inserted_atom.specie,
+                                                 inserted_atom.frac_coords)
+
+        inserted_atom_coords = \
+            [pristine_defect_structure[i].frac_coords for i in inserted_atoms]
 
         perturbed_sites = []
         for i, site in enumerate(defect_structure):
             pristine_defect_site = pristine_defect_structure[i]
             distance = site.distance(pristine_defect_site)
-            if perturbed_criterion < distance < tolerance:
+            if perturbed_criterion < distance < displacement_distance:
                 perturbed_sites.append(i)
 
-        sga = SpacegroupAnalyzer(pristine_defect_structure, tolerance,
+        sga = SpacegroupAnalyzer(pristine_defect_structure, displacement_distance,
                                  angle_tolerance)
         initial_site_symmetry = sga.get_point_group_symbol()
 
         num_equiv_sites = \
             count_equivalent_clusters(perfect_structure,
                                       inserted_atom_coords,
-                                      list(removed_atoms.keys()))
+                                      list(removed_atoms.keys()),
+                                      displacement_distance)
 
         return cls(name=name,
                    initial_structure=pristine_defect_structure,

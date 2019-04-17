@@ -38,13 +38,29 @@ def get_num_electrons_from_potcar(potcar, nions, charge=0):
     return sum([v.nelectrons * nions[i] for i, v in enumerate(p)]) - charge
 
 
-def get_defect_charge_from_vasp(nions, potcar="POTCAR", incar="INCAR"):
+def get_defect_charge_from_vasp(structure, potcar="POTCAR", incar="INCAR"):
     """
     Returns the defect charge by comparing nion, number of electrons in POTCAR,
     and NELECT in INCAR.
     """
-    num_elect_neutral = get_num_electrons_from_potcar(potcar, nions)
-    num_elect_incar = Incar.from_file(incar)["NELECT"]
+    try:
+        num_elect_incar = Incar.from_file(incar)["NELECT"]
+    # return 0 if NELECT is absent in INCAR
+    except KeyError:
+        return 0
+
+    potcar = Potcar.from_file(potcar)
+
+    num_elect_neutral = 0
+
+    for i, e in enumerate(structure.composition):
+        if potcar[i].element != str(e):
+            raise ValueError("The sequence of elements in POTCAR and Structure "
+                             "is different.")
+
+        nelect = potcar[i].nelectrons
+        nions = structure.composition[e]
+        num_elect_neutral += nelect * nions
 
     # charge is minus of difference of the electrons
     return int(num_elect_neutral - num_elect_incar)

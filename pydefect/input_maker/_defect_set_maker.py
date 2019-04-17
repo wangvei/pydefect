@@ -354,10 +354,7 @@ class DefectInputSetMaker(metaclass=ABCMeta):
 
 
 import os
-import shutil
 
-from pydefect.core.defect_entry import get_num_atoms_for_elements
-from pydefect.vasp_util.util import get_num_electrons_from_potcar
 from pydefect.util.structure import perturb_neighboring_atoms, defect_center
 
 
