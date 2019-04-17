@@ -3,7 +3,7 @@
 from collections import Iterable
 from monty.json import MSONable
 
-from pydefect.core.error_classes import InvalidInputFileError
+from pydefect.core.error_classes import InvalidFileError
 from pydefect.input_maker.defect_initial_setting import get_distances
 
 __author__ = "Yu Kumagai"
@@ -48,15 +48,15 @@ class InterstitialSite(MSONable):
 
 class InterstitialSites(MSONable):
     """Holds a set of InterstitialSite objects.
-
-    Args:
-        interstitial_sites (Iterable):
-            List of InterstitialSite objects
     """
 
     def __init__(self,
                  interstitial_sites: Iterable):
-
+        """
+        Args:
+            interstitial_sites (Iterable):
+                List of InterstitialSite objects
+        """
         name_set = set()
         for i in interstitial_sites:
             if i.site_name in name_set:
@@ -106,7 +106,7 @@ class InterstitialSites(MSONable):
                     method = line[1]
                 elif not line:
                     if not site_name or not representative_coords:
-                        raise InvalidInputFileError(
+                        raise InvalidFileError(
                             "{} file is invalid!".format(interstitial_in_file))
                     else:
                         interstitial_sites.append(
@@ -119,7 +119,7 @@ class InterstitialSites(MSONable):
                                 coordination_distances=coordination_distances,
                                 method=method))
                 else:
-                    raise InvalidInputFileError(
+                    raise InvalidFileError(
                         "{} is not supported in interstitials.in!".format(line))
 
         return cls(interstitial_sites)

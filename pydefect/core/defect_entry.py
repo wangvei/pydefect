@@ -12,7 +12,7 @@ from monty.serialization import loadfn
 from pymatgen.core.structure import Structure
 from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
 
-from pydefect.core.error_classes import ImproperInputStructureError
+from pydefect.core.error_classes import StructureError
 from pydefect.util.logger import get_logger
 from pydefect.util.structure import count_equivalent_clusters
 from pydefect.vasp_util.util import element_diff_from_poscar_files, \
@@ -208,7 +208,7 @@ class DefectEntry(MSONable):
         # check the consistency of the removed and inserted atoms
         if len(perfect_structure) + len(inserted_atoms) \
                 - len(removed_atoms) != len(defect_structure):
-            raise ImproperInputStructureError(
+            raise StructureError(
                 "Atoms are not properly mapped within the tolerance.")
 
         inserted_atom_coords = \
@@ -252,7 +252,6 @@ class DefectEntry(MSONable):
     @classmethod
     def load_json(cls, filename="defect_entry.json"):
         return loadfn(filename)
-#        return cls.from_dict(loadfn(filename))
 
     @property
     def atom_mapping_to_perfect(self):

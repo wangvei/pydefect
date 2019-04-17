@@ -1,16 +1,19 @@
 # -*- coding: utf-8 -*-
 from itertools import product, combinations, chain
-from math import acos, pi, floor
+from math import acos, pi, floor, degrees
 import numpy as np
 from tqdm import tqdm
 from typing import Union
 
 from pymatgen.io.vasp import Poscar
-from pymatgen.core import Structure, Lattice
+from pymatgen.core.structure import Structure
+from pymatgen.core.lattice import Lattice
+from pymatgen.core.periodic_table import DummySpecie
+from pymatgen.core.sites import PeriodicSite
 from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
 
 from pydefect.util.math import normalized_random_3d_vector, random_vector
-from pydefect.core.error_classes import ImproperInputStructureError
+from pydefect.core.error_classes import StructureError
 from pydefect.core.config import SYMMETRY_TOLERANCE, ANGLE_TOL
 
 __author__ = "Yu Kumagai"
@@ -53,10 +56,9 @@ def perturb_neighboring_atoms(structure, center, cutoff, distance):
 
 def get_displacements(final_structure: Structure,
                       initial_structure: Structure,
-                      center: Union[list, tuple],
-                      anchor_atom_index: int):
-    """
-    Return the list of displacements.
+                      center: Union[list, int],
+                      anchor_atom_index: int = None):
+    """ Return the list of displacements.
 
     Args:
         final_structure (Structure):
@@ -64,42 +66,60 @@ def get_displacements(final_structure: Structure,
         initial_structure (Structure):
             Initial Structure
         center (list):
-            Fractional coordinates of a central position.
+            Fractional coordinates of a central position or an atom index
+        anchor_atom_index (int):
+            Atom index that is assumed not to be moved during the structure
+            optimization, which is usually the farthest atom from a defect.
     """
-
     if len(final_structure) != len(initial_structure):
-        raise ImproperInputStructureError("The number of atoms are not the"
+        raise StructureError("The number of atoms are not the"
                                           "same between two input structures.")
     elif final_structure.lattice != initial_structure.lattice:
-        raise ImproperInputStructureError("The Lattice constants are different"
+        raise StructureError("The Lattice constants are different"
                                           "between two input structures.")
 
-    center = list(center)
+    center = np.array(center)
 
-    offset_coords = final_structure[anchor_atom_index].frac_coords - \
-                    initial_structure[anchor_atom_index].frac_coords
+    if anchor_atom_index:
+        offset_coords = final_structure[anchor_atom_index].frac_coords - \
+                        initial_structure[anchor_atom_index].frac_coords
+    else:
+        offset_coords = [0.0, 0.0, 0.0]
+    offset_coords = np.array(offset_coords)
 
-    displacements = []
+    disp_vectors = []
     for f, i in zip(final_structure, initial_structure):
+        print(f, i)
         disp_coords = (f.frac_coords - offset_coords) - i.frac_coords
-        displacements.\
+        disp_vectors.\
             append(initial_structure.lattice.get_cartesian_coords(disp_coords))
+    disp_norms = initial_structure.lattice.norm(disp_vectors, frac_coords=False)
 
     initial_distances = distance_list(initial_structure, center)
     final_distances = distance_list(final_structure, center + offset_coords)
 
+    print(disp_vectors)
+    print(disp_norms)
+
+
     angles = []
-    for i, d, f in zip(initial_distances, displacements, final_distances):
-        angles = acos((i * i + d * d - f * f) / (2 * i * d)) / pi * 180
+    for i, d, f in zip(initial_distances, disp_norms, final_distances):
+        print(i, d, f)
+        angles = degrees(acos((i * i + d * d - f * f) / (2 * i * d)))
 
-    return initial_distances, final_distances, displacements, angles
+    print(initial_distances)
+    return initial_distances, final_distances, disp_vectors, \
+           disp_norms, angles
 
 
-def defect_center_from_coords(inserted_atom_coords, removed_atom_coords,
-                              structure):
+def defect_center_from_coords(defect_coords: list,
+                              structure: Structure) -> list:
+    """Return defect center from given coordinates.
+
+    Args:
+        defect_coords (list):
+        structure (Structure):
     """
-    """
-    defect_coords = inserted_atom_coords + removed_atom_coords
     # First defect_coords is used as a base point under periodic boundary
     # condition. Here, we are aware of the case when two defect positions
     # are, e.g., [0.01, 0.01, 0.01] and [0.99, 0.99, 0.99].
@@ -130,7 +150,6 @@ def defect_center(defect_entry, structure=None):
         defect_entry (DefectEntry):
             Related DefectEntry class object
     """
-    # If structure is not given, initial_structure of defect_entry is used.
     if structure is None:
         structure = defect_entry.initial_structure
 
@@ -138,8 +157,9 @@ def defect_center(defect_entry, structure=None):
                                  for k in defect_entry.inserted_atoms])
     removed_atom_coords = list(defect_entry.removed_atoms.values())
 
-    return defect_center_from_coords(inserted_atom_coords, removed_atom_coords,
-                                     structure)
+    defect_coords = inserted_atom_coords + removed_atom_coords
+
+    return defect_center_from_coords(defect_coords, structure)
 
 
 def min_distance_under_pbc(frac1, frac2, lattice_parameters):
@@ -246,27 +266,28 @@ def atomic_distances(lattice: Lattice,
     return np.sort(np.array(distances))
 
 
-def check_distances(lattice: Lattice,
-                    points: list,
-                    orig_distances: np.array,
-                    symprec: float,
-                    ) -> bool:
-    """ return a list of distances between the given points.
+def are_distances_same(lattice: Lattice,
+                       points: list,
+                       compared_distances: np.array,
+                       symprec: float,
+                       ) -> bool:
+    """ whether the calculated inter-points distances are the same as the
+        compared distances.
     Args:
         lattice (Lattice):
         points (list):
-        orig_distances (np.array):
+        compared_distances (np.array):
         symprec (float):
     """
     distances = []
     for a, b in combinations(points, 2):
         distance = lattice.get_distance_and_image(a, b)[0]
-        if any(abs(distance - orig_distances) < 0.0001):
+        if any(abs(distance - compared_distances) < 0.0001):
             distances.append(distance)
         else:
             return False
 
-    if all(abs(np.sort(np.array(distances)) - orig_distances) < symprec):
+    if all(abs(np.sort(np.array(distances)) - compared_distances) < symprec):
         return True
     else:
         return False
@@ -276,6 +297,7 @@ def create_saturated_interstitial_structure(structure: Structure,
                                             inserted_atom_coords: list,
                                             dist_tol: float = 0.1):
     """ generates the sublattice for it based on the structure's space group.
+
     Originally copied from pymatgen.analysis.defects.core
 
     Args:
@@ -298,14 +320,12 @@ def create_saturated_interstitial_structure(structure: Structure,
 
     lattice = saturated_defect_structure.lattice
 
-    from pymatgen.core.periodic_table import DummySpecie
-    from pymatgen.core.sites import PeriodicSite
-
     inserted_atom_indices = []
     for i in inserted_atom_coords:
         already_exist = False
         for j, site in enumerate(saturated_defect_structure):
-            if lattice.get_distance_and_image(i, site.frac_coords)[0] < dist_tol:
+            if lattice.get_distance_and_image(i, site.frac_coords)[0] \
+                    < dist_tol:
                 inserted_atom_indices.append(j)
                 already_exist = True
 
@@ -332,16 +352,6 @@ def create_saturated_interstitial_structure(structure: Structure,
             except ValueError:
                 pass
 
-    # do final space group analysis to make sure symmetry not lowered by
-    # saturating defect structure
-    # saturated_sga = SpacegroupAnalyzer(saturated_defect_struct)
-    # print(saturated_defect_struct)
-
-    # if saturated_sga.get_space_group_number() != sga.get_space_group_number():
-    #     raise ValueError("Warning! Interstitial sublattice generation "
-    #                      "has changed space group symmetry. I recommend "
-    #                      "reducing dist_tol and trying again...")
-
     return saturated_defect_structure, inserted_atom_indices
 
 
@@ -353,7 +363,8 @@ def count_equivalent_clusters(perfect_structure: Structure,
     """Return a dict of atomic distances
 
     Args:
-        perfect_structure (Structure): Supercell is assumed to big enough.
+        perfect_structure (Structure):
+            Supercell is assumed to big enough.
         inserted_atom_coords (list):
         removed_atom_indices (list):
             Needs to begin from 0.
@@ -395,8 +406,8 @@ def count_equivalent_clusters(perfect_structure: Structure,
         frac_coords = \
             [saturated_structure[i].frac_coords for i in list(chain(*i))]
 
-        if check_distances(perfect_structure.lattice, frac_coords,
-                           orig_distances, symprec):
+        if are_distances_same(perfect_structure.lattice, frac_coords,
+                              orig_distances, symprec):
             count += 1
 
     return count

@@ -13,7 +13,7 @@ from monty.serialization import loadfn, dumpfn
 from obadb.util.structure_handler import get_symmetry_dataset, \
     get_point_group_from_dataset, get_coordination_distances
 
-from pydefect.core.error_classes import InvalidInputFileError
+from pydefect.core.error_classes import InvalidFileError
 from pydefect.database.atom import electronegativity_list, charge
 from pydefect.util.logger import get_logger
 from pydefect.core.irreducible_site import IrreducibleSite
@@ -313,7 +313,7 @@ class DefectInitialSetting(MSONable):
                         excluded = line[2:]
 
                 else:
-                    raise InvalidInputFileError(
+                    raise InvalidFileError(
                         "{} is not supported in defect.in!".format(line))
 
         return cls(structure, space_group_symbol, irreducible_sites,

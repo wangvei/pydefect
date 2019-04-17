@@ -7,21 +7,23 @@ import unittest
 from pymatgen.core.structure import Structure
 from pymatgen.util.testing import PymatgenTest
 
-from pydefect.util.structure import perturb_neighboring_atoms, \
+from pydefect.util.structure import perturb_neighboring_atoms, get_displacements, \
     atomic_distances, create_saturated_interstitial_structure, count_equivalent_clusters
 
 __author__ = "Yu Kumagai"
 __maintainer__ = "Yu Kumagai"
 
-test_dir = os.path.join(os.path.dirname(__file__), "..", "..", "..",
-                        "test_files", "input_maker")
+test_files = os.path.join(os.path.dirname(__file__), "..", "..", "..",
+                          "test_files")
+test_dir_input_structure = os.path.join(test_files, "input_maker")
+test_dir_core = os.path.join(test_files, "core", "MgO", "defects")
 
 
 class PerturbNeighborsTest(unittest.TestCase):
 
     def test(self):
         structure = \
-            Structure.from_file(os.path.join(test_dir, "POSCAR-MgO64atoms"))
+            Structure.from_file(os.path.join(test_dir_input_structure, "POSCAR-MgO64atoms"))
         center = [0.0, 0.0, 0.0]
         cutoff = 3.0
         distance = 0.2
@@ -45,6 +47,16 @@ class PerturbNeighborsTest(unittest.TestCase):
     #     a = get_coordination_distances(self.structure, 0)
     #     for k, v in a.items():
     #         print(k + ": " + " ".join([str(round(i, 2)) for i in v]))
+
+
+class GetDisplacementsTest(PymatgenTest):
+    def setUp(self):
+        self._contcar = Structure.from_file(os.path.join(test_dir_core, "Va_O1_2", "CONTCAR"))
+        self._poscar = Structure.from_file(os.path.join(test_dir_core, "Va_O1_2", "POSCAR"))
+        self._center = [0.25, 0.25, 0.25]
+
+    def test(self):
+        print(get_displacements(self._contcar, self._poscar, self._center))
 
 
 class AtomicDistancesTest(PymatgenTest):

@@ -1,15 +1,15 @@
 #!/usr/bin/env python
 
+from abc import ABC, abstractmethod
 from copy import deepcopy
-from enum import Enum, unique
 from functools import reduce
 from itertools import product, groupby
 import json
 import math
 from operator import itemgetter
-from abc import ABC, abstractmethod
 
 import matplotlib.pyplot as plt
+
 from monty.json import MontyEncoder
 from monty.serialization import loadfn
 

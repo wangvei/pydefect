@@ -5,7 +5,7 @@ from collections import Iterable
 from copy import deepcopy
 from typing import Union
 
-from pydefect.core.error_classes import TooLargeUnitcellError
+from pydefect.core.error_classes import CellSizeError
 from pymatgen.core.structure import Structure
 
 from obadb.util.structure_handler import find_spglib_standard_conventional, \
@@ -132,7 +132,7 @@ class Supercells:
         num_atoms_in_unitcell = self.unitcell.num_sites
 
         if max_num_atoms < num_atoms_in_unitcell:
-            raise TooLargeUnitcellError("Number of atoms in the unitcell is "
+            raise CellSizeError("Number of atoms in the unitcell is "
                                         "smaller than the maximum number of "
                                         "atoms in the supercell")
 

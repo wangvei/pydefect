@@ -4,18 +4,21 @@ __author__ = "Yu Kumagai"
 __maintainer__ = "Yu Kumagai"
 
 
-class ImproperInputStructureError(Exception):
-    """Raised when the input structures are not proper."""
+class StructureError(Exception):
+    """Raised when the Structure is inadequate."""
     pass
 
 
-class TooLargeUnitcellError(Exception):
+class CellSizeError(Exception):
+    """Raised when the cell size is inadequate."""
     pass
 
 
-class InvalidInputFileError(Exception):
+class InvalidFileError(Exception):
+    """Raised when the given file is invalid."""
     pass
 
 
 class NoConvergenceError(Exception):
+    """Raised when first-principles calculations are not converged."""
     pass
