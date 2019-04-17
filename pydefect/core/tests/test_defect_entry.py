@@ -1,22 +1,17 @@
 # -*- coding: utf-8 -*-
-
 import tempfile
 import os
 import unittest
-from copy import deepcopy
+import numpy as np
 
 from pymatgen.core.structure import Structure
+from pymatgen.util.testing import PymatgenTest
 
 from pydefect.core.defect_entry import get_num_atoms_for_elements, \
     DefectEntry
 
 __author__ = "Yu Kumagai"
-__copyright__ = "Copyright 2017, Oba group"
-__version__ = "0.1"
 __maintainer__ = "Yu Kumagai"
-__email__ = "yuuukuma@gmail.com"
-__status__ = "Development"
-__date__ = "December 4, 2017"
 
 test_dir = os.path.join(os.path.dirname(__file__), "..", "..", "..",
                         "test_files", "core")
@@ -33,7 +28,7 @@ class GetNumAtomsForElementsTest(unittest.TestCase):
         self.assertEqual(actual, expected)
 
 
-class DefectEntryTest(unittest.TestCase):
+class DefectEntryTest(PymatgenTest):
 
     def setUp(self):
         """ """
@@ -135,6 +130,20 @@ class DefectEntryTest(unittest.TestCase):
         expected = [0, 1, 2, 3, 4, 5, 6, 7, None, 10, 11, 12, 13, 14, 15]
         actual = self._MgO_complex.atom_mapping_to_perfect
         self.assertTrue(actual == expected)
+
+    def test_defect_center(self):
+        pos = [[0.25, 0.25, 0.25], [0.25, 0.25, -0.25], [0.25, 0.25, 0.25]]
+        expected = list(np.average(np.array(pos), axis=0))
+
+        actual = self._MgO_complex.defect_center
+
+        self.assertArrayAlmostEqual(actual, expected)
+
+    def test_anchor_atom_index(self):
+        expected = 14    # [0.75, 0.75, 0.75]
+        actual = self._MgO_Va_O1_2.anchor_atom_index
+
+        self.assertEqual(actual, expected)
 
 
 if __name__ == "__main__":

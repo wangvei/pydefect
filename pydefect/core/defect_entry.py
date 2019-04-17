@@ -1,15 +1,16 @@
 # -*- coding: utf-8 -*-
-
 from copy import deepcopy
 import itertools
 import json
+import numpy as np
 import os
 import ruamel.yaml as yaml
 
-from pymatgen.core.structure import Structure
-from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
 from monty.json import MontyEncoder, MSONable
 from monty.serialization import loadfn
+
+from pymatgen.core.structure import Structure
+from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
 
 from pydefect.core.error_classes import ImproperInputStructureError
 from pydefect.util.logger import get_logger
@@ -25,8 +26,8 @@ logger = get_logger(__name__)
 
 
 def get_num_atoms_for_elements(structure):
-    """
-    Returns numbers of ions for elements in a structure.
+    """ Returns list of numbers of ions for each element
+
     Example: Al1Mg31O32
         return: [1, 31, 32]
     """
@@ -36,10 +37,7 @@ def get_num_atoms_for_elements(structure):
 
 
 class DefectEntry(MSONable):
-    """
-
-    This class object holds all the information related to initial setting of a
-    single defect.
+    """ Holds all the information related to initial setting of a single defect.
     """
 
     def __init__(self,
@@ -109,8 +107,6 @@ class DefectEntry(MSONable):
 
     @classmethod
     def from_dict(cls, d: dict):
-        """ Constructs a DefectEntry class object from a dictionary.
-        """
         # The keys need to be converted to integers.
         removed_atoms = {int(k): v for k, v in d["removed_atoms"].items()}
 
@@ -122,8 +118,6 @@ class DefectEntry(MSONable):
         if isinstance(perturbed_initial_structure, dict):
             perturbed_initial_structure = \
                 Structure.from_dict(perturbed_initial_structure)
-
-#        removed_atoms=d["removed_atoms"],
 
         return cls(
             name=d["name"],
@@ -257,21 +251,17 @@ class DefectEntry(MSONable):
 
     @classmethod
     def load_json(cls, filename="defect_entry.json"):
-        """
-        Constructs a DefectEntry class object from a json file.
-        """
         return loadfn(filename)
 #        return cls.from_dict(loadfn(filename))
 
     @property
     def atom_mapping_to_perfect(self):
-        """
-        Returns a list of atom mapping from defect structure to perfect.
+        """ Returns a list of atom mapping from defect structure to perfect.
+
         Example of Mg32O32 supercell:
             When 33th atom, namely first O, is removed,
-                mapping = [0, 1, 2, .., 31, 33, 34, .., 62]
+                return [0, 1, 2, .., 31, 33, 34, .., 62] (=mapping)
                 len(mapping) = 63
-
         """
         total_nions_in_perfect = \
             len(self.initial_structure) - len(self.inserted_atoms) \
@@ -289,31 +279,33 @@ class DefectEntry(MSONable):
         return mapping
 
     def to_json_file(self, filename="defect_entry.json"):
-        """
-        Writes a json file.
-        """
         with open(filename, 'w') as fw:
             json.dump(self.as_dict(), fw, indent=2, cls=MontyEncoder)
 
     @property
     def defect_center(self):
-        inserted_atom_coords = \
-            [self.initial_structure[i] for i in self.inserted_atoms]
+        """ Return fractional coordinates of the defect center.
+
+        Calculates the arithmetic average of the defect positions.
+        """
+        inserted_atom_coords = [list(self.initial_structure[i].frac_coords)
+                                for i in self.inserted_atoms]
         removed_atom_coords = [v for v in self.removed_atoms.values()]
-        return defect_center_from_coords(inserted_atom_coords,
-                                         removed_atom_coords,
+        defect_coords = inserted_atom_coords + removed_atom_coords
+        return defect_center_from_coords(defect_coords,
                                          self.initial_structure)
 
     @property
     def anchor_atom_index(self):
-        """
-        Returns an index of atom that is the farthest from the defect.
-        This atom is assumed not to displace during the structure
-        optimization, and so used for analyzing local defect structure.
+        """ Returns an index of atom that is the farthest from the defect.
+
+        This atom is assumed not to displace in the defective supercell, and
+        so used for analyzing local structure around a defect.
+        Note that only the first occurrence is returned when using argmax.
+        docs.scipy.org/doc/numpy-1.15.0/reference/generated/numpy.argmax.html
         """
         distance_set = \
-            self.initial_structure.get_all_distances(
-                self.defect_center, self.initial_structure.frac_coords)
+            self.initial_structure.lattice.get_all_distances(
+                self.defect_center, self.initial_structure.frac_coords)[0]
 
-        return distance_set.index(max(distance_set))
-
+        return np.argmax(distance_set)
