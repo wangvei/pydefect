@@ -7,8 +7,9 @@ import unittest
 from pymatgen.core.structure import Structure
 from pymatgen.util.testing import PymatgenTest
 
-from pydefect.util.structure import perturb_neighboring_atoms, get_displacements, \
-    atomic_distances, create_saturated_interstitial_structure, count_equivalent_clusters
+from pydefect.util.structure import perturb_neighboring_atoms, \
+    get_displacements, defect_center_from_coords, atomic_distances, \
+    create_saturated_interstitial_structure, count_equivalent_clusters
 
 __author__ = "Yu Kumagai"
 __maintainer__ = "Yu Kumagai"
@@ -57,6 +58,19 @@ class GetDisplacementsTest(PymatgenTest):
 
     def test(self):
         print(get_displacements(self._contcar, self._poscar, self._center))
+
+
+class DefectCenterFromCoordsTest(PymatgenTest):
+    def setUp(self):
+        self._defect_coords = [[0.1, 0.2, 0.3], [-0.1, 0, 0.1]]
+        self._poscar = Structure.from_file(
+            os.path.join(test_dir_core, "Va_O1_2", "POSCAR"))
+
+    def test(self):
+        actual = defect_center_from_coords(self._defect_coords, self._poscar)
+        print(actual)
+        expected = [0.0, 0.1, 0.2]
+        self.assertArrayAlmostEqual(actual, expected)
 
 
 class AtomicDistancesTest(PymatgenTest):

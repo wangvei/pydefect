@@ -126,7 +126,7 @@ def defect_center_from_coords(defect_coords: list,
     shortest_defect_coords = []
 
     for dc in defect_coords:
-        diff = structure.lattice.get_distance_and_image(base, dc)[0]
+        diff = structure.lattice.get_distance_and_image(base, dc)[1]
         shortest_defect_coords.append(dc + diff)
 
     # np.array([[0, 0.1, 0.2], [0.3, 0.4, 0.5]]).transpose() =
@@ -351,10 +351,9 @@ def count_equivalent_clusters(perfect_structure: Structure,
     """
     inserted_atom_coords = list(inserted_atom_coords)
 
-    # TODO: refactoring this part
-    # determine whether the removed atoms are substituted; then the removed
-    # sites shouldn't be considered as defect sites for counting multiplicity.
-    removed_atom_indices_tmp = []
+    # If the removed atoms are substituted, the removed sites shouldn't be
+    # considered as vacant sites for counting multiplicity.
+    vacant_atom_indices = []
     for removed_atom_index in removed_atom_indices:
         for inserted_atom_coord in inserted_atom_coords:
 
@@ -367,36 +366,38 @@ def count_equivalent_clusters(perfect_structure: Structure,
             if distance < displacement_distance:
                 break
         else:
-            removed_atom_indices_tmp.append(removed_atom_index)
-
-    removed_atom_indices = removed_atom_indices_tmp
+            vacant_atom_indices.append(removed_atom_index)
 
     saturated_structure, inserted_atom_indices = \
         create_saturated_interstitial_structure(
             structure=perfect_structure.copy(),
             inserted_atom_coords=inserted_atom_coords)
 
-    # make host site groups for removed_atoms
     sga = SpacegroupAnalyzer(saturated_structure, symprec, angle_tolerance)
     symmetrized_saturated_structure = sga.get_symmetrized_structure()
+    # symmetrically equivalent sites are grouped.
     equiv_indices = symmetrized_saturated_structure.equivalent_indices
-    equiv_num_atoms = []
 
+    defect_atom_indices = vacant_atom_indices + inserted_atom_indices
+
+    # count the symmetrically equivalent defects
+    equiv_num_defects = []
     for i in equiv_indices:
-        atoms_from_i = \
-            [j for j in removed_atom_indices + inserted_atom_indices if j in i]
-        equiv_num_atoms.append(len(atoms_from_i))
+        atoms_from_i = [j for j in defect_atom_indices if j in i]
+        equiv_num_defects.append(len(atoms_from_i))
 
-    orig_atom_indices = removed_atom_indices + inserted_atom_indices
+    # Here, interatomic distances of original cluster are calculated.
     orig_atom_frac_coords = \
-        [saturated_structure[i].frac_coords for i in orig_atom_indices]
+        [saturated_structure[i].frac_coords for i in defect_atom_indices]
     orig_distances = atomic_distances(perfect_structure.lattice,
                                       orig_atom_frac_coords)
 
+    # Calculate the combination of each equivalent defect site.
     groups = []
-    for i, num_atoms in enumerate(equiv_num_atoms):
+    for i, num_atoms in enumerate(equiv_num_defects):
         groups.append(list(combinations(equiv_indices[i], num_atoms)))
 
+    # Consider all the possible defect site combinations.
     count = 0
     for i in tqdm(list(product(*groups))):
         frac_coords = \

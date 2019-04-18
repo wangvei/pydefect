@@ -147,6 +147,9 @@ class DefectInitialSettingTest(unittest.TestCase):
         self.assertTrue(mgo_from_dict.as_dict == self.MgO.as_dict())
         self.MgO.to()
 
+    def test_to_yaml_file(self):
+        self.MgO.to_defect_in_yaml_file()
+
     def test_to_json_file(self):
         # round trip test
         with tempfile.NamedTemporaryFile() as fp:

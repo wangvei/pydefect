@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 from copy import deepcopy
-import itertools
 import json
 import numpy as np
 import os
@@ -61,7 +60,7 @@ class DefectEntry(MSONable):
                 Keys: Element names
                 Values: Change of the numbers of elements wrt perfect supercell.
             charge (int):
-                Charge state of the defect. Charge is also added to the structure.
+                Defect charge state. Charge is also added to the structure.
             initial_site_symmetry (str):
                 Initial site symmetry such as D4h.
             perturbed_sites (list):
@@ -127,8 +126,8 @@ class DefectEntry(MSONable):
                   perturbed_criterion: float = 0.001):
         """Construct the DefectEntry object from perfect and defective POSCARs.
 
-        Note1: displacement_distance needs to be the same as the max displacement distance
-               for reducing the symmetry.
+        Note1: displacement_distance needs to be the same as the max
+               displacement distance for reducing the symmetry.
         Note2: Only unrelaxed but perturbed defective POSCAR structure is
                accepted.
 
@@ -149,7 +148,8 @@ class DefectEntry(MSONable):
         with open(filename, "r") as yaml_file:
             yaml_data = yaml.safe_load(yaml_file)
 
-        displacement_distance = yaml_data.get("displacement_distance", displacement_distance)
+        displacement_distance = \
+            yaml_data.get("displacement_distance", displacement_distance)
 
         element_diff = element_diff_from_poscar_files(
             os.path.join(abs_dir, yaml_data["defect_structure"]),
@@ -186,7 +186,8 @@ class DefectEntry(MSONable):
                 d_site = defect_structure[j]
                 distance = p_site.distance(d_site)
                 # check displacement_distance and species for comparison
-                if distance < displacement_distance and p_site.specie == d_site.specie:
+                if distance < displacement_distance \
+                        and p_site.specie == d_site.specie:
                     inserted_atoms.remove(j)
                     break
             else:
@@ -196,13 +197,13 @@ class DefectEntry(MSONable):
         if len(perfect_structure) + len(inserted_atoms) \
                 - len(removed_atoms) != len(defect_structure):
             raise StructureError(
-                "Atoms are not properly mapped within the displacement_distance.")
+                "Atoms are not properly mapped within the displacement.")
 
         pristine_defect_structure = deepcopy(perfect_structure)
         for r in sorted(removed_atoms, reverse=True):
             pristine_defect_structure.pop(r)
-        # If there is an atom near an inserted atom within the displacement_distance, the
-        # inserted atom is assumed to be replaced the original atom.
+        # If the inserted atom locates near an original atom within the
+        # displacement_distance, it is assumed to be substituted.
         for i in sorted(inserted_atoms):
             inserted_atom = defect_structure[i]
             for removed_frac_coords in removed_atoms.values():
@@ -226,7 +227,8 @@ class DefectEntry(MSONable):
             if perturbed_criterion < distance < displacement_distance:
                 perturbed_sites.append(i)
 
-        sga = SpacegroupAnalyzer(pristine_defect_structure, displacement_distance,
+        sga = SpacegroupAnalyzer(pristine_defect_structure,
+                                 displacement_distance,
                                  angle_tolerance)
         initial_site_symmetry = sga.get_point_group_symbol()
 

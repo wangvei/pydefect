@@ -691,7 +691,7 @@ electronegativity_list = {
     'Md':  1.30,
     'No':  1.30}
 
-charge = {
+oxidation_state_dict = {
     'H' : (1),
     'D' : (1),
     'He': (0),

@@ -4,7 +4,7 @@ import re
 
 from pymatgen.core.periodic_table import Element
 
-from pydefect.input_maker.defect_initial_setting import DefectInitialSetting
+from pydefect.input_maker.defect_initial_setting import DefectInitialSetting, SimpleDefectName
 from pydefect.core.defect_entry import DefectEntry
 from pydefect.util.structure import perturb_neighboring_atoms, \
     defect_center_from_coords
@@ -24,28 +24,6 @@ def get_int_from_string(x):
         x (str): a string
     """
     return int(''.join(i for i in x if i.isdigit()))
-
-
-def parse_defect_name(defect_name):
-    """
-    Divides defect name by "_" to three part.
-    E.g., "Va_Mg1_0" --> in_name="Va", out_name="Mg1", charge=0
-
-    Args:
-        defect_name (str): defect name defined in PyDefect, e.g., "Va_Mg1_2"
-    """
-    try:
-        d = defect_name.split("_")
-        in_name = d[0]
-        out_name = d[1]
-        charge = int(d[2])
-        name = in_name + "_" + out_name
-    except ValueError or IndexError:
-        raise ValueError("Defect name {} is not proper.".format(defect_name))
-
-    if not re.match(r'^[a-xA-Z]+[0-9]+$', out_name):
-        raise ValueError("Defect name {} is not proper.".format(defect_name))
-    return name, in_name, out_name, charge
 
 
 def log_is_being_removed(name):
@@ -75,49 +53,18 @@ def log_is_being_constructed(name):
     logger.warning("{:>10} is being constructed.".format(name))
 
 
-def is_name_matched(name, keywords):
-    """
-    Returns if name is matched by the selected_keywords.
-     Args:
-        name (str): Target name.
-        keywords (str/list): Keywords used for checking if name is selected.
-
-    When the following type names are given, constructs a set of defects.
-        "Va"    --> A set of all the vacancies.
-        "_i"     --> A set of all the interstitials.
-        "Va_O"  --> A set of all the oxygen vacancies
-        "Va_O[0-9]_0" --> All the oxygen vacancies in neutral charge states
-        "Va_O1" --> A set of oxygen vacancies at O1 site
-        "Mg_O"  --> A set of all the Mg-on-O antisite pairs.
-        "Mg_O1" --> A set of Mg-on-O1 antisite pairs.
-
-    When complete defect_name is given, constructs a particular defect.
-        e.g., "Va_O1_2",  "Mg_O1_0"
-    """
-
-    try:
-        if isinstance(keywords, str):
-            keywords = [keywords]
-        else:
-            keywords = list(keywords)
-    except TypeError:
-        raise TypeError("The type of keywords {} is not list.".format(keywords))
-
-    return any([re.search(p, name) for p in keywords])
-
-
 def select_defect_names(name_set, keywords):
     """
     Returns names including one of keywords.
      Args:
         name_set (list): A set of names.
-        keywords (str/list): Keywords used for checking if name is selected or not.
+        keywords (str/list): Keywords determining if name is selected or not.
     """
     names = []
 
-    for d in name_set:
-        if is_name_matched(d, keywords):
-            names.append(d)
+    for name in name_set:
+        if name.is_name_matched(keywords):
+            names.append(name)
 
     return list(set(names))
 
@@ -134,18 +81,15 @@ class DefectEntrySetMaker:
 
     def __init__(self,
                  defect_initial_setting: DefectInitialSetting,
-                 interstitial_in_file: str = None,
                  keywords: list = None,
                  particular_defects: list = None):
         """
         Args:
             defect_initial_setting (DefectInitialSetting):
                  DefectInitialSetting class object.
-            interstitial_in_file (str):
-                Name of interstitial.in file.
             keywords (list):
                 Specify regular expression to narrow the defects considered.
-            particular_defects (list):
+            particular_defects (list of SimpleDefectName):
                 Specifies particular defect to be considered.
         """
         self.perfect_structure = defect_initial_setting.structure
@@ -154,13 +98,8 @@ class DefectEntrySetMaker:
         self.displacement_distance = \
             defect_initial_setting.displacement_distance
         self.cell_multiplicity = defect_initial_setting.cell_multiplicity
-
-        if interstitial_in_file:
-            from pydefect.core.interstitial_site import InterstitialSites
-            self.interstitials = \
-                InterstitialSites.from_interstitial_in(interstitial_in_file)
-        else:
-            self.interstitials = None
+        self.interstitials = defect_initial_setting.interstitials
+        self.is_displaced = defect_initial_setting.is_displaced
 
         if particular_defects:
             defect_name_set = particular_defects
@@ -173,12 +112,10 @@ class DefectEntrySetMaker:
             [self.make_defect_entry(d) for d in defect_name_set]
 
     def make_defect_entry(self, defect_name):
-        """
-        Constructs a single DefectEntry class object from a given defect_name.
+        """ Constructs a single DefectEntry object from a given defect_name.
 
         Args:
-            defect_name (str):
-                defect name in PyDefect manner, e.g., "Va_Mg2_-2".
+            defect_name (SimpleDefectName):
 
         Parameters in use:
             in_name" (str):
@@ -193,27 +130,25 @@ class DefectEntrySetMaker:
         """
 
         defect_structure = self.perfect_structure.copy()
-        name, in_name, out_name, charge = parse_defect_name(defect_name)
 
         changes_of_num_elements = {}
-        # -------------------- analyze out_name --------------------------------
+        # -------------------- analyze out_site --------------------------------
         removed_atoms = {}
         # interstitial
-        if re.match(r"^i[a-xA-Z0-9]+$", out_name):
+        if defect_name.is_interstitial:
             for i in self.interstitials:
-                if out_name == i.site_name:
+                if defect_name.out_site == i.site_name:
                     defect_coords = i.representative_coords
                     initial_site_symmetry = i.site_symmetry
-                    num_equiv_sites = \
-                        self.cell_multiplicity * i.symmetry_multiplicity
+                    num_equiv_sites = i.symmetry_multiplicity
                     break
             else:
                 raise IndexError("{} in {} is not in interstitial.in."
-                                 .format(out_name, defect_name))
+                                 .format(defect_name.out_site, defect_name))
 
         else:
             for i in self.irreducible_sites:
-                if out_name == i.irreducible_name:
+                if defect_name.out_site == i.irreducible_name:
                     changes_of_num_elements[i.element] = -1
                     removed_index = i.first_index - 1
                     defect_coords = i.representative_coords
@@ -222,39 +157,41 @@ class DefectEntrySetMaker:
                     num_equiv_sites = i.num_atoms
                     break
             else:
-                raise IndexError("{} in {} is improper.".format(out_name,
-                                                                defect_name))
+                raise IndexError("{} in {} is improper.".
+                                 format(defect_name.out_site, defect_name))
 
             try:
                 defect_structure.remove_sites([removed_index])
             except IndexError:
-                print("{} in {} is improper.".format(out_name, defect_name))
+                print("{} in {} is improper.".format(defect_name.out_site,
+                                                     defect_name))
 
-        # -------------------- analyze in_name ---------------------------------
+        # -------------------- analyze in_atom ---------------------------------
         inserted_atoms = []
 
         # This block must be following analyzing out_name because
         # defect coordinates is needed when inserting an in_name atom.
-        if in_name == "Va":
+        if defect_name.is_vacancy:
             pass
-        elif Element.is_valid_symbol(in_name):
+        elif Element.is_valid_symbol(defect_name.in_atom):
             # There may be multiple irreducible sites for inserted element,
-            # e.g., Mg1 and Mg2, element of in_name is inserted to just before
+            # e.g., Mg1 and Mg2, element of in_atom is inserted to just before
             # the same elements, otherwise to the 1st index.
-            changes_of_num_elements[in_name] = 1
-            if in_name in defect_structure.symbol_set:
-                inserted_index = \
-                    min(defect_structure.indices_from_symbol(in_name))
+            changes_of_num_elements[defect_name.in_atom] = 1
+            if defect_name.in_atom in defect_structure.symbol_set:
+                inserted_index = min(
+                    defect_structure.indices_from_symbol(defect_name.in_atom))
                 inserted_atoms.append(inserted_index)
             else:
                 inserted_index = 0
                 inserted_atoms = [0]
-            defect_structure.insert(inserted_index, in_name, defect_coords)
+            defect_structure.insert(inserted_index, defect_name.in_atom,
+                                    defect_coords)
         else:
-            raise ValueError("{} in {} is improper.".format(out_name,
+            raise ValueError("{} in {} is improper.".format(defect_name.in_atom,
                                                             defect_name))
 
-        if self.cutoff:
+        if self.is_displaced:
             inserted_atom_coords = list([self.perfect_structure.frac_coords[k]
                                          for k in inserted_atoms])
             removed_atom_coords = list(removed_atoms.values())
@@ -267,19 +204,20 @@ class DefectEntrySetMaker:
                                           self.cutoff,
                                           self.displacement_distance)
         else:
-            perturbed_defect_structure = defect_structure
+            perturbed_defect_structure = defect_structure.copy()
             perturbed_sites = []
 
-        defect_structure.set_charge(charge)
-        perturbed_defect_structure.set_charge(charge)
+        defect_structure.set_charge(defect_name.charge)
+        perturbed_defect_structure.set_charge(defect_name.charge)
 
-        return DefectEntry(name=name,
-                           initial_structure=defect_structure,
-                           perturbed_initial_structure=perturbed_defect_structure,
-                           removed_atoms=removed_atoms,
-                           inserted_atoms=inserted_atoms,
-                           changes_of_num_elements=changes_of_num_elements,
-                           charge=charge,
-                           initial_site_symmetry=initial_site_symmetry,
-                           perturbed_sites=perturbed_sites,
-                           num_equiv_sites=num_equiv_sites)
+        return DefectEntry(
+            name=defect_name.name_str,
+            initial_structure=defect_structure,
+            perturbed_initial_structure=perturbed_defect_structure,
+            removed_atoms=removed_atoms,
+            inserted_atoms=inserted_atoms,
+            changes_of_num_elements=changes_of_num_elements,
+            charge=defect_name.charge,
+            initial_site_symmetry=initial_site_symmetry,
+            perturbed_sites=perturbed_sites,
+            num_equiv_sites=num_equiv_sites)
