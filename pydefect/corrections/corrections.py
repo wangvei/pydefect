@@ -5,12 +5,12 @@ from copy import deepcopy
 from functools import reduce
 from itertools import product, groupby
 import json
-import math
+from math import sqrt, pow
 from operator import itemgetter
 
 import matplotlib.pyplot as plt
 
-from monty.json import MontyEncoder
+from monty.json import MontyEncoder, MSONable
 from monty.serialization import loadfn
 
 import numpy as np
@@ -22,7 +22,10 @@ from scipy.special import erfc
 from scipy.constants import elementary_charge, epsilon_0
 from scipy.stats import mstats
 
-from pydefect.util.structure import defect_center, distance_list
+from pydefect.util.structure_tools import defect_center, distance_list
+from pydefect.core.defect_entry import DefectEntry
+from pydefect.core.supercell_calc_results import SupercellCalcResults
+from pydefect.core.unitcell_calc_results import UnitcellCalcResults
 
 """
 This module provides functions used to correct defect formation energies
@@ -48,34 +51,32 @@ def calc_max_sphere_radius(lattice_vectors):
     return max(calc_distance_two_planes(lattice_vectors)) / 2.0
 
 
-def calc_neighbor_lattices(max_norm, lattice):
-    lattices = []
-    max_int = [int(max_norm / np.linalg.norm(lattice[i])) + 1
-               for i in range(3)]
-    for index in product(range(-max_int[0], max_int[0] + 1),
-                         range(-max_int[1], max_int[1] + 1),
-                         range(-max_int[2], max_int[2] + 1)):
-        cart_vector = np.dot(lattice.transpose(), np.array(index))
-        if np.linalg.norm(cart_vector) < max_norm:
-            lattices.append(cart_vector)
+# def calc_neighbor_lattices(max_norm, lattice):
+#     lattices = []
+#     max_int = [int(max_norm / np.linalg.norm(lattice[i])) + 1
+#                for i in range(3)]
+#     for index in product(range(-max_int[0], max_int[0] + 1),
+#                          range(-max_int[1], max_int[1] + 1),
+#                          range(-max_int[2], max_int[2] + 1)):
+#         cart_vector = np.dot(lattice.transpose(), np.array(index))
+#         if np.linalg.norm(cart_vector) < max_norm:
+#             lattices.append(cart_vector)
 
-    return lattices
+# return lattices
 
 
 # for searching ewald parameter
-def generate_neighbor_lattices(lattice_vectors, max_length):
-    """
-    Generator of a set of lattice vectors within the max length.
+def create_neighbor_lattices(lattice_vectors, max_length):
+    """ Return a set of lattice vectors within the max length.
+
     Note that angles between any two axes are assumed to be between 60 and
     120 deg.
+
     Args:
         lattice_vectors (np.ndarray): 3x3 matrix.
         max_length (float): Max length to search lattice set.
-        include_self (bool): Flag whether (0, 0, 0) will be yield.
-        shift (np.ndarray): Lattice_vector + shift will be yielded.
-                            Should be specify by Cartesian vector.
-                            Defaults to zero vector.
-    Yields (np.ndarray): Cartesian vector of lattice point.
+
+    Return (np.ndarray): Cartesian vector of lattice points.
     """
     max_int = [int(max_length / np.linalg.norm(lattice_vectors[i])) + 1
                for i in range(3)]
@@ -90,19 +91,29 @@ def generate_neighbor_lattices(lattice_vectors, max_length):
     return neighbor_lattices
 
 
-class Ewald:
+class Ewald(MSONable):
 
     def __init__(self,
-                 lattice_matrix,
-                 dielectric_tensor,
+                 lattice: Lattice,
+                 dielectric_tensor: np.array,
                  ewald_param: float,
                  prod_cutoff_fwhm: float,
                  real_neighbor_lattices: list,
                  reciprocal_neighbor_lattices: list):
+        """
+        Args:
+            lattice (Lattice):
+            dielectric_tensor (3x3 np.array):
+            ewald_param (float):
+            prod_cutoff_fwhm (float):
+            real_neighbor_lattices (list):
+            reciprocal_neighbor_lattices (list):
+        """
 
-        self.lattice_matrix = lattice_matrix
+        self.lattice = lattice
+        self.volume = lattice.volume
         self.reciprocal_lattice_matrix = \
-            Lattice(self.lattice_matrix).reciprocal_lattice.matrix
+            self.lattice.reciprocal_lattice.matrix
         self.dielectric_tensor = dielectric_tensor
         self.ewald_param = ewald_param
         self.prod_cutoff_fwhm = prod_cutoff_fwhm
@@ -113,7 +124,7 @@ class Ewald:
 
         # self.real_neighbor_lattices = \
         #     calc_neighbor_lattices(self.max_r_vector_norm,
-        #                            self.lattice_matrix)
+        #                            self.lattice)
 
         # self.reciprocal_neighbor_lattices = \
         #     calc_neighbor_lattices(self.max_g_vector_norm,
@@ -121,60 +132,23 @@ class Ewald:
 
     @property
     def max_r_vector_norm(self):
-        root_det_dielectric = math.sqrt(np.linalg.det(self.dielectric_tensor))
-        vol = Lattice(self.lattice_matrix).volume
-        cube_root_vol = math.pow(vol, 1 / 3)
+        root_det_dielectric = sqrt(np.linalg.det(self.dielectric_tensor))
+        cube_root_vol = pow(self.volume, 1 / 3)
         ewald = self.ewald_param / cube_root_vol * root_det_dielectric
+
         return self.prod_cutoff_fwhm / ewald
 
     @property
     def max_g_vector_norm(self):
-        root_det_dielectric = math.sqrt(np.linalg.det(self.dielectric_tensor))
-        vol = Lattice(self.lattice_matrix).volume
-        cube_root_vol = math.pow(vol, 1 / 3)
+        root_det_dielectric = sqrt(np.linalg.det(self.dielectric_tensor))
+        cube_root_vol = pow(self.volume, 1 / 3)
         ewald = self.ewald_param / cube_root_vol * root_det_dielectric
+
         return 2 * ewald * self.prod_cutoff_fwhm
 
-    def as_dict(self):
-        d = {"@module": self.__class__.__module__,
-             "@class":  self.__class__.__name__,
-             "lattice_matrix":       [list(v) for v in self.lattice_matrix],
-             "dielectric_tensor":    [list(v) for v in self.dielectric_tensor],
-             "ewald_param":                  self.ewald_param,
-             "prod_cutoff_fwhm":             self.prod_cutoff_fwhm,
-             "real_neighbor_lattices":       self.real_neighbor_lattices,
-             "reciprocal_neighbor_lattices": self.reciprocal_neighbor_lattices}
-        return d
-
-    @classmethod
-    def from_dict(cls, d):
-        return cls(
-            lattice_matrix=d["lattice_matrix"],
-            dielectric_tensor=d["dielectric_tensor"],
-            ewald_param=d["ewald_param"],
-            prod_cutoff_fwhm=d["prod_cutoff_fwhm"],
-            real_neighbor_lattices=d["real_neighbor_lattices"],
-            reciprocal_neighbor_lattices=d["reciprocal_neighbor_lattices"])
-
-    def to_json_file(self, filename):
-        """
-        Dump a json file.
-
-        Args:
-            filename (str):
-
-        Returns:
-
-        """
+    def to_json_file(self, filename: str):
         with open(filename, 'w') as fw:
             json.dump(self.as_dict(), fw, indent=2, cls=MontyEncoder)
-
-    @classmethod
-    def load_json(cls, filename):
-        """
-        Constructs a DefectEntry class object from a json file.
-        """
-        return cls.from_dict(loadfn(filename))
 
     @classmethod
     def from_optimization(cls,
@@ -205,10 +179,10 @@ class Ewald:
         Returns:
             Optimized ewald_param (float).
         """
-        root_det_dielectric = math.sqrt(np.linalg.det(dielectric_tensor))
+        root_det_dielectric = sqrt(np.linalg.det(dielectric_tensor))
         real_lattice = structure.lattice.matrix
         reciprocal_lattice = structure.lattice.reciprocal_lattice.matrix
-        cube_root_vol = math.pow(structure.lattice.volume, 1 / 3)
+        cube_root_vol = pow(structure.lattice.volume, 1 / 3)
 
         if initial_ewald_param is not None:
             ewald_param = initial_ewald_param
@@ -238,39 +212,36 @@ class Ewald:
             # count number of real lattice
             max_r_vector_norm = prod_cutoff_fwhm / ewald
             real_neighboring_lattices = \
-                generate_neighbor_lattices(real_lattice, max_r_vector_norm)
+                create_neighbor_lattices(real_lattice, max_r_vector_norm)
 
             # count number of reciprocal lattice
             max_g_vector_norm = 2 * ewald * prod_cutoff_fwhm
             reciprocal_neighboring_lattices = \
-                generate_neighbor_lattices(reciprocal_lattice,
-                                                max_g_vector_norm)
+                create_neighbor_lattices(reciprocal_lattice,
+                                         max_g_vector_norm)
 
-            diff_real_reciprocal = len(real_neighboring_lattices) \
-                                   / len(reciprocal_neighboring_lattices)
+            real_to_reciprocal_ratio = len(real_neighboring_lattices) \
+                                       / len(reciprocal_neighboring_lattices)
 
-            if 1 / convergence < diff_real_reciprocal < convergence:
-                return cls(real_lattice, dielectric_tensor, ewald_param,
+            if 1 / convergence < real_to_reciprocal_ratio < convergence:
+                return cls(structure.lattice, dielectric_tensor, ewald_param,
                            prod_cutoff_fwhm, real_neighboring_lattices,
                            reciprocal_neighboring_lattices)
             else:
-                ewald_param *= diff_real_reciprocal ** 0.17
+                ewald_param *= real_to_reciprocal_ratio ** 0.17
         else:
-            raise ValueError("The initial ewald param would not be file.")
+            raise ValueError("The initial ewald param may not be adequate.")
 
     def neighbor_lattices(self,
-                          include_self=True,
-                          shift=np.zeros(3),
-                          is_reciprocal_space=False):
+                          include_self: bool = True,
+                          shift: np.array = np.zeros(3),
+                          is_reciprocal_space: bool = False):
         """
-
         Args:
              include_self (bool):
                 Whether to include the central lattice point itself.
              shift (np.array):
-             is_reciprocal_space:
-
-        :return:
+             is_reciprocal_space (bool):
         """
 
         if is_reciprocal_space:
@@ -289,17 +260,16 @@ class Correction(ABC):
     def correction_energy(self):
         pass
 
-    @abstractmethod
-    def manually_added_correction_energy(self):
-        pass
+    # def manually_added_correction_energy(self):
+    #     return
 
 
 # class PointCharge:
 
-    # def __init__(self, ewald, lattice_energy): pass
+# def __init__(self, ewald, lattice_energy): pass
 
 
-class ExtendedFnvCorrection(Correction):
+class ExtendedFnvCorrection(Correction, MSONable):
 
     def __init__(self, ewald, lattice_energy, diff_ave_pot,
                  alignment_correction_energy, symbols_without_defect,
@@ -319,14 +289,15 @@ class ExtendedFnvCorrection(Correction):
         """
 
         # error check just in case (should be removed in the future)
-        if not len(symbols_without_defect) == len(distances_from_defect) \
-               == len(difference_electrostatic_pot) == len(model_pot):
+        if not len(symbols_without_defect) == len(distances_from_defect) == \
+               len(difference_electrostatic_pot) == len(model_pot):
             raise IndexError(
-                "Lengths of symbols({0}), distances({1}), "
-                "electro_static_pot({2}), model_pot differs({3}) differ.".
+                "Lengths of symbols({}), distances({}), "
+                "electro_static_pot({}), model_pot differs({}) differ.".
                     format(len(symbols_without_defect),
                            len(distances_from_defect),
-                           len(difference_electrostatic_pot), len(model_pot)))
+                           len(difference_electrostatic_pot),
+                           len(model_pot)))
         self.ewald = ewald
         self.lattice_energy = lattice_energy
         self.diff_ave_pot = diff_ave_pot
@@ -349,11 +320,11 @@ class ExtendedFnvCorrection(Correction):
 
     @property
     def max_sphere_radius(self):
-        lattice_vectors = self.ewald.lattice_matrix
+        lattice_vectors = self.ewald.lattice
         return calc_max_sphere_radius(lattice_vectors)
 
     # TODO: if remote connect and can't be displayed figure by X,
-    # matplotlib maybe raise exception.
+    # matplotlib should raise exception.
     def plot_distance_vs_potential(self, file_name=None):
         property_without_defect = list(zip(self.symbols_without_defect,
                                            self.distances_from_defect,
@@ -399,54 +370,13 @@ class ExtendedFnvCorrection(Correction):
         else:
             plt.show()
 
-    def as_dict(self):
-        """
-        Returns (dict):
-        """
-        d = {"@module":                      self.__class__.__module__,
-             "@class":                       self.__class__.__name__,
-             "ewald":                        self.ewald,
-             "lattice_energy":               self.lattice_energy,
-             "diff_ave_pot":                 self.diff_ave_pot,
-             "alignment":                    self.alignment_correction_energy,
-             "symbols_without_defect":       self.symbols_without_defect,
-             "distances_from_defect":        self.distances_from_defect,
-             "difference_electrostatic_pot": self.difference_electrostatic_pot,
-             "model_pot":                    self.model_pot,
-             "manually_added_correction_energy":
-                 self.manually_added_correction_energy}
-        return d
-
-    @classmethod
-    def from_dict(cls, d):
-        """
-        Constructs a ExtendedFnvCorrection class object from a dictionary.
-        """
-        return cls(d["ewald"],
-                   d["lattice_energy"],
-                   d["diff_ave_pot"],
-                   d["alignment"],
-                   d["symbols_without_defect"],
-                   d["distances_from_defect"],
-                   d["difference_electrostatic_pot"], d["model_pot"],
-                   d["manually_added_correction_energy"])
-
     def to_json_file(self, filename):
-        """
-        Dump a json file.
-
-        Args:
-            filename (str):
-
-        """
         with open(filename, 'w') as fw:
             json.dump(self.as_dict(), fw, indent=2, cls=MontyEncoder)
 
     @classmethod
     def load_json(cls, filename):
-        """
-        """
-        return cls.from_dict(loadfn(filename))
+        return loadfn(filename)
 
     @classmethod
     def compute_correction(cls, defect_entry, defect_dft, perfect_dft,
@@ -472,21 +402,23 @@ class ExtendedFnvCorrection(Correction):
 
     @classmethod
     def compute_alignment_by_extended_fnv(cls,
-                                          defect_entry,
-                                          defect_dft,
-                                          perfect_dft,
-                                          unitcell_dft,
-                                          ewald):
+                                          defect_entry: DefectEntry,
+                                          defect_dft: SupercellCalcResults,
+                                          perfect_dft: SupercellCalcResults,
+                                          unitcell_dft: UnitcellCalcResults,
+                                          ewald: Ewald):
 
         """
-        Corrects error of formation energy of point defect due to
-        finite-supercell effect.
-            defect_entry(DefectEntry):
-            defect_dft(SupercellCalcResults):
-            perfect_dft(SupercellCalcResults):
-            unitcell_dft(UnitcellCalcResults):
-            ewald_param(Ewald):
-        Returns (float): Corrected energy by extended FNV method.
+        Estimate correction energy of point defect formation energy calculated
+        using finite-size supercell.
+
+        Args:
+            defect_entry (DefectEntry):
+            defect_dft (SupercellCalcResults):
+            perfect_dft (SupercellCalcResults):
+            unitcell_dft (UnitcellCalcResults):
+            ewald (Ewald):
+
         """
 
         dielectric_tensor = unitcell_dft.total_dielectric_tensor
@@ -507,7 +439,6 @@ class ExtendedFnvCorrection(Correction):
              if j is not None]
 
         charge = defect_entry.charge
-        axis = np.array(perfect_structure.lattice.matrix)
         volume = perfect_structure.lattice.volume
         defect_coords = defect_center(defect_entry, defect_dft.final_structure)
         distances_from_defect = \
@@ -521,7 +452,7 @@ class ExtendedFnvCorrection(Correction):
         model_pot = []
         root_det_epsilon = np.sqrt(np.linalg.det(ewald.dielectric_tensor))
         epsilon_inv = np.linalg.inv(ewald.dielectric_tensor)
-        cube_root_vol = math.pow(volume, 1 / 3)
+        cube_root_vol = pow(volume, 1 / 3)
         ewald_param = ewald.ewald_param / cube_root_vol * root_det_epsilon
         diff_pot = -0.25 / volume / ewald_param ** 2  # [1/A]
 
@@ -530,9 +461,8 @@ class ExtendedFnvCorrection(Correction):
             # \sum erfc(ewald*\sqrt(R*\epsilon_inv*R))
             # / \sqrt(det(\epsilon)) / \sqrt(R*\epsilon_inv*R) [1/A]
             summation = 0
-            shift = \
-                defect_dft.final_structure.lattice. \
-                    get_cartesian_coords(r - defect_coords)
+            shift = defect_dft.final_structure.lattice. \
+                get_cartesian_coords(r - defect_coords)
 
             for v in ewald.neighbor_lattices(shift=shift):
                 # Skip the potential caused by the defect itself
@@ -599,7 +529,8 @@ class ExtendedFnvCorrection(Correction):
         lattice_energy = model_pot_defect_site * charge / 2
 
         # calc ave_pot_diff
-        distance_threshold = calc_max_sphere_radius(axis)
+        distance_threshold = \
+            calc_max_sphere_radius(np.array(perfect_structure.lattice.matrix))
         pot_diff = []
 
         # error check just in case (should be removed in the future)

@@ -175,7 +175,7 @@ class SupercellCalcResults(MSONable):
 
         return cls(final_structure=d["final_structure"],
                    total_energy=d["total_energy"],
-                   magnetization=d["total_magnetization"],
+                   total_magnetization=d["total_magnetization"],
                    eigenvalues=eigenvalues,
                    kpoints=d["kpoints"],
                    electrostatic_potential=d["electrostatic_potential"],

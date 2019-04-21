@@ -2,11 +2,7 @@
 
 from collections import OrderedDict
 from monty.json import MSONable
-
 import yaml
-
-from pydefect.core.error_classes import InvalidFileError
-from pydefect.input_maker.defect_initial_setting import get_distances
 
 __author__ = "Yu Kumagai"
 __maintainer__ = "Yu Kumagai"

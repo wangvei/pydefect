@@ -4,7 +4,7 @@ import unittest
 
 from pydefect.input_maker.vasp_input_maker import ModIncar, make_potcar, \
     make_hpkot_primitive_poscar, make_band_kpoints, make_kpoints, MakeIncar
-from pydefect.util.structure import NotStandardizedPrimitiveError
+from pydefect.util.structure_tools import NotStandardizedPrimitiveError
 
 
 __author__ = "Yu Kumagai"

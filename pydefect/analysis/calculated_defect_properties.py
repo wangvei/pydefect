@@ -132,7 +132,7 @@ class DefectProperties(MSONable):
         final_site_symmetry = sga.get_point_group_symbol()
         final_symmetry_multiplicity = len(sga.get_point_group_operations())
 
-        from pydefect.util.structure import get_displacements
+        from pydefect.util.structure_tools import get_displacements
         initial_distances, final_distances, displacements, angles = \
             get_displacements(final_structure, initial_structure, center, anchor_atom_index)
 

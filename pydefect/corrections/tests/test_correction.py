@@ -221,7 +221,23 @@ class EwaldTest(unittest.TestCase):
         unitcell.set_ionic_dielectric_tensor_from_vasp(dirname_dielectric)
         perfect = SupercellCalcResults.from_vasp_files(dirname_perfect)
         self._structure = perfect.final_structure
+        self._lattice = perfect.final_structure.lattice
         self._dielectric_tensor = unitcell.total_dielectric_tensor
+        _ewald = 0.1
+        _prod_cutoff_fwhm = 0.1
+        _real_neighbor_lattices = [[1, 1, 1], [2, 2, 2]]
+        _reciprocal_neighbor_lattices = [[1, 1, 1], [2, 2, 2]]
+        self._ewald = Ewald(self._lattice, self._dielectric_tensor, _ewald, _prod_cutoff_fwhm, _real_neighbor_lattices, _reciprocal_neighbor_lattices)
+
+    def test_json(self):
+        """ round trip test of to_json and from_json
+        """
+        tmp_file = tempfile.NamedTemporaryFile()
+        self._ewald.to_json_file(tmp_file.name)
+        ewald_from_json = DefectEntry.load_json(tmp_file.name)
+        print(ewald_from_json.as_dict())
+        self.assertTrue(ewald_from_json.as_dict() ==
+                        self._ewald.as_dict())
 
     def test_optimize(self):
         ewald = Ewald.from_optimization(self._structure,
@@ -243,6 +259,7 @@ class EwaldTest(unittest.TestCase):
 
         ewald.to_json_file("ewald.json")
 
+
 class CorrectionTest(unittest.TestCase):
 
     def setUp(self):
@@ -253,13 +270,15 @@ class CorrectionTest(unittest.TestCase):
         self._perfect = SupercellCalcResults.from_vasp_files(dirname_perfect)
         self._structure = self._perfect.final_structure
         self._dielectric_tensor = self._unitcell.total_dielectric_tensor
-        self._ewald = Ewald.load_json("ewald.json")
-        # self._ewald = Ewald(
-        #     lattice_matrix=self._structure.lattice.matrix,
-        #     dielectric_tensor=self._unitcell.total_dielectric_tensor,
-        #     ewald_param=expected_ewald,
-        #     num_real_lattice=expected_num_real_vector,
-        #     num_reciprocal_lattice=expected_num_reciprocal_vector)
+
+        self._lattice = self._perfect.final_structure.lattice
+        self._dielectric_tensor = self._unitcell.total_dielectric_tensor
+        _ewald = 0.1
+        _prod_cutoff_fwhm = 0.1
+        _real_neighbor_lattices = [[1, 1, 1], [2, 2, 2]]
+        _reciprocal_neighbor_lattices = [[1, 1, 1], [2, 2, 2]]
+        self._ewald = Ewald(self._lattice, self._dielectric_tensor, _ewald, _prod_cutoff_fwhm, _real_neighbor_lattices, _reciprocal_neighbor_lattices)
+
         # self.ewald = \
         #     Ewald.from_optimization(self.perfect_structure, self.dielectric_tensor)
         self._vacancy_entry = DefectEntry.load_json(vac_defect_entry_json)
@@ -273,7 +292,7 @@ class CorrectionTest(unittest.TestCase):
 
     def test_dict(self):
         vacancy_correction = \
-            ExtendedFnvCorrection(CorrectionMethod.extended_fnv, self._ewald,
+            ExtendedFnvCorrection(self._ewald,
                                   lattice_energy=expected_vacancy_lattice_energy,
                                   diff_ave_pot=expected_vacancy_potential_difference,
                                   alignment_correction_energy=expected_vacancy_alignment_like_term,
@@ -286,12 +305,12 @@ class CorrectionTest(unittest.TestCase):
         # object -> dict -> object
         d = vacancy_correction.as_dict()
         correction_from_dict = ExtendedFnvCorrection.from_dict(d)
-        # self.assertTrue(correction_from_dict == vacancy_correction)
+        self.assertTrue(correction_from_dict.as_dict() == vacancy_correction.as_dict())
 
     def test_json(self):
         tmp_file = tempfile.NamedTemporaryFile()
         vacancy_correction = \
-            ExtendedFnvCorrection(CorrectionMethod.extended_fnv, self._ewald,
+            ExtendedFnvCorrection(self._ewald,
                                   lattice_energy=expected_vacancy_lattice_energy,
                                   diff_ave_pot=expected_vacancy_potential_difference,
                                   alignment_correction_energy=expected_vacancy_alignment_like_term,
@@ -301,9 +320,10 @@ class CorrectionTest(unittest.TestCase):
                        expected_vacancy_difference_electrostatic_pot,
                                   model_pot=expected_vacancy_model_pot,
                                   manually_added_correction_energy=None)
+
         vacancy_correction.to_json_file(tmp_file.name)
         loaded = ExtendedFnvCorrection.load_json(tmp_file.name)
-        # self.assertEqual(vacancy_correction == loaded)
+        self.assertTrue(vacancy_correction.as_dict() == loaded.as_dict())
 
     def test_compute_extended_fnv(self):
         # vacancy

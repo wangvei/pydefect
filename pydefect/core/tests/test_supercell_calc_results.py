@@ -13,7 +13,7 @@ from pymatgen.util.testing import PymatgenTest
 from pydefect.core.defect_entry import DefectEntry
 from pydefect.core.supercell_calc_results \
     import SupercellCalcResults
-from pydefect.util.structure import defect_center, distances_from_point
+from pydefect.util.structure_tools import defect_center, distances_from_point
 from pydefect.core.unitcell_calc_results import UnitcellCalcResults
 
 __author__ = "Yu Kumagai"

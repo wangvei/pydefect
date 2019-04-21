@@ -57,23 +57,24 @@ def make_symmetric_matrix(d):
 class UnitcellCalcResults(MSONable):
     """
     DFT results for a unitcell.
-    Args:
-        band_edge (1x2 list): VBM and CBM.
-        static_dielectric_tensor (3x3 numpy array):
-        ionic_dielectric_tensor (3x3 numpy array):
-        total_dos (2xN numpy array): [[energy1, dos1], [energy2, dos2],...]
-        volume (float):
     """
 
     def __init__(self,
-                 band_edge=None,
-                 static_dielectric_tensor=None,
-                 ionic_dielectric_tensor=None,
-                 total_dos=None,
-                 volume=None,
-                 is_direct=None):
-        """ """
-        self._band_edge = band_edge
+                 band_edge: list = None,
+                 static_dielectric_tensor: np.array = None,
+                 ionic_dielectric_tensor: np.array = None,
+                 total_dos: np.array = None,
+                 volume: float = None,
+                 is_direct: bool = None):
+        """
+        Args:
+            band_edge (1x2 list): VBM and CBM.
+            static_dielectric_tensor (3x3 numpy array):
+            ionic_dielectric_tensor (3x3 numpy array):
+            total_dos (2xN numpy array): [[energy1, dos1], [energy2, dos2],...]
+            volume (float):
+        """
+        self._band_edge = None if band_edge is None else list(band_edge)
         self._static_dielectric_tensor = static_dielectric_tensor
         self._ionic_dielectric_tensor = ionic_dielectric_tensor
         self._total_dos = total_dos
@@ -85,10 +86,7 @@ class UnitcellCalcResults(MSONable):
         def xstr(s):
             return 'None' if s is None else str(s)
 
-        if self._band_edge is None:
-            band_edge = [None, None]
-        else:
-            band_edge = self._band_edge
+        band_edge = [None, None] if self._band_edge is None else self._band_edge
 
         outs = ["vbm (eV): " + xstr(band_edge[0]),
                 "cbm (eV): " + xstr(band_edge[1]),
@@ -217,8 +215,5 @@ class UnitcellCalcResults(MSONable):
         self._volume = contcar.structure.volume
 
     def to_json_file(self, filename="unitcell.json"):
-        """
-        Returns a json file, named unitcell.json.
-        """
         with open(filename, 'w') as fw:
             json.dump(self.as_dict(), fw, indent=2, cls=MontyEncoder)

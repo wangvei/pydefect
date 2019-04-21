@@ -6,7 +6,7 @@ from pymatgen.core.periodic_table import Element
 
 from pydefect.input_maker.defect_initial_setting import DefectInitialSetting, SimpleDefectName
 from pydefect.core.defect_entry import DefectEntry
-from pydefect.util.structure import perturb_neighboring_atoms, \
+from pydefect.util.structure_tools import perturb_neighboring_atoms, \
     defect_center_from_coords
 from pydefect.util.logger import get_logger
 
@@ -89,7 +89,7 @@ class DefectEntrySetMaker:
                  DefectInitialSetting class object.
             keywords (list):
                 Specify regular expression to narrow the defects considered.
-            particular_defects (list of SimpleDefectName):
+            particular_defects (list of strings):
                 Specifies particular defect to be considered.
         """
         self.perfect_structure = defect_initial_setting.structure
@@ -99,10 +99,11 @@ class DefectEntrySetMaker:
             defect_initial_setting.displacement_distance
         self.cell_multiplicity = defect_initial_setting.cell_multiplicity
         self.interstitials = defect_initial_setting.interstitials
-        self.is_displaced = defect_initial_setting.is_displaced
+        self.is_displaced = defect_initial_setting.are_atoms_perturbed
 
         if particular_defects:
-            defect_name_set = particular_defects
+            defect_name_set = \
+                [SimpleDefectName.from_str(i) for i in particular_defects]
         else:
             defect_name_set = defect_initial_setting.make_defect_name_set()
             if keywords:
@@ -111,7 +112,8 @@ class DefectEntrySetMaker:
         self.defect_entries = \
             [self.make_defect_entry(d) for d in defect_name_set]
 
-    def make_defect_entry(self, defect_name):
+    def make_defect_entry(self,
+                          defect_name: SimpleDefectName):
         """ Constructs a single DefectEntry object from a given defect_name.
 
         Args:

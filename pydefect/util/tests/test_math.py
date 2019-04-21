@@ -3,7 +3,7 @@ import numpy as np
 import os
 import unittest
 
-from pydefect.util.math import normalized_random_3d_vector, random_vector
+from pydefect.util.math_tools import normalized_random_3d_vector, random_vector
 
 __author__ = "Yu Kumagai"
 __copyright__ = "Copyright 2018, Oba group"

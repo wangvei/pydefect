@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 
-import numpy as np
 from collections import Iterable
 from copy import deepcopy
+import numpy as np
 from typing import Union
 
 from pydefect.core.error_classes import CellSizeError

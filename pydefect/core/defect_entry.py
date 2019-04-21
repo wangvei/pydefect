@@ -13,10 +13,10 @@ from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
 
 from pydefect.core.error_classes import StructureError
 from pydefect.util.logger import get_logger
-from pydefect.util.structure import count_equivalent_clusters
+from pydefect.util.structure_tools import count_equivalent_clusters
 from pydefect.vasp_util.util import element_diff_from_poscar_files, \
     get_defect_charge_from_vasp
-from pydefect.util.structure import defect_center_from_coords
+from pydefect.util.structure_tools import defect_center_from_coords
 
 __author__ = "Yu Kumagai"
 __maintainer__ = "Yu Kumagai"
@@ -80,16 +80,16 @@ class DefectEntry(MSONable):
         self.num_equiv_sites = num_equiv_sites
 
     def __str__(self):
-        outs = ["name: " + str(self.name),
+        outs = ["perturbed_initial_structure: \n" +
+                str(self.perturbed_initial_structure),
+                "name: " + str(self.name),
                 "initial_site_symmetry: " + str(self.initial_site_symmetry),
                 "removed_atoms: " + str(self.removed_atoms),
                 "inserted_atoms: " + str(self.inserted_atoms),
                 "changes_of_num_element: " + str(self.changes_of_num_elements),
                 "charge: " + str(self.charge),
-                "perturbed_initial_structure: \n" +
-                str(self.perturbed_initial_structure),
                 "perturbed_sites: " + str(self.perturbed_sites),
-                "num_equiv_sites: \n" + str(self.num_equiv_sites)]
+                "num_equiv_sites: " + str(self.num_equiv_sites)]
         return "\n".join(outs)
 
     @classmethod

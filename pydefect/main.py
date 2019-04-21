@@ -574,7 +574,7 @@ def vasp_set(args):
         make_dir("perfect", obrs)
 
     for de in desm.defect_entries:
-        defect_name = de.name + "_" + str(de.charge)
+        defect_name = "_".join([de.name, str(de.charge)])
         json_file_name = os.path.join(defect_name, "defect_entry.json")
 
         obrs = ObaSet.make_input(de.perturbed_initial_structure,

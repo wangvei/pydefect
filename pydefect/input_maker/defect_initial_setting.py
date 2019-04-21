@@ -115,10 +115,16 @@ class SimpleDefectName(MSONable):
         self.out_site = out_site
         self.charge = charge
 
-        if in_atom:
-            self.name_str = "_".join([in_atom, out_site, str(charge)])
+    @property
+    def name_str(self):
+        if self.in_atom:
+            return "_".join([self.in_atom, self.out_site])
         else:
-            self.name_str = "_".join(["Va", out_site, str(charge)])
+            return "_".join(["Va", self.out_site])
+
+    @property
+    def name_str_with_charge(self):
+        return "_".join([self.name_str, self.charge])
 
     @property
     def is_interstitial(self):
@@ -126,12 +132,12 @@ class SimpleDefectName(MSONable):
 
     @property
     def is_vacancy(self):
-        return True if self.in_atom is None else True
+        return True if self.in_atom is None else False
 
     @classmethod
     def from_str(cls, string):
         in_atom, out_site, charge = string.split("_")
-        return cls(in_atom, out_site, charge)
+        return cls(in_atom, out_site, int(charge))
 
     def __eq__(self, other):
         return True if self.name_str == other.name_str else False
@@ -409,7 +415,7 @@ class DefectInitialSetting(MSONable):
                    electronegativity=electronegativity)
 
     @property
-    def is_displaced(self):
+    def are_atoms_perturbed(self):
         return False if self.cutoff < 1e-6 else True
 
     @classmethod

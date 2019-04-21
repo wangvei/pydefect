@@ -7,9 +7,9 @@ import unittest
 from pymatgen.core.structure import Structure
 from pymatgen.util.testing import PymatgenTest
 
-from pydefect.util.structure import perturb_neighboring_atoms, \
+from pydefect.util.structure_tools import perturb_neighboring_atoms, \
     get_displacements, defect_center_from_coords, atomic_distances, \
-    create_saturated_interstitial_structure, count_equivalent_clusters
+    create_saturated_interstitial_structure, count_equivalent_clusters, count_equivalent_clusters2
 
 __author__ = "Yu Kumagai"
 __maintainer__ = "Yu Kumagai"
@@ -24,7 +24,8 @@ class PerturbNeighborsTest(unittest.TestCase):
 
     def test(self):
         structure = \
-            Structure.from_file(os.path.join(test_dir_input_structure, "POSCAR-MgO64atoms"))
+            Structure.from_file(os.path.join(test_dir_input_structure,
+                                             "POSCAR-MgO64atoms"))
         center = [0.0, 0.0, 0.0]
         cutoff = 3.0
         distance = 0.2
@@ -105,7 +106,8 @@ class CountEquivalentClustersTest(PymatgenTest):
         self.removed_atom_coords = [0, 32]
 
     def test(self):
-        print(count_equivalent_clusters(self.structure, self.inserted_atom_coords, self.removed_atom_coords))
+        print(count_equivalent_clusters(self.structure, self.inserted_atom_coords, self.removed_atom_coords, displacement_distance=0.1))
+#        print(count_equivalent_clusters2(self.structure, self.inserted_atom_coords, self.removed_atom_coords, displacement_distance=0.1))
 
 
 if __name__ == "__main__":
