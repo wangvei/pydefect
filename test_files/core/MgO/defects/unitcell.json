@@ -1,4 +1,6 @@
 {
+  "@module": "pydefect.core.unitcell_calc_results",
+  "@class": "UnitcellCalcResults",
   "band_edge": [
     3.0036,
     7.4934
@@ -660,5 +662,6 @@
       ]
     ]
   },
-  "volume": 19.165913159103553
+  "volume": 19.14934713771693,
+  "is_direct": true
 }

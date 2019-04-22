@@ -128,17 +128,24 @@ class SupercellDftResultsTest(unittest.TestCase):
             os.path.join(test_dir, "MgO/defects/Va_O1_2", "POSCAR"))
         perturbed_initial_structure = initial_structure.copy()
         removed_atoms = {8: [0.25, 0.25, 0.25]}
-        inserted_atoms = {}
+        inserted_atoms = []
         changes_of_num_elements = {"O": -1}
         charge = 2
         initial_symmetry = "Oh"
-        multiplicity = 4
         perturbed_sites = []
+        num_equiv_sites = 4
 
         self._defect_entry_MgO_Va_O1_2 = \
-            DefectEntry(name, initial_structure, perturbed_initial_structure, removed_atoms, inserted_atoms,
-                        changes_of_num_elements, charge,initial_symmetry,
-                        multiplicity, perturbed_sites)
+            DefectEntry(name=name,
+                        initial_structure=initial_structure,
+                        perturbed_initial_structure=perturbed_initial_structure,
+                        removed_atoms=removed_atoms,
+                        inserted_atoms=inserted_atoms,
+                        changes_of_num_elements=changes_of_num_elements,
+                        charge=charge,
+                        initial_site_symmetry=initial_symmetry,
+                        perturbed_sites=perturbed_sites,
+                        num_equiv_sites=num_equiv_sites)
 
     def test_print(self):
         print(self._MgO_Va_O1_2)

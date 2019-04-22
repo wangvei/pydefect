@@ -1,2 +1,2 @@
-initial_structure: POSCAR
-perfect_structure: ../../defects/perfect/POSCAR
+defect_structure: POSCAR
+perfect_structure: ../DPOSCAR

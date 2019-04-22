@@ -14,6 +14,8 @@ from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
 
 from obadb.util.structure_handler import get_symmetry_dataset, get_rotations
 
+import spglib
+
 from pydefect.util.math_tools import normalized_random_3d_vector, random_vector
 from pydefect.core.error_classes import StructureError
 from pydefect.core.config import SYMMETRY_TOLERANCE, ANGLE_TOL
@@ -529,3 +531,26 @@ def get_point_group_op_number(sym_dataset, coords, lattice,
     rotations = get_rotations(coords, lattice, full_rotations, translations,
                               symprec)
     return len(rotations)
+
+
+class ModSpacegroupAnalyzer(SpacegroupAnalyzer):
+    def get_refined_structure(self, is_sorted=False):
+        """
+        Get the refined structure based on detected symmetry. The refined
+        structure is a *conventional* cell setting with atoms moved to the
+        expected symmetry positions.
+
+        Returns:
+            Refined structure.
+        """
+        # Atomic positions have to be specified by scaled positions for spglib.
+        lattice, scaled_positions, numbers \
+            = spglib.refine_cell(self._cell, self._symprec, self._angle_tol)
+
+        species = [self._unique_species[i - 1] for i in numbers]
+        s = Structure(lattice, species, scaled_positions)
+
+        if is_sorted:
+            return s.get_sorted_structure()
+        else:
+            return s

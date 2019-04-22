@@ -13,7 +13,7 @@ from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
 
 from pydefect.core.error_classes import StructureError
 from pydefect.util.logger import get_logger
-from pydefect.util.structure_tools import count_equivalent_clusters
+from pydefect.util.structure_tools import count_equivalent_clusters, ModSpacegroupAnalyzer
 from pydefect.vasp_util.util import element_diff_from_poscar_files, \
     get_defect_charge_from_vasp
 from pydefect.util.structure_tools import defect_center_from_coords
@@ -33,7 +33,7 @@ class DefectEntry(MSONable):
                  initial_structure: Structure,
                  perturbed_initial_structure: Structure,
                  removed_atoms: dict,
-                 inserted_atoms: list,
+                 inserted_atoms: dict,
                  changes_of_num_elements: dict,
                  charge: int,
                  initial_site_symmetry: str,
@@ -51,11 +51,12 @@ class DefectEntry(MSONable):
                 Keys: Atom indices removed from the perfect supercell.
                       The index begins from 0.
                       For interstitials, set {}.
-                Values: Defect supercell coordinates
-            inserted_atoms (list):
-                Atom indices inserted to the supercell.
-                Index is based on the defective supercell and begins from 0.
-                For vacancies, set [].
+                Values: Fractional coordinates in the perfect positions.
+            inserted_atoms (dict):
+                Keys: Atom indices inserted to the supercell.
+                      Indices are in  the defective supercell and begins from 0.
+                      For vacancies, set [].
+                Values: Fractional coordinates at the ideal positions.
             changes_of_num_elements (dict):
                 Keys: Element names
                 Values: Change of the numbers of elements wrt perfect supercell.
@@ -72,7 +73,7 @@ class DefectEntry(MSONable):
         self.initial_structure = initial_structure
         self.perturbed_initial_structure = perturbed_initial_structure
         self.removed_atoms = deepcopy(removed_atoms)
-        self.inserted_atoms = list(inserted_atoms)
+        self.inserted_atoms = deepcopy(inserted_atoms)
         self.changes_of_num_elements = deepcopy(changes_of_num_elements)
         self.charge = charge
         self.initial_site_symmetry = initial_site_symmetry
@@ -96,6 +97,7 @@ class DefectEntry(MSONable):
     def from_dict(cls, d: dict):
         # The keys need to be converted to integers.
         removed_atoms = {int(k): v for k, v in d["removed_atoms"].items()}
+        inserted_atoms = {int(k): v for k, v in d["inserted_atoms"].items()}
 
         initial_structure = d["initial_structure"]
         if isinstance(initial_structure, dict):
@@ -111,7 +113,7 @@ class DefectEntry(MSONable):
             initial_structure=initial_structure,
             perturbed_initial_structure=perturbed_initial_structure,
             removed_atoms=removed_atoms,
-            inserted_atoms=d["inserted_atoms"],
+            inserted_atoms=inserted_atoms,
             changes_of_num_elements=d["changes_of_num_elements"],
             charge=d["charge"],
             initial_site_symmetry=d["initial_site_symmetry"],
@@ -178,36 +180,37 @@ class DefectEntry(MSONable):
             logger.warning("charge {} is set from vasp input files.".
                            format(charge))
 
-        inserted_atoms = [i for i in range(defect_structure.num_sites)]
+        inserted_atom_indices = [i for i in range(defect_structure.num_sites)]
         removed_atoms = {}
 
         for i, p_site in enumerate(perfect_structure):
-            for j in inserted_atoms:
+            for j in inserted_atom_indices:
                 d_site = defect_structure[j]
                 distance = p_site.distance(d_site)
                 # check displacement_distance and species for comparison
                 if distance < displacement_distance \
                         and p_site.specie == d_site.specie:
-                    inserted_atoms.remove(j)
+                    inserted_atom_indices.remove(j)
                     break
             else:
                 removed_atoms[i] = list(p_site.frac_coords)
 
         # check the consistency of the removed and inserted atoms
-        if len(perfect_structure) + len(inserted_atoms) \
+        if len(perfect_structure) + len(inserted_atom_indices) \
                 - len(removed_atoms) != len(defect_structure):
             raise StructureError(
                 "Atoms are not properly mapped within the displacement.")
 
         pristine_defect_structure = deepcopy(perfect_structure)
+        lattice = defect_structure.lattice
         for r in sorted(removed_atoms, reverse=True):
             pristine_defect_structure.pop(r)
         # If the inserted atom locates near an original atom within the
         # displacement_distance, it is assumed to be substituted.
-        for i in sorted(inserted_atoms):
+        for i in sorted(inserted_atom_indices):
             inserted_atom = defect_structure[i]
             for removed_frac_coords in removed_atoms.values():
-                if defect_structure.lattice.get_distance_and_image(
+                if lattice.get_distance_and_image(
                         inserted_atom.frac_coords, removed_frac_coords)[0] \
                         < displacement_distance:
                     pristine_defect_structure.insert(i, inserted_atom.specie,
@@ -216,9 +219,6 @@ class DefectEntry(MSONable):
             else:
                 pristine_defect_structure.insert(i, inserted_atom.specie,
                                                  inserted_atom.frac_coords)
-
-        inserted_atom_coords = \
-            [pristine_defect_structure[i].frac_coords for i in inserted_atoms]
 
         perturbed_sites = []
         for i, site in enumerate(defect_structure):
@@ -231,6 +231,19 @@ class DefectEntry(MSONable):
                                  displacement_distance,
                                  angle_tolerance)
         initial_site_symmetry = sga.get_point_group_symbol()
+
+        refined_structure = sga.get_refined_structure()
+        inserted_atoms = {}
+        for i in inserted_atom_indices:
+            inserted_atom_coord = pristine_defect_structure[i]
+            for j in refined_structure:
+                if lattice.get_distance_and_image(
+                        inserted_atom_coord.frac_coords, j.frac_coords)[0] \
+                        < displacement_distance:
+                    pristine_defect_structure[i].frac_coords = j.frac_coords
+                    inserted_atoms[i] = list(j.frac_coords)
+
+        inserted_atom_coords = list(inserted_atoms.values())
 
         num_equiv_sites = \
             count_equivalent_clusters(perfect_structure,
@@ -252,6 +265,7 @@ class DefectEntry(MSONable):
     @classmethod
     def load_json(cls, filename="defect_entry.json"):
         return loadfn(filename)
+#        return cls.from_dict(loadfn(filename))
 
     @property
     def atom_mapping_to_perfect(self):
@@ -272,7 +286,7 @@ class DefectEntry(MSONable):
         for o in sorted(self.removed_atoms.keys(), reverse=True):
             mapping.pop(o)
 
-        for i in sorted(self.inserted_atoms, reverse=True):
+        for i in sorted(self.inserted_atoms.keys(), reverse=True):
             mapping.insert(i, None)
 
         return mapping
@@ -287,11 +301,11 @@ class DefectEntry(MSONable):
 
         Calculates the arithmetic average of the defect positions.
         """
-        inserted_atom_coords = [list(self.initial_structure[i].frac_coords)
-                                for i in self.inserted_atoms]
-        removed_atom_coords = [v for v in self.removed_atoms.values()]
-        defect_coords = inserted_atom_coords + removed_atom_coords
-        return defect_center_from_coords(defect_coords,
+        total_defect_coords = \
+            list(self.removed_atoms.values()) + \
+            list(self.inserted_atoms.values())
+        averaged_defect_coords = [v for v in total_defect_coords]
+        return defect_center_from_coords(averaged_defect_coords,
                                          self.initial_structure)
 
     @property

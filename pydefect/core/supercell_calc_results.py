@@ -16,9 +16,12 @@ from pymatgen.io.vasp.inputs import Poscar, Kpoints
 from pymatgen.io.vasp.outputs import Outcar, Vasprun
 from pymatgen.electronic_structure.core import Spin
 from pymatgen.core import Structure
+from pymatgen.symmetry.structure import SymmetrizedStructure
+from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
 
 from pydefect.core.defect_entry import DefectEntry
 from pydefect.util.logger import get_logger
+from pydefect.core.config import DEFECT_SYMMETRY_TOLERANCE, ANGLE_TOL
 
 __author__ = "Yu Kumagai"
 __maintainer__ = "Yu Kumagai"
@@ -40,7 +43,8 @@ class SupercellCalcResults(MSONable):
                  eigenvalue_properties,
                  volume: float,
                  fermi_level: float,
-                 is_converged: bool):
+                 is_converged: bool,
+                 does_symmetrize: bool = True):
         """
         Args:
             final_structure (Structure):
@@ -73,6 +77,13 @@ class SupercellCalcResults(MSONable):
         self.fermi_level = fermi_level
         self.is_converged = is_converged
 
+        self.symmetrized_structure = None
+        if does_symmetrize:
+            sga = SpacegroupAnalyzer(self.final_structure,
+                                     DEFECT_SYMMETRY_TOLERANCE, ANGLE_TOL)
+
+            self.symmetrized_structure = sga.get_symmetrized_structure()
+
     def __str__(self):
         outs = ["total energy (eV): " + str(self.total_energy),
                 "total total_magnetization (mu_B): " +
@@ -93,7 +104,8 @@ class SupercellCalcResults(MSONable):
                         vasprun: str = None,
                         ibzkpt: str = None,
                         contcar: str = None,
-                        outcar: str = None):
+                        outcar: str = None,
+                        does_symmetrize: bool = True):
         """
         Construct class object from vasp output files.
         Args:
@@ -107,6 +119,8 @@ class SupercellCalcResults(MSONable):
                 Name of the converged CONTCAR file.
             outcar (str):
                 Name of the OUTCAR file.
+            does_symmetrize (bool):
+                Whether to symmetrize the structure.
         """
         p = Path(directory_path)
 
@@ -161,7 +175,7 @@ class SupercellCalcResults(MSONable):
 
         return cls(final_structure, total_energy, magnetization, eigenvalues,
                    kpoints, electrostatic_potential, eigenvalue_properties,
-                   volume, fermi_level, is_converged)
+                   volume, fermi_level, is_converged, does_symmetrize)
 
     @classmethod
     def from_dict(cls, d):
@@ -173,7 +187,11 @@ class SupercellCalcResults(MSONable):
         for spin, v in d["eigenvalues"].items():
             eigenvalues[Spin(int(spin))] = np.array(v)
 
-        return cls(final_structure=d["final_structure"],
+        final_structure = d["final_structure"]
+        if isinstance(final_structure, dict):
+            final_structure = Structure.from_dict(final_structure)
+
+        return cls(final_structure=final_structure,
                    total_energy=d["total_energy"],
                    total_magnetization=d["total_magnetization"],
                    eigenvalues=eigenvalues,
@@ -192,8 +210,10 @@ class SupercellCalcResults(MSONable):
         For instance, when one adds new attributes, they do not exist in old
         json files. Then, the corresponding values are set to None.
         """
-        dd = defaultdict(lambda: None, loadfn(filename))
-        return cls.from_dict(dd)
+#        dd = defaultdict(lambda: None, loadfn(filename))
+#        return cls.from_dict(dd)
+        print(filename)
+        return loadfn(filename)
 
     def as_dict(self):
         """
@@ -246,6 +266,7 @@ class SupercellCalcResults(MSONable):
             defect_entry (DefectEntry):
                 DefectEntry class object corresponding the SupercellDftResuts.
         """
+        #        print(defect_entry)
         mapping = defect_entry.atom_mapping_to_perfect
         relative_potential = []
 

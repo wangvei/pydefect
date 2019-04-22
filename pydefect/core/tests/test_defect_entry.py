@@ -7,25 +7,13 @@ import numpy as np
 from pymatgen.core.structure import Structure
 from pymatgen.util.testing import PymatgenTest
 
-from pydefect.core.defect_entry import get_num_atoms_for_elements, \
-    DefectEntry
+from pydefect.core.defect_entry import DefectEntry
 
 __author__ = "Yu Kumagai"
 __maintainer__ = "Yu Kumagai"
 
 test_dir = os.path.join(os.path.dirname(__file__), "..", "..", "..",
                         "test_files", "core")
-
-
-class GetNumAtomsForElementsTest(unittest.TestCase):
-
-    def test(self):
-        structure = Structure.from_file(
-            os.path.join(test_dir, "POSCAR-MgO64atoms-Al_doped"))
-
-        expected = [1, 31, 32]
-        actual = get_num_atoms_for_elements(structure)
-        self.assertEqual(actual, expected)
 
 
 class DefectEntryTest(PymatgenTest):
@@ -62,12 +50,12 @@ class DefectEntryTest(PymatgenTest):
             os.path.join(test_dir, "POSCAR-MgO8atoms-2Va_O1-Mg_i1_2"))
         perturbed_initial_structure = initial_structure.copy()
         removed_atoms = {8: [0.25, 0.25, 0.25], 9: [0.25, 0.25, 0.75]}
-        inserted_atoms = [8]
+        inserted_atoms = {8: [0.25, 0.25, 0.25]}
         changes_of_num_elements = {"O": -2, "Mg": 1}
         charge = 2
         initial_site_symmetry = "mmm"
         perturbed_sites = []
-        num_equiv_sites = 0
+        num_equiv_sites = 24
 
         self._MgO_complex = \
             DefectEntry(name=name,
@@ -86,8 +74,7 @@ class DefectEntryTest(PymatgenTest):
             os.path.join(test_dir, "defect_entry-2Va_O1-Mg_i1_2.yaml"))
         print(defect_entry_from_yaml)
         print(self._MgO_complex)
-        self.assertTrue(
-            defect_entry_from_yaml.as_dict == self._MgO_complex.as_dict)
+        self.assertTrue(defect_entry_from_yaml.as_dict() == self._MgO_complex.as_dict())
 
     # def test_from_simpler_yaml(self):
     #     simpler_dir = os.path.join(test_dir, "MgO/defects/2Va_O1-Mg_i1_2")

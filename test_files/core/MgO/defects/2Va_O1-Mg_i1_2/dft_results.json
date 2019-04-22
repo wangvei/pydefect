@@ -1,4 +1,6 @@
 {
+  "@module": "pydefect.core.supercell_calc_results",
+  "@class": "SupercellCalcResults",
   "final_structure": {
     "@module": "pymatgen.core.structure",
     "@class": "Structure",
@@ -97,7 +99,7 @@
         "xyz": [
           6.414087064701562,
           8.303231279936156,
-          6.370339529437801
+          6.3703395294378
         ],
         "label": "Mg",
         "properties": {
@@ -122,8 +124,8 @@
         ],
         "xyz": [
           4.437447778939444,
-          6.326591994174039,
-          6.370339529437801
+          6.326591994174038,
+          6.3703395294378
         ],
         "label": "Mg",
         "properties": {
@@ -173,7 +175,7 @@
           0.5172840737183719
         ],
         "xyz": [
-          6.326591994174039,
+          6.326591994174038,
           4.437447778939444,
           6.3703395294378
         ],
@@ -303,7 +305,7 @@
           0.75
         ],
         "xyz": [
-          6.3703395294377705,
+          6.37033952943777,
           4.2468930196252,
           4.24689301962517
         ],
@@ -356,7 +358,7 @@
         ],
         "xyz": [
           4.2468930196252,
-          6.3703395294377705,
+          6.37033952943777,
           4.24689301962517
         ],
         "label": "O",
@@ -423,7 +425,7 @@
     ]
   },
   "total_energy": -78.14124479,
-  "magnetization": 0.4999428,
+  "total_magnetization": 0.4999428,
   "eigenvalues": {
     "1": [
       [
@@ -2210,40 +2212,63 @@
       ]
     ]
   },
-  "kpoints": [
-    [
-      0.0,
-      0.0,
-      0.0
+  "kpoints": {
+    "comment": "Automatically generated mesh",
+    "nkpoints": 5,
+    "generation_style": "Reciprocal",
+    "kpoints": [
+      [
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.5,
+        0.0,
+        0.0
+      ],
+      [
+        0.5,
+        0.5,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        0.5
+      ],
+      [
+        0.5,
+        0.0,
+        0.5
+      ]
     ],
-    [
-      0.5,
-      0.0,
-      0.0
+    "usershift": [
+      0,
+      0,
+      0
     ],
-    [
-      0.5,
-      0.5,
-      0.0
+    "kpts_weights": [
+      1.0,
+      2.0,
+      1.0,
+      2.0,
+      2.0
     ],
-    [
-      0.0,
-      0.0,
-      0.5
+    "coord_type": null,
+    "labels": [
+      null,
+      null,
+      null,
+      null,
+      null
     ],
-    [
-      0.5,
-      0.0,
-      0.5
-    ]
-  ],
-  "kpoint_weights": [
-    0.125,
-    0.25,
-    0.125,
-    0.25,
-    0.25
-  ],
+    "tet_number": 0,
+    "tet_weight": 0,
+    "tet_connections": null,
+    "@module": "pymatgen.io.vasp.inputs",
+    "@class": "Kpoints"
+  },
   "electrostatic_potential": [
     -34.5925,
     -35.2431,
@@ -2268,5 +2293,6 @@
     false
   ],
   "volume": 153.19477710173544,
-  "fermi_level": 6.44148542
+  "fermi_level": 6.44148542,
+  "is_converged": true
 }

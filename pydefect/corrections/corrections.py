@@ -51,20 +51,6 @@ def calc_max_sphere_radius(lattice_vectors):
     return max(calc_distance_two_planes(lattice_vectors)) / 2.0
 
 
-# def calc_neighbor_lattices(max_norm, lattice):
-#     lattices = []
-#     max_int = [int(max_norm / np.linalg.norm(lattice[i])) + 1
-#                for i in range(3)]
-#     for index in product(range(-max_int[0], max_int[0] + 1),
-#                          range(-max_int[1], max_int[1] + 1),
-#                          range(-max_int[2], max_int[2] + 1)):
-#         cart_vector = np.dot(lattice.transpose(), np.array(index))
-#         if np.linalg.norm(cart_vector) < max_norm:
-#             lattices.append(cart_vector)
-
-# return lattices
-
-
 # for searching ewald parameter
 def create_neighbor_lattices(lattice_vectors, max_length):
     """ Return a set of lattice vectors within the max length.
@@ -118,17 +104,13 @@ class Ewald(MSONable):
         self.ewald_param = ewald_param
         self.prod_cutoff_fwhm = prod_cutoff_fwhm
 
-        # include self lattice site
+        # including self lattice site
         self.real_neighbor_lattices = list(real_neighbor_lattices)
         self.reciprocal_neighbor_lattices = list(reciprocal_neighbor_lattices)
 
-        # self.real_neighbor_lattices = \
-        #     calc_neighbor_lattices(self.max_r_vector_norm,
-        #                            self.lattice)
-
-        # self.reciprocal_neighbor_lattices = \
-        #     calc_neighbor_lattices(self.max_g_vector_norm,
-        #                            self.reciprocal_lattice_matrix)
+    @classmethod
+    def load_json(cls, filename):
+        return loadfn(filename)
 
     @property
     def max_r_vector_norm(self):
@@ -156,7 +138,7 @@ class Ewald(MSONable):
                           dielectric_tensor: np.array,
                           initial_ewald_param: float = None,
                           convergence: float = 1.05,
-                          prod_cutoff_fwhm: float = 20.0):
+                          prod_cutoff_fwhm: float = 25.0):
         """ Get optimized ewald parameter.
 
         Args:
@@ -250,7 +232,8 @@ class Ewald(MSONable):
             lattices = np.array(deepcopy(self.real_neighbor_lattices))
 
         if include_self is False:
-            np.delete(lattices, int(len(lattices) - 1) / 2)
+            # Note: numpy.delete returns new object.
+            lattices = np.delete(lattices, int((len(lattices) - 1) / 2), 0)
 
         return lattices + shift
 
@@ -271,13 +254,20 @@ class Correction(ABC):
 
 class ExtendedFnvCorrection(Correction, MSONable):
 
-    def __init__(self, ewald, lattice_energy, diff_ave_pot,
-                 alignment_correction_energy, symbols_without_defect,
-                 distances_from_defect, difference_electrostatic_pot, model_pot,
-                 manually_added_correction_energy=0):
+    def __init__(self,
+                 ewald_json: str,
+                 lattice_matrix: np.array,
+                 lattice_energy: float,
+                 diff_ave_pot: float,
+                 alignment_correction_energy: float,
+                 symbols_without_defect: list,
+                 distances_from_defect: list,
+                 difference_electrostatic_pot: list,
+                 model_pot: list,
+                 manually_added_correction_energy: float = 0.0):
         """
         Args:
-            ewald (Ewald):
+            ewald_json (str):
             lattice_energy (float):
             diff_ave_pot (float):
             alignment_correction_energy (float):
@@ -285,7 +275,7 @@ class ExtendedFnvCorrection(Correction, MSONable):
             distances_from_defect (list of float):
             model_pot (list of float):
             difference_electrostatic_pot (list of float):
-            manually_added_correction_energy (float or None):
+            manually_added_correction_energy (float):
         """
 
         # error check just in case (should be removed in the future)
@@ -298,7 +288,8 @@ class ExtendedFnvCorrection(Correction, MSONable):
                            len(distances_from_defect),
                            len(difference_electrostatic_pot),
                            len(model_pot)))
-        self.ewald = ewald
+        self.ewald_json = ewald_json
+        self.lattice_matrix = lattice_matrix
         self.lattice_energy = lattice_energy
         self.diff_ave_pot = diff_ave_pot
         self.alignment_correction_energy = alignment_correction_energy
@@ -313,6 +304,14 @@ class ExtendedFnvCorrection(Correction, MSONable):
         return - self.lattice_energy
 
     @property
+    def manually_added_correction_energy(self):
+        return self.manually_added_correction_energy
+
+    @manually_added_correction_energy.setter
+    def manually_added_correction_energy(self, e):
+        self.manually_added_correction_energy = e
+
+    @property
     def correction_energy(self):
         return self.point_charge_correction_energy \
                + self.alignment_correction_energy \
@@ -320,8 +319,9 @@ class ExtendedFnvCorrection(Correction, MSONable):
 
     @property
     def max_sphere_radius(self):
-        lattice_vectors = self.ewald.lattice
-        return calc_max_sphere_radius(lattice_vectors)
+        # Note that original script files use min_sphere_radius,
+        # thus the results are different.
+        return calc_max_sphere_radius(self.lattice_matrix)
 
     # TODO: if remote connect and can't be displayed figure by X,
     # matplotlib should raise exception.
@@ -380,25 +380,28 @@ class ExtendedFnvCorrection(Correction, MSONable):
 
     @classmethod
     def compute_correction(cls, defect_entry, defect_dft, perfect_dft,
-                           unitcell_dft, ewald=None):
+                           unitcell_dft, ewald_json=None,
+                           to_filename="ewald.json"):
         """
         Args
-            defect_entry(DefectEntry):
-            defect_dft(SupercellCalcResults):
-            perfect_dft(SupercellCalcResults):
-            unitcell_dft(UnitcellCalcResults):
-            ewald(Ewald):
+            defect_entry (DefectEntry):
+            defect_dft (SupercellCalcResults):
+            perfect_dft (SupercellCalcResults):
+            unitcell_dft (UnitcellCalcResults):
+            ewald (Ewald):
         """
         # search ewald
-        if ewald is None:
+        if ewald_json is None:
             ewald = Ewald.from_optimization(
                 perfect_dft.final_structure,
                 unitcell_dft.total_dielectric_tensor)
+            ewald.to_json_file(to_filename)
+
         return cls.compute_alignment_by_extended_fnv(defect_entry,
                                                      defect_dft,
                                                      perfect_dft,
                                                      unitcell_dft,
-                                                     ewald)
+                                                     to_filename)
 
     @classmethod
     def compute_alignment_by_extended_fnv(cls,
@@ -406,7 +409,8 @@ class ExtendedFnvCorrection(Correction, MSONable):
                                           defect_dft: SupercellCalcResults,
                                           perfect_dft: SupercellCalcResults,
                                           unitcell_dft: UnitcellCalcResults,
-                                          ewald: Ewald):
+                                          ewald_json: str,
+                                          use_symmtrized_structure: bool = True):
 
         """
         Estimate correction energy of point defect formation energy calculated
@@ -417,32 +421,38 @@ class ExtendedFnvCorrection(Correction, MSONable):
             defect_dft (SupercellCalcResults):
             perfect_dft (SupercellCalcResults):
             unitcell_dft (UnitcellCalcResults):
-            ewald (Ewald):
-
+            ewald_json (str):
+            use_symmtrized_structure (bool):
+                This will be used in the future for implementing symmetry
+                treatment
         """
 
         dielectric_tensor = unitcell_dft.total_dielectric_tensor
         perfect_structure = perfect_dft.final_structure
+        ewald = Ewald.load_json(ewald_json)
 
         diff_ep = [-ep for ep in
                    defect_dft.relative_potential(perfect_dft, defect_entry)
                    if ep is not None]
 
+        defective_structure = defect_dft.final_structure
+
         atomic_position_without_defect = \
-            [defect_dft.final_structure.frac_coords[i]
+            [defective_structure.frac_coords[i]
              for i, j in enumerate(defect_entry.atom_mapping_to_perfect)
              if j is not None]
 
         symbols_without_defect = \
-            [defect_dft.final_structure.sites[i].specie.symbol
+            [defective_structure.sites[i].specie.symbol
              for i, j in enumerate(defect_entry.atom_mapping_to_perfect)
              if j is not None]
 
         charge = defect_entry.charge
-        volume = perfect_structure.lattice.volume
-        defect_coords = defect_center(defect_entry, defect_dft.final_structure)
+        lattice = perfect_structure.lattice
+        volume = lattice.volume
+        defect_coords = defect_center(defect_entry, defective_structure)
         distances_from_defect = \
-            [distance_list(defect_dft.final_structure, defect_coords)[i]
+            [distance_list(defective_structure, defect_coords)[i]
              for i, j in enumerate(defect_entry.atom_mapping_to_perfect)
              if j is not None]
 
@@ -461,8 +471,7 @@ class ExtendedFnvCorrection(Correction, MSONable):
             # \sum erfc(ewald*\sqrt(R*\epsilon_inv*R))
             # / \sqrt(det(\epsilon)) / \sqrt(R*\epsilon_inv*R) [1/A]
             summation = 0
-            shift = defect_dft.final_structure.lattice. \
-                get_cartesian_coords(r - defect_coords)
+            shift = lattice.get_cartesian_coords(r - defect_coords)
 
             for v in ewald.neighbor_lattices(shift=shift):
                 # Skip the potential caused by the defect itself
@@ -478,9 +487,10 @@ class ExtendedFnvCorrection(Correction, MSONable):
             # Ewald reciprocal part
             # \sum exp(-g*\epsilon*g/(4*ewald**2)) / g*\epsilon*g [1/A]
             summation = 0
-            for g in ewald.neighbor_lattices(
-                    include_self=False, is_reciprocal_space=True):
+            for g in ewald.neighbor_lattices(include_self=False,
+                                             is_reciprocal_space=True):
                 g_epsilon_g = reduce(np.dot, [g.T, dielectric_tensor, g])
+
                 summation += \
                     np.exp(- g_epsilon_g / 4.0 / ewald_param ** 2) \
                     / g_epsilon_g * np.cos(np.dot(g, r))  # [A^2]
@@ -489,6 +499,7 @@ class ExtendedFnvCorrection(Correction, MSONable):
 
             model_pot.append((real_part + reciprocal_part + diff_pot) * coeff)
 
+        # ----------------------------------------------------------------
         # Madelung potential energy
         # TODO: Can be this part included above loop?
 
@@ -527,10 +538,11 @@ class ExtendedFnvCorrection(Correction, MSONable):
         model_pot_defect_site = \
             (real_part + reciprocal_part + diff_pot + self_pot) * coeff
         lattice_energy = model_pot_defect_site * charge / 2
+        # ----------------------------------------------------------------
 
         # calc ave_pot_diff
         distance_threshold = \
-            calc_max_sphere_radius(np.array(perfect_structure.lattice.matrix))
+            calc_max_sphere_radius(np.array(lattice.matrix))
         pot_diff = []
 
         # error check just in case (should be removed in the future)
@@ -547,6 +559,6 @@ class ExtendedFnvCorrection(Correction, MSONable):
         ave_pot_diff = float(np.mean(pot_diff))
         alignment = -ave_pot_diff * charge
 
-        return cls(ewald, lattice_energy, ave_pot_diff, alignment,
-                   symbols_without_defect, distances_from_defect, diff_ep,
-                   model_pot)
+        return cls(ewald_json, lattice.matrix, lattice_energy, ave_pot_diff,
+                   alignment, symbols_without_defect, distances_from_defect,
+                   diff_ep, model_pot)

@@ -105,7 +105,7 @@ def main():
         help="Set if antisite defects are not considered.")
     parser_initial.add_argument(
         "-e", dest="en_diff", type=float,
-        help="Criterion of the electronegativity_list difference that determines "
+        help="Criterion of the electronegativity_difference that determines "
              "antisites and/or substituted impurities.")
     parser_initial.add_argument(
         "--included", dest="included", type=str, nargs="+",
@@ -115,7 +115,7 @@ def main():
         help="Exceptionally excluded defects. E.g., Va_O2_0.")
     parser_initial.add_argument(
         "--displacement_distance", dest="displacement_distance", type=float,
-        help="Displacement displacement_distance. 0 means that random displacement is not "
+        help="Displacement distance. 0 means that random displacement is not "
              "considered.")
     parser_initial.add_argument(
         "--cutoff", dest="cutoff", type=float,
@@ -243,7 +243,7 @@ def main():
     parser_supercell_results.add_argument(
         "-v", dest="vasprun", type=str)
     parser_supercell_results.add_argument(
-        "--json", dest="json", type=str,
+        "--json", dest="json", type=str, default="dft_results.json",
         help="dft_results.json type file name.")
     parser_supercell_results.add_argument(
         "--print", dest="print", action="store_true",
@@ -310,33 +310,27 @@ def main():
 
     # needed files
     parser_correction.add_argument(
-        "--unitcell_json", dest="unitcell_json",
-        default="unitcell.json", type=str)
+        "--unitcell_json", dest="unitcell_json", default="unitcell.json",
+        type=str)
     parser_correction.add_argument(
         "--perfect_json", dest="perfect_json",
         default="perfect/dft_results.json", type=str)
-
     # ewald
     parser_correction.add_argument(
-        "--read_ewald_json", dest="read_ewald_json",
-        default="ewald.json", type=str)
+        "--read_ewald_json", dest="read_ewald_json", default="ewald.json",
+        type=str)
     parser_correction.add_argument(
-        "--dump_ewald_json", dest="dump_ewald_json",
-        default="ewald.json", type=str)
+        "--dump_ewald_json", dest="dump_ewald_json", default="ewald.json",
+        type=str)
     parser_correction.add_argument(
-        "--ewald_init", dest="ewald_init",
-        default=None)
+        "--ewald_init", dest="ewald_init", default=None)
     parser_correction.add_argument(
-        "--ewald_convergence", dest="ewald_convergence",
-        default=None)
+        "--ewald_convergence", dest="ewald_convergence", default=None)
     parser_correction.add_argument(
-        "--ewald_accuracy", dest="ewald_accuracy",
-        default=None)
-
+        "--ewald_accuracy", dest="ewald_accuracy", default=None)
     # correction
     parser_correction.add_argument(
-        "--dirs", dest="dirs", nargs="+", type=str,
-        help="Directory names.")
+        "--dirs", dest="dirs", nargs="+", type=str, help="Directory names.")
     parser_correction.add_argument(
         "--dir_all", dest="dir_all", action="store_true",
         help="Make dft_results.json for *[0-9] and " "perfect directory.")
@@ -727,15 +721,15 @@ def correction(args):
     try:
         unitcell_dft_data = UnitcellCalcResults.load_json(args.unitcell_json)
     except IOError:
-        raise FileNotFoundError("JSON for the unitcell info was not found.")
+        raise FileNotFoundError("JSON for the unitcell info is not found.")
 
     try:
         perfect_dft_data = SupercellCalcResults.load_json(args.perfect_json)
     except IOError:
-        raise FileNotFoundError("JSON for the perfect cell info was not found.")
+        raise FileNotFoundError("JSON for the perfect supercell is not found.")
 
     if args.dump_ewald_json:
-        print("optimizing ewald...")
+        logger.info("optimizing ewald...")
         ewald_kwargs = {}
         if args.ewald_init:
             ewald_kwargs["initial_value"] = args.ewald_init
@@ -748,11 +742,12 @@ def correction(args):
                                     unitcell_dft_data.total_dielectric_tensor,
                                     **ewald_kwargs)
         ewald_data.to_json_file(args.dump_ewald_json)
+        ewald_filename = args.dump_ewald_json
     elif args.read_ewald_json:
         try:
-            ewald_data = Ewald.load_json(args.read_ewald_json)
+            ewald_filename = args.read_ewald_json
         except IOError:
-            raise FileNotFoundError("JSON of ewald was not found.")
+            raise FileNotFoundError("JSON for ewald parameter is not found.")
 
     if args.dir_all:
         dirs = glob('*[0-9]/')
@@ -762,25 +757,27 @@ def correction(args):
     for directory in dirs:
         json_to_make = join(directory, "correction.json")
         if os.path.exists(json_to_make) and not args.force_overwrite:
-            print("{} exists. ExtendedFnvCorrection was not done.".format(json_to_make))
+            logger.warning("{} exists. ExtendedFnvCorrection was not done."
+                           .format(json_to_make))
             continue
-        print("correcting {0} ...".format(directory))
+        logger.info("correcting {} ...".format(directory))
         try:
             entry = DefectEntry.load_json(join(directory, "defect_entry.json"))
             defect_dft_data = SupercellCalcResults.load_json(
                 join(directory, "dft_results.json"))
-            c = ExtendedFnvCorrection.compute_alignment_by_extended_fnv(entry,
-                                                                        defect_dft_data,
-                                                                        perfect_dft_data,
-                                                                        unitcell_dft_data,
-                                                                        ewald_data)
+            c = ExtendedFnvCorrection.\
+                compute_alignment_by_extended_fnv(entry,
+                                                  defect_dft_data,
+                                                  perfect_dft_data,
+                                                  unitcell_dft_data,
+                                                  ewald_filename)
             c.plot_distance_vs_potential(join(directory, "potential.eps"))
             c.to_json_file(join(directory, "correction.json"))
         except Exception as e:
-            warnings.warn("ExtendedFnvCorrection for {0} is failed. "
-                          "The calculation for {0} is skipped."
-                          "Exception type and message is {1}, {2}".
-                          format(directory, type(e), e.args))
+            logger.warning("ExtendedFnvCorrection for {0} is failed. "
+                           "The calculation for {0} is skipped."
+                           "Exception type and message is {1}, {2}".
+                           format(directory, type(e), e.args))
 
 
 def chempotdiag(args):
