@@ -13,7 +13,8 @@ from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
 
 from pydefect.core.error_classes import StructureError
 from pydefect.util.logger import get_logger
-from pydefect.util.structure_tools import count_equivalent_clusters, ModSpacegroupAnalyzer
+from pydefect.util.structure_tools import count_equivalent_clusters, \
+    ModSpacegroupAnalyzer
 from pydefect.vasp_util.util import element_diff_from_poscar_files, \
     get_defect_charge_from_vasp
 from pydefect.util.structure_tools import defect_center_from_coords
@@ -265,7 +266,7 @@ class DefectEntry(MSONable):
     @classmethod
     def load_json(cls, filename="defect_entry.json"):
         return loadfn(filename)
-#        return cls.from_dict(loadfn(filename))
+
 
     @property
     def atom_mapping_to_perfect(self):
@@ -301,11 +302,9 @@ class DefectEntry(MSONable):
 
         Calculates the arithmetic average of the defect positions.
         """
-        total_defect_coords = \
-            list(self.removed_atoms.values()) + \
-            list(self.inserted_atoms.values())
-        averaged_defect_coords = [v for v in total_defect_coords]
-        return defect_center_from_coords(averaged_defect_coords,
+        total_defect_coords = (list(self.removed_atoms.values()) +
+                               list(self.inserted_atoms.values()))
+        return defect_center_from_coords(total_defect_coords,
                                          self.initial_structure)
 
     @property

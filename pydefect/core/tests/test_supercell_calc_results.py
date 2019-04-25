@@ -13,7 +13,7 @@ from pymatgen.util.testing import PymatgenTest
 from pydefect.core.defect_entry import DefectEntry
 from pydefect.core.supercell_calc_results \
     import SupercellCalcResults
-from pydefect.util.structure_tools import defect_center, distances_from_point
+from pydefect.util.structure_tools import defect_center, distances_from_defect_center
 from pydefect.core.unitcell_calc_results import UnitcellCalcResults
 
 __author__ = "Yu Kumagai"
@@ -103,7 +103,7 @@ class DistancesFromPointTest(unittest.TestCase):
         # (Fe1 - Ni1) = 4.67707(0)
         # Fe1  0.25000 0.25000 0.25000(0, 0, 0) + x, y, z
         # Ni1 -0.12500 0.25000 0.50000(-1, 0, 0) + x, y, z
-        actual = distances_from_point(structure, defect_entry)
+        actual = distances_from_defect_center(structure, defect_entry)
         expected = [0.0, 7.705517503711221, 4.677071733467427]
         self.assertEqual(actual, expected)
 

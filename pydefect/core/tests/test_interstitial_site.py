@@ -4,7 +4,7 @@
 from pymatgen.util.testing import PymatgenTest
 from collections import OrderedDict
 
-from pydefect.core.interstitial_site import InterstitialSites, InterstitialSite
+from pydefect.core.interstitial_site import InterstitialSiteSet, InterstitialSite
 
 # __author__ = "Yu Kumagai"
 # __maintainer__ = "Yu Kumagai"
@@ -48,25 +48,34 @@ class InterstitialSitesTest(PymatgenTest):
             coordination_distances=coordination_distances,
             method=method)
 
-        self.interstitial_sites = InterstitialSites([i1, i2])
+        self.interstitial_sites = InterstitialSiteSet([i1, i2])
 
     def test_dict(self):
         d = self.interstitial_sites.as_dict()
-        from_dict = InterstitialSites.from_dict(d)
+        from_dict = InterstitialSiteSet.from_dict(d)
         print(from_dict.as_dict())
         self.assertTrue(d == from_dict.as_dict())
 
     def test_yaml(self):
         self.interstitial_sites.to_yaml_file()
 
-
+    def test_str(self):
+        print(self.interstitial_sites[0])
 
     def test_from_interstitial_in(self):
         """
         """
 
-        actual = InterstitialSites.from_interstitial_in()
+        actual = InterstitialSiteSet.from_interstitial_in()
         print(actual.as_dict())
         print(self.interstitial_sites.as_dict())
         self.assertTrue(actual.as_dict() == self.interstitial_sites.as_dict())
 
+    def add_interstitial(self):
+        """
+        """
+
+        actual = InterstitialSiteSet.from_interstitial_in()
+        print(actual.as_dict())
+        print(self.interstitial_sites.as_dict())
+        self.assertTrue(actual.as_dict() == self.interstitial_sites.as_dict())

@@ -9,6 +9,8 @@ from pydefect.core.defect_entry import DefectEntry
 from pydefect.util.structure_tools import perturb_neighboring_atoms, \
     defect_center_from_coords
 from pydefect.util.logger import get_logger
+from pydefect.util.structure_tools import first_appearance_index
+
 
 __author__ = "Yu Kumagai"
 __maintainer__ = "Yu Kumagai"
@@ -169,7 +171,7 @@ class DefectEntrySetMaker:
                                                      defect_name))
 
         # -------------------- analyze in_atom ---------------------------------
-        inserted_atoms = []
+        inserted_atoms = {}
 
         # This block must be following analyzing out_name because
         # defect coordinates is needed when inserting an in_name atom.
@@ -180,13 +182,9 @@ class DefectEntrySetMaker:
             # e.g., Mg1 and Mg2, element of in_atom is inserted to just before
             # the same elements, otherwise to the 1st index.
             changes_of_num_elements[defect_name.in_atom] = 1
-            if defect_name.in_atom in defect_structure.symbol_set:
-                inserted_index = min(
-                    defect_structure.indices_from_symbol(defect_name.in_atom))
-                inserted_atoms.append(inserted_index)
-            else:
-                inserted_index = 0
-                inserted_atoms = [0]
+            inserted_index = first_appearance_index(defect_structure,
+                                                    defect_name.in_atom)
+            inserted_atoms[inserted_index] = defect_coords
             defect_structure.insert(inserted_index, defect_name.in_atom,
                                     defect_coords)
         else:
@@ -197,8 +195,8 @@ class DefectEntrySetMaker:
             inserted_atom_coords = list([self.perfect_structure.frac_coords[k]
                                          for k in inserted_atoms])
             removed_atom_coords = list(removed_atoms.values())
-            defect_coords = inserted_atom_coords + removed_atom_coords
-            center = defect_center_from_coords(defect_coords,
+            all_defect_coords = inserted_atom_coords + removed_atom_coords
+            center = defect_center_from_coords(all_defect_coords,
                                                self.perfect_structure)
 
             perturbed_defect_structure, perturbed_sites = \

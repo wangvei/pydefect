@@ -4,8 +4,12 @@ from collections import OrderedDict
 from monty.json import MSONable
 import yaml
 
+from pydefect.util.logger import get_logger
+
 __author__ = "Yu Kumagai"
 __maintainer__ = "Yu Kumagai"
+
+logger = get_logger(__name__)
 
 
 class InterstitialSite(MSONable):
@@ -41,6 +45,16 @@ class InterstitialSite(MSONable):
         self.coordination_distances = coordination_distances
         self.method = method
 
+    def __str__(self):
+        outs = ["site_name: " + self.site_name,
+                "representative_coords: " + str(self.representative_coords),
+                "wyckoff: " + self.wyckoff,
+                "site_symmetry: " + self.site_symmetry,
+                "symmetry_multiplicity: " + str(self.symmetry_multiplicity),
+                "coordination_distances: " + str(self.coordination_distances),
+                "method: " + self.method]
+        return "\n".join(outs)
+
     def as_dict(self):
         d = OrderedDict(
             {"site_name":              self.site_name,
@@ -53,7 +67,8 @@ class InterstitialSite(MSONable):
 
         return d
 
-
+# The followings are needed for keeping the order of dict when dumping to yaml.
+# https://qiita.com/podhmo/items/aa954ee1dc1747252436
 def represent_odict(dumper, instance):
     return dumper.represent_mapping('tag:yaml.org,2002:map', instance.items())
 
@@ -68,16 +83,21 @@ def construct_odict(loader, node):
 yaml.add_constructor('tag:yaml.org,2002:map', construct_odict)
 
 
-class InterstitialSites(list):
+class InterstitialSiteSet(list):
     """Holds a set of InterstitialSite objects.
     """
 
-    def __init__(self, interstitial_sites: list):
+    def __init__(self, interstitial_sites: list = None):
         """
         Args:
             interstitial_sites (Iterable):
                 List of InterstitialSite objects
         """
+        if interstitial_sites is not None:
+            interstitial_sites = list(interstitial_sites)
+        else:
+            interstitial_sites = []
+
         name_set = set()
         for i in interstitial_sites:
             if i.site_name in name_set:
@@ -98,6 +118,10 @@ class InterstitialSites(list):
         with open(filename, "w") as f:
             f.write(yaml.dump(self.as_dict()))
 
+    @property
+    def coords(self):
+        return [v.representative_coords for v in self]
+
     @classmethod
     def from_dict(cls, d):
         return cls([InterstitialSite.from_dict(v) for v in d.values()])
@@ -108,18 +132,6 @@ class InterstitialSites(list):
             d = yaml.load(f)
 
         return cls.from_dict(d)
-
-    # def add_interstitial(self, structure, frac_coords, tolerance):
-    #     from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
-
-        # # use create_saturated_interstitial_structure??
-        # sga = SpacegroupAnalyzer(structure)
-        # sg_ops = sga.get_symmetry_operations()
-        # primitive = sga.find_primitive()
-
-
-
-#        self += new_int
 
 
 

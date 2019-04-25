@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 from itertools import product, combinations, chain
-from math import acos,  floor, degrees
+from math import acos, floor, degrees
 import numpy as np
 from tqdm import tqdm
 from typing import Union
@@ -8,7 +8,7 @@ from typing import Union
 from pymatgen.io.vasp import Poscar
 from pymatgen.core.structure import Structure
 from pymatgen.core.lattice import Lattice
-from pymatgen.core.periodic_table import DummySpecie
+from pymatgen.core.periodic_table import DummySpecie, Specie
 from pymatgen.core.sites import PeriodicSite
 from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
 
@@ -16,12 +16,16 @@ from obadb.util.structure_handler import get_symmetry_dataset, get_rotations
 
 import spglib
 
+from pydefect.util.logger import get_logger
 from pydefect.util.math_tools import normalized_random_3d_vector, random_vector
 from pydefect.core.error_classes import StructureError
 from pydefect.core.config import SYMMETRY_TOLERANCE, ANGLE_TOL
 
+
 __author__ = "Yu Kumagai"
 __maintainer__ = "Yu Kumagai"
+
+logger = get_logger(__name__)
 
 
 def perturb_neighboring_atoms(structure, center, cutoff, distance):
@@ -37,22 +41,22 @@ def perturb_neighboring_atoms(structure, center, cutoff, distance):
         distance (float):
             Max displacement_distance for the perturbation.
     """
-    if len(center) == 3:
+    try:
         perturbed_structure = structure.copy()
         cartesian_coords = structure.lattice.get_cartesian_coords(center)
         neighbors = structure.get_sites_in_sphere(
             cartesian_coords, cutoff, include_index=True)
-    else:
-        raise ValueError
+    except ValueError:
+        print("The length of defect coordinates is not appropriate.")
 
     sites = []
     # Since translate_sites accepts only one vector, we need to iterate this.
     for i in neighbors:
-
         vector = random_vector(normalized_random_3d_vector(), distance)
-        site = i[2]
-        sites.append(site)
-        perturbed_structure.translate_sites(site, vector, frac_coords=False)
+        site_index = i[2]
+        sites.append(site_index)
+        perturbed_structure.translate_sites(site_index, vector,
+                                            frac_coords=False)
 
     return perturbed_structure, sites
 
@@ -94,7 +98,7 @@ def get_displacements(final_structure: Structure,
     for f, i in zip(final_structure, initial_structure):
         print(f, i)
         disp_coords = (f.frac_coords - offset_coords) - i.frac_coords
-        disp_vectors.\
+        disp_vectors. \
             append(initial_structure.lattice.get_cartesian_coords(disp_coords))
     disp_norms = initial_structure.lattice.norm(disp_vectors, frac_coords=False)
 
@@ -103,7 +107,6 @@ def get_displacements(final_structure: Structure,
 
     print(disp_vectors)
     print(disp_norms)
-
 
     angles = []
     for i, d, f in zip(initial_distances, disp_norms, final_distances):
@@ -138,32 +141,6 @@ def defect_center_from_coords(defect_coords: list,
     return [np.mean(i) for i in np.array(shortest_defect_coords).transpose()]
 
 
-def defect_center(defect_entry, structure=None):
-    """ Return a fractional coordinates of the defect center.
-
-    It is calculated by averaging coordinates of vacancies and interstitials.
-    When len(defect_coords) == 1, simply returns defect_coords[0].
-    First defect_coords is used as a base point when the periodic boundary
-    condition is considered.
-
-    Args:
-        structure (Structure):
-            pmg Structure class object for perfect supercell
-        defect_entry (DefectEntry):
-            Related DefectEntry class object
-    """
-    if structure is None:
-        structure = defect_entry.initial_structure
-
-    inserted_atom_coords = list([structure.frac_coords[k]
-                                 for k in defect_entry.inserted_atoms])
-    removed_atom_coords = list(defect_entry.removed_atoms.values())
-
-    defect_coords = inserted_atom_coords + removed_atom_coords
-
-    return defect_center_from_coords(defect_coords, structure)
-
-
 def distance_list(structure, coords):
     """ Return a list of the shortest distances between a point and its images
 
@@ -177,7 +154,7 @@ def distance_list(structure, coords):
             for host in structure.frac_coords]
 
 
-def distances_from_point(structure, defect_entry):
+def distances_from_defect_center(structure, defect_entry):
     """ Returns a list of distances at atomic sites from defect center
 
     Note that in the case of an interstitial-type defect, zero is also set for
@@ -189,7 +166,7 @@ def distances_from_point(structure, defect_entry):
         defect_entry (DefectEntry):
             DefectEntry class object considered
     """
-    return distance_list(structure, defect_center(defect_entry, structure))
+    return distance_list(structure, defect_entry.defect_center)
 
 
 def fold_positions(structure):
@@ -268,14 +245,17 @@ def are_distances_same(lattice: Lattice,
 
 def create_saturated_interstitial_structure(structure: Structure,
                                             inserted_atom_coords: list,
-                                            dist_tol: float = 0.1):
+                                            species: list = None,
+                                            dist_tol: float = 0.1,
+                                            symprec: float = SYMMETRY_TOLERANCE,
+                                            angle_tolerance: float = ANGLE_TOL):
     """ generates the sublattice for it based on the structure's space group.
-
-    Originally copied from pymatgen.analysis.defects.core
 
     Args:
         structure (Structure):
         inserted_atom_coords (list):
+            List of 3x1 fractional coords or 3x1 fractional coords
+        species (list): If not provided, "H" are inserted.
         dist_tol (float):
             changing distance tolerance of saturated structure,
             allowing for possibly overlapping sites
@@ -283,49 +263,53 @@ def create_saturated_interstitial_structure(structure: Structure,
 
     Returns:
         Structure object decorated with interstitial site equivalents and
-        list of inserted atom indices.
+        list of the representative inserted atom indices.
     """
-    sga = SpacegroupAnalyzer(structure)
-    sg_ops = sga.get_symmetry_operations()
+    if species and len(inserted_atom_coords) != len(species):
+        raise ValueError("Numbers of inserted_atom_coords and species differ.")
+    if isinstance(inserted_atom_coords[0], float):
+        inserted_atom_coords = [inserted_atom_coords[:]]
 
+    sga = SpacegroupAnalyzer(structure, symprec, angle_tolerance)
+    symmops = sga.get_symmetry_operations()
     saturated_defect_structure = structure.copy()
     saturated_defect_structure.DISTANCE_TOLERANCE = dist_tol
 
-    lattice = saturated_defect_structure.lattice
-
     inserted_atom_indices = []
-    for i in inserted_atom_coords:
-        already_exist = False
-        for j, site in enumerate(saturated_defect_structure):
-            if lattice.get_distance_and_image(i, site.frac_coords)[0] \
-                    < dist_tol:
-                inserted_atom_indices.append(j)
-                already_exist = True
+    for i, coord in enumerate(inserted_atom_coords):
+        # Whether the inserted atoms already exist.
+        try:
+            inserted_atom_index = \
+                neighboring_atom_indices(
+                    saturated_defect_structure, coord, dist_tol)[0]
+        except IndexError:
+            inserted_atom_index = len(saturated_defect_structure)
 
-        if already_exist:
-            continue
+            for symmop in symmops:
+                specie = species[i] if species else DummySpecie()
+                new_interstitial_coords = symmop.operate(coord[:])
+                try:
+                    saturated_defect_structure.append(specie,
+                                                      new_interstitial_coords,
+                                                      validate_proximity=True)
+                except ValueError:
+                    pass
 
-        for sgo in sg_ops:
-            if already_exist is False:
-                inserted_atom_indices.append(len(saturated_defect_structure))
-
-            new_interstitial_coords = sgo.operate(i[:])
-            poss_new_site = PeriodicSite(
-                    "H",
-                    new_interstitial_coords,
-                    saturated_defect_structure.lattice)
-
-            already_exist = True
-
-            try:
-                # will raise value error if site already exists in structure
-                saturated_defect_structure.append(
-                            poss_new_site.specie, poss_new_site.frac_coords,
-                            validate_proximity=True)
-            except ValueError:
-                pass
+        inserted_atom_indices.append(inserted_atom_index)
 
     return saturated_defect_structure, inserted_atom_indices
+
+
+def neighboring_atom_indices(structure, coord, dist_tol):
+
+    neighboring_indices = []
+    for j, site in enumerate(structure):
+        distance = structure.lattice.get_distance_and_image(coord,
+                                                            site.frac_coords)[0]
+        if distance < dist_tol:
+            neighboring_indices.append(j)
+
+    return neighboring_indices
 
 
 def count_equivalent_clusters(perfect_structure: Structure,
@@ -422,98 +406,100 @@ def count_equivalent_clusters(perfect_structure: Structure,
 #                                angle_tolerance: float = ANGLE_TOL):
 #     """Return a dict of atomic distances
 
-    # NOTE: This can be calculated using mathematics more elegantly.
-    #       Symmetry of complex defect is direct product of each defect symmetry?
+# NOTE: This can be calculated using mathematics more elegantly.
+#       Symmetry of complex defect is direct product of each defect symmetry?
 
-    # Args:
-    #     perfect_structure (Structure):
-    #         Supercell is assumed to big enough.
-    #     inserted_atom_coords (list):
-    #     removed_atom_indices (list):
-    #         Needs to begin from 0.
-    #     displacement_distance (float)
-    #     symprec (float):
-    #     angle_tolerance (float):
+# Args:
+#     perfect_structure (Structure):
+#         Supercell is assumed to big enough.
+#     inserted_atom_coords (list):
+#     removed_atom_indices (list):
+#         Needs to begin from 0.
+#     displacement_distance (float)
+#     symprec (float):
+#     angle_tolerance (float):
 
-    # Returns:
-    #     count (int):
+# Returns:
+#     count (int):
 
-    # """
-    # inserted_atom_coords = list(inserted_atom_coords)
+# """
+# inserted_atom_coords = list(inserted_atom_coords)
 
-    # # If the removed atoms are substituted, the removed sites shouldn't be
-    # # considered as vacant sites for counting multiplicity.
-    # vacant_atom_indices = []
-    # for removed_atom_index in removed_atom_indices:
-    #     for inserted_atom_coord in inserted_atom_coords:
+# # If the removed atoms are substituted, the removed sites shouldn't be
+# # considered as vacant sites for counting multiplicity.
+# vacant_atom_indices = []
+# for removed_atom_index in removed_atom_indices:
+#     for inserted_atom_coord in inserted_atom_coords:
 
-            # distance_and_image = \
-            #     perfect_structure.lattice.get_distance_and_image(
-            #         inserted_atom_coord,
-            #         perfect_structure[removed_atom_index].frac_coords)
+# distance_and_image = \
+#     perfect_structure.lattice.get_distance_and_image(
+#         inserted_atom_coord,
+#         perfect_structure[removed_atom_index].frac_coords)
 
-        #     distance = distance_and_image[0]
-        #     if distance < displacement_distance:
-        #         break
-        # else:
-        #     vacant_atom_indices.append(removed_atom_index)
+#     distance = distance_and_image[0]
+#     if distance < displacement_distance:
+#         break
+# else:
+#     vacant_atom_indices.append(removed_atom_index)
 
-    # saturated_structure, inserted_atom_indices = \
-    #     create_saturated_interstitial_structure(
-    #         structure=perfect_structure.copy(),
-    #         inserted_atom_coords=inserted_atom_coords)
+# saturated_structure, inserted_atom_indices = \
+#     create_saturated_interstitial_structure(
+#         structure=perfect_structure.copy(),
+#         inserted_atom_coords=inserted_atom_coords)
 
-    # sga = SpacegroupAnalyzer(saturated_structure, symprec, angle_tolerance)
-    # symmetrized_saturated_structure = sga.get_symmetrized_structure()
-    # # symmetrically equivalent sites are grouped.
-    # equiv_indices = symmetrized_saturated_structure.equivalent_indices
-    # print(equiv_indices)
+# sga = SpacegroupAnalyzer(saturated_structure, symprec, angle_tolerance)
+# symmetrized_saturated_structure = sga.get_symmetrized_structure()
+# # symmetrically equivalent sites are grouped.
+# equiv_indices = symmetrized_saturated_structure.equivalent_indices
+# print(equiv_indices)
 
-    # sym_dataset = get_symmetry_dataset(symmetrized_saturated_structure, symprec,
-    #                                    angle_tolerance)
+# sym_dataset = get_symmetry_dataset(symmetrized_saturated_structure, symprec,
+#                                    angle_tolerance)
 
-    # lattice = symmetrized_saturated_structure.lattice
-    # defect_atom_indices = vacant_atom_indices + inserted_atom_indices
-
-
-
-    # # count the symmetrically equivalent defects
-    # count = 0
-    # for sublattice_equiv_indices in equiv_indices:
-    #     sublattice_defect_indices = \
-    #         [j for j in defect_atom_indices if j in sublattice_equiv_indices]
-    #     if not sublattice_defect_indices:
-    #         continue
-    #     else:
-    #         sublattice_defect_coords = \
-    #             np.array([symmetrized_saturated_structure[i].frac_coords
-    #                       for i in sublattice_defect_indices])
-
-        # # site symmetry
-        # symmetry_operation_number = \
-        #     get_point_group_op_number(sym_dataset, sublattice_defect_coords[0],
-        #                               lattice.matrix, symprec)
-
-        # structure = Structure(lattice=lattice,
-        #                       species=["H"] * len(sublattice_defect_coords),
-        #                       coords=sublattice_defect_coords)
-
-        # equivalent_symmetry_reduction = \
-        #     len(SpacegroupAnalyzer(structure, symprec, angle_tolerance).
-        #         get_space_group_operations())
-
-        # print("aaaaaaaaaaaaaaaa")
-        # print(sublattice_defect_coords)
-        # print(symmetry_operation_number)
-        # print(equivalent_symmetry_reduction)
+# lattice = symmetrized_saturated_structure.lattice
+# defect_atom_indices = vacant_atom_indices + inserted_atom_indices
 
 
-        # count += len(sublattice_equiv_indices) * symmetry_operation_number / equivalent_symmetry_reduction
+# # count the symmetrically equivalent defects
+# count = 0
+# for sublattice_equiv_indices in equiv_indices:
+#     sublattice_defect_indices = \
+#         [j for j in defect_atom_indices if j in sublattice_equiv_indices]
+#     if not sublattice_defect_indices:
+#         continue
+#     else:
+#         sublattice_defect_coords = \
+#             np.array([symmetrized_saturated_structure[i].frac_coords
+#                       for i in sublattice_defect_indices])
 
-    # return count
+# # site symmetry
+# symmetry_operation_number = \
+#     get_point_group_op_number(sym_dataset, sublattice_defect_coords[0],
+#                               lattice.matrix, symprec)
 
-def get_point_group_op_number(sym_dataset, coords, lattice,
-                              symprec=SYMMETRY_TOLERANCE):
+# structure = Structure(lattice=lattice,
+#                       species=["H"] * len(sublattice_defect_coords),
+#                       coords=sublattice_defect_coords)
+
+# equivalent_symmetry_reduction = \
+#     len(SpacegroupAnalyzer(structure, symprec, angle_tolerance).
+#         get_space_group_operations())
+
+# print("aaaaaaaaaaaaaaaa")
+# print(sublattice_defect_coords)
+# print(symmetry_operation_number)
+# print(equivalent_symmetry_reduction)
+
+
+# count += len(sublattice_equiv_indices) * symmetry_operation_number / equivalent_symmetry_reduction
+
+# return count
+
+
+def get_point_group_op_number(sym_dataset: dict,
+                              coords: list,
+                              lattice: np.array,
+                              symprec: float = SYMMETRY_TOLERANCE):
     """
     Args:
         sym_dataset (dict):
@@ -533,6 +519,32 @@ def get_point_group_op_number(sym_dataset, coords, lattice,
     return len(rotations)
 
 
+def get_symmetry_multiplicity(sym_dataset: dict,
+                              coords: list,
+                              lattice: np.array,
+                              symprec: float = SYMMETRY_TOLERANCE):
+    return len(sym_dataset["transformation_matrix"]) / \
+           get_point_group_op_number(sym_dataset, coords, lattice, symprec)
+
+
+def first_appearance_index(structure: Structure,
+                           specie: Union[str, Specie]) -> int:
+    """Return first index where the specie appears. 0 if it doesn't exist.
+
+    Used for inserting an element to a Structure, so if the element does not
+    exist, 0 is returned such that the new specie is inserted to
+    the first place by structure.insert(inserted_index, specie, coords).
+
+    :param structure:
+    :param specie:
+    :return:
+    """
+    if specie in structure.symbol_set:
+        return min(structure.indices_from_symbol(specie))
+    else:
+        return 0
+
+
 class ModSpacegroupAnalyzer(SpacegroupAnalyzer):
     def get_refined_structure(self, is_sorted=False):
         """
@@ -550,7 +562,4 @@ class ModSpacegroupAnalyzer(SpacegroupAnalyzer):
         species = [self._unique_species[i - 1] for i in numbers]
         s = Structure(lattice, species, scaled_positions)
 
-        if is_sorted:
-            return s.get_sorted_structure()
-        else:
-            return s
+        return s.get_sorted_structure() if is_sorted else s

@@ -9,7 +9,7 @@ from pymatgen.util.testing import PymatgenTest
 
 from pydefect.util.structure_tools import perturb_neighboring_atoms, \
     get_displacements, defect_center_from_coords, atomic_distances, \
-    create_saturated_interstitial_structure, count_equivalent_clusters, count_equivalent_clusters2
+    create_saturated_interstitial_structure, count_equivalent_clusters
 
 __author__ = "Yu Kumagai"
 __maintainer__ = "Yu Kumagai"

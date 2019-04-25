@@ -16,7 +16,7 @@ from obadb.util.structure_handler import get_symmetry_dataset, \
     get_point_group_from_dataset, get_coordination_distances
 
 from pydefect.core.error_classes import InvalidFileError
-from pydefect.core.interstitial_site import InterstitialSites
+from pydefect.core.interstitial_site import InterstitialSiteSet
 from pydefect.database.atom import electronegativity_list, oxidation_state_dict
 from pydefect.util.logger import get_logger
 from pydefect.core.irreducible_site import IrreducibleSite
@@ -313,7 +313,7 @@ class DefectInitialSetting(MSONable):
         space_group_symbol = None
         irreducible_sites = []
         antisite_configs = []
-        interstitial_names = []
+        interstitial_indices = []
         included = None
         excluded = None
         electronegativity = {}
@@ -659,7 +659,7 @@ class DefectInitialSetting(MSONable):
         # Both intrinsic elements and dopants are considered.
         # Charges are set from 0 to the oxidation state.
         if self.interstitial_indices:
-            t = InterstitialSites.from_yaml_file()
+            t = InterstitialSiteSet.from_yaml_file()
 
             if self.interstitial_indices <= t.keys():
                 return ValueError(

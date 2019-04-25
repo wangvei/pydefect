@@ -308,8 +308,8 @@ class ExtendedFnvCorrection(Correction, MSONable):
         return self.manually_added_correction_energy
 
     @manually_added_correction_energy.setter
-    def manually_added_correction_energy(self, e):
-        self.manually_added_correction_energy = e
+    def manually_added_correction_energy(self, correction_energy):
+        self.manually_added_correction_energy = correction_energy
 
     @property
     def correction_energy(self):
