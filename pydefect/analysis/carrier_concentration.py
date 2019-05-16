@@ -12,15 +12,17 @@ class CarrierConcentration:
     Carrier calc_defect_carrier_concentration
     """
 
-    def __init__(self, temperature, vbm, cbm, fermi_levels, ns, ps):
+    def __init__(self,
+                 temperatures: list, vbm: float, cbm: float, fermi_levels: list,
+                 ns: list, ps: list):
         """
         Args:
-            temperature: temperature in K.
-            fermi_levels: Fermi levels considered in the absolute value in eV.
-            ns: Carrier electron concentrations at the Fermi levels.
-            ps: Carrier hole concentrations at the Fermi levels.
+            temperatures (list): list of temperature considered.
+            fermi_levels: Fermi levels considered in the absolute scale in eV.
+            ns[temperature][Fermi level]: Carrier electron concentrations.
+            ps[temperature][Fermi level]: Carrier hole concentrations.
         """
-        self.temperature = temperature
+        self.temperatures = temperatures
         self.vbm = vbm
         self.cbm = cbm
         self.fermi_levels = fermi_levels
@@ -35,20 +37,20 @@ class CarrierConcentration:
     def hole_concentration(self):
         return self.ps
 
-    def __str__(self):
-        outs = ["Temperature [K]: " + str(self.temperature),
-                "E_f [eV],  n [cm-3],  p [cm-3]"]
-        for a, b, c in zip(self.fermi_levels, self.ns, self.ps):
-            outs.append('%8.4f'%a + "   " + '%.2e'%b + "   " + '%.2e'%c)
+    # def __str__(self):
+    #     outs = ["Temperature [K]: " + str(self.temperatures),
+    #             "E_f [eV],  n [cm-3],  p [cm-3]"]
+    #     for a, b, c in zip(self.fermi_levels, self.ns, self.ps):
+    #         outs.append('%8.4f'%a + "   " + '%.2e'%b + "   " + '%.2e'%c)
 
-        return "\n".join(outs)
+        # return "\n".join(outs)
 
     @classmethod
-    def from_unitcell(cls, temperature, unitcell, e_range=None):
+    def from_unitcell(cls, temperatures, unitcell, e_range=None):
         """
         Calculates defect formation energies.
         Args:
-            temperature (float):
+            temperatures (list):
             unitcell (UnitcellCalcResults):
             e_range (list):
         """
@@ -67,16 +69,14 @@ class CarrierConcentration:
 
         for f in fermi_levels:
 
-            ns.append(cls.n(temperature, f, total_dos, cbm, volume))
-            ps.append(cls.p(temperature, f, total_dos, vbm, volume))
+            ns.append(cls.n(temperatures, f, total_dos, cbm, volume))
+            ps.append(cls.p(temperatures, f, total_dos, vbm, volume))
 
-        return cls(temperature, vbm, cbm, fermi_levels, ns, ps)
+        return cls(temperatures, vbm, cbm, fermi_levels, ns, ps)
 
     @staticmethod
     def n(temperature, fermi_level, total_dos, cbm, volume, threshold=0.05):
-        """
-        Calculate the electron carrier calc_defect_carrier_concentration at the given absolute
-        fermi_level.
+        """ electron carrier concentration at the given absolute fermi_level.
         """
         mesh_distance = total_dos[1][1] - total_dos[1][0]
         n = sum(fermi_dirac_distribution(e, fermi_level, temperature) * td
@@ -86,9 +86,7 @@ class CarrierConcentration:
 
     @staticmethod
     def p(temperature, fermi_level, total_dos, vbm, volume, threshold=0.05):
-        """
-        Calculate the hole carrier calc_defect_carrier_concentration at the given absolute
-        fermi_level.
+        """ hole carrier concentration at the given absolute fermi_level.
         """
         mesh_distance = total_dos[1][1] - total_dos[1][0]
         p = sum(fermi_dirac_distribution(fermi_level, e, temperature) * td
@@ -97,8 +95,7 @@ class CarrierConcentration:
         return p * mesh_distance / volume
 
     def get_plot(self, xlim=None, ylim=None, relative=True):
-        """
-        Get a matplotlib plot.
+        """ Get a matplotlib plot.
 
         Args:
             xlim: Specifies the x-axis limits. Set to None for automatic

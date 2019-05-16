@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+from collections import namedtuple
 from copy import deepcopy
 import json
 import numpy as np
@@ -13,8 +14,7 @@ from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
 
 from pydefect.core.error_classes import StructureError
 from pydefect.util.logger import get_logger
-from pydefect.util.structure_tools import count_equivalent_clusters, \
-    ModSpacegroupAnalyzer
+from pydefect.util.structure_tools import count_equivalent_clusters
 from pydefect.vasp_util.util import element_diff_from_poscar_files, \
     get_defect_charge_from_vasp
 from pydefect.util.structure_tools import defect_center_from_coords
@@ -26,7 +26,7 @@ logger = get_logger(__name__)
 
 
 class DefectEntry(MSONable):
-    """ Holds all the information related to initial setting of a single defect.
+    """ Holds all the information related to the initial setting of a single defect.
     """
 
     def __init__(self,
@@ -267,7 +267,6 @@ class DefectEntry(MSONable):
     def load_json(cls, filename="defect_entry.json"):
         return loadfn(filename)
 
-
     @property
     def atom_mapping_to_perfect(self):
         """ Returns a list of atom mapping from defect structure to perfect.
@@ -321,3 +320,6 @@ class DefectEntry(MSONable):
                 self.defect_center, self.initial_structure.frac_coords)[0]
 
         return np.argmax(distance_set)
+
+
+Defect = namedtuple("Defect", ("defect_entry", "dft_results", "correction"))

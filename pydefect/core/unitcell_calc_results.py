@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 def check_attribute(name, attr):
     if attr is None:
         logger.warning("{}: is None.".format(name))
-        return None
+        return
     return attr
 
 
@@ -145,7 +145,7 @@ class UnitcellCalcResults(MSONable):
             return (np.array(self.static_dielectric_tensor) +
                     np.array(self.ionic_dielectric_tensor)).tolist()
         except TypeError:
-            return None
+            return
 
     @property
     def total_dos(self):

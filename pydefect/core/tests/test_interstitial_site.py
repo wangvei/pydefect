@@ -1,19 +1,22 @@
 # -*- coding: utf-8 -*-
-# import os
+import os
+from collections import OrderedDict
 
 from pymatgen.util.testing import PymatgenTest
-from collections import OrderedDict
+from pymatgen.core.structure import Structure
 
 from pydefect.core.interstitial_site import InterstitialSiteSet, InterstitialSite
 
 # __author__ = "Yu Kumagai"
 # __maintainer__ = "Yu Kumagai"
 
+test_dir = os.path.join(os.path.dirname(__file__), "..", "..", "..",
+                        "test_files", "input_maker")
 
-class InterstitialSitesTest(PymatgenTest):
-
+class InterstitialSiteTest(PymatgenTest):
     def setUp(self):
         """ """
+
         site_name = "i1"
         representative_coords = [0.25, 0.25, 0.25]
         wyckoff = "b"
@@ -22,8 +25,36 @@ class InterstitialSitesTest(PymatgenTest):
         coordination_distances = {"Mg": [2.12] * 6}
         method = "Voronoi"
 
+        self.i = InterstitialSite(
+                 site_name=site_name,
+                 representative_coords=representative_coords,
+                 wyckoff=wyckoff,
+                 site_symmetry=site_symmetry,
+                 symmetry_multiplicity=symmetry_multiplicity,
+                 coordination_distances=coordination_distances,
+                 method=method)
+
+    def test_dict(self):
+        d = self.i.as_dict()
+        from_dict = InterstitialSite.from_dict(d)
+        self.assertTrue(d == from_dict.as_dict())
+
+
+class InterstitialSitesTest(PymatgenTest):
+
+    def setUp(self):
+        """ """
+        structure = Structure.from_file("BPOSCAR-MgO")
+
+        site_name_1 = "i1"
+        representative_coords = [0.25, 0.25, 0.25]
+        wyckoff = "b"
+        site_symmetry = "m-3m"
+        symmetry_multiplicity = 8
+        coordination_distances = {"Mg": [2.12] * 6}
+        method = "Voronoi"
+
         i1 = InterstitialSite(
-            site_name=site_name,
             representative_coords=representative_coords,
             wyckoff=wyckoff,
             site_symmetry=site_symmetry,
@@ -31,7 +62,7 @@ class InterstitialSitesTest(PymatgenTest):
             coordination_distances=coordination_distances,
             method=method)
 
-        site_name = "i2"
+        site_name_2 = "i2"
         representative_coords = [0.125, 0.125, 0.125]
         wyckoff = "b"
         site_symmetry = "m-3m"
@@ -40,7 +71,6 @@ class InterstitialSitesTest(PymatgenTest):
         method = "Voronoi"
 
         i2 = InterstitialSite(
-            site_name=site_name,
             representative_coords=representative_coords,
             wyckoff=wyckoff,
             site_symmetry=site_symmetry,
@@ -48,34 +78,39 @@ class InterstitialSitesTest(PymatgenTest):
             coordination_distances=coordination_distances,
             method=method)
 
-        self.interstitial_sites = InterstitialSiteSet([i1, i2])
+        d = OrderedDict({site_name_1: i1, site_name_2: i2})
+
+        self.interstitial_site_set = InterstitialSiteSet(structure, d)
 
     def test_dict(self):
-        d = self.interstitial_sites.as_dict()
-        from_dict = InterstitialSiteSet.from_dict(d)
-        print(from_dict.as_dict())
-        self.assertTrue(d == from_dict.as_dict())
+        d = self.interstitial_site_set.as_dict()
+        print(d)
+#        from_dict = InterstitialSiteSet.from_dict(d)
+#        self.assertTrue(d == from_dict.as_dict())
 
     def test_yaml(self):
-        self.interstitial_sites.to_yaml_file()
+        self.interstitial_site_set.site_set_to_yaml_file()
 
     def test_str(self):
-        print(self.interstitial_sites[0])
+        print(self.interstitial_site_set.interstitial_sites["i1"])
 
-    def test_from_interstitial_in(self):
-        """
-        """
+    def test_coords(self):
+        actual = self.interstitial_site_set.coords
+        expected = [[0.25, 0.25, 0.25], [0.125, 0.125, 0.125]]
+        self.assertEqual(actual, expected)
 
-        actual = InterstitialSiteSet.from_interstitial_in()
-        print(actual.as_dict())
-        print(self.interstitial_sites.as_dict())
-        self.assertTrue(actual.as_dict() == self.interstitial_sites.as_dict())
+    def test_site_names(self):
+        actual = self.interstitial_site_set.site_names
+        expected = ['i1', 'i2']
+        self.assertEqual(actual, expected)
 
-    def add_interstitial(self):
-        """
-        """
+    def test_from_files(self):
+        actual = InterstitialSiteSet.from_files(
+            poscar="BPOSCAR-MgO", filename="interstitials.yaml").as_dict()
+        expected = self.interstitial_site_set.as_dict()
+        self.assertEqual(actual, expected)
 
-        actual = InterstitialSiteSet.from_interstitial_in()
-        print(actual.as_dict())
-        print(self.interstitial_sites.as_dict())
-        self.assertTrue(actual.as_dict() == self.interstitial_sites.as_dict())
+    def test_add(self):
+        coord = [0.175, 0.175, 0.175]
+        self.interstitial_site_set.add_site(coord=coord)
+        print(self.interstitial_site_set.interstitial_sites["i3"])

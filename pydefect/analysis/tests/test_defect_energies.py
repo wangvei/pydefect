@@ -3,12 +3,12 @@
 import os
 import unittest
 
-from pydefect.analysis.defect_energy import DefectEnergies, Defect
+from pydefect.analysis.defect_energy import DefectEnergies
 from pydefect.analysis.chempotdiag.chem_pot_diag import ChemPotDiag
 from pydefect.corrections.corrections import ExtendedFnvCorrection
 from pydefect.core.supercell_calc_results import SupercellCalcResults
 from pydefect.core.unitcell_calc_results import UnitcellCalcResults
-from pydefect.core.defect_entry import DefectEntry
+from pydefect.core.defect import DefectEntry, Defect
 
 __author__ = "Yu Kumagai"
 __copyright__ = "Copyright 2017, Oba group"
@@ -32,9 +32,7 @@ class DefectEnergiesTest(unittest.TestCase):
                                     "MgO/defects/perfect/dft_results.json")
         perfect = SupercellCalcResults.load_json(perfect_file)
 
-        defect_dirs = ["Mg_O1_0", "Mg_O1_1", "Mg_O1_2", "Mg_O1_3", "Mg_O1_4",
-                       "Mg_i1_0", "Mg_i1_1", "Mg_i1_2", "Va_O1_1", "Va_O1_2",
-                       "Va_O1_0"]
+        defect_dirs = ["Va_O1_1", "Va_O1_2", "Va_O1_0"]
         defects = []
         for dd in defect_dirs:
             d = os.path.join(test_dir, "MgO/defects", dd)
@@ -66,12 +64,14 @@ class DefectEnergiesTest(unittest.TestCase):
                                       chem_pot_label=chem_pot_label,
                                       system="MgO")
 
+    def test(self): pass
+
     def test_energies(self):
-        print(self.defect_energies.energies)
-        print(self.defect_energies.transition_levels)
-        print(self.defect_energies.vbm)
-        print(self.defect_energies.cbm)
-        print(self.defect_energies.band_gap)
+        d = self.defect_energies.as_dict()
+        de = DefectEnergies.from_dict(d)
+        dd = de.as_dict()
+        print(dd)
+        self.assertEqual(d, dd)
 
     def test_U(self):
         print(self.defect_energies.u(name="Va_O1", charge=[0, 1, 2]))

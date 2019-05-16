@@ -1,5 +1,5 @@
 {
-  "@module": "pydefect.core.defect_entry",
+  "@module": "pydefect.core.defect",
   "@class": "DefectEntry",
   "name": "Mg_i1",
   "initial_structure": {
@@ -41,14 +41,14 @@
           }
         ],
         "abc": [
-          0.124102,
-          0.125517,
-          0.124296
+          0.125,
+          0.12499999999999997,
+          0.125
         ],
         "xyz": [
-          1.0609290810090002,
-          1.054919727414,
-          1.060105183767
+          1.06172325,
+          1.06172325,
+          1.06172325
         ],
         "label": "Mg",
         "properties": {}
@@ -749,9 +749,13 @@
     ]
   },
   "removed_atoms": {},
-  "inserted_atoms": [
-    0
-  ],
+  "inserted_atoms": {
+    "0": [
+      0.125,
+      0.12499999999999997,
+      0.125
+    ]
+  },
   "changes_of_num_elements": {
     "Mg": 1
   },
@@ -767,5 +771,5 @@
     11,
     13
   ],
-  "num_equiv_sites": 2
+  "num_equiv_sites": 16
 }

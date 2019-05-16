@@ -14,7 +14,7 @@ from pymatgen.core.structure import Structure
 from pydefect.input_maker.defect_initial_setting \
     import print_dopant_info, DefectInitialSetting
 from pydefect.input_maker.supercell_maker import Supercells
-from pydefect.core.defect_entry import DefectEntry
+from pydefect.core.defect import DefectEntry, Defect
 from pydefect.core.supercell_calc_results import SupercellCalcResults
 from pydefect.core.unitcell_calc_results import UnitcellCalcResults
 from pydefect.corrections.corrections import Ewald, ExtendedFnvCorrection
@@ -25,7 +25,7 @@ from obadb.vasp.input_set import ObaSet
 #from pydefect.analysis.chempotdiag.chem_pot_diag \
 #    import ChemPotDiag
 from pydefect.analysis.chempotdiag.make_inputs import make_vasp_inputs_from_mp
-from pydefect.analysis.defect_energy import DefectEnergies, Defect
+from pydefect.analysis.defect_energy import DefectEnergies
 from pydefect.analysis.defect_concentration import DefectConcentration
 from pydefect.analysis.defect_energy_plotter import DefectEnergyPlotter
 from pydefect.util.logger import get_logger
@@ -83,6 +83,42 @@ def main():
 
     subparsers = parser.add_subparsers()
 
+    # -- recommend_supercell ---------------------------------------------------
+    parser_recommend_supercell = subparsers.add_parser(
+        name="recommend_supercell",
+        description="Tools for recommendation of an optimal supercell for "
+                    "defect calculations",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+        aliases=['rs'])
+    parser_recommend_supercell.add_argument(
+        "-p", dest="poscar", type=str, default="POSCAR")
+    parser_recommend_supercell.add_argument(
+        "-s", dest="sposcar", type=str, default="SPOSCAR")
+    parser_recommend_supercell.add_argument(
+        "-u", dest="uposcar", type=str, default="UPOSCAR")
+    parser_recommend_supercell.add_argument(
+        "-c", "--criterion", dest="isotropy_criterion", type=float,
+        help="Isotropy criterion.")
+    parser_recommend_supercell.add_argument(
+        "--min_num_atoms", dest="min_num_atoms", type=int,
+        help="Minimum number of atoms")
+    parser_recommend_supercell.add_argument(
+        "--max_num_atoms", dest="max_num_atoms", type=int,
+        help="Maximum number of atoms")
+    parser_recommend_supercell.add_argument(
+        "-pr", "--primitive", dest="primitive", action="store_true",
+        help="Set when the supercell is expanded based on the primitive cell.")
+    parser_recommend_supercell.add_argument(
+        "-i", "--most_isotropic", dest="most_isotropic",
+        action="store_true",
+        help="Output the smallest criterion supercell instead of the smallest "
+             "supercell.")
+    parser_recommend_supercell.add_argument(
+        "-set", dest="set", action="store_true",
+        help="Output all the supercells satisfying the criterion.")
+
+    parser_recommend_supercell.set_defaults(func=recommend_supercell)
+
     # -- initial_setting -------------------------------------------------------
     parser_initial = subparsers.add_parser(
         name="initial_setting",
@@ -97,9 +133,6 @@ def main():
     parser_initial.add_argument(
         "-d", "--dopants", dest="dopants", nargs="+", type=str,
         help="Dopant elements, e.g., Ga In.")
-    parser_initial.add_argument(
-        "-i", dest="interstitial_coords", nargs="+", type=float,
-        help="Interstitial coordinates. Eg., 0.5 0.5 0.5.")
     parser_initial.add_argument(
         "-a", "--antisite", dest="is_antisite", action="store_false",
         help="Set if antisite defects are not considered.")
@@ -132,6 +165,35 @@ def main():
     #    groups = parser_input.add_mutually_exclusive_group(required=True)
     parser_initial.set_defaults(func=initial_setting)
 
+    # -- interstitial ------------------------------------------------------
+    parser_interstitial = subparsers.add_parser(
+        name="interstitial",
+        description="Tools for managing the interstitial sites.",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+        aliases=['i'])
+
+    parser_interstitial.add_argument(
+        "--yaml", dest="yaml", type=str, default="interstitials.yaml",
+        help="defect_entry.yaml-type file name to be read.")
+    parser_interstitial.add_argument(
+        "--dposcar", dest="dposcar", default="DPOSCAR", type=str,
+        help="DPOSCAR-type file name.")
+    parser_interstitial.add_argument(
+        "-c", dest="interstitial_coords", nargs="+", type=float,
+        help="Interstitial coordinates. Eg., 0.5 0.5 0.5.")
+    parser_interstitial.add_argument(
+        "--name", dest="site_name", type=str, default=None,
+        help="Set the interstitial site name.")
+    parser_interstitial.add_argument(
+        "--radius", dest="r", type=str,
+        help=".")
+    parser_interstitial.add_argument(
+        "--force_add", dest="force_add", action="store_true",
+        help="Set if the interstitial site is added, although it is too close "
+             "to other atoms.")
+
+    parser_interstitial.set_defaults(func=interstitial)
+
     # -- vasp_set_maker -------------------------------------------------
     parser_vasp_set = subparsers.add_parser(
         name="vasp_set",
@@ -163,42 +225,6 @@ def main():
         "-k", "--kpt_density", dest="kpt_density", default=2.3, type=float,
         help="K-points density.")
     parser_vasp_set.set_defaults(func=vasp_set)
-
-    # -- recommend_supercell ---------------------------------------------------
-    parser_recommend_supercell = subparsers.add_parser(
-        name="recommend_supercell",
-        description="Tools for recommendation of an optimal supercell for "
-                    "defect calculations",
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-        aliases=['rs'])
-    parser_recommend_supercell.add_argument(
-        "-p", dest="poscar", type=str, default="POSCAR")
-    parser_recommend_supercell.add_argument(
-        "-s", dest="sposcar", type=str, default="SPOSCAR")
-    parser_recommend_supercell.add_argument(
-        "-u", dest="uposcar", type=str, default="UPOSCAR")
-    parser_recommend_supercell.add_argument(
-        "-c", "--criterion", dest="criterion", type=float,
-        help="Isotropy criterion.")
-    parser_recommend_supercell.add_argument(
-        "--min_num_atoms", dest="min_num_atoms", type=int,
-        help="Minimum number of atoms")
-    parser_recommend_supercell.add_argument(
-        "--max_num_atoms", dest="max_num_atoms", type=int,
-        help="Maximum number of atoms")
-    parser_recommend_supercell.add_argument(
-        "-pr", "--primitive", dest="primitive", action="store_true",
-        help="Set when the supercell is expanded based on the primitive cell.")
-    parser_recommend_supercell.add_argument(
-        "-i", "--min_isotropy", dest="min_iso",
-        action="store_true",
-        help="Output the smallest criterion supercell instead of the smallest "
-             "supercell.")
-    parser_recommend_supercell.add_argument(
-        "-set", dest="set", action="store_true",
-        help="Output all the supercells satisfying the criterion.")
-
-    parser_recommend_supercell.set_defaults(func=recommend_supercell)
 
     # -- defect_entry ----------------------------------------------------------
     parser_defect_entry = subparsers.add_parser(
@@ -535,6 +561,22 @@ def initial_setting(args):
         defect_setting.to()
 
 
+def interstitial(args):
+
+    from pydefect.core.interstitial_site import InterstitialSiteSet
+
+    try:
+        interstitial_set = InterstitialSiteSet.from_files(args.dposcar, args.yaml)
+    except FileNotFoundError:
+        structure = Structure.from_file(args.dposcar)
+        interstitial_set = InterstitialSiteSet(structure=structure)
+
+    coords = args.interstitial_coords
+    interstitial_set.add_site(coords, args.site_name)
+
+    interstitial_set.site_set_to_yaml_file(filename=args.yaml)
+
+
 def vasp_set(args):
 
     def make_dir(name, obrs):
@@ -610,18 +652,26 @@ def recommend_supercell(args):
             logger.info("The number of supercells:" + str(len(s.supercells)))
             for supercell in s.supercells:
                 cell = "c" if s.is_conventional_based else "p"
-                multi_str = cell + "x".join([str(list(supercell.multi)[i])
+                multi_str = cell + "x".join([str(list(supercell.trans_mat)[i])
                                              for i in range(3)])
-                name = args.sposcar + "_" + multi_str + "_" + \
-                       str(supercell.num_atoms) + "_" + str(supercell.isotropy)
-                supercell.to_poscar(filename=name)
+                name = "_".join([args.sposcar,
+                                 multi_str,
+                                 str(supercell.num_atoms),
+                                 str(supercell.isotropy)])
+                supercell.to_poscar(poscar_filename=name)
+            s.supercells[0].to_uposcar(uposcar_filename=args.uposcar)
+
         else:
-            supercell = s.create_smallest_supercell if args.min_iso else s.create_most_isotropic_supercell
-            supercell.to_poscar(poscar_filename=args.sposcar, uposcar_filename=args.uposcar)
+            if args.most_isotropic:
+                supercell = s.create_most_isotropic_supercell
+            else:
+                supercell = s.create_smallest_supercell
+            supercell.to_poscar(poscar_filename=args.sposcar)
+            supercell.to_uposcar(uposcar_filename=args.uposcar)
 
     else:
         logger.warning("Any supercell does not satisfy the criterion. Increase "
-                       "the criterion if needed")
+                       "the criterion if needed.")
 
 
 def defect_entry(args):
@@ -671,8 +721,9 @@ def unitcell_calc_results(args):
 
     if args.print:
         dft_results = UnitcellCalcResults.load_json(filename=args.json_file)
+        print(dft_results.total_dielectric_tensor)
         print(dft_results)
-        return None
+        return
 
     if args.band_edge_dir:
         try:
@@ -725,6 +776,7 @@ def correction(args):
 
     try:
         perfect_dft_data = SupercellCalcResults.load_json(args.perfect_json)
+        print(type(perfect_dft_data))
     except IOError:
         raise FileNotFoundError("JSON for the perfect supercell is not found.")
 
@@ -748,36 +800,33 @@ def correction(args):
             ewald_filename = args.read_ewald_json
         except IOError:
             raise FileNotFoundError("JSON for ewald parameter is not found.")
-
-    if args.dir_all:
-        dirs = glob('*[0-9]/')
     else:
-        dirs = args.dirs
+        raise IOError("Ewald parameter is a mandatory.")
+
+    dirs = glob('*[0-9]/') if args.dir_all else args.dirs
 
     for directory in dirs:
         json_to_make = join(directory, "correction.json")
+
         if os.path.exists(json_to_make) and not args.force_overwrite:
             logger.warning("{} exists. ExtendedFnvCorrection was not done."
                            .format(json_to_make))
             continue
+
         logger.info("correcting {} ...".format(directory))
-        try:
-            entry = DefectEntry.load_json(join(directory, "defect_entry.json"))
-            defect_dft_data = SupercellCalcResults.load_json(
-                join(directory, "dft_results.json"))
-            c = ExtendedFnvCorrection.\
-                compute_alignment_by_extended_fnv(entry,
-                                                  defect_dft_data,
-                                                  perfect_dft_data,
-                                                  unitcell_dft_data,
-                                                  ewald_filename)
-            c.plot_distance_vs_potential(join(directory, "potential.eps"))
-            c.to_json_file(join(directory, "correction.json"))
-        except Exception as e:
-            logger.warning("ExtendedFnvCorrection for {0} is failed. "
-                           "The calculation for {0} is skipped."
-                           "Exception type and message is {1}, {2}".
-                           format(directory, type(e), e.args))
+        entry = DefectEntry.load_json(join(directory, "defect_entry.json"))
+        defect_dft_data = SupercellCalcResults.load_json(
+            join(directory, "dft_results.json"))
+
+        c = ExtendedFnvCorrection.\
+            compute_alignment_by_extended_fnv(entry,
+                                              defect_dft_data,
+                                              perfect_dft_data,
+                                              unitcell_dft_data,
+                                              ewald_filename)
+
+        c.plot_distance_vs_potential(join(directory, "potential.eps"))
+        c.to_json_file(join(directory, "correction.json"))
 
 
 def chempotdiag(args):

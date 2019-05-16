@@ -1,5 +1,5 @@
 {
-  "@module": "pydefect.core.defect_entry",
+  "@module": "pydefect.core.defect",
   "@class": "DefectEntry",
   "name": "Al_Mg1",
   "initial_structure": {
@@ -715,9 +715,13 @@
       0.0
     ]
   },
-  "inserted_atoms": [
-    0
-  ],
+  "inserted_atoms": {
+    "0": [
+      0.0,
+      0.0,
+      0.0
+    ]
+  },
   "changes_of_num_elements": {
     "Al": 1,
     "Mg": -1

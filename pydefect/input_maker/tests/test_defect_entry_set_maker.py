@@ -12,7 +12,7 @@ from pydefect.input_maker.defect_entry_set_maker \
     log_already_exist, log_is_being_constructed, is_name_matched, \
     select_defect_names
 
-from pydefect.core.defect_entry import DefectEntry
+from pydefect.core.defect import DefectEntry
 from pydefect.core.irreducible_site import IrreducibleSite
 
 __author__ = "Yu Kumagai"

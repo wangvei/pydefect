@@ -353,7 +353,7 @@ class VerticesList(list):
         matched_list = [(i, v) for i, v in enumerate(self)
                         if v.name == label]
         if len(matched_list) == 0:
-            return None
+            return
         return VerticesList(matched_list)
 
     def set_boundary_range(self, boundary_range):

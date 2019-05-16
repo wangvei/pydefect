@@ -1,65 +1,36 @@
 # -*- coding: utf-8 -*-
 
-import json
-
-from monty.json import MontyEncoder
-from monty.serialization import loadfn
-
 from collections import defaultdict, namedtuple
 from itertools import combinations
+import json
+
+from monty.json import MontyEncoder, MSONable
+
+from obadb.analyzer.chempotdiag.chem_pot_diag import ChemPotDiag
 
 from pydefect.core.supercell_calc_results import SupercellCalcResults
 from pydefect.core.unitcell_calc_results import UnitcellCalcResults
+from pydefect.core.defect import Defect
 
-Defect = namedtuple("Defect", ("defect_entry", "dft_results", "correction"))
 TransitionLevel = namedtuple("TransitionLevel", ("cross_points", "charges"))
 
 
-class DefectEnergy:
-    """ A class related to a defect formation energy.
-    """
+class DefectEnergies(MSONable):
     def __init__(self,
-                 name: str,
-                 relative_total_energy: float,
-                 relative_potential: list,
-                 changes_of_num_elements: dict,
-                 charge: int,
-                 energy_correction: dict = None):
-        """
+                 energies: dict,
+                 transition_levels: dict,
+                 vbm: float,
+                 cbm: float,
+                 supercell_vbm: float,
+                 supercell_cbm: float,
+                 magnetization: dict,
+                 title: str = None):
+        """ A class related to a set of defect formation energies.
         Args:
-            name (str):
-                Name of a defect
-            relative_total_energy (float):
-                Relative energy wrt the perfect supercell total energy.
-            relative_potential (float):
-                Relative potential wrt the perfect supercell one.
-            changes_of_num_elements (dict):
-                Keys: Element names
-                Values: Change of the numbers of elements wrt perfect supercell.
-            charge (int):
-                Charge state of the defect. Charge is also added to the structure.
-            energy_correction (dict):
-                Dict of key = (correction name) and value = (correction value)
-        """
-        self.name = name
-        self.relative_total_energy = relative_total_energy
-        self.relative_potential = relative_potential
-        self.changes_of_num_elements = changes_of_num_elements
-        self.charge = charge
-        self.energy_correction = energy_correction
-
-
-class DefectEnergies:
-    """
-    A class related to a set of defect formation energies.
-    """
-    def __init__(self, energies, transition_levels, vbm, cbm,
-                 supercell_vbm, supercell_cbm, magnetization, title=None):
-        """
-        Args:
-            energies (defaultdict):
+            energies (dict):
                 Defect formation energies. energies[name][charge]
             transition_levels (dict):
+                key is defect name and value is TransitionLevel.
             vbm (float):
                 Valence band maximum in the unitcell in the absolute scale.
             cbm (float):
@@ -69,24 +40,29 @@ class DefectEnergies:
             supercell_cbm (float):
                 Conduction band minimum in the perfect supercell.
             magnetization (dict):
-                Magnetization in \mu_B. total_magnetization[defect][charge]
+                Magnetization in \mu_B. magnetization[defect][charge]
             title (str):
                 Title of the system.
         """
-        self._energies = energies
-        self._transition_levels = transition_levels
-        self._vbm = vbm
-        self._cbm = cbm
-        self._supercell_vbm = supercell_vbm
-        self._supercell_cbm = supercell_cbm
-        self._magnetization = magnetization
-        self._title = title
+        self.energies = energies
+        self.transition_levels = transition_levels
+        self.vbm = vbm
+        self.cbm = cbm
+        self.supercell_vbm = supercell_vbm
+        self.supercell_cbm = supercell_cbm
+        self.magnetization = magnetization
+        self.title = title
 
     @classmethod
-    def from_files(cls, unitcell, perfect, defects, chem_pot, chem_pot_label,
-                   system=""):
-        """
-        Calculates defect formation energies.
+    def from_files(cls,
+                   unitcell: UnitcellCalcResults,
+                   perfect: SupercellCalcResults,
+                   defects: list,
+                   chem_pot: ChemPotDiag,
+                   chem_pot_label: str,
+                   system: str = ""):
+        """ Calculates defect formation energies from several objects.
+
         Note that all the energies are calculated at 0 eV in the absolute scale.
         Args:
             unitcell (UnitcellCalcResults):
@@ -122,7 +98,7 @@ class DefectEnergies:
         for d in defects:
             name = d.defect_entry.name
             charge = d.defect_entry.charge
-            element_diff = d.defect_entry.element_diff
+            element_diff = d.defect_entry.changes_of_num_elements
 
             # calculate four terms for a defect formation energy.
             relative_energy = d.dft_results.relative_total_energy(perfect)
@@ -134,78 +110,38 @@ class DefectEnergies:
             energies[name][charge] = \
                 relative_energy + correction_energy + element_interchange_energy
 
-            magnetization[name][charge] = d.dft_results.magnetization
+            magnetization[name][charge] = d.dft_results.total_magnetization
 
-        # Calculates transition levels
         transition_levels = {}
 
+        # e_of_c means energy as a function of charge: e_of_c[charge] = energy
         for name, e_of_c in energies.items():
-            points = []
+            cross_points = []
             charge = []
 
             for (c1, e1), (c2, e2) in combinations(e_of_c.items(), r=2):
-                # Estimate the cross point between two charge states
+                # The cross point between two charge states.
                 x = - (e1 - e2) / (c1 - c2)
                 y = (c1 * e2 - c2 * e1) / (c1 - c2)
 
-                compared_energy = cls.min_e_at_ef(e_of_c, x)[1] + 0.00001
+                # The lowest energy among all the charge states to be compared.
+                compared_energy = \
+                    min([energy + c * x for c, energy in e_of_c.items()])
 
-                # if x_min < x < x_max and y < compared_energy:
-                if y < compared_energy:
-                    points.append([x, y])
+                if y < compared_energy + 1e-5:
+                    cross_points.append([x, y])
                     charge.append([c1, c2])
 
             transition_levels[name] = \
-                TransitionLevel(cross_points=sorted(points, key=lambda x: x[0]),
-                                charges=sorted(charge))
+                TransitionLevel(
+                    cross_points=sorted(cross_points, key=lambda z: z[0]),
+                    charges=sorted(charge))
+
         return cls(energies, transition_levels, vbm, cbm, supercell_vbm,
                    supercell_cbm, magnetization, title)
 
-    @staticmethod
-    def min_e_at_ef(ec, ef):
-        # calculate each energy at the given Fermi level ef.
-        d = {c: e + c * ef for c, e in ec.items()}
-        # return the charge with the lowest energy, and its energy value
-        return min(d.items(), key=lambda x: x[1])
-
-    @classmethod
-    def from_dict(cls, d):
-        """
-        Constructs a class object from a dictionary.
-        """
-        # Programmatic access to enumeration members in Enum class.
-        return cls(d["defect_energies"], d["transition_levels"], d["vbm"],
-                   d["cbm"], d["supercell_vbm"], d["supercell_cbm"],
-                   d["title"])
-
-    @classmethod
-    def load_json(cls, filename):
-        """
-        Constructs a class object from a json file.
-        """
-        d = loadfn(filename)
-        return cls.from_dict(d)
-
-    def as_dict(self):
-        """
-        Dict representation of the class object.
-        """
-
-        d = {"@module":           self.__class__.__module__,
-             "@class":            self.__class__.__name__,
-             "defect_energies":   self._defect_energies,
-             "transition_levels": self._transition_levels,
-             "vbm":               self._vbm,
-             "cbm":               self._cbm,
-             "supercell_vbm":     self._supercell_vbm,
-             "supercell_cbm":     self._supercell_cbm,
-             "title":             self._title}
-        return d
-
-    def to_json_file(self, filename):
-        """
-        Returns a json file, named dft_results.json.
-        """
+    def to_json_file(self, filename="defect_energy.json"):
+        """ Returns a json file. """
         with open(filename, 'w') as fw:
             json.dump(self.as_dict(), fw, indent=2, cls=MontyEncoder)
 
@@ -213,52 +149,23 @@ class DefectEnergies:
         pass
 
     def u(self, name, charge):
-        """
-        Return U value among three charge states.
+        """ Return the U value among three charge states.
+
         Args:
             name (str):
                 Name of the defect.
             charge (list):
                 1x3 list comprising three charge states.
         """
-        if (charge[0] + charge[2]) / 2 != charge[1]:
-            assert ValueError("The charge states are not preserved.")
+        if len(charge) != 3:
+            assert ValueError("The length of charge states must be 3.")
+        elif charge[0] + charge[2] - 2 * charge[1] != 0:
+            assert ValueError("The charge states {} {} {} are not balanced."
+                              .format(*charge))
+
         energies = [self.energies[name][c] for c in charge]
         return energies[0] + energies[2] - 2 * energies[1]
 
     @property
-    def energies(self):
-        return self._energies
-
-    @property
-    def transition_levels(self):
-        return self._transition_levels
-
-    @property
-    def vbm(self):
-        return self._vbm
-
-    @property
-    def cbm(self):
-        return self._cbm
-
-    @property
-    def supercell_vbm(self):
-        return self._supercell_vbm
-
-    @property
-    def supercell_cbm(self):
-        return self._supercell_cbm
-
-    @property
-    def title(self):
-        return self._title
-
-    @property
     def band_gap(self):
-        return self._cbm - self._vbm
-
-    @property
-    def magnetization(self):
-        return self._magnetization
-
+        return self.cbm - self.vbm

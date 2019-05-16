@@ -1,5 +1,5 @@
 {
-  "@module": "pydefect.core.defect_entry",
+  "@module": "pydefect.core.defect",
   "@class": "DefectEntry",
   "name": "Mg_O1",
   "initial_structure": {
@@ -715,9 +715,13 @@
       0.25
     ]
   },
-  "inserted_atoms": [
-    0
-  ],
+  "inserted_atoms": {
+    "0": [
+      0.25,
+      0.25,
+      0.25
+    ]
+  },
   "changes_of_num_elements": {
     "Mg": 1,
     "O": -1

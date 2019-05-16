@@ -1,7 +1,12 @@
 {
-  "method": "Extended FNV",
-  "ewald": {
-    "lattice_matrix": [
+  "@module": "pydefect.corrections.corrections",
+  "@class": "ExtendedFnvCorrection",
+  "ewald_json": "ewald.json",
+  "lattice_matrix": {
+    "@module": "numpy",
+    "@class": "array",
+    "dtype": "float64",
+    "data": [
       [
         0.0,
         4.246893,
@@ -17,34 +22,11 @@
         4.246893,
         0.0
       ]
-    ],
-    "dielectric_tensor": [
-      [
-        12.269128,
-        0.0,
-        0.0
-      ],
-      [
-        0.0,
-        12.269175,
-        0.0
-      ],
-      [
-        0.0,
-        0.0,
-        12.269269
-      ]
-    ],
-    "ewald_param": 0.04126215261014065,
-    "prod_cutoff_fwhm": 25.0,
-    "num_real_lattice": 11051,
-    "num_reciprocal_lattice": 10692,
-    "@module": "pydefect.core.correction",
-    "@class": "Ewald"
+    ]
   },
   "lattice_energy": -0.0,
   "diff_ave_pot": 0.3864999999999996,
-  "alignment": -0.0,
+  "alignment_correction_energy": -0.0,
   "symbols_without_defect": [
     "Mg",
     "Mg",
@@ -66,7 +48,7 @@
     3.6779172251543057,
     2.1335214285543143,
     2.088181572230638,
-    2.1177040139445404,
+    2.117704013944541,
     2.000605551137255,
     2.1167063971206903,
     2.1230505685463426,
@@ -113,5 +95,5 @@
     -0.0,
     -0.0
   ],
-  "manually_set_correction_energy": 0
+  "manual_correction_energy": 0.0
 }

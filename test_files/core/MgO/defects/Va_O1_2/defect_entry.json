@@ -1,5 +1,5 @@
 {
-  "@module": "pydefect.core.defect_entry",
+  "@module": "pydefect.core.defect",
   "@class": "DefectEntry",
   "name": "Va_O1",
   "initial_structure": {
@@ -675,7 +675,7 @@
       0.25
     ]
   },
-  "inserted_atoms": [],
+  "inserted_atoms": {},
   "changes_of_num_elements": {
     "O": -1
   },

@@ -1,5 +1,5 @@
 {
-  "@module": "pydefect.core.defect_entry",
+  "@module": "pydefect.core.defect",
   "@class": "DefectEntry",
   "name": "Al_Mg1",
   "initial_structure": {

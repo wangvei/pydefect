@@ -7,7 +7,7 @@ import numpy as np
 from pymatgen.core.structure import Structure
 from pymatgen.util.testing import PymatgenTest
 
-from pydefect.core.defect_entry import DefectEntry
+from pydefect.core.defect import DefectEntry
 
 __author__ = "Yu Kumagai"
 __maintainer__ = "Yu Kumagai"

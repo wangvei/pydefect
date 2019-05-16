@@ -7,7 +7,7 @@ from typing import Union, Optional
 
 from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
 
-from pydefect.core.defect_entry import DefectEntry
+from pydefect.core.defect import DefectEntry
 from pydefect.core.supercell_calc_results import SupercellCalcResults
 from pydefect.core.unitcell_calc_results import UnitcellCalcResults
 from pydefect.analysis.defect_eigenvalues import DefectEigenvalue
@@ -20,7 +20,7 @@ from pydefect.core.config import DEFECT_SYMMETRY_TOLERANCE, ANGLE_TOL
 __author__ = "Yu Kumagai"
 __maintainer__ = "Yu Kumagai"
 
-
+#TODO: Symmetrize the final structures
 class DefectProperties(MSONable):
     """
     """

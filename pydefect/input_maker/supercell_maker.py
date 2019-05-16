@@ -19,16 +19,15 @@ __maintainer__ = "Yu Kumagai"
 logger = get_logger(__name__)
 
 
-def calc_isotropy(structure, multi):
-    """
-    Isotropy is defined as the mean absolute deviation of the lattice
-    constants from the averaged lattice constant.
+def calc_isotropy(structure: Structure, trans_mat: np.array):
+    """ Return mean absolute deviation of lattice constants from their average
+
     Return
         isotropy (float):
     """
-    abc = structure.lattice.abc
-    super_abc = multi * abc
+    super_abc = trans_mat * structure.lattice.abc
     average_abc = np.mean(super_abc)
+
     return round(np.sum(np.abs(super_abc - average_abc) / average_abc) / 3, 4)
 
 
@@ -37,7 +36,7 @@ class Supercell:
                  structure: Structure,
                  trans_mat: Union[int, np.array],
                  multiplicity: int):
-        """ Constructs a supercell based on a given multiplicity.
+        """ Supercell class constructed based on a given multiplicity.
 
         Args:
             structure (Structure):
@@ -58,7 +57,8 @@ class Supercell:
         elif len(trans_mat) == 3:
             trans_mat = np.array(trans_mat)
             if isinstance(trans_mat[0], list) and len(trans_mat[0]) == 3:
-                trans_mat_str = ' '.join([str(int(i)) for i in trans_mat.flatten()])
+                trans_mat_str = \
+                    ' '.join([str(int(i)) for i in trans_mat.flatten()])
             else:
                 trans_mat_str = ' '.join([str(int(i)) for i in trans_mat])
         else:
@@ -68,21 +68,25 @@ class Supercell:
         self.base_structure = structure
         s = structure * trans_mat
         self.structure = s.get_sorted_structure()
-        self.multi = trans_mat
+        self.trans_mat = trans_mat
         self.isotropy = calc_isotropy(structure, trans_mat)
         self.num_atoms = self.structure.num_sites
 
-        self.comment = 'trans_mat: ' + trans_mat_str + ', multi: ' + str(multiplicity) + ', isotropy: ' + \
+        self.comment = 'trans_mat: ' + trans_mat_str + ', multi: ' \
+                       + str(multiplicity) + ', isotropy: ' + \
                        str(self.isotropy) + '\n'
 
-    def to_poscar(self, poscar_filename, uposcar_filename):
-        self.base_structure.to(filename=uposcar_filename)
-
+    def to_poscar(self, poscar_filename):
         poscar_str = self.structure.to(fmt="poscar").splitlines(True)
         poscar_str[0] = self.comment
+
         with open(poscar_filename, 'w') as fw:
             for line in poscar_str:
                 fw.write(line)
+
+    def to_uposcar(self, uposcar_filename):
+        self.base_structure.to(filename=uposcar_filename)
+
 
 
 class Supercells:
@@ -110,7 +114,6 @@ class Supercells:
                 lattice constants from the averaged lattice constant.
                 np.sum(np.abs(abc - average_abc) / average_abc) / 3
         """
-
         structure = structure.copy()
 
         self.is_conventional_based = False
@@ -132,9 +135,7 @@ class Supercells:
         num_atoms_in_unitcell = self.unitcell.num_sites
 
         if max_num_atoms < num_atoms_in_unitcell:
-            raise CellSizeError("Number of atoms in the unitcell is "
-                                        "smaller than the maximum number of "
-                                        "atoms in the supercell")
+            raise CellSizeError("Number of atoms in the unitcell is too large.")
 
         trans_mat = np.ones(3, dtype="int8")
         self.supercells = []
@@ -143,11 +144,12 @@ class Supercells:
             num_atoms = trans_mat.prod() * num_atoms_in_unitcell
             if num_atoms > max_num_atoms:
                 break
-
             isotropy = calc_isotropy(self.unitcell, trans_mat)
             if isotropy < isotropy_criterion and num_atoms >= min_num_atoms:
-                multi = int(self.unitcell.num_sites / primitive.num_sites * trans_mat.prod())
-                self.supercells.append(Supercell(self.unitcell, trans_mat, multi))
+                multiplicity = int(self.unitcell.num_sites /
+                                   primitive.num_sites * trans_mat.prod())
+                self.supercells.append(
+                    Supercell(self.unitcell, trans_mat, multiplicity))
 
             super_abc = trans_mat * abc
             # multi indices within 1.05a, where a is the shortest supercell

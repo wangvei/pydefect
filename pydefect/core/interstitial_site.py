@@ -1,9 +1,21 @@
 # -*- coding: utf-8 -*-
 
+from copy import deepcopy
 from collections import OrderedDict
 from monty.json import MSONable
 import yaml
 
+from pymatgen.core.structure import Structure
+from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
+from pymatgen.core.periodic_table import DummySpecie
+
+from obadb.util.structure_handler import get_coordination_distances
+
+from pydefect.core.config import INTERSTITIAL_SYMMETRY_TOLERANCE, ANGLE_TOL, \
+    MAX_NUM_INTERSTITIAL_SITES
+from pydefect.core.error_classes import StructureError
+from pydefect.util.structure_tools import get_symmetry_multiplicity, \
+    create_saturated_interstitial_structure
 from pydefect.util.logger import get_logger
 
 __author__ = "Yu Kumagai"
@@ -30,14 +42,12 @@ class InterstitialSite(MSONable):
     """
 
     def __init__(self,
-                 site_name: str,
                  representative_coords: list,
                  wyckoff: str = None,
                  site_symmetry: str = None,
                  symmetry_multiplicity: int = None,
                  coordination_distances: dict = None,
                  method: str = None):
-        self.site_name = site_name
         self.representative_coords = representative_coords
         self.wyckoff = wyckoff
         self.site_symmetry = site_symmetry
@@ -46,8 +56,7 @@ class InterstitialSite(MSONable):
         self.method = method
 
     def __str__(self):
-        outs = ["site_name: " + self.site_name,
-                "representative_coords: " + str(self.representative_coords),
+        outs = ["representative_coords: " + str(self.representative_coords),
                 "wyckoff: " + self.wyckoff,
                 "site_symmetry: " + self.site_symmetry,
                 "symmetry_multiplicity: " + str(self.symmetry_multiplicity),
@@ -57,8 +66,7 @@ class InterstitialSite(MSONable):
 
     def as_dict(self):
         d = OrderedDict(
-            {"site_name":              self.site_name,
-             "representative_coords":  self.representative_coords,
+            {"representative_coords":  self.representative_coords,
              "wyckoff":                self.wyckoff,
              "site_symmetry":          self.site_symmetry,
              "symmetry_multiplicity":  self.symmetry_multiplicity,
@@ -83,106 +91,152 @@ def construct_odict(loader, node):
 yaml.add_constructor('tag:yaml.org,2002:map', construct_odict)
 
 
-class InterstitialSiteSet(list):
+class InterstitialSiteSet(MSONable):
     """Holds a set of InterstitialSite objects.
     """
 
-    def __init__(self, interstitial_sites: list = None):
+    def __init__(self,
+                 structure: Structure,
+                 interstitial_sites: OrderedDict = None):
         """
         Args:
+            structure (Structure):
+                pmg Structure class object. Supercell used for defect
+                calculations.
             interstitial_sites (Iterable):
-                List of InterstitialSite objects
+                OrderedDict with keys of site names and values of
+                InterstitialSite objects.
         """
+        self.structure = structure
         if interstitial_sites is not None:
-            interstitial_sites = list(interstitial_sites)
+            self.interstitial_sites = deepcopy(interstitial_sites)
         else:
-            interstitial_sites = []
+            self.interstitial_sites = OrderedDict()
 
         name_set = set()
-        for i in interstitial_sites:
-            if i.site_name in name_set:
+        for site_name in self.interstitial_sites.keys():
+            if site_name in name_set:
                 raise ValueError("Interstitial name {} conflicts.".
-                                 format(i.site_name))
+                                 format(site_name))
             else:
-                name_set.add(i.site_name)
+                name_set.add(site_name)
 
-        super().__init__(interstitial_sites)
-
-    def as_dict(self):
+    def site_set_as_dict(self):
         d = OrderedDict()
-        for i, interstitial in enumerate(self):
-            d[i] = interstitial.as_dict()
+        for k, v in self.interstitial_sites.items():
+            d[k] = v.as_dict()
+
         return d
 
-    def to_yaml_file(self, filename="interstitials.yaml"):
+    def as_dict(self):
+        return {"interstitial_site_set": self.site_set_as_dict(),
+                "structure":          self.structure.as_dict()}
+
+    def site_set_to_yaml_file(self, filename="interstitials.yaml"):
         with open(filename, "w") as f:
-            f.write(yaml.dump(self.as_dict()))
+            f.write(yaml.dump(self.site_set_as_dict()))
 
     @property
     def coords(self):
-        return [v.representative_coords for v in self]
+        """Return list of fractional coordinates of interstitial sites"""
+        return [v.representative_coords
+                for v in self.interstitial_sites.values()]
+
+    @property
+    def site_names(self):
+        """Return list of interstitial site names"""
+        return [k for k in self.interstitial_sites.keys()]
 
     @classmethod
     def from_dict(cls, d):
-        return cls([InterstitialSite.from_dict(v) for v in d.values()])
+        structure = d["structure"]
+        if isinstance(structure, dict):
+            structure = Structure.from_dict(structure)
+
+        interstitial_sites = OrderedDict()
+        for k, v in d["interstitial_site_set"].items():
+            interstitial_sites[k] = InterstitialSite.from_dict(v)
+
+        return cls(structure=structure,
+                   interstitial_sites=interstitial_sites)
 
     @classmethod
-    def from_yaml_file(cls, filename="interstitials.yaml"):
+    def from_files(cls, poscar="DPOSCAR", filename="interstitials.yaml"):
+        d = {"structure": Structure.from_file(poscar)}
         with open(filename, "r") as f:
-            d = yaml.load(f)
+            d["interstitial_site_set"] = yaml.load(f)
 
         return cls.from_dict(d)
 
+    def add_site(self,
+                 coord: list,
+                 site_name: str = None,
+                 r: float = 0.3,
+                 force_add: bool = False,
+                 symprec: float = INTERSTITIAL_SYMMETRY_TOLERANCE,
+                 angle_tolerance: float = ANGLE_TOL,
+                 method: str = "manual"):
+        """ """
+        # Check whether other sites exist too close to the inserted sites.
+        # Construct saturated structure with existing interstitial sites.
+        if self.coords:
+            saturated_structure, _, symmetry_dataset = \
+                create_saturated_interstitial_structure(
+                    self.structure, self.coords, dist_tol=symprec)
 
+            cart_coord = saturated_structure.lattice.get_cartesian_coords(coord)
+            neighbors = \
+                saturated_structure.get_sites_in_sphere(pt=cart_coord, r=r)
 
-    # @classmethod
-    # def from_interstitial_in(cls, interstitial_in_file="interstitials.in"):
+            for n in neighbors:
+                # DummySpecie occupies the saturated interstitial sites.
+                if isinstance(n[0], DummySpecie):
+                    specie = "another interstitial site"
+                else:
+                    specie = n[0].frac_coords
+                distance = n[1]
+                message = "Inserted position is too close to {}. The distance "\
+                          "is {:5.3f}".format(specie, distance)
+                if force_add:
+                    logger.warning(message)
+                else:
+                    raise StructureError(message)
+        else:
+            sga = SpacegroupAnalyzer(self.structure, symprec, angle_tolerance)
+            symmetry_dataset = sga.get_symmetry_dataset()
 
-        # interstitial_sites = []
-        # with open(interstitial_in_file) as i:
-        #     for l in i:
-        #         line = l.split()
+        structure = self.structure.copy()
+        structure.insert(0, DummySpecie(), coord)
 
-                # # No line also needs to comment out now.
-                # if not line:
-                #     interstitial_sites.append(
-                #         InterstitialSite(
-                #             site_name=site_name,
-                #             representative_coords=representative_coords,
-                #             wyckoff=wyckoff,
-                #             site_symmetry=site_symmetry,
-                #             symmetry_multiplicity=symmetry_multiplicity,
-                #             coordination_distances=coordination_distances,
-                #             method=method))
+        # check the symmetry of the newly inserted interstitial site
+        sga = SpacegroupAnalyzer(structure, symprec, angle_tolerance)
+        sym_dataset = sga.get_symmetry_dataset()
+        wyckoff = sym_dataset["wyckoffs"][0]
+        site_symmetry = sym_dataset["pointgroup"]
+        symmetry_multiplicity = \
+            get_symmetry_multiplicity(symmetry_dataset, coord,
+                                      structure.lattice.matrix, symprec)
+        coordination_distances = get_coordination_distances(structure, 0)
 
-                    # site_name = None
-                    # representative_coords = None
-                    # wyckoff = None
-                    # site_symmetry = None
-                    # symmetry_multiplicity = None
-                    # coordination_distances = None
-                    # method = None
+        # Set the default of the site_name
+        if site_name is None:
+            for i in range(MAX_NUM_INTERSTITIAL_SITES):
+                trial_name = "i" + str(i + 1)
+                if trial_name not in self.site_names:
+                    site_name = trial_name
+                    break
+            else:
+                raise ValueError("Site name is not assigned automatically.")
+        else:
+            if site_name in self.site_names:
+                raise ValueError("Site {} already exists.".format(site_name))
 
-                # elif line[0][0] == "#":
-                #     continue
-                # elif line[0] == "Name:":
-                #     site_name = line[1]
-                # elif line[0] == "Fractional":
-                #     representative_coords = [float(x) for x in line[2:]]
-                # elif line[0] == "Wyckoff":
-                #     wyckoff = line[2]
-                # elif line[0] == "Site":
-                #     site_symmetry = line[2]
-                # elif line[0] == "Multiplicity:":
-                #     symmetry_multiplicity = line[1]
-                # elif line[0] == "Coordination:":
-                #     coordination_distances = get_distances(line[1:])
-                # elif line[0] == "Method:":
-                #     method = line[1]
-                # else:
-                #     raise InvalidFileError(
-                #         "{} is not supported in interstitials.in!".format(line))
+        interstitial_site = \
+            InterstitialSite(representative_coords=coord,
+                             wyckoff=wyckoff,
+                             site_symmetry=site_symmetry,
+                             symmetry_multiplicity=symmetry_multiplicity,
+                             coordination_distances=coordination_distances,
+                             method=method)
 
-        # return cls(interstitial_sites)
-
-
+        self.interstitial_sites[site_name] = interstitial_site

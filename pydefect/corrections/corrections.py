@@ -22,8 +22,8 @@ from scipy.special import erfc
 from scipy.constants import elementary_charge, epsilon_0
 from scipy.stats import mstats
 
-from pydefect.util.structure_tools import defect_center, distance_list
-from pydefect.core.defect_entry import DefectEntry
+from pydefect.util.structure_tools import distance_list
+from pydefect.core.defect import DefectEntry
 from pydefect.core.supercell_calc_results import SupercellCalcResults
 from pydefect.core.unitcell_calc_results import UnitcellCalcResults
 
@@ -33,7 +33,7 @@ with finite supercell-size dependencies.
 """
 
 __author__ = "Akira Takahashi, Yu Kumagai"
-__maintainer__ = "Akira Takahashi, Yu Kumagai"
+__maintainer__ = "Yu Kumagai"
 
 
 def calc_distance_two_planes(lattice_vectors):
@@ -264,7 +264,7 @@ class ExtendedFnvCorrection(Correction, MSONable):
                  distances_from_defect: list,
                  difference_electrostatic_pot: list,
                  model_pot: list,
-                 manually_added_correction_energy: float = 0.0):
+                 manual_correction_energy: float = 0.0):
         """
         Args:
             ewald_json (str):
@@ -275,7 +275,7 @@ class ExtendedFnvCorrection(Correction, MSONable):
             distances_from_defect (list of float):
             model_pot (list of float):
             difference_electrostatic_pot (list of float):
-            manually_added_correction_energy (float):
+            manual_correction_energy (float):
         """
 
         # error check just in case (should be removed in the future)
@@ -297,25 +297,25 @@ class ExtendedFnvCorrection(Correction, MSONable):
         self.distances_from_defect = list(distances_from_defect)
         self.difference_electrostatic_pot = list(difference_electrostatic_pot)
         self.model_pot = list(model_pot)
-        self.manually_added_correction_energy = manually_added_correction_energy
+        self._manual_correction_energy = manual_correction_energy
 
     @property
     def point_charge_correction_energy(self):
         return - self.lattice_energy
 
     @property
-    def manually_added_correction_energy(self):
-        return self.manually_added_correction_energy
+    def manual_correction_energy(self):
+        return self._manual_correction_energy
 
-    @manually_added_correction_energy.setter
-    def manually_added_correction_energy(self, correction_energy):
-        self.manually_added_correction_energy = correction_energy
+    @manual_correction_energy.setter
+    def manual_correction_energy(self, correction_energy):
+        self._manual_correction_energy = correction_energy
 
     @property
     def correction_energy(self):
         return self.point_charge_correction_energy \
                + self.alignment_correction_energy \
-               + self.manually_added_correction_energy
+               + self.manual_correction_energy
 
     @property
     def max_sphere_radius(self):
@@ -450,7 +450,7 @@ class ExtendedFnvCorrection(Correction, MSONable):
         charge = defect_entry.charge
         lattice = perfect_structure.lattice
         volume = lattice.volume
-        defect_coords = defect_center(defect_entry, defective_structure)
+        defect_coords = defect_entry.defect_center
         distances_from_defect = \
             [distance_list(defective_structure, defect_coords)[i]
              for i, j in enumerate(defect_entry.atom_mapping_to_perfect)
@@ -480,8 +480,8 @@ class ExtendedFnvCorrection(Correction, MSONable):
                     continue
                 root_r_inv_epsilon_r = \
                     np.sqrt(reduce(np.dot, [v.T, epsilon_inv, v]))
-                summation += erfc(ewald_param * root_r_inv_epsilon_r) / \
-                             root_r_inv_epsilon_r
+                summation += (erfc(ewald_param * root_r_inv_epsilon_r) /
+                              root_r_inv_epsilon_r)
             real_part = summation / (4 * np.pi * root_det_epsilon)
 
             # Ewald reciprocal part
@@ -516,8 +516,8 @@ class ExtendedFnvCorrection(Correction, MSONable):
                 continue
             root_r_inv_epsilon_r = \
                 np.sqrt(reduce(np.dot, [v.T, epsilon_inv, v]))
-            summation += erfc(ewald_param * root_r_inv_epsilon_r) / \
-                         root_r_inv_epsilon_r
+            summation += (erfc(ewald_param * root_r_inv_epsilon_r) /
+                          root_r_inv_epsilon_r)
         real_part = summation / (4 * np.pi * root_det_epsilon)
 
         # Ewald reciprocal part
@@ -526,9 +526,8 @@ class ExtendedFnvCorrection(Correction, MSONable):
         for g in ewald.neighbor_lattices(
                 include_self=False, is_reciprocal_space=True):
             g_epsilon_g = reduce(np.dot, [g.T, dielectric_tensor, g])
-            summation += \
-                np.exp(- g_epsilon_g / 4.0 / ewald_param ** 2) / \
-                g_epsilon_g * np.cos(np.dot(g, np.zeros(3)))  # [A^2]
+            summation += (np.exp(- g_epsilon_g / 4.0 / ewald_param ** 2) /
+                          g_epsilon_g * np.cos(np.dot(g, np.zeros(3))))  # [A^2]
         reciprocal_part = summation / volume
 
         # self potential
@@ -541,8 +540,7 @@ class ExtendedFnvCorrection(Correction, MSONable):
         # ----------------------------------------------------------------
 
         # calc ave_pot_diff
-        distance_threshold = \
-            calc_max_sphere_radius(np.array(lattice.matrix))
+        distance_threshold = calc_max_sphere_radius(np.array(lattice.matrix))
         pot_diff = []
 
         # error check just in case (should be removed in the future)

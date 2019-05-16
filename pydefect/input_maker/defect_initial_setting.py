@@ -187,7 +187,7 @@ class DefectInitialSetting(MSONable):
                  irreducible_sites: list,
                  dopant_configs: list,
                  antisite_configs: list,
-                 interstitial_indices: list,
+                 interstitial_site_names: list,
                  included: list,
                  excluded: list,
                  displacement_distance: float,
@@ -217,7 +217,7 @@ class DefectInitialSetting(MSONable):
                 Dopant configurations, e.g., [["Al", Mg"], ["N", "O"]]
             antisite_configs (Nx2 list):
                 Antisite configurations, e.g., [["Mg","O"], ["O", "Mg"]]
-            interstitial_indices (list):
+            interstitial_site_names (list):
                 Interstitial site indices written in intersitital.in file
             included (list):
                 Exceptionally added defects with charges,
@@ -251,7 +251,7 @@ class DefectInitialSetting(MSONable):
         # dopant element names are derived from in_name of dopant_configs.
         self.dopants = set([d[0] for d in dopant_configs])
         self.antisite_configs = list(antisite_configs)
-        self.interstitial_indices = list(interstitial_indices)
+        self.interstitial_site_names = list(interstitial_site_names)
         self.included = list(included) if included else []
         self.excluded = list(excluded) if excluded else []
         self.displacement_distance = displacement_distance
@@ -261,7 +261,7 @@ class DefectInitialSetting(MSONable):
         self.oxidation_states = oxidation_states
         self.electronegativity = electronegativity
 
-        self.interstitials = []
+        self.interstitials = {}
 
     @classmethod
     def from_dict(cls, d):
@@ -281,7 +281,7 @@ class DefectInitialSetting(MSONable):
                    irreducible_sites=irreducible_sites,
                    dopant_configs=d["dopant_configs"],
                    antisite_configs=d["antisite_configs"],
-                   interstitial_indices=d["interstitial_indices"],
+                   interstitial_site_names=d["interstitial_site_names"],
                    included=d["included"],
                    excluded=d["excluded"],
                    displacement_distance=d["displacement_distance"],
@@ -313,7 +313,7 @@ class DefectInitialSetting(MSONable):
         space_group_symbol = None
         irreducible_sites = []
         antisite_configs = []
-        interstitial_indices = []
+        interstitial_site_names = []
         included = None
         excluded = None
         electronegativity = {}
@@ -362,7 +362,7 @@ class DefectInitialSetting(MSONable):
                     oxidation_states[element] = int(di.readline().split()[2])
 
                 elif line[0] == "Interstitials:":
-                        interstitial_indices = list(line[1:])
+                        interstitial_site_names = list(line[1:])
 
                 elif line[0] == "Antisite":
                     antisite_configs = [i.split("_") for i in line[2:]]
@@ -404,7 +404,7 @@ class DefectInitialSetting(MSONable):
                    irreducible_sites=irreducible_sites,
                    dopant_configs=dopant_configs,
                    antisite_configs=antisite_configs,
-                   interstitial_indices=interstitial_indices,
+                   interstitial_site_names=interstitial_site_names,
                    included=included,
                    excluded=excluded,
                    displacement_distance=displacement_distance,
@@ -432,7 +432,7 @@ class DefectInitialSetting(MSONable):
                             cutoff: float = CUTOFF_RADIUS,
                             symprec: float = SYMMETRY_TOLERANCE,
                             angle_tolerance: float = ANGLE_TOL,
-                            interstitial_indices: list = None):
+                            interstitial_site_names: list = None):
         """ Generates object with some default settings.
 
         Args:
@@ -464,13 +464,13 @@ class DefectInitialSetting(MSONable):
                 Distance precision used for symmetry analysis.
             angle_tolerance (float):
                 Angle precision used for symmetry analysis.
-            interstitial_indices (list):
+            interstitial_site_names (list):
                 Names of interstitial sites written in interstitial.in file.
         """
         if dopants is None:
             dopants = []
-        if interstitial_indices is None:
-            interstitial_indices = []
+        if interstitial_site_names is None:
+            interstitial_site_names = []
 
         s = structure.get_sorted_structure()
 
@@ -570,7 +570,7 @@ class DefectInitialSetting(MSONable):
                    irreducible_sites=irreducible_sites,
                    dopant_configs=dopant_configs,
                    antisite_configs=antisite_configs,
-                   interstitial_indices=interstitial_indices,
+                   interstitial_site_names=interstitial_site_names,
                    included=included,
                    excluded=excluded,
                    displacement_distance=displacement_distance,
@@ -591,7 +591,7 @@ class DefectInitialSetting(MSONable):
                                       for i in self.irreducible_sites],
              "dopant_configs":        self.dopant_configs,
              "antisite_configs":      self.antisite_configs,
-             "interstitial_indices":    self.interstitial_indices,
+             "interstitial_site_names": self.interstitial_site_names,
              "included":              self.included,
              "excluded":              self.excluded,
              "displacement_distance": self.displacement_distance,
@@ -636,14 +636,13 @@ class DefectInitialSetting(MSONable):
             json.dump(self.as_dict(), fw, indent=2, cls=MontyEncoder)
 
     def to(self, defect_in_file="defect.in", poscar_file="DPOSCAR"):
-        """ Prints readable defect.in file.
-        """
+        """ Prints readable defect.in file. """
         self._write_defect_in(defect_in_file)
         self.structure.to(fmt="poscar", filename=poscar_file)
 
-    def make_defect_name_set(self):
-        """ Returns a set of defect names by default.
-        """
+    def make_defect_name_set(self, poscar_file="DPOSCAR",
+                             interstitials_yaml="interstitials.yaml"):
+        """ Returns a set of defect names by default. """
         name_set = list()
 
         # Vacancies
@@ -655,26 +654,31 @@ class DefectInitialSetting(MSONable):
                 charge = -o
                 name_set.append(SimpleDefectName(in_atom, out_site, charge))
 
+        # TODO: move setting of self.interstitials to other places.
         # Interstitials
         # Both intrinsic elements and dopants are considered.
         # Charges are set from 0 to the oxidation state.
-        if self.interstitial_indices:
-            t = InterstitialSiteSet.from_yaml_file()
-
-            if self.interstitial_indices <= t.keys():
-                return ValueError(
-                    "Interstitial indices {} do not exist in interstitial.in".format(self.interstitial_indices))
-
-            self.interstitials = \
-                [v for k, v in t.items() if k in self.interstitial_indices]
+        if self.interstitial_site_names:
+            t = InterstitialSiteSet.from_files(poscar_file, interstitials_yaml)
+            sites = t.interstitial_sites
+            if self.interstitial_site_names[0] == "all":
+                self.interstitials = {k: v for k, v in sites.items()}
+            else:
+                for site_name in self.interstitial_site_names:
+                    if site_name not in sites.keys():
+                        return ValueError(
+                            "Interstitial site name {} do not exist in "
+                            "{}".format(site_name, interstitials_yaml))
+                self.interstitials = {k: v for k, v in sites.items()
+                                      if k in self.interstitial_site_names}
 
         inserted_elements = \
             tuple(self.structure.symbol_set) + tuple(self.dopants)
         for element in inserted_elements:
-            for interstitial in self.interstitials:
+            for name in self.interstitials.keys():
                 for charge in extended_range(self.oxidation_states[element]):
                     in_atom = element
-                    out_site = interstitial.site_name
+                    out_site = name
                     name_set.append(SimpleDefectName(in_atom, out_site, charge))
 
         # Antisites + Substituted dopants
@@ -739,7 +743,7 @@ class DefectInitialSetting(MSONable):
             lines.append("       Oxidation state: {}\n".format(
                 self.oxidation_states[e.element]))
 
-        lines.append("Interstitials: " + " ".join(self.interstitial_indices))
+        lines.append("Interstitials: " + " ".join(self.interstitial_site_names))
 
         if self.antisite_configs is not []:
             lines.append("Antisite defects: " +

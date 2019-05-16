@@ -5,7 +5,7 @@ import re
 from pymatgen.core.periodic_table import Element
 
 from pydefect.input_maker.defect_initial_setting import DefectInitialSetting, SimpleDefectName
-from pydefect.core.defect_entry import DefectEntry
+from pydefect.core.defect import DefectEntry
 from pydefect.util.structure_tools import perturb_neighboring_atoms, \
     defect_center_from_coords
 from pydefect.util.logger import get_logger
@@ -100,16 +100,19 @@ class DefectEntrySetMaker:
         self.displacement_distance = \
             defect_initial_setting.displacement_distance
         self.cell_multiplicity = defect_initial_setting.cell_multiplicity
-        self.interstitials = defect_initial_setting.interstitials
         self.is_displaced = defect_initial_setting.are_atoms_perturbed
 
         if particular_defects:
             defect_name_set = \
                 [SimpleDefectName.from_str(i) for i in particular_defects]
         else:
+            # here, self.interstitials in DefectInitialSetting is constructed,
             defect_name_set = defect_initial_setting.make_defect_name_set()
             if keywords:
                 defect_name_set = select_defect_names(defect_name_set, keywords)
+
+        # This insertion needs to be after defect_name_set is set.
+        self.interstitials = defect_initial_setting.interstitials
 
         self.defect_entries = \
             [self.make_defect_entry(d) for d in defect_name_set]
@@ -140,14 +143,14 @@ class DefectEntrySetMaker:
         removed_atoms = {}
         # interstitial
         if defect_name.is_interstitial:
-            for i in self.interstitials:
-                if defect_name.out_site == i.site_name:
+            for site_name, i in self.interstitials.items():
+                if defect_name.out_site == site_name:
                     defect_coords = i.representative_coords
                     initial_site_symmetry = i.site_symmetry
                     num_equiv_sites = i.symmetry_multiplicity
                     break
             else:
-                raise IndexError("{} in {} is not in interstitial.in."
+                raise IndexError("{} is not in defect.in."
                                  .format(defect_name.out_site, defect_name))
 
         else:

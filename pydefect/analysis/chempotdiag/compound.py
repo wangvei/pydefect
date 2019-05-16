@@ -610,10 +610,7 @@ class CompoundsList(list):
         compound_name = Composition(compound_name).reduced_formula
         matched_list = [(i, c) for i, c in enumerate(self)
                         if Composition(c.name).reduced_formula == compound_name]
-        if len(matched_list) == 0:
-            return None
-        else:
-            return matched_list
+        return None if len(matched_list) == 0 else matched_list
 
     @classmethod
     def from_file(cls, file_name, temperature=None, pressure=None):
@@ -670,7 +667,7 @@ class CompoundsList(list):
         if file_name:
             with open(file_name, 'w') as f:
                 f.write(return_str)
-            return None
+            return
         else:
             return return_str
 

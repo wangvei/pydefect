@@ -9,7 +9,8 @@ from pymatgen.util.testing import PymatgenTest
 
 from pydefect.util.structure_tools import perturb_neighboring_atoms, \
     get_displacements, defect_center_from_coords, atomic_distances, \
-    create_saturated_interstitial_structure, count_equivalent_clusters
+    create_saturated_interstitial_structure, count_equivalent_clusters, \
+    get_point_group_op_number, get_symmetry_multiplicity
 
 __author__ = "Yu Kumagai"
 __maintainer__ = "Yu Kumagai"
@@ -53,12 +54,20 @@ class PerturbNeighborsTest(unittest.TestCase):
 
 class GetDisplacementsTest(PymatgenTest):
     def setUp(self):
-        self._contcar = Structure.from_file(os.path.join(test_dir_core, "Va_O1_2", "CONTCAR"))
-        self._poscar = Structure.from_file(os.path.join(test_dir_core, "Va_O1_2", "POSCAR"))
+        self._contcar = Structure.from_file(os.path.join("CONTCAR-MgO-VO"))
+        self._poscar = Structure.from_file(os.path.join("POSCAR-MgO-VO"))
         self._center = [0.25, 0.25, 0.25]
 
     def test(self):
-        print(get_displacements(self._contcar, self._poscar, self._center))
+        disp_vectors, disp_norms, angles = \
+            get_displacements(self._contcar, self._poscar, self._center)[2:5]
+        # disp_vector is in cartesian coordinates.
+        vector_expected = [0.02123447, -0.10617233,  0.04246893]
+        norm_expected = 0.11630595530799753
+        angle_expected = 68.58328596696641
+        self.assertArrayAlmostEqual(disp_vectors[1].tolist(), vector_expected)
+        self.assertAlmostEqual(disp_norms[1], norm_expected)
+        self.assertAlmostEqual(angles[1], angle_expected)
 
 
 class DefectCenterFromCoordsTest(PymatgenTest):
@@ -93,9 +102,12 @@ class CreateSaturatedInterstitialStructureTest(PymatgenTest):
 
     def test(self):
         inserted_atom_coords = [[0.125, 0.125, 0.125]]
-        saturated_defect_struct, inserted_atom_indices = create_saturated_interstitial_structure(self.structure, inserted_atom_coords)
+        saturated_defect_struct, inserted_atom_indices, symmetry_dataset = \
+            create_saturated_interstitial_structure(self.structure,
+                                                    inserted_atom_coords)
         print(saturated_defect_struct)
         print(inserted_atom_indices)
+        print(symmetry_dataset)
 
 
 class CountEquivalentClustersTest(PymatgenTest):
@@ -109,6 +121,18 @@ class CountEquivalentClustersTest(PymatgenTest):
         print(count_equivalent_clusters(self.structure, self.inserted_atom_coords, self.removed_atom_coords, displacement_distance=0.1))
 #        print(count_equivalent_clusters2(self.structure, self.inserted_atom_coords, self.removed_atom_coords, displacement_distance=0.1))
 
+
+class GetPointGroupOpNumberTest(PymatgenTest):
+    def setUp(self):
+        structure = Structure.from_file("POSCAR-MgO64atoms")
+        from obadb.util.structure_handler import get_symmetry_dataset
+        self.sym_dataset = get_symmetry_dataset(structure)
+        self.lattice = structure.lattice.matrix
+
+    def test(self):
+        coords = [0.125, 0.125, 0.125]
+        print(get_point_group_op_number(self.sym_dataset, coords, self.lattice))
+        print(get_symmetry_multiplicity(self.sym_dataset, coords, self.lattice))
 
 if __name__ == "__main__":
     unittest.main()
