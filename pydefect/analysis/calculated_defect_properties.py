@@ -12,7 +12,7 @@ from pydefect.core.supercell_calc_results import SupercellCalcResults
 from pydefect.core.unitcell_calc_results import UnitcellCalcResults
 from pydefect.analysis.defect_eigenvalues import DefectEigenvalue
 from pydefect.analysis.defect_structure import DefectStructure
-from pydefect.analysis.defect_energy import DefectEnergy
+from pydefect.analysis.defect_energies import DefectEnergy
 from pydefect.corrections.corrections import Correction
 
 from pydefect.core.config import DEFECT_SYMMETRY_TOLERANCE, ANGLE_TOL

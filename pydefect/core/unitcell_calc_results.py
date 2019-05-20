@@ -3,7 +3,6 @@
 import json
 import numpy as np
 import os
-import logging
 
 from monty.json import MontyEncoder, MSONable
 from monty.serialization import loadfn
@@ -11,11 +10,12 @@ from monty.serialization import loadfn
 from pymatgen.io.vasp.outputs import Outcar, Vasprun, Poscar
 from pymatgen.electronic_structure.core import Spin
 
+from pydefect.util.logger import get_logger
 
 __author__ = "Yu Kumagai"
 __maintainer__ = "Yu Kumagai"
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 def check_attribute(name, attr):
@@ -119,10 +119,6 @@ class UnitcellCalcResults(MSONable):
 
     @classmethod
     def load_json(cls, filename):
-        """
-        Constructs a class object from a json file.
-        """
-        # This returns the UnitcellCalcResults object
         return loadfn(filename)
 
     @property

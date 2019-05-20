@@ -14,7 +14,7 @@ from pymatgen.core.structure import Structure
 from pydefect.input_maker.defect_initial_setting \
     import print_dopant_info, DefectInitialSetting
 from pydefect.input_maker.supercell_maker import Supercells
-from pydefect.core.defect import DefectEntry, Defect
+from pydefect.core.defect import DefectEntry
 from pydefect.core.supercell_calc_results import SupercellCalcResults
 from pydefect.core.unitcell_calc_results import UnitcellCalcResults
 from pydefect.corrections.corrections import Ewald, ExtendedFnvCorrection
@@ -22,11 +22,11 @@ from pydefect.corrections.corrections import Ewald, ExtendedFnvCorrection
 from obadb.analyzer.chempotdiag.chem_pot_diag import ChemPotDiag
 from obadb.vasp.input_set import ObaSet
 
-#from pydefect.analysis.chempotdiag.chem_pot_diag \
+# from pydefect.analysis.chempotdiag.chem_pot_diag \
 #    import ChemPotDiag
 from pydefect.analysis.chempotdiag.make_inputs import make_vasp_inputs_from_mp
-from pydefect.analysis.defect_energy import DefectEnergies
-from pydefect.analysis.defect_concentration import DefectConcentration
+from pydefect.analysis.defect_energies import DefectEnergies, Defect
+from pydefect.analysis.defect_carrier_concentration import DefectConcentration
 from pydefect.analysis.defect_energy_plotter import DefectEnergyPlotter
 from pydefect.util.logger import get_logger
 from pydefect.input_maker.defect_entry_set_maker \
@@ -77,7 +77,7 @@ def main():
     Author: Yu Kumagai, Akira Takahashi
     Version: {}                                                                 
     Last updated: {}""".format("0.0.1", "will be inserted"),
-#   Last updated: {}""".format(__version__, __date__),
+        #   Last updated: {}""".format(__version__, __date__),
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     #        allow_abbrev=False)
 
@@ -268,6 +268,10 @@ def main():
         "-o", dest="outcar", type=str)
     parser_supercell_results.add_argument(
         "-v", dest="vasprun", type=str)
+    parser_supercell_results.add_argument(
+        "-pe", dest="perfect_results", type=str, default="perfect")
+    parser_supercell_results.add_argument(
+        "-de", dest="defect_entry_name", type=str, default="defect_entry.json")
     parser_supercell_results.add_argument(
         "--json", dest="json", type=str, default="dft_results.json",
         help="dft_results.json type file name.")
@@ -547,8 +551,11 @@ def initial_setting(args):
         structure = Structure.from_file(args.poscar)
         with open(args.poscar) as f:
             first_line = f.readline()
-            transformation_matrix = [int(x) for x in first_line.split(":")[1].split(",")[0].split()]
-            cell_multiplicity = int(first_line.split(":")[2].split(",")[0].split()[0])
+            transformation_matrix = [int(x) for x in
+                                     first_line.split(":")[1].split(",")[
+                                         0].split()]
+            cell_multiplicity = int(
+                first_line.split(":")[2].split(",")[0].split()[0])
 
         overwritten_args = \
             overwrite_default_args(DefectInitialSetting.from_basic_settings,
@@ -562,11 +569,11 @@ def initial_setting(args):
 
 
 def interstitial(args):
-
     from pydefect.core.interstitial_site import InterstitialSiteSet
 
     try:
-        interstitial_set = InterstitialSiteSet.from_files(args.dposcar, args.yaml)
+        interstitial_set = InterstitialSiteSet.from_files(args.dposcar,
+                                                          args.yaml)
     except FileNotFoundError:
         structure = Structure.from_file(args.dposcar)
         interstitial_set = InterstitialSiteSet(structure=structure)
@@ -578,7 +585,6 @@ def interstitial(args):
 
 
 def vasp_set(args):
-
     def make_dir(name, obrs):
         if args.force_overwrite:
             if os.path.exists(name):
@@ -597,7 +603,6 @@ def vasp_set(args):
     desm = DefectEntrySetMaker(dis, args.keywords, args.particular_defects)
 
     if not args.particular_defects:
-
         obrs = ObaSet.make_input(desm.perfect_structure,
                                  standardize_structure=False,
                                  task="defect",
@@ -685,7 +690,6 @@ def defect_entry(args):
 def supercell_calc_results(args):
     if args.print:
         print(SupercellCalcResults.load_json(args.json))
-        return True
 
     if args.dir_all:
         dirs = glob('*[0-9]/')
@@ -698,22 +702,33 @@ def supercell_calc_results(args):
             overwrite_default_args(SupercellCalcResults.from_vasp_files, args)
 
         if os.path.isdir(d):
-            print(d)
-            try:
+            logger.info("Parsing data in {}...".format(d))
+#            try:
+            if d in ["perfect", "perfect/"]:
                 dft_results = \
-                    SupercellCalcResults.from_vasp_files(d, **overwritten_args)
+                    SupercellCalcResults.from_vasp_files(d,
+                                                         **overwritten_args)
+            else:
+                filename = join(args.perfect_results, "dft_results.json")
+                perfect_results = SupercellCalcResults.load_json(filename)
+                de = DefectEntry.load_json(join(d, args.defect_entry_name))
 
-                dft_results.to_json_file(
-                    filename=join(d, "dft_results.json"))
-            except:
-                warnings.warn(
-                    message="Parsing data in " + d + " is failed.")
+                dft_results = \
+                    SupercellCalcResults.from_vasp_files(
+                        directory_path=d,
+                        defect_entry=de,
+                        referenced_dft_results=perfect_results,
+                        **overwritten_args)
+
+            dft_results.to_json_file(
+                filename=join(d, "dft_results.json"))
+#            except ValueError:
+#                logger.warning("Parsing data in {} is failed.".format(d))
         else:
-            warnings.warn(message=d + " does not exist, so nothing is done.")
+            logger.warning("{} does not exist, so nothing is done.".format(d))
 
 
 def unitcell_calc_results(args):
-
     try:
         dft_results = UnitcellCalcResults.load_json(filename=args.json_file)
     except:
@@ -818,10 +833,9 @@ def correction(args):
         defect_dft_data = SupercellCalcResults.load_json(
             join(directory, "dft_results.json"))
 
-        c = ExtendedFnvCorrection.\
+        c = ExtendedFnvCorrection. \
             compute_alignment_by_extended_fnv(entry,
                                               defect_dft_data,
-                                              perfect_dft_data,
                                               unitcell_dft_data,
                                               ewald_filename)
 

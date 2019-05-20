@@ -450,6 +450,7 @@
       }
     ]
   },
+  "site_symmetry": "m-3m",
   "total_energy": -95.3639567,
   "total_magnetization": 0.0,
   "eigenvalues": {
@@ -1059,5 +1060,10 @@
   ],
   "volume": 153.19477497796296,
   "fermi_level": 3.32929791,
-  "is_converged": true
+  "is_converged": true,
+  "shallow": null,
+  "relative_total_energy": null,
+  "relative_potential": null,
+  "displacements": null,
+  "symmetrized_structure": null
 }

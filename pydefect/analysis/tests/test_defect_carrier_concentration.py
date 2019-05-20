@@ -3,13 +3,13 @@
 import os
 import unittest
 
-from pydefect.analysis.defect_energy import DefectEnergies
-from pydefect.analysis.defect_concentration import DefectConcentration
+from pydefect.analysis.defect_energies import DefectEnergies, Defect
+from pydefect.analysis.defect_carrier_concentration import DefectConcentration
 from pydefect.analysis.chempotdiag.chem_pot_diag import ChemPotDiag
 from pydefect.corrections.corrections import ExtendedFnvCorrection
 from pydefect.core.supercell_calc_results import SupercellCalcResults
 from pydefect.core.unitcell_calc_results import UnitcellCalcResults
-from pydefect.core.defect import DefectEntry, Defect
+from pydefect.core.defect import DefectEntry
 
 __author__ = "Yu Kumagai"
 __copyright__ = "Copyright 2017, Oba group"
@@ -81,27 +81,27 @@ class DefectConcentrationTest(unittest.TestCase):
         print(dc1.energies)
         print(dc1.temperature)
         print(dc1.e_f)
-        print(dc1.p)
-        print(dc1.n)
+        print(p)
+        print(n)
         print(dc1.concentration)
 
         temperature2 = 1000
 
-        dc2 = DefectConcentration.from_defect_energies(
-            defect_energies=self.defect_energies,
-            temperature=temperature2,
-            unitcell=self.unitcell,
-            num_sites_filename=num_sites_filename,
-            previous_concentration=dc1,
-            verbose=True)
+        # dc2 = DefectConcentration.from_defect_energies(
+        #     defect_energies=self.defect_energies,
+        #     temperature=temperature2,
+        #     unitcell=self.unitcell,
+        #     num_sites_filename=num_sites_filename,
+        #     previous_concentration=dc1,
+        #     verbose=True)
 
-        print("-------------------------------")
-        print(dc2.energies)
-        print(dc2.temperature)
-        print(dc2.e_f)
-        print(dc2.p)
-        print(dc2.n)
-        print(dc2.concentration)
+        # print("-------------------------------")
+        # print(dc2.energies)
+        # print(dc2.temperature)
+        # print(dc2.e_f)
+        # print(dc2.p)
+        # print(dc2.n)
+        # print(dc2.concentration)
 
 
 if __name__ == "__main__":

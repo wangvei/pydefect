@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 
 from collections import defaultdict, namedtuple
-from itertools import combinations
 import json
 
 from monty.json import MontyEncoder, MSONable
@@ -10,27 +9,37 @@ from obadb.analyzer.chempotdiag.chem_pot_diag import ChemPotDiag
 
 from pydefect.core.supercell_calc_results import SupercellCalcResults
 from pydefect.core.unitcell_calc_results import UnitcellCalcResults
-from pydefect.core.defect import Defect
+from pydefect.database.num_symmetry_operation import num_symmetry_operation
 
 TransitionLevel = namedtuple("TransitionLevel", ("cross_points", "charges"))
+Defect = namedtuple("Defect", ("defect_entry", "dft_results", "correction"))
 
 
 class DefectEnergies(MSONable):
     def __init__(self,
                  energies: dict,
-                 transition_levels: dict,
+                 multiplicity: dict,
+                 magnetization: dict,
+                 show_unconverged: dict,
+                 show_shallow: dict,
                  vbm: float,
                  cbm: float,
                  supercell_vbm: float,
                  supercell_cbm: float,
-                 magnetization: dict,
                  title: str = None):
         """ A class related to a set of defect formation energies.
+
         Args:
             energies (dict):
                 Defect formation energies. energies[name][charge]
-            transition_levels (dict):
-                key is defect name and value is TransitionLevel.
+            multiplicity (dict):
+                Multiplicity. multiplicity[name][charge]
+            magnetization (dict):
+                Magnetization in mu_B. magnetization[name][charge]
+            show_unconverged (bool):
+                Whether to remove the unconverged defects.
+            show_shallow (bool):
+                Whether to remove the shallow defects.
             vbm (float):
                 Valence band maximum in the unitcell in the absolute scale.
             cbm (float):
@@ -39,18 +48,18 @@ class DefectEnergies(MSONable):
                 Valence band maximum in the perfect supercell.
             supercell_cbm (float):
                 Conduction band minimum in the perfect supercell.
-            magnetization (dict):
-                Magnetization in \mu_B. magnetization[defect][charge]
             title (str):
                 Title of the system.
         """
         self.energies = energies
-        self.transition_levels = transition_levels
+        self.multiplicity = multiplicity
+        self.magnetization = magnetization
+        self.show_unconverged = show_unconverged
+        self.show_shallow = show_shallow
         self.vbm = vbm
         self.cbm = cbm
         self.supercell_vbm = supercell_vbm
         self.supercell_cbm = supercell_cbm
-        self.magnetization = magnetization
         self.title = title
 
     @classmethod
@@ -60,6 +69,8 @@ class DefectEnergies(MSONable):
                    defects: list,
                    chem_pot: ChemPotDiag,
                    chem_pot_label: str,
+                   show_unconverged: bool = True,
+                   show_shallow: bool = True,
                    system: str = ""):
         """ Calculates defect formation energies from several objects.
 
@@ -93,15 +104,25 @@ class DefectEnergies(MSONable):
 
         # Calculate defect formation energies at the vbm
         energies = defaultdict(dict)
+        multiplicity = defaultdict(dict)
         magnetization = defaultdict(dict)
+        are_converged = defaultdict(dict)
+        are_shallow = defaultdict(dict)
 
         for d in defects:
+
             name = d.defect_entry.name
             charge = d.defect_entry.charge
+            if show_unconverged is False \
+                    and d.dft_results.is_converged is False:
+                continue
+            if show_shallow is False and d.dft_results.is_shallow is True:
+                continue
+
             element_diff = d.defect_entry.changes_of_num_elements
 
             # calculate four terms for a defect formation energy.
-            relative_energy = d.dft_results.relative_total_energy(perfect)
+            relative_energy = d.dft_results.relative_total_energy
             correction_energy = d.correction.correction_energy
             element_interchange_energy = \
                 - sum([v * (relative_chem_pot.elem_coords[k] + standard_e[k])
@@ -110,35 +131,20 @@ class DefectEnergies(MSONable):
             energies[name][charge] = \
                 relative_energy + correction_energy + element_interchange_energy
 
+            initial_num_symmops = \
+                num_symmetry_operation(d.defect_entry.initial_site_symmetry)
+            final_num_symmops = \
+                num_symmetry_operation(d.dft_results.site_symmetry)
+
+            multiplicity[name][charge] = \
+                int(d.defect_entry.num_equiv_sites / final_num_symmops
+                    * initial_num_symmops)
+
             magnetization[name][charge] = d.dft_results.total_magnetization
 
-        transition_levels = {}
-
-        # e_of_c means energy as a function of charge: e_of_c[charge] = energy
-        for name, e_of_c in energies.items():
-            cross_points = []
-            charge = []
-
-            for (c1, e1), (c2, e2) in combinations(e_of_c.items(), r=2):
-                # The cross point between two charge states.
-                x = - (e1 - e2) / (c1 - c2)
-                y = (c1 * e2 - c2 * e1) / (c1 - c2)
-
-                # The lowest energy among all the charge states to be compared.
-                compared_energy = \
-                    min([energy + c * x for c, energy in e_of_c.items()])
-
-                if y < compared_energy + 1e-5:
-                    cross_points.append([x, y])
-                    charge.append([c1, c2])
-
-            transition_levels[name] = \
-                TransitionLevel(
-                    cross_points=sorted(cross_points, key=lambda z: z[0]),
-                    charges=sorted(charge))
-
-        return cls(energies, transition_levels, vbm, cbm, supercell_vbm,
-                   supercell_cbm, magnetization, title)
+        return cls(dict(energies), dict(multiplicity), dict(magnetization),
+                   dict(are_converged), dict(are_shallow), vbm, cbm,
+                   supercell_vbm, supercell_cbm, title)
 
     def to_json_file(self, filename="defect_energy.json"):
         """ Returns a json file. """

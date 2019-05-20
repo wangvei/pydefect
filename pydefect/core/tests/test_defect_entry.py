@@ -26,7 +26,7 @@ class DefectEntryTest(PymatgenTest):
             os.path.join(test_dir, "POSCAR-MgO8atoms-Va_O1"))
         perturbed_initial_structure = initial_structure.copy()
         removed_atoms = {8: [0.25, 0.25, 0.25]}
-        inserted_atoms = []
+        inserted_atoms = {}
         changes_of_num_elements = {"O": -1}
         charge = 2
         initial_site_symmetry = "Oh"

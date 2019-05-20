@@ -3,7 +3,7 @@
 import os
 import unittest
 
-from pydefect.analysis.carrier_concentration import CarrierConcentration
+from pydefect.analysis.defect_carrier_concentration import CarrierConcentration
 from pydefect.core.unitcell_calc_results import UnitcellCalcResults
 
 __author__ = "Yu Kumagai"

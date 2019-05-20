@@ -1,13 +1,17 @@
 # -*- coding: utf-8 -*-
 
+from collections import namedtuple
 from copy import deepcopy
+from itertools import combinations
 import numpy as np
 import matplotlib
 import matplotlib.pyplot as plt
 
-from pydefect.analysis.defect_energy import DefectEnergies
-from pydefect.analysis.defect_concentration import DefectConcentration
+from pydefect.analysis.defect_energies import DefectEnergies
+from pydefect.analysis.defect_carrier_concentration import DefectConcentration
 from pydefect.input_maker.defect_initial_setting import SimpleDefectName
+
+TransitionLevel = namedtuple("TransitionLevel", ("cross_points", "charges"))
 
 
 class DefectEnergyPlotter:
@@ -27,13 +31,13 @@ class DefectEnergyPlotter:
         # Objects of the Concentration named tuple for 1st and 2nd temperature.
         self.title = defect_energies.title
         self.energies = defect_energies.energies
-        self.transition_levels = defect_energies.transition_levels
         self.vbm = defect_energies.vbm
         self.cbm = defect_energies.cbm
         self.supercell_vbm = defect_energies.supercell_vbm
         self.supercell_cbm = defect_energies.supercell_cbm
         self.band_gap = self.cbm - self.vbm
 
+        self.transition_levels = {}
         self.e_f1 = None
         self.e_f2 = None
         self.t1 = None
@@ -77,17 +81,37 @@ class DefectEnergyPlotter:
         ax.set_xlabel("Fermi level (eV)", fontsize=15)
         ax.set_ylabel("Formation energy (eV)", fontsize=15)
 
-        # filtering specific words for plot.
-        if filtering_words:
-            transition_levels = {}
-            for name in self.transition_levels.keys():
-                n = SimpleDefectName.from_str(name)
-                if n.is_name_selected(filtering_words):
-                    transition_levels[name] = self.transition_levels[name]
-        else:
-            transition_levels = deepcopy(self.transition_levels)
+        # e_of_c is energy as a function of charge: e_of_c[charge] = energy
+        for name, e_of_c in self.energies.items():
 
-        if transition_levels == {}:
+            for c in e_of_c.keys():
+                n = SimpleDefectName.from_str("_".join([name, str(c)]))
+                if filtering_words \
+                        and n.is_name_selected(filtering_words) is False:
+                    e_of_c.pop(c)
+
+            cross_points = []
+            charge = []
+
+            for (c1, e1), (c2, e2) in combinations(e_of_c.items(), r=2):
+                # The cross point between two charge states.
+                x = - (e1 - e2) / (c1 - c2)
+                y = (c1 * e2 - c2 * e1) / (c1 - c2)
+
+                # The lowest energy among all the charge states to be compared.
+                compared_energy = \
+                    min([energy + c * x for c, energy in e_of_c.items()])
+
+                if y < compared_energy + 1e-5:
+                    cross_points.append([x, y])
+                    charge.append([c1, c2])
+
+            self.transition_levels[name] = \
+                TransitionLevel(
+                    cross_points=sorted(cross_points, key=lambda z: z[0]),
+                    charges=sorted(charge))
+
+        if self.transition_levels == {}:
             raise KeyError("No transition levels are found.")
 
         if x_range:
@@ -115,7 +139,7 @@ class DefectEnergyPlotter:
         y_min = float("inf")
         y_max = -float("inf")
 
-        for i, (name, tl) in enumerate(transition_levels.items()):
+        for i, (name, tl) in enumerate(self.transition_levels.items()):
 
             color = matplotlib.cm.hot(float(i) / len(self.transition_levels))
 

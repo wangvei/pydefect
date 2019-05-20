@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-from collections import namedtuple
 from copy import deepcopy
 import json
 import numpy as np
@@ -322,4 +321,3 @@ class DefectEntry(MSONable):
         return np.argmax(distance_set)
 
 
-Defect = namedtuple("Defect", ("defect_entry", "dft_results", "correction"))

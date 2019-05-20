@@ -3,12 +3,12 @@
 import os
 import unittest
 
-from pydefect.analysis.defect_energy import DefectEnergies
+from pydefect.analysis.defect_energies import DefectEnergies, Defect
 from pydefect.analysis.chempotdiag.chem_pot_diag import ChemPotDiag
 from pydefect.corrections.corrections import ExtendedFnvCorrection
 from pydefect.core.supercell_calc_results import SupercellCalcResults
 from pydefect.core.unitcell_calc_results import UnitcellCalcResults
-from pydefect.core.defect import DefectEntry, Defect
+from pydefect.core.defect import DefectEntry
 
 __author__ = "Yu Kumagai"
 __copyright__ = "Copyright 2017, Oba group"
@@ -62,6 +62,7 @@ class DefectEnergiesTest(unittest.TestCase):
                                       defects=defects,
                                       chem_pot=chem_pot,
                                       chem_pot_label=chem_pot_label,
+                                      show_shallow=True,
                                       system="MgO")
 
     def test(self): pass
@@ -70,11 +71,17 @@ class DefectEnergiesTest(unittest.TestCase):
         d = self.defect_energies.as_dict()
         de = DefectEnergies.from_dict(d)
         dd = de.as_dict()
-        print(dd)
         self.assertEqual(d, dd)
 
+    def test_multiplicity(self):
+        actual = self.defect_energies.multiplicity["Va_O1"][2]
+        expected = 8
+        self.assertEqual(actual, expected)
+
     def test_U(self):
-        print(self.defect_energies.u(name="Va_O1", charge=[0, 1, 2]))
+        actual = self.defect_energies.u(name="Va_O1", charge=[0, 1, 2])
+        expected = 1.82926181856907
+        self.assertAlmostEqual(actual, expected)
 
 
 if __name__ == "__main__":

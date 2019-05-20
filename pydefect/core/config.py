@@ -3,8 +3,6 @@
 __author__ = "Yu Kumagai"
 __maintainer__ = "Yu Kumagai"
 
-__author__ = 'Yu Kumagai'
-
 
 # Following defaults determine the condition of automatic defect calculations.
 # electronegativity difference for antisites and substitutional impurities

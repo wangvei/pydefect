@@ -453,7 +453,6 @@ class DefectInitialSetting(MSONable):
                 Exceptionally added defects with charges,
                 e.g., ["Va_O1_-1", "Va_O1_-2"]
             excluded (list):
-                Exceptionally removed defects with charges. If they don't exist,
                 this flag does nothing. e.g., ["Va_O1_1", "Va_O1_2"]
             displacement_distance (float):
                 Maximum displacement distance in angstrom. 0 means that random
