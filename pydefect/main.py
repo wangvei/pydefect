@@ -602,17 +602,17 @@ def vasp_set(args):
         poscar=args.dposcar, defect_in_file=args.defect_in)
     desm = DefectEntrySetMaker(dis, args.keywords, args.particular_defects)
 
-    if not args.particular_defects:
-        obrs = ObaSet.make_input(desm.perfect_structure,
-                                 standardize_structure=False,
-                                 task="defect",
-                                 xc=args.xc,
-                                 sort_structure=False,
-                                 kpt_mode="manual",
-                                 kpt_density=args.kpt_density,
-                                 user_incar_settings={"ISPIN": 1})
+#    if not args.particular_defects:
+    obrs = ObaSet.make_input(desm.perfect_structure,
+                             standardize_structure=False,
+                             task="defect",
+                             xc=args.xc,
+                             sort_structure=False,
+                             kpt_mode="manual",
+                             kpt_density=args.kpt_density,
+                             user_incar_settings={"ISPIN": 1})
 
-        make_dir("perfect", obrs)
+    make_dir("perfect", obrs)
 
     for de in desm.defect_entries:
         defect_name = "_".join([de.name, str(de.charge)])
@@ -948,13 +948,14 @@ def plot_energy(args):
 
     defects = []
     for d in defects_dirs:
+        print(d)
         try:
             e = DefectEntry.load_json(join(d, "defect_entry.json"))
             r = SupercellCalcResults.load_json(join(d, "dft_results.json"))
             c = ExtendedFnvCorrection.load_json(join(d, "correction.json"))
             defects.append(Defect(defect_entry=e, dft_results=r, correction=c))
         except:
-            warnings.warn(message="Parsing data in " + d + " is failed.")
+            logger.warning("Parsing data in {} is failed.".format(d))
 
     chem_pot = ChemPotDiag.load_vertices_yaml(args.chem_pot_yaml)
 
@@ -967,26 +968,27 @@ def plot_energy(args):
                                   chem_pot_label=args.chem_pot_label,
                                   system=args.name)
 
-    if args.concentration:
-        defect_concentration = \
-            DefectConcentration.from_defect_energies(
-                defect_energies=defect_energies,
-                temperature=args.temperature[0],
-                unitcell=unitcell,
-                num_sites_filename=args.num_site_file)
+    # if args.concentration:
+    #     defect_concentration = \
+    #         DefectConcentration.from_defect_energies(
+    #             defect_energies=defect_energies,
+    #             temperature=args.temperature[0],
+    #             unitcell=unitcell,
+    #             num_sites_filename=args.num_site_file)
 
-        if len(args.temperature) == 2:
-            defect_concentration = \
-                DefectConcentration.from_defect_energies(
-                    defect_energies=defect_energies,
-                    temperature=args.temperature[1],
-                    unitcell=unitcell,
-                    num_sites_filename=args.num_site_file,
-                    previous_concentration=defect_concentration)
-    else:
-        defect_concentration = None
+    #     if len(args.temperature) == 2:
+    #         defect_concentration = \
+    #             DefectConcentration.from_defect_energies(
+    #                 defect_energies=defect_energies,
+    #                 temperature=args.temperature[1],
+    #                 unitcell=unitcell,
+    #                 num_sites_filename=args.num_site_file,
+    #                 previous_concentration=defect_concentration)
+    # else:
+#        defect_concentration = None
 
-    plotter = DefectEnergyPlotter(defect_energies, defect_concentration)
+    plotter = DefectEnergyPlotter(defect_energies)
+    #plotter = DefectEnergyPlotter(defect_energies, defect_concentration)
     plt = plotter.plot_energy(filtering_words=args.filtering,
                               x_range=args.x_range,
                               y_range=args.y_range,

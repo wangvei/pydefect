@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 
 from collections import namedtuple
-from copy import deepcopy
 from itertools import combinations
 import numpy as np
 import matplotlib
@@ -90,8 +89,7 @@ class DefectEnergyPlotter:
                         and n.is_name_selected(filtering_words) is False:
                     e_of_c.pop(c)
 
-            cross_points = []
-            charge = []
+            cross_points_charge = []
 
             for (c1, e1), (c2, e2) in combinations(e_of_c.items(), r=2):
                 # The cross point between two charge states.
@@ -103,16 +101,17 @@ class DefectEnergyPlotter:
                     min([energy + c * x for c, energy in e_of_c.items()])
 
                 if y < compared_energy + 1e-5:
-                    cross_points.append([x, y])
-                    charge.append([c1, c2])
+                    cross_points_charge.append([[x, y], [c1, c2]])
+
+            # need to sort the points along x-axis.
+            cross_points = []
+            charge = []
+            for cp, c in sorted(cross_points_charge, key=lambda z: z[0][0]):
+                cross_points.append(cp)
+                charge.append(c)
 
             self.transition_levels[name] = \
-                TransitionLevel(
-                    cross_points=sorted(cross_points, key=lambda z: z[0]),
-                    charges=sorted(charge))
-
-        if self.transition_levels == {}:
-            raise KeyError("No transition levels are found.")
+                TransitionLevel(cross_points=cross_points, charges=charge)
 
         if x_range:
             x_min = x_range[0]
@@ -183,6 +182,7 @@ class DefectEnergyPlotter:
                 y_min = y
             if y > y_max:
                 y_max = y
+
             # ------------------------------------------------------------------
 
             # set x and y arrays to be compatible with matplotlib style.
@@ -201,7 +201,7 @@ class DefectEnergyPlotter:
                 x, y = np.array(shallow_points).transpose()
                 ax.scatter(x, y, facecolor="white", edgecolor=color)
 
-            # These determine the positions of the transition levels.
+            # margin_x and _y determine the positions of the transition levels.
             margin_x = (x_max - x_min) * 0.025
             margin_y = (y_max - y_min) * 0.025
 

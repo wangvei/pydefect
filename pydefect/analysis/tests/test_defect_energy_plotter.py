@@ -13,12 +13,7 @@ from pydefect.core.unitcell_calc_results import UnitcellCalcResults
 from pydefect.core.defect import DefectEntry
 
 __author__ = "Yu Kumagai"
-__copyright__ = "Copyright 2017, Oba group"
-__version__ = "0.1"
 __maintainer__ = "Yu Kumagai"
-__email__ = "yuuukuma@gmail.com"
-__status__ = "Development"
-__date__ = "Feb. 25, 2018"
 
 test_dir = os.path.join(os.path.dirname(__file__), "..", "..", "..",
                         "test_files", "core")
@@ -68,7 +63,7 @@ class DefectEnergiesTest(unittest.TestCase):
                                       defects=defects,
                                       chem_pot=chem_pot,
                                       chem_pot_label=chem_pot_label,
-                                      show_shallow=True,
+                                      shallow=True,
                                       system="MgO")
 
         # temperature = 10000

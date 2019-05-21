@@ -20,8 +20,8 @@ class DefectEnergies(MSONable):
                  energies: dict,
                  multiplicity: dict,
                  magnetization: dict,
-                 show_unconverged: dict,
-                 show_shallow: dict,
+                 convergence: dict,
+                 shallow: dict,
                  vbm: float,
                  cbm: float,
                  supercell_vbm: float,
@@ -36,9 +36,9 @@ class DefectEnergies(MSONable):
                 Multiplicity. multiplicity[name][charge]
             magnetization (dict):
                 Magnetization in mu_B. magnetization[name][charge]
-            show_unconverged (bool):
+            convergence (bool):
                 Whether to remove the unconverged defects.
-            show_shallow (bool):
+            shallow (bool):
                 Whether to remove the shallow defects.
             vbm (float):
                 Valence band maximum in the unitcell in the absolute scale.
@@ -54,8 +54,8 @@ class DefectEnergies(MSONable):
         self.energies = energies
         self.multiplicity = multiplicity
         self.magnetization = magnetization
-        self.show_unconverged = show_unconverged
-        self.show_shallow = show_shallow
+        self.convergence = convergence
+        self.shallow = shallow
         self.vbm = vbm
         self.cbm = cbm
         self.supercell_vbm = supercell_vbm
@@ -69,8 +69,6 @@ class DefectEnergies(MSONable):
                    defects: list,
                    chem_pot: ChemPotDiag,
                    chem_pot_label: str,
-                   show_unconverged: bool = True,
-                   show_shallow: bool = True,
                    system: str = ""):
         """ Calculates defect formation energies from several objects.
 
@@ -106,18 +104,12 @@ class DefectEnergies(MSONable):
         energies = defaultdict(dict)
         multiplicity = defaultdict(dict)
         magnetization = defaultdict(dict)
-        are_converged = defaultdict(dict)
-        are_shallow = defaultdict(dict)
+        convergence = defaultdict(dict)
+        shallow = defaultdict(dict)
 
         for d in defects:
-
             name = d.defect_entry.name
             charge = d.defect_entry.charge
-            if show_unconverged is False \
-                    and d.dft_results.is_converged is False:
-                continue
-            if show_shallow is False and d.dft_results.is_shallow is True:
-                continue
 
             element_diff = d.defect_entry.changes_of_num_elements
 
@@ -141,9 +133,11 @@ class DefectEnergies(MSONable):
                     * initial_num_symmops)
 
             magnetization[name][charge] = d.dft_results.total_magnetization
+            convergence[name][charge] = d.dft_results.is_converged
+            shallow[name][charge] = d.dft_results.shallow
 
         return cls(dict(energies), dict(multiplicity), dict(magnetization),
-                   dict(are_converged), dict(are_shallow), vbm, cbm,
+                   dict(convergence), dict(shallow), vbm, cbm,
                    supercell_vbm, supercell_cbm, title)
 
     def to_json_file(self, filename="defect_energy.json"):
@@ -152,7 +146,21 @@ class DefectEnergies(MSONable):
             json.dump(self.as_dict(), fw, indent=2, cls=MontyEncoder)
 
     def __str__(self):
-        pass
+        outs = []
+        for n in self.energies.keys():
+            for c in self.energies[n].keys():
+                outs.extend(
+                    ["- name: {} - charge: {}".format(n, c),
+                     "Energy at e_f = 0 (eV): {}".format(
+                         round(self.energies[n][c], 4)),
+                     "Multiplicity: {}".format(self.multiplicity[n][c]),
+                     "Magnetization: {}".format(
+                         round(self.magnetization[n][c], 2)),
+                     "Convergence: {}".format(self.convergence[n][c]),
+                     "Shallow: {}".format(self.shallow[n][c]),
+                     ""])
+
+        return "\n".join(outs)
 
     def u(self, name, charge):
         """ Return the U value among three charge states.
