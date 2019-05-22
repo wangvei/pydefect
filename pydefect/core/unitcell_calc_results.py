@@ -55,9 +55,7 @@ def make_symmetric_matrix(d):
 
 
 class UnitcellCalcResults(MSONable):
-    """
-    DFT results for a unitcell.
-    """
+    """ DFT results for a unitcell. """
 
     def __init__(self,
                  band_edge: list = None,
@@ -98,24 +96,10 @@ class UnitcellCalcResults(MSONable):
                 xstr(self.total_dielectric_tensor),
                 "volume (A^3): " + xstr(self._volume)]
 
-        if self._total_dos is None:
-            outs.append("Total density of states is not set yet")
-        else:
-            outs.append("Total density of states is already set.")
+        is_total_dos = "None" if self._total_dos is None else "Exists"
+        outs.append("Total DOS: {}".format(is_total_dos))
 
         return "\n".join(outs)
-
-    # @classmethod
-    # def from_dict(cls, d):
-    #     """
-    #     Construct a class object from a dictionary.
-    #     """
-
-        # return cls(band_edge=d["band_edge"],
-        #            static_dielectric_tensor=d["static_dielectric_tensor"],
-        #            ionic_dielectric_tensor=d["ionic_dielectric_tensor"],
-        #            total_dos=d["total_dos"],
-        #            volume=d["volume"] )
 
     @classmethod
     def load_json(cls, filename):
@@ -145,10 +129,6 @@ class UnitcellCalcResults(MSONable):
 
     @property
     def total_dos(self):
-        """
-        :return:
-            total_dos (list): [energy: list, dos: list]
-        """
         return check_attribute("total dos", self._total_dos)
 
     @property

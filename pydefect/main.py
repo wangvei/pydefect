@@ -2,12 +2,12 @@
 # -*- coding: utf-8 -*-
 
 import argparse
-from glob import glob
-from inspect import signature
 import os
-from os.path import join
 import shutil
 import warnings
+
+from glob import glob
+from os.path import join
 
 from pymatgen.core.structure import Structure
 
@@ -22,13 +22,13 @@ from pydefect.corrections.corrections import Ewald, ExtendedFnvCorrection
 from obadb.analyzer.chempotdiag.chem_pot_diag import ChemPotDiag
 from obadb.vasp.input_set import ObaSet
 
-# from pydefect.analysis.chempotdiag.chem_pot_diag \
-#    import ChemPotDiag
+
 from pydefect.analysis.chempotdiag.make_inputs import make_vasp_inputs_from_mp
 from pydefect.analysis.defect_energies import DefectEnergies, Defect
-from pydefect.analysis.defect_carrier_concentration import DefectConcentration
 from pydefect.analysis.defect_energy_plotter import DefectEnergyPlotter
+from pydefect.core.interstitial_site import InterstitialSiteSet
 from pydefect.util.logger import get_logger
+from pydefect.util.main_tools import overwrite_default_args, get_default_args
 from pydefect.input_maker.defect_entry_set_maker \
     import DefectEntrySetMaker, log_is_being_removed, log_already_exist, \
     log_is_being_constructed
@@ -39,39 +39,11 @@ __maintainer__ = "Yu Kumagai, Akira Takahashi"
 logger = get_logger(__name__)
 
 
-def overwrite_default_args(class_method, main_args):
-    """ Use the defaults in class.classmethod
-
-    Args:
-        class_method (classmethod): classmethod. When using __init__, class is fine.
-        main_args (dict): Args set by main
-
-    Return:
-        args (dict): Overwritten args by options
-    """
-    from inspect import _empty
-
-    args_with_default = []
-    sig = signature(class_method)
-
-    for name, param in sig.parameters.items():
-        if param.default != _empty:
-            args_with_default.append(name)
-
-    args = {}
-    for a in args_with_default:
-        if hasattr(main_args, a):
-            if getattr(main_args, a) is not None:
-                args[a] = getattr(main_args, a)
-
-    return args
-
-
 def main():
     parser = argparse.ArgumentParser(
         description="""                            
     pydefect is a package for first-principles point defect calculations. It 
-    allows us to construct input files, parse first-principles calculation 
+    allows one to construct input files, parse first-principles calculation 
     results, and analyze data.""",
         epilog="""                                 
     Author: Yu Kumagai, Akira Takahashi
@@ -90,6 +62,9 @@ def main():
                     "defect calculations",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
         aliases=['rs'])
+
+    defaults = get_default_args(Supercells)
+
     parser_recommend_supercell.add_argument(
         "-p", dest="poscar", type=str, default="POSCAR")
     parser_recommend_supercell.add_argument(
@@ -98,19 +73,21 @@ def main():
         "-u", dest="uposcar", type=str, default="UPOSCAR")
     parser_recommend_supercell.add_argument(
         "-c", "--criterion", dest="isotropy_criterion", type=float,
+        default=defaults["isotropy_criterion"],
         help="Isotropy criterion.")
     parser_recommend_supercell.add_argument(
         "--min_num_atoms", dest="min_num_atoms", type=int,
+        default=defaults["min_num_atoms"],
         help="Minimum number of atoms")
     parser_recommend_supercell.add_argument(
         "--max_num_atoms", dest="max_num_atoms", type=int,
+        default=defaults["max_num_atoms"],
         help="Maximum number of atoms")
     parser_recommend_supercell.add_argument(
         "-pr", "--primitive", dest="primitive", action="store_true",
         help="Set when the supercell is expanded based on the primitive cell.")
     parser_recommend_supercell.add_argument(
-        "-i", "--most_isotropic", dest="most_isotropic",
-        action="store_true",
+        "-i", "--most_isotropic", dest="most_isotropic", action="store_true",
         help="Output the smallest criterion supercell instead of the smallest "
              "supercell.")
     parser_recommend_supercell.add_argument(
@@ -127,56 +104,73 @@ def main():
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
         aliases=['is'])
 
+    defaults = get_default_args(DefectInitialSetting.from_basic_settings)
+
     parser_initial.add_argument(
         "-p", "--poscar", dest="poscar", default="SPOSCAR", type=str,
         help="POSCAR-type file name for the supercell.")
     parser_initial.add_argument(
         "-d", "--dopants", dest="dopants", nargs="+", type=str,
+        default=defaults["dopants"],
         help="Dopant elements, e.g., Ga In.")
     parser_initial.add_argument(
         "-a", "--antisite", dest="is_antisite", action="store_false",
+        default=defaults["is_antisite"],
         help="Set if antisite defects are not considered.")
     parser_initial.add_argument(
-        "-e", dest="en_diff", type=float,
+        "-e", dest="en_diff", type=float, default=defaults["en_diff"],
         help="Criterion of the electronegativity_difference that determines "
              "antisites and/or substituted impurities.")
     parser_initial.add_argument(
         "--included", dest="included", type=str, nargs="+",
+        default=defaults["included"],
         help="Exceptionally included defects. E.g., Va_O2_-1.")
     parser_initial.add_argument(
         "--excluded", dest="excluded", type=str, nargs="+",
+        default=defaults["excluded"],
         help="Exceptionally excluded defects. E.g., Va_O2_0.")
     parser_initial.add_argument(
         "--displacement_distance", dest="displacement_distance", type=float,
+        default=defaults["displacement_distance"],
         help="Displacement distance. 0 means that random displacement is not "
              "considered.")
     parser_initial.add_argument(
         "--cutoff", dest="cutoff", type=float,
+        default=defaults["cutoff"],
         help="Set the cutoff radius [A] in which atoms are displaced.")
     parser_initial.add_argument(
         "--symprec", dest="symprec", type=float,
-        help="Set precision used for symmetry analysis [A].")
+        default=defaults["symprec"],
+        help="Set length precision used for symmetry analysis [A].")
     parser_initial.add_argument(
         "--angle_tol", dest="angle_tolerance", type=float,
-        help="Set precision used for symmetry analysis.")
+        default=defaults["angle_tolerance"],
+        help="Set angle precision used for symmetry analysis.")
+    parser_initial.add_argument(
+        "--interstitial_sites", dest="interstitials", type=float,
+        default=defaults["interstitial_site_names"],
+        help="Interstitial site names.")
     parser_initial.add_argument(
         "--print_dopant", dest="print_dopant", type=str,
         help="Print dopant information that can be added a posteriori.")
-    #    groups = parser_input.add_mutually_exclusive_group(required=True)
+
     parser_initial.set_defaults(func=initial_setting)
 
     # -- interstitial ------------------------------------------------------
     parser_interstitial = subparsers.add_parser(
         name="interstitial",
-        description="Tools for managing the interstitial sites.",
+        description="Tools for handling the interstitial sites.",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
         aliases=['i'])
 
+    defaults = get_default_args(InterstitialSiteSet.add_site)
+    defaults.update(get_default_args(InterstitialSiteSet.from_files))
+
     parser_interstitial.add_argument(
-        "--yaml", dest="yaml", type=str, default="interstitials.yaml",
+        "--yaml", dest="yaml", type=str, default=defaults["filename"],
         help="defect_entry.yaml-type file name to be read.")
     parser_interstitial.add_argument(
-        "--dposcar", dest="dposcar", default="DPOSCAR", type=str,
+        "--dposcar", dest="dposcar", type=str, default=defaults["poscar"],
         help="DPOSCAR-type file name.")
     parser_interstitial.add_argument(
         "-c", dest="interstitial_coords", nargs="+", type=float,
@@ -185,12 +179,25 @@ def main():
         "--name", dest="site_name", type=str, default=None,
         help="Set the interstitial site name.")
     parser_interstitial.add_argument(
-        "--radius", dest="r", type=str,
-        help=".")
+        "--radius", dest="radius", type=str,
+        default=defaults["check_neighbor_radius"],
+        help="Radius for checking too closed neighbor atoms.")
     parser_interstitial.add_argument(
         "--force_add", dest="force_add", action="store_true",
         help="Set if the interstitial site is added, although it is too close "
              "to other atoms.")
+    parser_interstitial.add_argument(
+        "--symprec", dest="symprec", type=float,
+        default=defaults["symprec"],
+        help="Set length precision used for symmetry analysis [A].")
+    parser_interstitial.add_argument(
+        "--angle_tol", dest="angle_tolerance", type=float,
+        default=defaults["angle_tolerance"],
+        help="Set angle precision used for symmetry analysis.")
+    parser_interstitial.add_argument(
+        "--method", dest="method", type=float,
+        default=defaults["method"],
+        help="Name of method.")
 
     parser_interstitial.set_defaults(func=interstitial)
 
@@ -230,7 +237,7 @@ def main():
     parser_defect_entry = subparsers.add_parser(
         name="defect_entry",
         description="Tools for configuring defect_entry files for post process"
-                    "of defect calculations.",
+                    "of defect calculations. By default, print defect_entry.",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
         aliases=['de'])
 
@@ -243,9 +250,6 @@ def main():
     parser_defect_entry.add_argument(
         "--json", dest="json", type=str, default="defect_entry.json",
         help="defect_entry.json type file name.")
-    parser_defect_entry.add_argument(
-        "--print", dest="print", action="store_true",
-        help="Print DefectEntry class object information.")
 
     parser_defect_entry.set_defaults(func=defect_entry)
 
@@ -256,6 +260,8 @@ def main():
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
         aliases=['sr'])
 
+    defaults = get_default_args(SupercellCalcResults.from_vasp_files)
+
     parser_supercell_results.add_argument(
         "--dirs", dest="dirs", nargs="+", type=str,
         help="Directory names.")
@@ -263,11 +269,16 @@ def main():
         "--dir_all", dest="dir_all", action="store_true",
         help="Make dft_results.json for *[0-9] and " "perfect directory.")
     parser_supercell_results.add_argument(
-        "-p", dest="poscar", type=str)
+        "-v", dest="vasprun", default=defaults["vasprun"], type=str)
     parser_supercell_results.add_argument(
-        "-o", dest="outcar", type=str)
+        "-i", dest="ibzkpt", default=defaults["ibzkpt"], type=str)
     parser_supercell_results.add_argument(
-        "-v", dest="vasprun", type=str)
+        "-c", dest="contcar", default=defaults["contcar"], type=str)
+    parser_supercell_results.add_argument(
+        "-o", dest="outcar", default=defaults["outcar"], type=str)
+    parser_supercell_results.add_argument(
+        "-s", dest="not_check_shallow", action="store_false",
+        help="Not check whether the defects are shallow.")
     parser_supercell_results.add_argument(
         "-pe", dest="perfect_results", type=str, default="perfect")
     parser_supercell_results.add_argument(
@@ -275,6 +286,14 @@ def main():
     parser_supercell_results.add_argument(
         "--json", dest="json", type=str, default="dft_results.json",
         help="dft_results.json type file name.")
+    parser_supercell_results.add_argument(
+        "--symprec", dest="symprec", type=float,
+        default=defaults["symprec"],
+        help="Set length precision used for symmetry analysis [A].")
+    parser_supercell_results.add_argument(
+        "--angle_tol", dest="angle_tolerance", type=float,
+        default=defaults["angle_tolerance"],
+        help="Set angle precision used for symmetry analysis.")
     parser_supercell_results.add_argument(
         "--print", dest="print", action="store_true",
         help="Print SupercellCalcResults class object information.")
@@ -502,6 +521,13 @@ def main():
         help="Json file name for the SupercellCalcResults class object of the "
              "perfect supercell result.")
     parser_plot_energy.add_argument(
+        "--de", dest="defect_entry", type=str, default="defect_entry.json")
+    parser_plot_energy.add_argument(
+        "--dft_results", dest="dft_results", type=str,
+        default="dft_results.json")
+    parser_plot_energy.add_argument(
+        "--correction", dest="correction", type=str, default="correction.json")
+    parser_plot_energy.add_argument(
         "--defect_dirs", dest="defect_dirs", nargs="+", type=str,
         help="Directory names for the defect supercell results. "
              "defect_entry.json, dft_results.json, and correction.json files "
@@ -520,20 +546,16 @@ def main():
         "-c", "--concentration", dest="concentration", action="store_true",
         help="Calculate the carrier and defect concentrations.")
     parser_plot_energy.add_argument(
-        "-stl", "--show_tl", dest="show_tl", action="store_true",
+        "-stl", "--show_transition_level", dest="show_tl", action="store_true",
         help="Show the transition levels.")
     parser_plot_energy.add_argument(
-        "-sal", "--show_al", dest="show_al", action="store_true",
+        "-sa", "--show_all", dest="show_all", action="store_true",
         help="Show all the energy lines.")
     parser_plot_energy.add_argument(
         "-t", "--temperature", dest="temperature", nargs="+", type=float,
         help="Temperature for calculating the Fermi level. When two "
              "temperatures are supplied, the first temperature is quenched to "
              "the second temperature.")
-    parser_plot_energy.add_argument(
-        "-ns", "--num_sites", dest="num_site_file", type=str,
-        help="The yaml file name that shows the number of sites. An example is "
-             "Va_Mg1: 2")
     # parser_plot_energy.add_argument(
     #     "-u", dest="u", action="store_true",
     #     help="Calculate the U values at given defect name and three charges")
@@ -544,9 +566,48 @@ def main():
     args.func(args)
 
 
+def recommend_supercell(args):
+    s = Supercells(structure=Structure.from_file(args.poscar),
+                   is_conventional=not args.primitive,
+                   max_num_atoms=args.max_num_atoms,
+                   min_num_atoms=args.min_num_atoms,
+                   isotropy_criterion=args.isotropy_criterion)
+
+    if s.supercells:
+        if args.set:
+            logger.info("The number of supercells:" + str(len(s.supercells)))
+
+            for supercell in s.supercells:
+                # Suffix "c" means conventional cell, while "p" primitive cell.
+                cell = "c" if s.is_conventional_based else "p"
+                multi_str = cell + "x".join([str(list(supercell.trans_mat)[i])
+                                             for i in range(3)])
+                name = "_".join([args.sposcar,
+                                 multi_str,
+                                 str(supercell.num_atoms),
+                                 str(supercell.isotropy)])
+                supercell.to_poscar(poscar_filename=name)
+
+            s.supercells[0].to_uposcar(uposcar_filename=args.uposcar)
+
+        else:
+            if args.most_isotropic:
+                supercell = s.create_most_isotropic_supercell
+            else:
+                supercell = s.create_smallest_supercell
+
+            supercell.to_poscar(poscar_filename=args.sposcar)
+            supercell.to_uposcar(uposcar_filename=args.uposcar)
+
+    else:
+        logger.warning("Any supercell does not satisfy the criterion. Increase "
+                       "the criterion if needed.")
+
+
 def initial_setting(args):
     if args.print_dopant:
         print_dopant_info(args.print_dopant)
+
     else:
         structure = Structure.from_file(args.poscar)
         with open(args.poscar) as f:
@@ -557,34 +618,46 @@ def initial_setting(args):
             cell_multiplicity = int(
                 first_line.split(":")[2].split(",")[0].split()[0])
 
-        overwritten_args = \
-            overwrite_default_args(DefectInitialSetting.from_basic_settings,
-                                   args)
         defect_setting = \
-            DefectInitialSetting.from_basic_settings(structure,
-                                                     transformation_matrix,
-                                                     cell_multiplicity,
-                                                     **overwritten_args)
+            DefectInitialSetting.from_basic_settings(
+                structure=structure,
+                transformation_matrix=transformation_matrix,
+                cell_multiplicity=cell_multiplicity,
+                dopants=args.dopants,
+                is_antisite=args.is_antisite,
+                en_diff=args.en_diff,
+                included=args.included,
+                excluded=args.excluded,
+                displacement_distance=args.displacement_distance,
+                cutoff=args.cutoff,
+                symprec=args.symprec,
+                angle_tolerance=args.angle_tolerance,
+                interstitial_site_names=args.interstitials)
+
         defect_setting.to()
 
 
 def interstitial(args):
-    from pydefect.core.interstitial_site import InterstitialSiteSet
-
     try:
-        interstitial_set = InterstitialSiteSet.from_files(args.dposcar,
-                                                          args.yaml)
+        interstitial_set = \
+            InterstitialSiteSet.from_files(args.dposcar, args.yaml)
     except FileNotFoundError:
         structure = Structure.from_file(args.dposcar)
         interstitial_set = InterstitialSiteSet(structure=structure)
 
     coords = args.interstitial_coords
-    interstitial_set.add_site(coords, args.site_name)
+    interstitial_set.add_site(coord=coords,
+                              site_name=args.site_name,
+                              check_neighbor_radius=args.radius,
+                              force_add=args.force_add,
+                              symprec=args.symprec,
+                              angle_tolerance=args.angle_tolerance)
 
     interstitial_set.site_set_to_yaml_file(filename=args.yaml)
 
 
 def vasp_set(args):
+
     def make_dir(name, obrs):
         if args.force_overwrite:
             if os.path.exists(name):
@@ -603,31 +676,31 @@ def vasp_set(args):
     desm = DefectEntrySetMaker(dis, args.keywords, args.particular_defects)
 
 #    if not args.particular_defects:
-    obrs = ObaSet.make_input(desm.perfect_structure,
-                             standardize_structure=False,
-                             task="defect",
-                             xc=args.xc,
-                             sort_structure=False,
-                             kpt_mode="manual",
-                             kpt_density=args.kpt_density,
-                             user_incar_settings={"ISPIN": 1})
+    oba_set = ObaSet.make_input(structure=desm.perfect_structure,
+                                standardize_structure=False,
+                                task="defect",
+                                xc=args.xc,
+                                sort_structure=False,
+                                kpt_mode="manual",
+                                kpt_density=args.kpt_density,
+                                user_incar_settings={"ISPIN": 1})
 
-    make_dir("perfect", obrs)
+    make_dir("perfect", oba_set)
 
     for de in desm.defect_entries:
         defect_name = "_".join([de.name, str(de.charge)])
         json_file_name = os.path.join(defect_name, "defect_entry.json")
 
-        obrs = ObaSet.make_input(de.perturbed_initial_structure,
-                                 charge=de.charge,
-                                 standardize_structure=False,
-                                 task="defect",
-                                 xc=args.xc,
-                                 sort_structure=False,
-                                 kpt_mode="manual",
-                                 kpt_density=args.kpt_density)
+        oba_set = ObaSet.make_input(structure=de.perturbed_initial_structure,
+                                    charge=de.charge,
+                                    standardize_structure=False,
+                                    task="defect",
+                                    xc=args.xc,
+                                    sort_structure=False,
+                                    kpt_mode="manual",
+                                    kpt_density=args.kpt_density)
 
-        make_dir(defect_name, obrs)
+        make_dir(defect_name, oba_set)
         de.to_json_file(json_file_name)
 
         if de.perturbed_sites:
@@ -643,47 +716,11 @@ def vasp_set(args):
                     f.write(line)
 
 
-def recommend_supercell(args):
-    structure = Structure.from_file(args.poscar)
-    overwritten_args = overwrite_default_args(Supercells, args)
-
-    if args.primitive:
-        overwritten_args["is_conventional"] = False
-
-    s = Supercells(structure, **overwritten_args)
-
-    if s.supercells:
-        if args.set:
-            logger.info("The number of supercells:" + str(len(s.supercells)))
-            for supercell in s.supercells:
-                cell = "c" if s.is_conventional_based else "p"
-                multi_str = cell + "x".join([str(list(supercell.trans_mat)[i])
-                                             for i in range(3)])
-                name = "_".join([args.sposcar,
-                                 multi_str,
-                                 str(supercell.num_atoms),
-                                 str(supercell.isotropy)])
-                supercell.to_poscar(poscar_filename=name)
-            s.supercells[0].to_uposcar(uposcar_filename=args.uposcar)
-
-        else:
-            if args.most_isotropic:
-                supercell = s.create_most_isotropic_supercell
-            else:
-                supercell = s.create_smallest_supercell
-            supercell.to_poscar(poscar_filename=args.sposcar)
-            supercell.to_uposcar(uposcar_filename=args.uposcar)
-
-    else:
-        logger.warning("Any supercell does not satisfy the criterion. Increase "
-                       "the criterion if needed.")
-
-
 def defect_entry(args):
     if args.make_defect_entry:
         defect_entry_from_yaml = DefectEntry.from_yaml(args.yaml)
-        defect_entry_from_yaml.to_json_file("defect_entry.json")
-    elif args.print:
+        defect_entry_from_yaml.to_json_file(args.json)
+    else:
         print(DefectEntry.load_json(args.json))
 
 
@@ -698,16 +735,17 @@ def supercell_calc_results(args):
         dirs = args.dirs
 
     for d in dirs:
-        overwritten_args = \
-            overwrite_default_args(SupercellCalcResults.from_vasp_files, args)
-
         if os.path.isdir(d):
             logger.info("Parsing data in {}...".format(d))
-#            try:
+
             if d in ["perfect", "perfect/"]:
-                dft_results = \
-                    SupercellCalcResults.from_vasp_files(d,
-                                                         **overwritten_args)
+                dft_results = SupercellCalcResults.from_vasp_files(
+                    directory_path=d,
+                    vasprun=args.vasprun,
+                    ibzkpt=args.ibzkpt,
+                    contcar=args.contcar,
+                    outcar=args.outcar)
+
             else:
                 filename = join(args.perfect_results, "dft_results.json")
                 perfect_results = SupercellCalcResults.load_json(filename)
@@ -716,14 +754,19 @@ def supercell_calc_results(args):
                 dft_results = \
                     SupercellCalcResults.from_vasp_files(
                         directory_path=d,
-                        defect_entry=de,
+                        vasprun=args.vasprun,
+                        ibzkpt=args.ibzkpt,
+                        contcar=args.contcar,
+                        outcar=args.outcar,
+                        check_shallow=not args.not_check_shallow,
                         referenced_dft_results=perfect_results,
-                        **overwritten_args)
+                        defect_entry=de,
+                        symprec=args.symprec,
+                        angle_tolerance=args.angle_tolerance)
 
             dft_results.to_json_file(
                 filename=join(d, "dft_results.json"))
-#            except ValueError:
-#                logger.warning("Parsing data in {} is failed.".format(d))
+
         else:
             logger.warning("{} does not exist, so nothing is done.".format(d))
 
@@ -731,12 +774,11 @@ def supercell_calc_results(args):
 def unitcell_calc_results(args):
     try:
         dft_results = UnitcellCalcResults.load_json(filename=args.json_file)
-    except:
+    except IOError:
         dft_results = UnitcellCalcResults()
 
     if args.print:
         dft_results = UnitcellCalcResults.load_json(filename=args.json_file)
-        print(dft_results.total_dielectric_tensor)
         print(dft_results)
         return
 
@@ -795,6 +837,7 @@ def correction(args):
     except IOError:
         raise FileNotFoundError("JSON for the perfect supercell is not found.")
 
+    # Ewald parameter related
     if args.dump_ewald_json:
         logger.info("optimizing ewald...")
         ewald_kwargs = {}
@@ -834,10 +877,10 @@ def correction(args):
             join(directory, "dft_results.json"))
 
         c = ExtendedFnvCorrection. \
-            compute_alignment_by_extended_fnv(entry,
-                                              defect_dft_data,
-                                              unitcell_dft_data,
-                                              ewald_filename)
+            compute_alignment_by_extended_fnv(defect_entry=entry,
+                                              defect_dft=defect_dft_data,
+                                              unitcell_dft=unitcell_dft_data,
+                                              ewald_json=ewald_filename)
 
         c.plot_distance_vs_potential(join(directory, "potential.eps"))
         c.to_json_file(join(directory, "correction.json"))
@@ -901,16 +944,16 @@ def chempotdiag(args):
                                              energy_shift_dict=energy_shift_dict)
             if args.elements:
                 cp.set_elements(args.elements)
-        print("Energies of elements ({0}) : {1}"
-              .format(cp.elements, cp.element_energy))
+        logger.log("Energies of elements ({0}) : {1}"
+                   .format(cp.elements, cp.element_energy))
         #  Read args of drawing diagram from parser
         if args.remarked_compound:
             try:
                 for vertex in cp.get_neighbor_vertices(args.remarked_compound):
-                    print(vertex)
+                    logger.log("vertex {}".format(vertex))
             except ValueError:
-                print("{0} is unstable. No vertex is labeled."
-                      .format(args.remarked_compound))
+                logger.log("{0} is unstable. No vertex is labeled."
+                           .format(args.remarked_compound))
 
         kwargs_for_diagram = {}
         if args.remarked_compound:
@@ -948,14 +991,18 @@ def plot_energy(args):
 
     defects = []
     for d in defects_dirs:
-        print(d)
-        try:
-            e = DefectEntry.load_json(join(d, "defect_entry.json"))
-            r = SupercellCalcResults.load_json(join(d, "dft_results.json"))
-            c = ExtendedFnvCorrection.load_json(join(d, "correction.json"))
-            defects.append(Defect(defect_entry=e, dft_results=r, correction=c))
-        except:
-            logger.warning("Parsing data in {} is failed.".format(d))
+        logger.log("parsing directory {}...".format(d))
+        input_objects = []
+        for i in args.defect_entry, args.dft_results, args.correction:
+            try:
+                input_objects.append(DefectEntry.load_json(join(d, i)))
+            except IOError:
+                logger.warning("Parsing {} in {} failed.".format(i, d))
+                continue
+
+        defects.append(Defect(defect_entry=input_objects[0],
+                              dft_results=input_objects[1],
+                              correction=input_objects[2]))
 
     chem_pot = ChemPotDiag.load_vertices_yaml(args.chem_pot_yaml)
 
@@ -996,10 +1043,7 @@ def plot_energy(args):
                               show_transition_levels=args.show_tl,
                               show_all_lines=args.show_al)
 
-    if args.save_file:
-        plt.savefig(args.save_file, format="pdf")
-    else:
-        plt.show()
+    plt.savefig(args.save_file, format="pdf") if args.save_file else plt.show()
 
 
 if __name__ == "__main__":

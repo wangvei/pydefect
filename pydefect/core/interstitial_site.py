@@ -171,7 +171,7 @@ class InterstitialSiteSet(MSONable):
     def add_site(self,
                  coord: list,
                  site_name: str = None,
-                 r: float = 0.3,
+                 check_neighbor_radius: float = 0.3,
                  force_add: bool = False,
                  symprec: float = INTERSTITIAL_SYMMETRY_TOLERANCE,
                  angle_tolerance: float = ANGLE_TOL,
@@ -186,7 +186,8 @@ class InterstitialSiteSet(MSONable):
 
             cart_coord = saturated_structure.lattice.get_cartesian_coords(coord)
             neighbors = \
-                saturated_structure.get_sites_in_sphere(pt=cart_coord, r=r)
+                saturated_structure.get_sites_in_sphere(pt=cart_coord,
+                                                        r=check_neighbor_radius)
 
             for n in neighbors:
                 # DummySpecie occupies the saturated interstitial sites.
