@@ -7,6 +7,8 @@ import shutil
 import warnings
 
 from glob import glob
+from inspect import signature
+from itertools import chain
 from os.path import join
 
 from pymatgen.core.structure import Structure
@@ -21,14 +23,14 @@ from pydefect.corrections.corrections import Ewald, ExtendedFnvCorrection
 
 from obadb.analyzer.chempotdiag.chem_pot_diag import ChemPotDiag
 from obadb.vasp.input_set import ObaSet
-
+from obadb.vasp.incar import incar_flags
 
 from pydefect.analysis.chempotdiag.make_inputs import make_vasp_inputs_from_mp
 from pydefect.analysis.defect_energies import DefectEnergies, Defect
 from pydefect.analysis.defect_energy_plotter import DefectEnergyPlotter
 from pydefect.core.interstitial_site import InterstitialSiteSet
 from pydefect.util.logger import get_logger
-from pydefect.util.main_tools import overwrite_default_args, get_default_args
+from pydefect.util.main_tools import get_default_args, return_dict
 from pydefect.input_maker.defect_entry_set_maker \
     import DefectEntrySetMaker, log_is_being_removed, log_already_exist, \
     log_is_being_constructed
@@ -147,7 +149,7 @@ def main():
         default=defaults["angle_tolerance"],
         help="Set angle precision used for symmetry analysis.")
     parser_initial.add_argument(
-        "--interstitial_sites", dest="interstitials", type=float,
+        "--interstitial_sites", dest="interstitials", type=str, nargs="+",
         default=defaults["interstitial_site_names"],
         help="Interstitial site names.")
     parser_initial.add_argument(
@@ -195,8 +197,7 @@ def main():
         default=defaults["angle_tolerance"],
         help="Set angle precision used for symmetry analysis.")
     parser_interstitial.add_argument(
-        "--method", dest="method", type=float,
-        default=defaults["method"],
+        "--method", dest="method", type=str, default=defaults["method"],
         help="Name of method.")
 
     parser_interstitial.set_defaults(func=interstitial)
@@ -491,6 +492,53 @@ def main():
                                     help="Dumps yaml of remarked_compound")
 
     parser_chempotdiag.set_defaults(func=chempotdiag)
+
+    # -- vasp_oba_set ----------------------------------------------------------
+    parser_vasp_oba_set = subparsers.add_parser(
+        name="vasp_vasp_oba_set",
+        description="Tools for constructing vasp input set with oba_set",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+        aliases=['vos'])
+
+    parser_vasp_oba_set.add_argument(
+        "-p", "--poscar", dest="poscar", default="POSCAR", type=str,
+        help="POSCAR-type file name for the supercell.")
+    parser_vasp_oba_set.add_argument(
+        "-x", "--xc", dest="xc", default="pbesol", type=str,
+        help="XC interaction treatment.")
+    parser_vasp_oba_set.add_argument(
+        "-t", "--task", dest="task", default="structure_opt", type=str,
+        help="The task name.")
+    parser_vasp_oba_set.add_argument(
+        "-k", "--kpt_density", dest="kpt_density", default=3, type=float,
+        help="K-points density.")
+    parser_vasp_oba_set.add_argument(
+        "-s", "--standardize", dest="standardize", action="store_false",
+        help="Store if one doesn't want the cell to be transformed to a "
+             "primitive one.")
+    parser_vasp_oba_set.add_argument(
+        "-d", "--prev_dir", dest="prev_dir", type=str,
+        help=".")
+    # parser_vasp_oba_set.add_argument(
+    #     "-gga", "--prev_gga", dest="prev_gga",
+    #     action="store_true", help=".")
+    # parser_vasp_oba_set.add_argument(
+    #     "-gpre", "--prev_dir_gw_pre2", dest="prev_dir_gw_pre2", type=str,
+    #     help=".")
+    # parser_vasp_oba_set.add_argument(
+    #     "-gw", "--prev_dir_gw0", dest="prev_dir_gw0", type=str,
+    #     help=".")
+    parser_vasp_oba_set.add_argument(
+        "-vr", "-very_rough", dest="very_rough", action="store_true",
+        help=".")
+    parser_vasp_oba_set.add_argument(
+        "-kw", "--kwargs", dest="kwargs", type=str, nargs="+",
+        default=None, help="keyword arguments.")
+    parser_vasp_oba_set.add_argument(
+        "-is", "--incar_setting", dest="incar_setting", type=str, nargs="+",
+        default=None, help="INCAR setting to be overwritten.")
+
+    parser_vasp_oba_set.set_defaults(func=vasp_oba_set)
 
     # -- plot_energy -----------------------------------------------------------
     parser_plot_energy = subparsers.add_parser(
@@ -833,7 +881,6 @@ def correction(args):
 
     try:
         perfect_dft_data = SupercellCalcResults.load_json(args.perfect_json)
-        print(type(perfect_dft_data))
     except IOError:
         raise FileNotFoundError("JSON for the perfect supercell is not found.")
 
@@ -882,7 +929,7 @@ def correction(args):
                                               unitcell_dft=unitcell_dft_data,
                                               ewald_json=ewald_filename)
 
-        c.plot_distance_vs_potential(join(directory, "potential.eps"))
+        c.plot_distance_vs_potential(join(directory, "potential.pdf"))
         c.to_json_file(join(directory, "correction.json"))
 
 
@@ -978,6 +1025,37 @@ def chempotdiag(args):
             if args.remarked_compound is None:
                 raise ValueError("remarked_compound is needed to dump yaml")
             cp.dump_vertices_yaml(os.getcwd(), args.remarked_compound)
+
+
+def vasp_oba_set(args):
+
+    #TODO: When writing GW part, refer oba_set_main.py in obadb
+
+    kwargs = {"task":                  args.task,
+              "xc":                    args.xc,
+              "kpt_density":           args.kpt_density,
+              "standardize_structure": args.standardize}
+
+    flags = list(chain.from_iterable(incar_flags.values()))
+    user_incar_settings = return_dict(args.incar_setting, flags)
+
+    flags = list(signature(ObaSet.make_input).parameters.keys())
+    kwargs.update(return_dict(args.kwargs, flags))
+
+    if args.prev_dir:
+        files = {"CHGCAR": "C", "WAVECAR": "L", "WAVEDER": "M"}
+        oba_set = ObaSet.from_prev_calc(args.prev_dir,
+                                        copied_file_names=files, **kwargs)
+    else:
+        oba_set = ObaSet.make_input(structure=Structure.from_file(args.poscar),
+                                    user_incar_settings=user_incar_settings,
+                                    rough=args.very_rough,
+                                    **kwargs)
+
+    oba_set.write_input(".")
+
+    # structure = Structure.from_file(args.poscar)
+    # obrs = ObaSet.make_input(structure, **kwargs)
 
 
 def plot_energy(args):

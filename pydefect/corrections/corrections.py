@@ -363,7 +363,7 @@ class ExtendedFnvCorrection(Correction, MSONable):
         plt.title("Distance vs potential")
 
         if file_name:
-            plt.savefig(file_name, format="eps")
+            plt.savefig(file_name, format="pdf")
             plt.close(fig)
         else:
             plt.show()
