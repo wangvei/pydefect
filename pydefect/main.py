@@ -1054,9 +1054,6 @@ def vasp_oba_set(args):
 
     oba_set.write_input(".")
 
-    # structure = Structure.from_file(args.poscar)
-    # obrs = ObaSet.make_input(structure, **kwargs)
-
 
 def plot_energy(args):
     unitcell = UnitcellCalcResults.load_json(args.unitcell)
