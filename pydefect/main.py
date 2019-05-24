@@ -996,15 +996,15 @@ def chempotdiag(args):
                                              energy_shift_dict=energy_shift_dict)
             if args.elements:
                 cp.set_elements(args.elements)
-        logger.log("Energies of elements ({0}) : {1}"
+        logger.info("Energies of elements ({0}) : {1}"
                    .format(cp.elements, cp.element_energy))
         #  Read args of drawing diagram from parser
         if args.remarked_compound:
             try:
                 for vertex in cp.get_neighbor_vertices(args.remarked_compound):
-                    logger.log("vertex {}".format(vertex))
+                    logger.info("vertex {}".format(vertex))
             except ValueError:
-                logger.log("{0} is unstable. No vertex is labeled."
+                logger.info("{0} is unstable. No vertex is labeled."
                            .format(args.remarked_compound))
 
         kwargs_for_diagram = {}
@@ -1052,15 +1052,13 @@ def vasp_oba_set(args):
 
     for d in dirs:
         os.chdir(os.path.join(original_dir, d))
-
+        logger.info("Constructing vasp set in {}".format(d))
         user_incar_settings = deepcopy(base_user_incar_settings)
         kwargs = deepcopy(base_kwargs)
 
         if args.prior_info:
             if os.path.exists("prior_info.json"):
                 prior_info = PriorInfo.load_json("prior_info.json")
-
-                print(prior_info)
                 kwargs["band_gap"] = prior_info.band_gap
                 kwargs["is_magnetic"] = prior_info.is_magnetic
                 kwargs["is_cluster"] = prior_info.is_cluster
