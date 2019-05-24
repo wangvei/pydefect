@@ -6,20 +6,13 @@ import os
 import shutil
 import warnings
 
+from copy import deepcopy
 from glob import glob
 from inspect import signature
 from itertools import chain
 from os.path import join
 
 from pymatgen.core.structure import Structure
-
-from pydefect.input_maker.defect_initial_setting \
-    import print_dopant_info, DefectInitialSetting
-from pydefect.input_maker.supercell_maker import Supercells
-from pydefect.core.defect import DefectEntry
-from pydefect.core.supercell_calc_results import SupercellCalcResults
-from pydefect.core.unitcell_calc_results import UnitcellCalcResults
-from pydefect.corrections.corrections import Ewald, ExtendedFnvCorrection
 
 from obadb.analyzer.chempotdiag.chem_pot_diag import ChemPotDiag
 from obadb.vasp.input_set import ObaSet
@@ -28,15 +21,24 @@ from obadb.vasp.incar import incar_flags
 from pydefect.analysis.chempotdiag.make_inputs import make_vasp_inputs_from_mp
 from pydefect.analysis.defect_energies import DefectEnergies, Defect
 from pydefect.analysis.defect_energy_plotter import DefectEnergyPlotter
+from pydefect.core.defect import DefectEntry
 from pydefect.core.interstitial_site import InterstitialSiteSet
-from pydefect.util.logger import get_logger
-from pydefect.util.main_tools import get_default_args, return_dict
+from pydefect.core.prior_info import PriorInfo
+from pydefect.core.supercell_calc_results import SupercellCalcResults
+from pydefect.core.unitcell_calc_results import UnitcellCalcResults
+from pydefect.corrections.corrections import Ewald, ExtendedFnvCorrection
 from pydefect.input_maker.defect_entry_set_maker \
     import DefectEntrySetMaker, log_is_being_removed, log_already_exist, \
     log_is_being_constructed
+from pydefect.input_maker.defect_initial_setting \
+    import print_dopant_info, DefectInitialSetting
+from pydefect.input_maker.supercell_maker import Supercells
+from pydefect.util.logger import get_logger
+from pydefect.util.main_tools import get_default_args, list2dict
+
 
 __author__ = "Yu Kumagai, Akira Takahashi"
-__maintainer__ = "Yu Kumagai, Akira Takahashi"
+__maintainer__ = "Yu Kumagai"
 
 logger = get_logger(__name__)
 
@@ -529,14 +531,17 @@ def main():
     #     "-gw", "--prev_dir_gw0", dest="prev_dir_gw0", type=str,
     #     help=".")
     parser_vasp_oba_set.add_argument(
-        "-vr", "-very_rough", dest="very_rough", action="store_true",
-        help=".")
-    parser_vasp_oba_set.add_argument(
         "-kw", "--kwargs", dest="kwargs", type=str, nargs="+",
         default=None, help="keyword arguments.")
     parser_vasp_oba_set.add_argument(
         "-is", "--incar_setting", dest="incar_setting", type=str, nargs="+",
         default=None, help="INCAR setting to be overwritten.")
+    parser_vasp_oba_set.add_argument(
+        "--dirs", dest="dirs", nargs="+", type=str,
+        help="Make vasp set for the directories.")
+    parser_vasp_oba_set.add_argument(
+        "-pi", "-prior_info", dest="prior_info", action="store_true",
+        help="Set if prior_info.json is not read.")
 
     parser_vasp_oba_set.set_defaults(func=vasp_oba_set)
 
@@ -1031,28 +1036,48 @@ def vasp_oba_set(args):
 
     #TODO: When writing GW part, refer oba_set_main.py in obadb
 
-    kwargs = {"task":                  args.task,
-              "xc":                    args.xc,
-              "kpt_density":           args.kpt_density,
-              "standardize_structure": args.standardize}
+    base_kwargs = {"task":                  args.task,
+                   "xc":                    args.xc,
+                   "kpt_density":           args.kpt_density,
+                   "standardize_structure": args.standardize}
 
     flags = list(chain.from_iterable(incar_flags.values()))
-    user_incar_settings = return_dict(args.incar_setting, flags)
+    base_user_incar_settings = list2dict(args.incar_setting, flags)
 
     flags = list(signature(ObaSet.make_input).parameters.keys())
-    kwargs.update(return_dict(args.kwargs, flags))
+    base_kwargs.update(list2dict(args.kwargs, flags))
 
-    if args.prev_dir:
-        files = {"CHGCAR": "C", "WAVECAR": "L", "WAVEDER": "M"}
-        oba_set = ObaSet.from_prev_calc(args.prev_dir,
-                                        copied_file_names=files, **kwargs)
-    else:
-        oba_set = ObaSet.make_input(structure=Structure.from_file(args.poscar),
-                                    user_incar_settings=user_incar_settings,
-                                    rough=args.very_rough,
-                                    **kwargs)
+    original_dir = os.getcwd()
+    dirs = args.dirs if args.dirs else ["."]
 
-    oba_set.write_input(".")
+    for d in dirs:
+        os.chdir(os.path.join(original_dir, d))
+
+        user_incar_settings = deepcopy(base_user_incar_settings)
+        kwargs = deepcopy(base_kwargs)
+
+        if args.prior_info:
+            if os.path.exists("prior_info.json"):
+                prior_info = PriorInfo.load_json("prior_info.json")
+
+                print(prior_info)
+                kwargs["band_gap"] = prior_info.band_gap
+                kwargs["is_magnetic"] = prior_info.is_magnetic
+                kwargs["is_cluster"] = prior_info.is_cluster
+
+        if args.prev_dir:
+            files = {"CHGCAR": "C", "WAVECAR": "L", "WAVEDER": "M"}
+            oba_set = ObaSet.from_prev_calc(args.prev_dir,
+                                            copied_file_names=files, **kwargs)
+        else:
+            s = Structure.from_file(args.poscar)
+            oba_set = ObaSet.make_input(structure=s,
+                                        user_incar_settings=user_incar_settings,
+                                        **kwargs)
+
+        oba_set.write_input(".")
+
+    os.chdir(original_dir)
 
 
 def plot_energy(args):

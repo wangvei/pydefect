@@ -44,7 +44,7 @@ def get_default_args(class_method):
     return defaults
 
 
-def return_dict(arg_list, flags):
+def list2dict(arg_list, flags):
     """
     flags: incar flags
 
@@ -59,6 +59,8 @@ def return_dict(arg_list, flags):
     :return:
     """
     flag_indices = []
+    arg_list = [] if arg_list is None else arg_list
+
     for i, element in enumerate(arg_list):
         if element in flags:
             flag_indices.append(i)
