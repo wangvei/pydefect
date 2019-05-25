@@ -106,7 +106,9 @@ class SupercellCalcResults(MSONable):
                 "final structure: \n" + str(self.final_structure),
                 "site_symmetry: " + str(self.site_symmetry),
                 "volume: \n" + str(self.volume),
-                "Fermi level (eV): \n" + str(self.fermi_level)]
+                "Fermi level (eV): \n" + str(self.fermi_level),
+                "shallow: \n" + str(self.shallow)]
+
 
         if self.kpoints:
             outs.append("IBZKPT is parsed \n")
@@ -213,14 +215,24 @@ class SupercellCalcResults(MSONable):
                 if abs(magnetization - round(magnetization))\
                         > MAGNETIZATION_THRESHOLD:
                     shallow.append("not_integer_mag")
-                    supercell_vbm = \
-                        referenced_dft_results.eigenvalue_properties[2]
-                    supercell_cbm = \
-                        referenced_dft_results.eigenvalue_properties[1]
-                    if fermi_level > supercell_cbm:
-                        shallow.append("fermi_is_higher_than_cbm")
-                    if fermi_level < supercell_vbm:
-                        shallow.append("fermi_is_lower_than_vbm")
+
+                defect_supercell_vbm = eigenvalue_properties[2]
+                defect_supercell_cbm = eigenvalue_properties[1]
+
+                perfect_supercell_vbm = \
+                    referenced_dft_results.eigenvalue_properties[2]
+                perfect_supercell_cbm = \
+                    referenced_dft_results.eigenvalue_properties[1]
+                if defect_supercell_cbm > perfect_supercell_cbm - 0.1:
+                    shallow.append("fermi_is_higher_than_cbm")
+                if defect_supercell_vbm < perfect_supercell_vbm + 0.1:
+                    shallow.append("fermi_is_lower_than_vbm")
+
+                # In case of LDA or GGA, the defect orbital might be partially
+                # occupied.
+                # nelect = outcar.nelect
+                # if round(nelect) % 2 != round(magnetization) % 2:
+                #     shallow.append("not_localized_orbital")
 
             relative_total_energy = \
                 total_energy - referenced_dft_results.total_energy
