@@ -7,6 +7,7 @@ __maintainer__ = "Yu Kumagai"
 def num_symmetry_operation(point_group):
     d = {"1":     1,
          "-1":    2,
+         "2":     2,
          "m":     2,
          "2/m":   4,
          "222":   4,

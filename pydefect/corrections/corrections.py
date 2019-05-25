@@ -292,6 +292,17 @@ class ExtendedFnvCorrection(Correction, MSONable):
         self.model_pot = list(model_pot)
         self._manual_correction_energy = manual_correction_energy
 
+    def __str__(self):
+        outs = ["Point-charge correction energy (eV): "
+                + str(self.point_charge_correction_energy),
+                "Alignment-like correction energy (eV): "
+                + str(self.alignment_correction_energy),
+                "Manually added correction energy (eV): "
+                + str(self.manual_correction_energy),
+                "Total correction energy (eV): " + str(self.correction_energy)]
+
+        return "\n".join(outs)
+
     @property
     def point_charge_correction_energy(self):
         return - self.lattice_energy

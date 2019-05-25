@@ -352,13 +352,13 @@ def main():
 
     parser_unitcell_results.set_defaults(func=unitcell_calc_results)
 
-    # -- correction ------------------------------------------------------------
+    # -- FNV correction --------------------------------------------------------
     parser_correction = subparsers.add_parser(
-        name="correction",
-        description="Tools for correction of error of defect formation energy"
-                    " due to finite cell size.",
+        name="extended_fnv_correction",
+        description="Tools for extended FNV correction for error of defect "
+                    "formation energy due to finite supercell size.",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-        aliases=['c'])
+        aliases=['efc'])
 
     # needed files
     parser_correction.add_argument(
@@ -389,8 +389,14 @@ def main():
     parser_correction.add_argument(
         "--force_overwrite", dest="force_overwrite", action="store_true",
         help="Overwrite already existing correction.json.")
+    parser_correction.add_argument(
+        "--json_file", dest="json_file", default="correction.json", type=str,
+        help="Json file for the correction.")
+    parser_correction.add_argument(
+        "--print", dest="print", action="store_true",
+        help="Print FNV correction information.")
 
-    parser_correction.set_defaults(func=correction)
+    parser_correction.set_defaults(func=efnv_correction)
 
     # -- chempotdiag -----------------------------------------------------------
     parser_chempotdiag = subparsers.add_parser(
@@ -497,7 +503,7 @@ def main():
 
     # -- vasp_oba_set ----------------------------------------------------------
     parser_vasp_oba_set = subparsers.add_parser(
-        name="vasp_vasp_oba_set",
+        name="vasp_oba_set",
         description="Tools for constructing vasp input set with oba_set",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
         aliases=['vos'])
@@ -712,10 +718,10 @@ def interstitial(args):
 def vasp_set(args):
 
     def make_dir(name, obrs):
-        if args.force_overwrite:
-            if os.path.exists(name):
-                log_is_being_removed(name)
-                shutil.rmtree(name)
+        """Helper function"""
+        if args.force_overwrite and os.path.exists(name):
+            log_is_being_removed(name)
+            shutil.rmtree(name)
 
         if os.path.exists(name):
             log_already_exist(name)
@@ -726,21 +732,22 @@ def vasp_set(args):
 
     dis = DefectInitialSetting.from_defect_in(
         poscar=args.dposcar, defect_in_file=args.defect_in)
-    desm = DefectEntrySetMaker(dis, args.keywords, args.particular_defects)
+    defect_entry_set_maker = \
+        DefectEntrySetMaker(dis, args.keywords, args.particular_defects)
 
-#    if not args.particular_defects:
-    oba_set = ObaSet.make_input(structure=desm.perfect_structure,
-                                standardize_structure=False,
-                                task="defect",
-                                xc=args.xc,
-                                sort_structure=False,
-                                kpt_mode="manual",
-                                kpt_density=args.kpt_density,
-                                user_incar_settings={"ISPIN": 1})
+    oba_set = ObaSet.make_input(
+        structure=defect_entry_set_maker.perfect_structure,
+        standardize_structure=False,
+        task="defect",
+        xc=args.xc,
+        sort_structure=False,
+        kpt_mode="manual",
+        kpt_density=args.kpt_density,
+        user_incar_settings={"ISPIN": 1})
 
     make_dir("perfect", oba_set)
 
-    for de in desm.defect_entries:
+    for de in defect_entry_set_maker.defect_entries:
         defect_name = "_".join([de.name, str(de.charge)])
         json_file_name = os.path.join(defect_name, "defect_entry.json")
 
@@ -780,6 +787,7 @@ def defect_entry(args):
 def supercell_calc_results(args):
     if args.print:
         print(SupercellCalcResults.load_json(args.json))
+        return
 
     if args.dir_all:
         dirs = glob('*[0-9]/')
@@ -811,7 +819,7 @@ def supercell_calc_results(args):
                         ibzkpt=args.ibzkpt,
                         contcar=args.contcar,
                         outcar=args.outcar,
-                        check_shallow=not args.not_check_shallow,
+                        check_shallow=args.not_check_shallow,
                         referenced_dft_results=perfect_results,
                         defect_entry=de,
                         symprec=args.symprec,
@@ -825,15 +833,14 @@ def supercell_calc_results(args):
 
 
 def unitcell_calc_results(args):
+    if args.print:
+        print(UnitcellCalcResults.load_json(filename=args.json_file))
+        return
+
     try:
         dft_results = UnitcellCalcResults.load_json(filename=args.json_file)
     except IOError:
         dft_results = UnitcellCalcResults()
-
-    if args.print:
-        dft_results = UnitcellCalcResults.load_json(filename=args.json_file)
-        print(dft_results)
-        return
 
     if args.band_edge_dir:
         try:
@@ -878,7 +885,11 @@ def unitcell_calc_results(args):
     dft_results.to_json_file(args.json_file)
 
 
-def correction(args):
+def efnv_correction(args):
+    if args.print:
+        print(ExtendedFnvCorrection.load_json(args.json_file))
+        return
+
     try:
         unitcell_dft_data = UnitcellCalcResults.load_json(args.unitcell_json)
     except IOError:
@@ -1089,7 +1100,7 @@ def plot_energy(args):
 
     defects = []
     for d in defects_dirs:
-        logger.log("parsing directory {}...".format(d))
+        logger.info("parsing directory {}...".format(d))
         input_objects = []
         for i in args.defect_entry, args.dft_results, args.correction:
             try:
@@ -1139,7 +1150,7 @@ def plot_energy(args):
                               y_range=args.y_range,
                               show_fermi_level=args.concentration,
                               show_transition_levels=args.show_tl,
-                              show_all_lines=args.show_al)
+                              show_all_lines=args.show_all)
 
     plt.savefig(args.save_file, format="pdf") if args.save_file else plt.show()
 
