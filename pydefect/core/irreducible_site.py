@@ -82,7 +82,4 @@ class IrreducibleSite(MSONable):
 
     @property
     def num_atoms(self):
-        """
-        Returns the number of atoms.
-        """
         return self.last_index - self.first_index + 1

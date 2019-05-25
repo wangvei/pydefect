@@ -105,8 +105,7 @@ def get_distances(string):
 
 
 class SimpleDefectName(MSONable):
-    """ Container class for defect name.
-    """
+    """ Container class for defect name. """
     def __init__(self,
                  in_atom: Union[str, None],
                  out_site: str,
@@ -176,8 +175,7 @@ class SimpleDefectName(MSONable):
 
 
 class DefectInitialSetting(MSONable):
-    """ Holds full information for creating a series of DefectEntry objects.
-    """
+    """ Holds full information for creating a series of DefectEntry objects. """
 
     def __init__(self,
                  structure: Structure,
