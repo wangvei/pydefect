@@ -79,9 +79,10 @@ def print_dopant_info(dopant):
         electronegativity = get_electronegativity(dopant)
         oxidation_state = get_oxidation_state(dopant)
 
-        print("   Dopant element: {}".format(dopant))
-        print("Electronegativity: {}".format(electronegativity))
-        print("  Oxidation state: {}".format(oxidation_state))
+        out = ["   Dopant element: {}".format(dopant),
+               "Electronegativity: {}".format(electronegativity),
+               "  Oxidation state: {}".format(oxidation_state)]
+        print("_".join(out))
     else:
         logger.warnings(dopant + " is not a proper element name.")
 
@@ -105,14 +106,23 @@ def get_distances(string):
 
 
 class SimpleDefectName(MSONable):
-    """ Container class for defect name. """
+    """ Container for a name of vacancy, interstitial, & antisite defect."""
     def __init__(self,
                  in_atom: Union[str, None],
                  out_site: str,
                  charge: int):
+        if not re.match(r"[a-xA-Z0-9]+$", out_site):
+            raise ValueError("out_site {} is not valid.")
+
         self.in_atom = in_atom
         self.out_site = out_site
         self.charge = charge
+
+    def __str__(self):
+        if self.in_atom:
+            return "_".join([self.in_atom, self.out_site, str(self.charge)])
+        else:
+            return "_".join(["Va", self.out_site, str(self.charge)])
 
     @property
     def name_str(self):
@@ -120,10 +130,6 @@ class SimpleDefectName(MSONable):
             return "_".join([self.in_atom, self.out_site])
         else:
             return "_".join(["Va", self.out_site])
-
-    @property
-    def name_str_with_charge(self):
-        return "_".join([self.name_str, self.charge])
 
     @property
     def is_interstitial(self):
@@ -138,16 +144,21 @@ class SimpleDefectName(MSONable):
         in_atom, out_site, charge = string.split("_")
         return cls(in_atom, out_site, int(charge))
 
+#    @property
+#    def to_str(self):
+#        return
+
     def __eq__(self, other):
         return True if self.name_str == other.name_str else False
 
     def __hash__(self):
         return hash(self.name_str)
 
-    def is_name_matched(self, keywords):
-        """
-        Returns if name is matched by the selected_keywords.
-         Args:
+    def is_name_matched(self,
+                        keywords: Union[str, list]):
+        """ Returns if name is matched by the selected_keywords.
+
+        Args:
             keywords (str/list): Keywords used for checking if name is selected.
 
         When the following type names are given, constructs a set of defects.
@@ -171,7 +182,7 @@ class SimpleDefectName(MSONable):
         except TypeError:
             print("The type of keywords {} is invalid.".format(keywords))
 
-        return any([re.search(p, self.name_str) for p in keywords])
+        return any([re.search(p, self.__str__()) for p in keywords])
 
 
 class DefectInitialSetting(MSONable):

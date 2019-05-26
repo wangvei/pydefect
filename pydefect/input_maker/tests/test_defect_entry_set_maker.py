@@ -1,27 +1,19 @@
 # -*- coding: utf-8 -*-
 
-from io import StringIO
 import os
-import sys
 import unittest
 
 from pymatgen.core.structure import Structure
 
 from pydefect.input_maker.defect_entry_set_maker \
-    import get_int_from_string, parse_defect_name, log_is_being_removed, \
-    log_already_exist, log_is_being_constructed, is_name_matched, \
-    select_defect_names
-
-from pydefect.core.defect import DefectEntry
+    import get_int_from_string, select_defect_names
+from pydefect.input_maker.defect_entry_set_maker import DefectEntrySetMaker
 from pydefect.core.irreducible_site import IrreducibleSite
+from pydefect.input_maker.defect_initial_setting import DefectInitialSetting
+
 
 __author__ = "Yu Kumagai"
-__copyright__ = "Copyright 2017, Oba group"
-__version__ = "0.1"
 __maintainer__ = "Yu Kumagai"
-__email__ = "yuuukuma@gmail.com"
-__status__ = "Development"
-__date__ = "December 4, 2017"
 
 
 test_dir = os.path.join(os.path.dirname(__file__), "..", "..", "..",
@@ -39,52 +31,7 @@ class GetIntFromStringTest(unittest.TestCase):
         self.assertEqual(expected_2, actual_2)
 
 
-class ParseDefectNameTest(unittest.TestCase):
-
-    def test(self):
-        actual_1 = parse_defect_name("Va_Mg1_0")
-        expected_1 = ("Va", "Mg1", 0)
-        self.assertEqual(actual_1, expected_1)
-
-
-class PrintAlreadyExistTest(unittest.TestCase):
-
-    def setUp(self):
-        self.org_stdout, sys.stdout = sys.stdout, StringIO()
-
-    def tearDown(self):
-        sys.stdout = self.org_stdout
-
-    def test(self):
-        print_already_exist(name="Va_O1_0")
-        expected = "   Va_O1_0 already exists, so nothing is done.\n"
-        self.assertEqual(sys.stdout.getvalue(), expected)
-
-
-class PrintIsBeingConstructedTest(unittest.TestCase):
-
-    def setUp(self):
-        self.org_stdout, sys.stdout = sys.stdout, StringIO()
-
-    def tearDown(self):
-        sys.stdout = self.org_stdout
-
-    def test(self):
-        print_is_being_constructed(name="Va_O1_0")
-        expected = "   Va_O1_0 is being constructed.\n"
-        self.assertEqual(sys.stdout.getvalue(), expected)
-
-
-class FilterNameTest(unittest.TestCase):
-    def test(self):
-        self.assertTrue(is_name_matched("Va_O11_-2",
-                                        keywords=["Va_O[0-9]+_-[0-9]+"]))
-        self.assertFalse(is_name_matched("Mg_i1_0", keywords=["Va", "O_i1"]))
-        self.assertTrue(is_name_matched("Mg_i1_0", keywords=("Va", "Mg_i1")))
-        self.assertFalse(is_name_matched("Mg_i1_0", keywords="Va"))
-
-
-class FilterNameSetTest(unittest.TestCase):
+class SelectDefectNamesTest(unittest.TestCase):
 
     def test(self):
         name_set = \
@@ -93,24 +40,26 @@ class FilterNameSetTest(unittest.TestCase):
              'O_i1_-1', 'O_i1_0', 'O_Mg1_-4', 'O_Mg1_-3', 'O_Mg1_-2',
              'O_Mg1_-1', 'O_Mg1_0', 'Al_Mg1_0', 'Al_Mg1_1']
 
-        actual_Va = select_defect_names(name_set, ["Va"])
+        actual_Va = select_defect_names(name_set, ["Va"], return_str=True)
         expected_Va = ['Va_Mg1_-2', 'Va_Mg1_-1', 'Va_Mg1_0', 'Va_O1_0',
                        'Va_O1_-1', 'Va_O1_-2', 'Va_O2_0']
 
-        actual__i = select_defect_names(name_set, ["_i"])
+        actual__i = select_defect_names(name_set, ["_i"], return_str=True)
         expected__i = ['Mg_i1_0', 'Mg_i1_1', 'Mg_i1_2', 'O_i1_-2', 'O_i1_-1',
                        'O_i1_0']
 
-        actual_Va_and__i = select_defect_names(name_set, ["Va", "_i"])
+        actual_Va_and__i = \
+            select_defect_names(name_set, ["Va", "_i"], return_str=True)
         expected_Va_and__i = expected_Va + expected__i
 
-        actual_Va_O = select_defect_names(name_set, ["Va_O"])
+        actual_Va_O = select_defect_names(name_set, ["Va_O"], return_str=True)
         expected_Va_O = ['Va_O1_0', 'Va_O1_-1', 'Va_O1_-2', 'Va_O2_0']
 
-        actual_Va_O_0 = select_defect_names(name_set, ["Va_O[0-9]_0"])
+        actual_Va_O_0 = \
+            select_defect_names(name_set, ["Va_O[0-9]_0"], return_str=True)
         expected_Va_O_0 = ['Va_O1_0', 'Va_O2_0']
 
-        actual_Va_O1 = select_defect_names(name_set, ["Va_O1"])
+        actual_Va_O1 = select_defect_names(name_set, ["Va_O1"], return_str=True)
         expected_Va_O1 = ['Va_O1_0', 'Va_O1_-1', 'Va_O1_-2']
 
         self.assertEqual(sorted(actual_Va), sorted(expected_Va))
@@ -119,16 +68,6 @@ class FilterNameSetTest(unittest.TestCase):
         self.assertEqual(sorted(actual_Va_O), sorted(expected_Va_O))
         self.assertEqual(sorted(actual_Va_O_0), sorted(expected_Va_O_0))
         self.assertEqual(sorted(actual_Va_O1), sorted(expected_Va_O1))
-
-import os
-import shutil
-import unittest
-
-from pymatgen.core.structure import Structure
-
-from pydefect.input_maker.defect_entry_set_maker import DefectEntrySetMaker
-from pydefect.core.irreducible_site import IrreducibleSite
-from pydefect.input_maker.defect_initial_setting import DefectInitialSetting
 
 class DefectEntrySetMakerTest(unittest.TestCase):
 

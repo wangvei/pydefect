@@ -1,10 +1,11 @@
 # -*- coding: utf-8 -*-
 
-import re
+from typing import Union
 
 from pymatgen.core.periodic_table import Element
 
-from pydefect.input_maker.defect_initial_setting import DefectInitialSetting, SimpleDefectName
+from pydefect.input_maker.defect_initial_setting import DefectInitialSetting, \
+    SimpleDefectName
 from pydefect.core.defect import DefectEntry
 from pydefect.util.structure_tools import perturb_neighboring_atoms, \
     defect_center_from_coords
@@ -29,8 +30,8 @@ def get_int_from_string(x):
 
 
 def log_is_being_removed(name):
-    """
-    Shows the message.
+    """ Shows the message.
+
     Args:
         name (str): a string
     """
@@ -38,8 +39,8 @@ def log_is_being_removed(name):
 
 
 def log_already_exist(name):
-    """
-    Shows the message.
+    """ Shows the message.
+
     Args:
         name (str): a string
     """
@@ -47,26 +48,41 @@ def log_already_exist(name):
 
 
 def log_is_being_constructed(name):
-    """
-    Shows the message.
+    """ Shows the message.
+
     Args:
         name (str): a string
     """
     logger.warning("{:>10} is being constructed.".format(name))
 
 
-def select_defect_names(name_set, keywords):
-    """
-    Returns names including one of keywords.
-     Args:
-        name_set (list): A set of names.
-        keywords (str/list): Keywords determining if name is selected or not.
+def select_defect_names(name_set: list,
+                        keywords: Union[str, list],
+                        return_str: bool = False):
+    """ Returns names including one of keywords.
+
+    Args:
+        name_set (list):
+            A set of names (str/SimpleDefectName).
+        keywords (str/list):
+            Keywords determining if name is selected or not.
+        return_str (bool):
+            Whether to return string instead of SimpleDefectName object.
+
+    Return:
+         list of names set.
     """
     names = []
 
     for name in name_set:
+        if isinstance(name, str):
+            name = SimpleDefectName.from_str(name)
+
         if name.is_name_matched(keywords):
-            names.append(name)
+            if return_str:
+                names.append(name.to_str)
+            else:
+                names.append(name)
 
     return list(set(names))
 
