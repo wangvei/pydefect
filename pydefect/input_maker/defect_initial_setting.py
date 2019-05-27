@@ -437,6 +437,7 @@ class DefectInitialSetting(MSONable):
                             structure: Structure,
                             transformation_matrix: list,
                             cell_multiplicity: int,
+                            oxidation_states: dict = None,
                             dopants: list = None,
                             is_antisite: bool = True,
                             en_diff: float = ELECTRONEGATIVITY_DIFFERENCE,
@@ -456,6 +457,8 @@ class DefectInitialSetting(MSONable):
                 Diagonal component of transformation matrix.
             cell_multiplicity (int):
                 How much is the supercell larger than the *primitive* cell.
+            oxidation_states (dict):
+                Oxidation states. Values are int.
             dopants (list):
                 Dopant element names, e.g., ["Al", "N"]
             is_antisite (bool):
@@ -480,10 +483,9 @@ class DefectInitialSetting(MSONable):
             interstitial_site_names (list):
                 Names of interstitial sites written in interstitial.in file.
         """
-        if dopants is None:
-            dopants = []
-        if interstitial_site_names is None:
-            interstitial_site_names = []
+        dopants = [] if dopants is None else dopants
+        interstitial_site_names = [] \
+            if interstitial_site_names is None else interstitial_site_names
 
         s = structure.get_sorted_structure()
 
@@ -491,7 +493,6 @@ class DefectInitialSetting(MSONable):
             SpacegroupAnalyzer(s, symprec=symprec,
                                angle_tolerance=angle_tolerance)
         symmetrized_structure = space_group_analyzer.get_symmetrized_structure()
-
         space_group_symbol = space_group_analyzer.get_space_group_symbol()
 
         symbol_set = s.symbol_set
@@ -500,10 +501,20 @@ class DefectInitialSetting(MSONable):
 
         # Electronegativity and oxidation states for constituents and dopants
         electronegativity = {}
-        oxidation_states = {}
         for element in element_set:
             electronegativity[element] = get_electronegativity(element)
-            oxidation_states[element] = get_oxidation_state(element)
+
+        if oxidation_states is None:
+            primitive = space_group_analyzer.find_primitive()
+            oxi_guess = primitive.composition.oxi_state_guesses()[0]
+            oxidation_states = {k: round(v) for k, v in oxi_guess.items()}
+        else:
+            for e in s.composition.elements:
+                if e not in oxidation_states.keys():
+                    raise ValueError("{} is not included in oxidation states".
+                                     format(e))
+
+        symmetrized_structure.add_oxidation_state_by_element(oxidation_states)
 
         # num_irreducible_sites["Mg"] = 2 means Mg has 2 inequivalent sites
         num_irreducible_sites = defaultdict(int)
@@ -513,15 +524,19 @@ class DefectInitialSetting(MSONable):
 
         # equivalent_sites: Equivalent site indices from SpacegroupAnalyzer.
         equiv_sites = symmetrized_structure.equivalent_sites
-        last_index = 0
 
         lattice = symmetrized_structure.lattice.matrix
         sym_dataset = get_symmetry_dataset(symmetrized_structure, symprec,
                                            angle_tolerance)
 
+        # Initialize the last index for iteration.
+        last_index = 0
         for i, equiv_site in enumerate(equiv_sites):
             # set element name of equivalent site
             element = equiv_site[0].species_string
+            # need to omit sign and numbers, eg Zn2+ -> Zn
+            element = ''.join([i for i in element
+                               if not (i.isdigit() or i == "+" or i == "-")])
 
             # increment number of inequivalent sites for element
             num_irreducible_sites[element] += 1

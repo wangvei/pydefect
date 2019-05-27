@@ -109,7 +109,6 @@ class SupercellCalcResults(MSONable):
                 "Fermi level (eV): \n" + str(self.fermi_level),
                 "shallow: \n" + str(self.shallow)]
 
-
         if self.kpoints:
             outs.append("IBZKPT is parsed \n")
         return "\n".join(outs)
