@@ -141,7 +141,6 @@ class DefectEnergies(MSONable):
                    supercell_vbm, supercell_cbm, title)
 
     def to_json_file(self, filename="defect_energy.json"):
-        """ Returns a json file. """
         with open(filename, 'w') as fw:
             json.dump(self.as_dict(), fw, indent=2, cls=MontyEncoder)
 
@@ -157,8 +156,8 @@ class DefectEnergies(MSONable):
                      "Magnetization: {}".format(
                          round(self.magnetization[n][c], 2)),
                      "Convergence: {}".format(self.convergence[n][c]),
-                     "Shallow: {}".format(self.shallow[n][c]),
-                     ""])
+                     "Shallow: {}".format(self.shallow[n][c])])
+            outs.append("")
 
         return "\n".join(outs)
 
@@ -170,11 +169,14 @@ class DefectEnergies(MSONable):
                 Name of the defect.
             charge (list):
                 1x3 list comprising three charge states.
+
+        Return:
+            U value.
         """
         if len(charge) != 3:
             assert ValueError("The length of charge states must be 3.")
-        elif charge[0] + charge[2] - 2 * charge[1] != 0:
-            assert ValueError("The charge states {} {} {} are not balanced."
+        elif charge[2] - charge[1] != 1 or charge[1] - charge[0] != 1:
+            assert ValueError("The charge states {} {} {} are not sequential."
                               .format(*charge))
 
         energies = [self.energies[name][c] for c in charge]

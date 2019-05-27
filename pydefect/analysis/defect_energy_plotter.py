@@ -56,6 +56,7 @@ class DefectEnergyPlotter:
                     x_range: list = None,
                     y_range: list = None,
                     show_fermi_level: bool = True,
+                    exclude_shallow_defects: bool = True,
                     show_transition_levels: bool = False,
                     show_all_lines: bool = False):
         """ Plots defect formation energies as a function of the Fermi level.
