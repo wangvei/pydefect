@@ -38,14 +38,19 @@ def extended_range(i):
     """
     Extended range method used for positive/negative input value.
     The input value is included for both positive and negative numbers.
-    E.g., extended_range(3) = [0, 1, 2, 3]
-          extended_range(-3) = [-3, -2, -1, 0]
+    E.g., extended_range(3) = [-1, 0, 1, 2, 3]
+          extended_range(-3) = [-3, -2, -1, 0, 1]
+          extended_range(2) = [0, 1, 2]
+          extended_range(-4) = [-4, -3, -2, -1, 0]
 
     Args:
         i (int): an integer
     """
     if isinstance(i, int):
-        return range(i + 1) if i >= 0 else range(i, 1)
+        if i % 2 == 0:
+            return range(i + 1) if i >= 0 else range(i, 1)
+        else:
+            return range(-1, i + 1) if i >= 0 else range(i, 2)
     else:
         raise AttributeError
 
@@ -371,7 +376,7 @@ class DefectInitialSetting(MSONable):
                     oxidation_states[element] = int(di.readline().split()[2])
 
                 elif line[0] == "Interstitials:":
-                        interstitial_site_names = list(line[1:])
+                    interstitial_site_names = list(line[1:])
 
                 elif line[0] == "Antisite":
                     antisite_configs = [i.split("_") for i in line[2:]]

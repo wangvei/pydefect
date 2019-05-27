@@ -19,11 +19,19 @@ test_dir = os.path.join(os.path.dirname(__file__), "..", "..", "..",
 
 class ExtendedRangeTest(unittest.TestCase):
     def test_range(self):
-        expected_positive = [0, 1, 2, 3]
+        expected_positive = [0, 1, 2]
+        actual_positive = [i for i in extended_range(2)]
+        self.assertEqual(actual_positive, expected_positive)
+
+        expected_negative = [-2, -1, 0]
+        actual_negative = [i for i in extended_range(-2)]
+        self.assertEqual(actual_negative, expected_negative)
+
+        expected_positive = [-1, 0, 1, 2, 3]
         actual_positive = [i for i in extended_range(3)]
         self.assertEqual(actual_positive, expected_positive)
 
-        expected_negative = [-3, -2, -1, 0]
+        expected_negative = [-3, -2, -1, 0, 1]
         actual_negative = [i for i in extended_range(-3)]
         self.assertEqual(actual_negative, expected_negative)
 
@@ -159,9 +167,6 @@ class DefectInitialSettingTest(unittest.TestCase):
         print(self.MgO.as_dict())
         self.assertTrue(mgo_from_dict.as_dict == self.MgO.as_dict())
         self.MgO.to()
-
-    def test_to_yaml_file(self):
-        self.MgO.to_defect_in_yaml_file()
 
     def test_to_json_file(self):
         # round trip test
