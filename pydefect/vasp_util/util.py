@@ -1,14 +1,15 @@
 # -*- coding: utf-8 -*-
-from pymatgen import Composition, Structure
-from pymatgen.io.vasp import Potcar, Incar
+import numpy as np
+from collections import defaultdict
+
+from pymatgen.core.composition import Composition
+from pymatgen.core.sites import Element
+from pymatgen.core.structure import Structure
+from pymatgen.electronic_structure.core import Spin, OrbitalType
+from pymatgen.io.vasp import Potcar, Incar, Procar
 
 __author__ = "Yu Kumagai"
-__copyright__ = "Copyright 2018, Oba group"
-__version__ = "0.1"
 __maintainer__ = "Yu Kumagai"
-__email__ = "yuuukuma@gmail.com"
-__status__ = "Development"
-__date__ = "May 15, 2018"
 
 
 def element_diff_from_poscar_files(poscar1, poscar2):
@@ -64,3 +65,80 @@ def get_defect_charge_from_vasp(structure, potcar="POTCAR", incar="INCAR"):
 
     # charge is minus of difference of the electrons
     return int(num_elect_neutral - num_elect_incar)
+
+
+def calc_participation_ratio(procar: Procar,
+                             spin: Spin,
+                             band_index: int,
+                             kpoint_index: int,
+                             atom_indices: list):
+    """ Returns sum of participation ratios at atom_indices sites
+
+    The PROCAR data of the form below. It should VASP uses 1-based indexing,
+    but all indices are converted to 0-based here.::
+
+        {
+            spin: nd.array accessed with (k-point index, band index,
+                                          ion index, orbital index)
+        }
+    """
+
+    if spin not in procar.data.keys():
+        spin = Spin.up
+
+    # sum along k-point and orbital
+    projected_to_atoms = \
+        np.sum(procar.data[spin][kpoint_index], axis=2)[band_index]
+
+    return np.sum(projected_to_atoms[atom_indices]) / np.sum(projected_to_atoms)
+
+
+def calc_orbital_character(procar: Procar,
+                           structure: Structure,
+                           spin: Spin,
+                           band_index: int,
+                           kpoint_index: int):
+    """ Method returning a dictionary of projections on elements.
+
+    Args:
+        structure (Structure): Input structure.
+
+    Returns:
+        a dictionary in the {Element:{s: value, p: value, d: value}
+        where s, p, and d are OrbitalType in pymatgen.
+    """
+    d = defaultdict(dict)
+
+    for name in structure.symbol_set:
+        # get list of index
+        indices = \
+            [i for i, e in enumerate(structure.species) if e == Element(name)]
+        d[name]["s"] = \
+            np.sum(procar.data[spin][kpoint_index, band_index, indices, 0])
+        d[name]["p"] = \
+            np.sum(procar.data[spin][kpoint_index, band_index, indices, 1:4])
+        d[name]["d"] = \
+            np.sum(procar.data[spin][kpoint_index, band_index, indices, 4:9])
+        try:
+            d[name]["f"] = \
+                np.sum(procar.data[spin][kpoint_index, band_index,
+                       indices, 9:16])
+        except:
+            pass
+
+    return d
+
+
+def calc_orbital_similarity(orbital_1: defaultdict,
+                            orbital_2: defaultdict):
+    """
+    """
+    elements = set(list(orbital_1.keys()) + list(orbital_2.keys()))
+
+    diff = 0
+    for e in elements:
+        for o in "s", "p", "d", "f":
+            diff += abs(orbital_1[e][o] - orbital_2[e][o])
+
+    return diff
+

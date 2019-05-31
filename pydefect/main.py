@@ -274,8 +274,6 @@ def main():
     parser_supercell_results.add_argument(
         "-v", dest="vasprun", default=defaults["vasprun"], type=str)
     parser_supercell_results.add_argument(
-        "-i", dest="ibzkpt", default=defaults["ibzkpt"], type=str)
-    parser_supercell_results.add_argument(
         "-c", dest="contcar", default=defaults["contcar"], type=str)
     parser_supercell_results.add_argument(
         "-o", dest="outcar", default=defaults["outcar"], type=str)
@@ -551,6 +549,29 @@ def main():
 
     parser_vasp_oba_set.set_defaults(func=vasp_oba_set)
 
+    # -- diagnose --------------------------------------------------------------
+    parser_diagnose = subparsers.add_parser(
+        name="diagnose",
+        description="Tools for diagnosing results related to defects.",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+        aliases=['d'])
+
+    parser_diagnose.add_argument(
+        "--defect_dirs", dest="defect_dirs", nargs="+", type=str,
+        help="Directory names for the defect supercell results. "
+             "defect_entry.json, dft_results.json, and correction.json files "
+             "are required in each directory.")
+    parser_diagnose.add_argument(
+        "--unitcell", dest="unitcell", type=str, default="unitcell.json",
+        help="UnitcellCalcResults class object json file name.")
+    parser_diagnose.add_argument(
+        "--perfect", dest="perfect", type=str,
+        default="perfect/dft_results.json",
+        help="Json file name for the SupercellCalcResults class object of the "
+             "perfect supercell result.")
+
+    parser_diagnose.set_defaults(func=plot_energy)
+
     # -- plot_energy -----------------------------------------------------------
     parser_plot_energy = subparsers.add_parser(
         name="plot_energy",
@@ -620,6 +641,45 @@ def main():
     #     help="Calculate the U values at given defect name and three charges")
 
     parser_plot_energy.set_defaults(func=plot_energy)
+
+    # -- parse_eigenvalues -----------------------------------------------------------
+    parser_parse_eigenvalues = subparsers.add_parser(
+        name="parse_eigenvalues",
+        description="Tools for parsing defect eigenvalues",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+        aliases=['eig'])
+
+    parser_parse_eigenvalues.add_argument(
+        "--name", dest="name", type=str, default="",
+        help="System name that is written in the title.")
+    parser_parse_eigenvalues.add_argument(
+        "-y", "--yrange", dest="y_range", type=float, nargs='+', default=None,
+        help="Two float values for the y-range of the plot.")
+    parser_parse_eigenvalues.add_argument(
+        "-s", "--save_file", dest="save_file", type=str, default=None,
+        help="PDF file name to save the plot.")
+    parser_parse_eigenvalues.add_argument(
+        "--unitcell", dest="unitcell", type=str, default="unitcell.json",
+        help="UnitcellCalcResults class object json file name.")
+    parser_parse_eigenvalues.add_argument(
+        "--perfect", dest="perfect", type=str,
+        default="perfect/dft_results.json",
+        help="Json file name for the SupercellCalcResults class object of the "
+             "perfect supercell result.")
+    parser_parse_eigenvalues.add_argument(
+        "--de", dest="defect_entry", type=str, default="defect_entry.json")
+    parser_parse_eigenvalues.add_argument(
+        "--dft_results", dest="dft_results", type=str,
+        default="dft_results.json")
+    parser_parse_eigenvalues.add_argument(
+        "--correction", dest="correction", type=str, default="correction.json")
+    parser_parse_eigenvalues.add_argument(
+        "--defect_dir", dest="defect_dir", type=str,
+        help="Directory name for the defect supercell result. "
+             "defect_entry.json, dft_results.json, and correction.json files "
+             "are required in the directory.")
+
+    parser_parse_eigenvalues.set_defaults(func=parse_eigenvalues)
 
     args = parser.parse_args()
     args.func(args)
@@ -791,7 +851,7 @@ def supercell_calc_results(args):
 
     if args.dir_all:
         dirs = glob('*[0-9]/')
-        dirs.append("perfect/")
+        dirs.insert(0, "perfect/")
     else:
         dirs = args.dirs
 
@@ -803,7 +863,6 @@ def supercell_calc_results(args):
                 dft_results = SupercellCalcResults.from_vasp_files(
                     directory_path=d,
                     vasprun=args.vasprun,
-                    ibzkpt=args.ibzkpt,
                     contcar=args.contcar,
                     outcar=args.outcar)
 
@@ -816,10 +875,8 @@ def supercell_calc_results(args):
                     SupercellCalcResults.from_vasp_files(
                         directory_path=d,
                         vasprun=args.vasprun,
-                        ibzkpt=args.ibzkpt,
                         contcar=args.contcar,
                         outcar=args.outcar,
-                        check_shallow=args.not_check_shallow,
                         referenced_dft_results=perfect_results,
                         defect_entry=de,
                         symprec=args.symprec,
@@ -1089,24 +1146,39 @@ def vasp_oba_set(args):
     os.chdir(original_dir)
 
 
+# def diagnose(args):
+#     try:
+#         unitcell = UnitcellCalcResults.load_json(args.unitcell)
+#     except FileNotFoundError:
+#         print("{} not found".format(args.unitcell))
+
+    # try:
+    #     perfect = SupercellCalcResults.load_json(args.perfect)
+    # except FileNotFoundError:
+    #     print("{} not found".format(args.perfect))
+
+    # defects_dirs = args.defect_dirs if args.defect_dirs else glob('*[0-9]/')
+
+# #    for d in defects_dirs:
+
+
 def plot_energy(args):
     unitcell = UnitcellCalcResults.load_json(args.unitcell)
     perfect = SupercellCalcResults.load_json(args.perfect)
 
-    if not args.defect_dirs:
-        defects_dirs = glob('*[0-9]/')
-    else:
-        defects_dirs = args.defect_dirs
+    defects_dirs = args.defect_dirs if args.defect_dirs else glob('*[0-9]/')
 
     defects = []
     for d in defects_dirs:
         logger.info("parsing directory {}...".format(d))
         input_objects = []
-        for i in args.defect_entry, args.dft_results, args.correction:
+        files = [args.defect_entry, args.dft_results, args.correction]
+        classes = [DefectEntry, SupercellCalcResults, ExtendedFnvCorrection]
+        for f, c in zip(files, classes):
             try:
-                input_objects.append(DefectEntry.load_json(join(d, i)))
+                input_objects.append(c.load_json(join(d, f)))
             except IOError:
-                logger.warning("Parsing {} in {} failed.".format(i, d))
+                logger.warning("Parsing {} in {} failed.".format(f, d))
                 continue
 
         defects.append(Defect(defect_entry=input_objects[0],
@@ -1153,6 +1225,37 @@ def plot_energy(args):
                               show_all_lines=args.show_all)
 
     plt.savefig(args.save_file, format="pdf") if args.save_file else plt.show()
+
+
+def parse_eigenvalues(args):
+    unitcell = UnitcellCalcResults.load_json(args.unitcell)
+    perfect = SupercellCalcResults.load_json(args.perfect)
+
+    d = args.defect_dir
+    logger.info("parsing directory {}...".format(d))
+    input_objects = []
+    files = [args.defect_entry, args.dft_results, args.correction]
+    classes = [DefectEntry, SupercellCalcResults, ExtendedFnvCorrection]
+    for f, c in zip(files, classes):
+        try:
+            input_objects.append(c.load_json(join(d, f)))
+        except IOError:
+            logger.warning("Parsing {} in {} failed.".format(f, d))
+            continue
+
+    defect = Defect(defect_entry=input_objects[0],
+                    dft_results=input_objects[1],
+                    correction=input_objects[2])
+
+    from pydefect.analysis.defect_eigenvalues import DefectEigenvalue
+    defect_eigenvalues = DefectEigenvalue.from_files(unitcell=unitcell,
+                                                     perfect=perfect,
+                                                     defect=defect)
+    defect_eigenvalues.plot()
+
+#    plt.savefig(args.save_file, format="pdf") if args.save_file else plt.show()
+
+
 
 
 if __name__ == "__main__":

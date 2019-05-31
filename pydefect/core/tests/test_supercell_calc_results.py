@@ -23,123 +23,20 @@ test_dir = os.path.join(os.path.dirname(__file__), "..", "..", "..",
                         "test_files", "core")
 
 
-# class DefectCenterTest(unittest.TestCase):
-#     def test_defect_center(self):
-
-        # name = "Va_O1"
-        # test_structure = Structure.from_file(
-        #    os.path.join(test_dir, "POSCAR-MgO64atoms-Va_O1"))
-        # removed_atoms = {32: [0.25, 0.25, 0.25]}
-        # inserted_atoms = []
-        # element_diff = {"O": -1}
-        # charge = 2
-        # # Construct DefectEntry class object.
-        # vac_defect_entry = DefectEntry(name, test_structure, removed_atoms,
-        #                                inserted_atoms, element_diff, charge)
-
-        # # Test a single defect.
-        # actual1 = defect_center(vac_defect_entry)
-        # expected = [0.25, 0.25, 0.25]
-        # self.assertEqual(actual1, expected)
-
-        # # Test with relaxed structure.
-        # contcar = Structure.from_file(
-        #     os.path.join(test_dir, "CONTCAR-MgO64atoms-Va_O1"))
-
-        # actual2 = defect_center(vac_defect_entry, contcar)
-        # self.assertEqual(actual2, expected)
-
-        # name_complex = "Va_O1+i_2H"
-        # complex_structure = Structure.from_file(
-        #     os.path.join(test_dir, "POSCAR-MgO64atoms-Va_O1+i_2H"))
-        # removed_atoms = {32: [0.25, 0.25, 0.25]}
-        # inserted_atoms = [63, 64]
-        # element_diff = {"O": -1, "H": 2}
-        # charge = 0
-
-        # # Construct DefectEntry class object.
-        # complex_defect_entry = DefectEntry(name_complex, complex_structure,
-        #                                    removed_atoms, inserted_atoms,
-        #                                    element_diff, charge)
-        # actual3 = defect_center(complex_defect_entry)
-        # expected = [0.26, 0.26, 0.26]
-        # self.assertEqual(actual3, expected)
-
-    # def test_defect_center(self):
-    #     # Test for periodic boundary condition (PBC).
-    #     name = "MgO64atoms-Va_Mg1+Va_O1"
-    #     test_structure = Structure.from_file(
-    #         os.path.join(test_dir, "POSCAR-MgO64atoms-Va_Mg1+Va_O1"))
-    #     removed_atoms = {0: [0, 0, 0], 39: [0.75, 0.75, 0.75]}
-    #     inserted_atoms = []
-    #     element_diff = {"Mg": -1, "O": -1}
-    #     charge = 0
-    #     # Construct DefectEntry class object.
-    #     pbc_defect_entry = DefectEntry(name, test_structure, removed_atoms,
-    #                                     inserted_atoms, element_diff, charge)
-
-        # # Test a single defect.
-        # actual4 = defect_center(pbc_defect_entry)
-        # expected = [-0.125, -0.125, -0.125]
-        # self.assertEqual(actual4, expected)
-
-
-# class DistancesFromPointTest(unittest.TestCase):
-#     def test_distances_from_point(self):
-#         name = "tmp"
-#         structure = Structure.from_file(
-#             os.path.join(test_dir, "POSCAR-min_distance_under_pbc"))
-#         removed_atoms = {}
-#         inserted_atoms = [0]
-#         element_diff = {"Fe": 1}
-#         charge = 0
-#         # Construct DefectEntry class object.
-#         defect_entry = DefectEntry(name, structure, removed_atoms,
-#                                    inserted_atoms, element_diff, charge)
-
-        # # (Fe1 - Co1) = 7.70552(0)
-        # # Fe1 0.25000 0.25000 0.25000(0, 0, 0) + x, y, z
-        # # Co1 0.50000 -0.12500 -0.12500(0, -1, -1) + x, y, z
-        # # (Fe1 - Ni1) = 4.67707(0)
-        # # Fe1  0.25000 0.25000 0.25000(0, 0, 0) + x, y, z
-        # # Ni1 -0.12500 0.25000 0.50000(-1, 0, 0) + x, y, z
-        # actual = distances_from_defect_center(structure, defect_entry)
-        # expected = [0.0, 7.705517503711221, 4.677071733467427]
-        # self.assertEqual(actual, expected)
-
-
 class SupercellDftResultsTest(PymatgenTest):
 
     def setUp(self):
         """ """
+        self._defect_entry_perfect = \
+            DefectEntry.load_json(os.path.join(test_dir, "MgO/defects/perfect", "defect_entry.json"))
 
         self._MgO_perfect = \
             SupercellCalcResults.from_vasp_files(
-                os.path.join(test_dir, "MgO/defects/perfect"))
-
-        name = "Va_O1"
-        initial_structure = Structure.from_file(
-            os.path.join(test_dir, "MgO/defects/Va_O1_2", "POSCAR"))
-        perturbed_initial_structure = initial_structure.copy()
-        removed_atoms = {8: [0.25, 0.25, 0.25]}
-        inserted_atoms = {}
-        changes_of_num_elements = {"O": -1}
-        charge = 2
-        initial_symmetry = "Oh"
-        perturbed_sites = []
-        num_equiv_sites = 4
+                directory_path=os.path.join(test_dir, "MgO/defects/perfect"),
+                defect_entry=self._defect_entry_perfect)
 
         self._defect_entry_MgO_Va_O1_2 = \
-            DefectEntry(name=name,
-                        initial_structure=initial_structure,
-                        perturbed_initial_structure=perturbed_initial_structure,
-                        removed_atoms=removed_atoms,
-                        inserted_atoms=inserted_atoms,
-                        changes_of_num_elements=changes_of_num_elements,
-                        charge=charge,
-                        initial_site_symmetry=initial_symmetry,
-                        perturbed_sites=perturbed_sites,
-                        num_equiv_sites=num_equiv_sites)
+            DefectEntry.load_json(os.path.join(test_dir, "MgO/defects/Va_O1_2", "defect_entry.json"))
 
         self._MgO_Va_O1_2 = \
             SupercellCalcResults.from_vasp_files(
@@ -149,6 +46,9 @@ class SupercellDftResultsTest(PymatgenTest):
 
     def test_nothing(self):
         print(self._MgO_Va_O1_2.displacements)
+        print(self._MgO_Va_O1_2.participation_ratio)
+        print(self._MgO_Va_O1_2.orbital_character)
+        print(self._MgO_perfect.orbital_character)
 
     def test_from_vasp_files(self):
         # CAUTION: When constructing Structure object from Structure.from_file
@@ -177,7 +77,7 @@ class SupercellDftResultsTest(PymatgenTest):
         self.assertEqual(self._MgO_Va_O1_2.electrostatic_potential, expected)
 
     def test_dict(self):
-        """Roundtrip test"""
+        """Round trip test"""
         d = self._MgO_Va_O1_2.as_dict()
         dd = SupercellCalcResults.from_dict(d).as_dict()
         self.assertEqual(d, dd)

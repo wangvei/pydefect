@@ -11,12 +11,7 @@ from pydefect.core.defect import DefectEntry
 from pydefect.analysis.defect_energies import Defect
 
 __author__ = "Yu Kumagai"
-__copyright__ = "Copyright 2017, Oba group"
-__version__ = "0.1"
 __maintainer__ = "Yu Kumagai"
-__email__ = "yuuukuma@gmail.com"
-__status__ = "Development"
-__date__ = "Feb. 25, 2018"
 
 test_dir = os.path.join(os.path.dirname(__file__), "..", "..", "..",
                         "test_files", "core")
@@ -32,7 +27,8 @@ class DefectEigenvalueTest(unittest.TestCase):
                                     "MgO/defects/perfect/dft_results.json")
         perfect = SupercellCalcResults.load_json(perfect_file)
 
-        d = os.path.join(test_dir, "MgO/defects/Va_O1_2")
+        d = os.path.join(test_dir, "MgO/defects/Mg_i1_1")
+#        d = os.path.join(test_dir, "MgO/defects/Va_O1_2")
         defect_entry = \
             DefectEntry.load_json(os.path.join(d, "defect_entry.json"))
         dft_results = \
@@ -47,8 +43,13 @@ class DefectEigenvalueTest(unittest.TestCase):
 
         self.defect_eigenvalues = DefectEigenvalue.from_files(unitcell=unitcell,
                                                               perfect=perfect,
-                                                              defect=defect,
-                                                              system="MgO")
+                                                              defect=defect)
+
+    def test_diagnose_shallow(self):
+        print(self.defect_eigenvalues.diagnose_shallow())
+
+    def test(self):
+        print(self.defect_eigenvalues.vbm)
 
     def test_plot(self):
         self.defect_eigenvalues.plot()

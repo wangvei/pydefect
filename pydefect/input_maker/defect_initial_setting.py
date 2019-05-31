@@ -160,7 +160,7 @@ class SimpleDefectName(MSONable):
         return hash(self.name_str)
 
     def is_name_matched(self,
-                        keywords: Union[str, list]):
+                        keywords: Union[str, list, None]):
         """ Returns if name is matched by the selected_keywords.
 
         Args:
@@ -178,6 +178,8 @@ class SimpleDefectName(MSONable):
         When complete defect_name is given, constructs a particular defect.
             e.g., "Va_O1_2",  "Mg_O1_0"
         """
+        if keywords is None:
+            return True
 
         try:
             if isinstance(keywords, str):
@@ -570,7 +572,7 @@ class DefectInitialSetting(MSONable):
             for elem1, elem2 in permutations(symbol_set, 2):
                 if elem1 == elem2:
                     continue
-                elif elem1 and elem2 in electronegativity:
+                elif elem1 in electronegativity and elem2 in electronegativity:
                     if abs(electronegativity[elem1] -
                            electronegativity[elem2]) < en_diff:
                         antisite_configs.append([elem1, elem2])

@@ -135,12 +135,16 @@ class UnitcellCalcResults(MSONable):
     def volume(self):
         return check_attribute("volume", self._volume)
 
+    @property
     def is_set_all(self):
-        return not any([self._band_edge,
-                        self._static_dielectric_tensor,
-                        self._ionic_dielectric_tensor,
-                        self._total_dos,
-                        self._volume])
+        for i in self._band_edge, self._static_dielectric_tensor, \
+                 self._ionic_dielectric_tensor, self._total_dos, self._volume:
+            if i is None:
+                return False
+            else:
+                continue
+
+        return True
 
     @band_edge.setter
     def band_edge(self, band_edge):

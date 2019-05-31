@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+from copy import copy
 from collections import namedtuple
 from itertools import combinations
 import numpy as np
@@ -30,6 +31,8 @@ class DefectEnergyPlotter:
         # Objects of the Concentration named tuple for 1st and 2nd temperature.
         self.title = defect_energies.title
         self.energies = defect_energies.energies
+        self.convergence = defect_energies.convergence
+        self.shallow = defect_energies.shallow
         self.vbm = defect_energies.vbm
         self.cbm = defect_energies.cbm
         self.supercell_vbm = defect_energies.supercell_vbm
@@ -57,6 +60,7 @@ class DefectEnergyPlotter:
                     y_range: list = None,
                     show_fermi_level: bool = True,
                     exclude_shallow_defects: bool = True,
+                    exclude_unconverged_defects: bool = True,
                     show_transition_levels: bool = False,
                     show_all_lines: bool = False):
         """ Plots defect formation energies as a function of the Fermi level.
@@ -82,12 +86,16 @@ class DefectEnergyPlotter:
         ax.set_ylabel("Formation energy (eV)", fontsize=15)
 
         # e_of_c is energy as a function of charge: e_of_c[charge] = energy
-        for name, e_of_c in self.energies.items():
+        for name, e_of_c in copy(self.energies).items():
 
-            for c in e_of_c.keys():
+            for c in copy(e_of_c).keys():
                 n = SimpleDefectName.from_str("_".join([name, str(c)]))
-                if filtering_words \
-                        and n.is_name_selected(filtering_words) is False:
+
+                if ((n.is_name_matched(filtering_words) is False)
+                        or (exclude_shallow_defects is True
+                            and self.shallow[name][c])
+                        or (exclude_unconverged_defects is True
+                            and self.convergence is False)):
                     e_of_c.pop(c)
 
             cross_points_charge = []

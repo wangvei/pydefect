@@ -25,8 +25,7 @@ logger = get_logger(__name__)
 
 
 class DefectEntry(MSONable):
-    """ Holds all the information related to the initial setting of a single defect.
-    """
+    """ Holds information related to the initial setting of a single defect. """
 
     def __init__(self,
                  name: str,
