@@ -21,6 +21,7 @@ from obadb.vasp.incar import incar_flags
 from pydefect.analysis.chempotdiag.make_inputs import make_vasp_inputs_from_mp
 from pydefect.analysis.defect_energies import DefectEnergies, Defect
 from pydefect.analysis.defect_energy_plotter import DefectEnergyPlotter
+from pydefect.analysis.defect_eigenvalues import DefectEigenvalue
 from pydefect.core.defect import DefectEntry
 from pydefect.core.interstitial_site import InterstitialSiteSet
 from pydefect.core.prior_info import PriorInfo
@@ -1247,10 +1248,13 @@ def parse_eigenvalues(args):
                     dft_results=input_objects[1],
                     correction=input_objects[2])
 
-    from pydefect.analysis.defect_eigenvalues import DefectEigenvalue
     defect_eigenvalues = DefectEigenvalue.from_files(unitcell=unitcell,
                                                      perfect=perfect,
                                                      defect=defect)
+
+    defect_eigenvalues.diagnose_shallow_states()
+    print(defect_eigenvalues.shallow)
+    print(defect_eigenvalues.deep_states)
     defect_eigenvalues.plot()
 
 #    plt.savefig(args.save_file, format="pdf") if args.save_file else plt.show()

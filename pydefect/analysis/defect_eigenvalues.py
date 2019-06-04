@@ -3,20 +3,24 @@
 import json
 import numpy as np
 
+from collections import defaultdict
 from monty.json import MSONable, MontyEncoder
-from monty.serialization import loadfn
 
 import matplotlib.pyplot as plt
 
 from pymatgen.electronic_structure.core import Spin
-from pymatgen.io.vasp import Kpoints
 
+from pydefect.analysis.defect_energies import Defect
 from pydefect.core.supercell_calc_results import SupercellCalcResults
 from pydefect.core.unitcell_calc_results import UnitcellCalcResults
-from pydefect.core.defect import DefectEntry
 from pydefect.core.error_classes import UnitcellCalcResultsError
-from pydefect.analysis.defect_energies import Defect
 from pydefect.vasp_util.util import calc_orbital_similarity
+from pydefect.util.logger import get_logger
+
+__author__ = "Yu Kumagai"
+__maintainer__ = "Yu Kumagai"
+
+logger = get_logger(__name__)
 
 
 class DefectEigenvalue(MSONable):
@@ -41,8 +45,8 @@ class DefectEigenvalue(MSONable):
                  orbital_character: dict = None,
                  perfect_orbital_character: dict = None,
                  eigenvalue_correction: dict = None,
-                 deep_states: list = None,
-                 is_shallow: bool = False):
+                 deep_states: dict = None,
+                 shallow: dict = None):
         """
         Args:
             name (str):
@@ -73,6 +77,7 @@ class DefectEigenvalue(MSONable):
                 Dict with key of correction name and value of correction value.
             deep_states (list):
                 Band indices corresponding to the deep defect states.
+                ex. {Spin.up: ["vbm", "cbm"]}
         """
         self.name = name
         self.charge = charge
@@ -93,14 +98,15 @@ class DefectEigenvalue(MSONable):
         self.perfect_orbital_character = perfect_orbital_character
         self.eigenvalue_correction = \
             dict(eigenvalue_correction) if eigenvalue_correction else None
-        self.deep_states = list(deep_states) if deep_states else deep_states
-        self.is_shallow = is_shallow
+        self.deep_states = deep_states if deep_states else defaultdict(list)
+        self.shallow = shallow if shallow else defaultdict(dict)
 
     @classmethod
     def from_files(cls,
                    unitcell: UnitcellCalcResults,
                    perfect: SupercellCalcResults,
-                   defect: Defect):
+                   defect: Defect,
+                   diagnose_band_edges: bool = True):
         """ Parse defect eigenvalues.
 
         Args:
@@ -128,29 +134,66 @@ class DefectEigenvalue(MSONable):
                    eigenvalues=defect.dft_results.eigenvalues,
                    perfect_eigenvalues=perfect.eigenvalues,
                    perfect_symmops=perfect.symmops,
-                   vbm=vbm, cbm=cbm,
-                   supercell_vbm=supercell_vbm, supercell_cbm=supercell_cbm,
+                   vbm=vbm,
+                   cbm=cbm,
+                   supercell_vbm=supercell_vbm,
+                   supercell_cbm=supercell_cbm,
                    fermi_level=defect.dft_results.fermi_level,
                    total_magnetization=defect.dft_results.total_magnetization,
                    participation_ratio=defect.dft_results.participation_ratio,
                    orbital_character=defect.dft_results.orbital_character,
                    perfect_orbital_character=perfect.orbital_character)
 
-    def diagnose_shallow(self,
-                         deep_participation_ratio_criterion=0.1,
-                         orbital_similarity_criterion=0.1):
+    def diagnose_shallow_states(self,
+                                localized_criterion: float = 0.25,
+                                similarity_criterion: float = 0.3):
+        """
 
-        for s in self.participation_ratio:
+        Args:
+             localized_criterion (float):
+                 Determines whether the eigenstate is localized.
+             similarity_criterion:
+                 Determines whether the eigenstate is a host state.
+        """
+        if all([self.participation_ratio, self.orbital_character,
+                self.perfect_orbital_character]) is False:
+            logger.warning("Diagnosing shallow states is impossible.")
+            return False
+
+        for spin in self.participation_ratio:
             for band_edge in "vbm", "cbm":
-                similarity = \
-                    calc_orbital_similarity(self.orbital_character[s][band_edge],
-                                            self.perfect_orbital_character[s][band_edge])
-                if (self.participation_ratio[s][band_edge]
-                    < deep_participation_ratio_criterion) \
-                        and (similarity > orbital_similarity_criterion):
-                    return True
+                participation_ratio = self.participation_ratio[spin][band_edge]
 
-        return False
+                # Consider the situation where perfect has only Spin.up.
+                try:
+                    perfect = self.perfect_orbital_character[spin][band_edge]
+                except KeyError:
+                    perfect = self.perfect_orbital_character[Spin.up][band_edge]
+
+                dissimilarity = \
+                    calc_orbital_similarity(
+                        self.orbital_character[spin][band_edge], perfect)
+
+                print("participation_ratio, dissimilarity")
+                print(participation_ratio, dissimilarity)
+                print("spin, band_edge")
+                print(spin, band_edge)
+
+                if (participation_ratio < localized_criterion) \
+                        and (dissimilarity < similarity_criterion):
+                    # band edge is a host state.
+                    pass
+                elif (participation_ratio > localized_criterion) \
+                        and (dissimilarity > similarity_criterion):
+                    # band edge is a deep state
+                    self.deep_states[spin].append(band_edge)
+                elif (participation_ratio < localized_criterion) \
+                        and (dissimilarity > similarity_criterion):
+                    # band edge is a perturbed host sate
+                    self.shallow[spin][band_edge] = True
+                else:
+                    logger.warning("Orbitals are localized but similar to the "
+                                   "band edge of the perfect supercell.")
 
     def plot(self, yrange=None, add_perfect=True, title=None):
         """
@@ -176,8 +219,8 @@ class DefectEigenvalue(MSONable):
         plt.axhline(y=self.fermi_level, linewidth=1, linestyle="--")
 
         mapping = self.kpt_mapping_to_perfect_kpt
-        k_index = self.add_eigenvalues(ax, self.eigenvalues,
-                                       self.perfect_eigenvalues, mapping)
+        k_index = self.add_eigenvalues_to_plot(ax, self.eigenvalues,
+                                               self.perfect_eigenvalues, mapping)
         ax.set_ylim(yrange[0], yrange[1])
 
         ax.get_xaxis().set_tick_params(direction='out')
@@ -232,8 +275,8 @@ class DefectEigenvalue(MSONable):
         return mapping
 
     @staticmethod
-    def add_eigenvalues(ax, eigenvalues, perfect_eigenvalues, mapping,
-                        x_offset=0.3):
+    def add_eigenvalues_to_plot(ax, eigenvalues, perfect_eigenvalues, mapping,
+                                x_offset=0.3):
         occupied_eigenvalues = []
         occupied_x = []
         unoccupied_eigenvalues = []
@@ -269,7 +312,8 @@ class DefectEigenvalue(MSONable):
 #                    if k_index == 1 and e[0] - eigen[band_index-1][0] > 0.1:
                     if band_index < len(eigen) - 1:
                         if eigen[band_index + 1][0] - e[0] > 0.1:
-                            ax.annotate(str(band_index), xy=(k_index + 0.05, e[0]),
+                            ax.annotate(str(band_index),
+                                        xy=(k_index + 0.05, e[0]),
                                         fontsize=10)
 
                 for e in perfect_eigenvalues[Spin.up][mapping[k]]:
@@ -296,58 +340,6 @@ class DefectEigenvalue(MSONable):
                 perfect_partial_occupied_eigenvalues, 'o')
 
         return k_index
-
-    # @classmethod
-    # def from_files(cls, unitcell, perfect, defect, system=""):
-    #     """
-    #     Args:
-    #         unitcell (UnitcellCalcResults):
-    #             UnitcellCalcResults object for band edge.
-    #         perfect (SupercellCalcResults)
-    #             SupercellDftResults object of perfect supercell for band edge in
-    #             supercell.
-    #         defect (Defect):
-    #             Defect namedtuple object of a defect supercell DFT calculation
-    #         system (str):
-    #             System name used for the title.
-    #     """
-    #     # Note: vbm, cbm, perfect_vbm, perfect_cbm are in absolute energy.
-    #     vbm, cbm = unitcell.band_edge
-    #     supercell_cbm, supercell_vbm = perfect.eigenvalue_properties[1:3]
-    #     eigenvalues = defect.dft_results.eigenvalues
-    #     fermi_level = defect.dft_results.fermi_level
-    #     return cls(eigenvalues, vbm, cbm, supercell_vbm, supercell_cbm,
-    #                fermi_level)
-
-    # @classmethod
-    # def from_dict(cls, d):
-    #     """
-    #     Constructs a class object from a dictionary.
-    #     """
-    #     # Programmatic access to enumeration members in Enum class.
-    #     return cls(d["eigenvalues"], d["vbm"], d["cbm"], d["supercell_vbm"],
-    #                d["supercell_cbm"], d["fermi_level"], d["title"])
-
-    # @classmethod
-    # def load_json(cls, filename):
-    #     """
-    #     Constructs a class object from a json file.
-    #     """
-    #     d = loadfn(filename)
-    #     return cls.from_dict(d)
-
-    # def as_dict(self):
-    #     """
-    #     Dict representation of the class object.
-    #     """
-    #     d = {"eigenvalues":   self.eigenvalues,
-    #          "vbm":           self.vbm,
-    #          "cbm":           self.cbm,
-    #          "supercell_vbm": self.supercell_vbm,
-    #          "supercell_cbm": self.supercell_cbm,
-    #          "fermi_level":   self.fermi_level,
-    #          "title":         self.title}
-    #     return d
 
     def to_json_file(self, filename):
         with open(filename, 'w') as fw:

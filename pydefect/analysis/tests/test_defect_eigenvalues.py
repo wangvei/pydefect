@@ -46,7 +46,7 @@ class DefectEigenvalueTest(unittest.TestCase):
                                                               defect=defect)
 
     def test_diagnose_shallow(self):
-        print(self.defect_eigenvalues.diagnose_shallow())
+        print(self.defect_eigenvalues.diagnose_shallow_states())
 
     def test(self):
         print(self.defect_eigenvalues.vbm)

@@ -222,12 +222,15 @@ class SupercellCalcResults(MSONable):
         magnetization = 0.0 if outcar.total_mag is None else outcar.total_mag
         electrostatic_potential = outcar.electrostatic_potential
 
-        if parse_procar and defect_entry is not None:
+        if parse_procar:
             if procar is None:
                 procar = str(max(p.glob("**/*PROCAR*"), key=os.path.getctime))
             procar = Procar(procar)
 
-            neighboring_atoms = defect_entry.perturbed_sites
+            if defect_entry:
+                neighboring_atoms = defect_entry.perturbed_sites
+            else:
+                neighboring_atoms = None
 
             vbm_index = \
                 {Spin.up: round((outcar.nelect + magnetization) / 2) - 1,
@@ -248,13 +251,14 @@ class SupercellCalcResults(MSONable):
                         int(np.where(eigenvalues[s][:, band_index, 0]
                                      == max_eigenvalue)[0][0])
 
-                    participation_ratio[s][band_edge] = \
-                        calc_participation_ratio(
-                            procar=procar,
-                            spin=s,
-                            band_index=band_index,
-                            kpoint_index=kpoint_index,
-                            atom_indices=neighboring_atoms)
+                    if neighboring_atoms:
+                        participation_ratio[s][band_edge] = \
+                            calc_participation_ratio(
+                                procar=procar,
+                                spin=s,
+                                band_index=band_index,
+                                kpoint_index=kpoint_index,
+                                atom_indices=neighboring_atoms)
 
                     orbital_character[s][band_edge] = \
                         calc_orbital_character(
@@ -264,7 +268,10 @@ class SupercellCalcResults(MSONable):
                             band_index=band_index,
                             kpoint_index=kpoint_index)
 
-            participation_ratio = dict(participation_ratio)
+            if participation_ratio:
+                participation_ratio = dict(participation_ratio)
+            else:
+                participation_ratio = None
             orbital_character = dict(orbital_character)
 
         else:
@@ -352,7 +359,7 @@ class SupercellCalcResults(MSONable):
 
         if d["orbital_character"] is not None:
             orbital_character = {}
-            for spin, v in d["participation_ratio"].items():
+            for spin, v in d["orbital_character"].items():
                 orbital_character[Spin(int(spin))] = v
         else:
             orbital_character = None
@@ -383,17 +390,18 @@ class SupercellCalcResults(MSONable):
 
     def as_dict(self):
         # Spin object must be converted to string for to_json_file.
-        eigenvalues = {str(spin): v.tolist()
-                       for spin, v in self.eigenvalues.items()}
+        eigenvalues = \
+            {str(spin): v.tolist() for spin, v in self.eigenvalues.items()}
+
         if self.participation_ratio is not None:
-            participation_ratio = {str(spin): v
-                                   for spin, v in self.participation_ratio.items()}
+            participation_ratio = \
+                {str(spin): v for spin, v in self.participation_ratio.items()}
         else:
             participation_ratio = None
 
         if self.orbital_character is not None:
-            orbital_character = {str(spin): v
-                                 for spin, v in self.orbital_character.items()}
+            orbital_character = \
+                {str(spin): v for spin, v in self.orbital_character.items()}
         else:
             orbital_character = None
 
@@ -404,8 +412,8 @@ class SupercellCalcResults(MSONable):
              "total_energy":            self.total_energy,
              "total_magnetization":     self.total_magnetization,
              "eigenvalues":             eigenvalues,
-             "kpoint_coords":          self.kpoint_coords,
-             "kpoint_weights":         self.kpoint_weights,
+             "kpoint_coords":           self.kpoint_coords,
+             "kpoint_weights":          self.kpoint_weights,
              "electrostatic_potential": self.electrostatic_potential,
              "eigenvalue_properties":   self.eigenvalue_properties,
              "volume":                  self.volume,
