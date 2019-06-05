@@ -1,5 +1,5 @@
 {
-  "@module": "pydefect.core.defect",
+  "@module": "pydefect.core.defect_entry",
   "@class": "DefectEntry",
   "name": "Mg_i1",
   "initial_structure": {

@@ -22,7 +22,7 @@ from scipy.special import erfc
 from scipy.constants import elementary_charge, epsilon_0
 from scipy.stats import mstats
 
-from pydefect.core.defect import DefectEntry
+from pydefect.core.defect_entry import DefectEntry
 from pydefect.core.supercell_calc_results import SupercellCalcResults
 from pydefect.core.unitcell_calc_results import UnitcellCalcResults
 

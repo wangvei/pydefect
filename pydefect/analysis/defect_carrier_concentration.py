@@ -107,7 +107,10 @@ def calc_defect_carrier_concentration(energies: dict,
     return dict(concentration)
 
 
-def calc_equilibrium_concentration(energies, temperature, vbm, cbm, total_dos,
+def calc_equilibrium_concentration(energies,
+                                   temperature,
+                                   vbm,
+                                   cbm, total_dos,
                                    multiplicity, volume, magnetization,
                                    reference_concentration, verbose=False,
                                    max_iteration=50, threshold=1e-5):
@@ -156,17 +159,17 @@ def calc_equilibrium_concentration(energies, temperature, vbm, cbm, total_dos,
                  for d in defect_concentration])
 
         if verbose:
-            logger.log("- {} ----".format(iteration))
-            logger.log("Fermi level: {} eV.".format(e_f))
-            logger.log("p: {:.1e} cm-3.".format(p))
-            logger.log("n: {:.1e} cm-3.".format(n))
+            logger.info("- {} ----".format(iteration))
+            logger.info("Fermi level: {} eV.".format(e_f))
+            logger.info("p: {:.1e} cm-3.".format(p))
+            logger.info("n: {:.1e} cm-3.".format(n))
 
             for name, c_of_charge in defect_concentration.items():
                 for charge, concentration in c_of_charge.items():
-                    logger.log("{} {}: {:.1e} cm-3.".
-                               format(name, charge, concentration))
+                    logger.info("{} {}: {:.1e} cm-3.".
+                                format(name, charge, concentration))
 
-            logger.log("Charge sum: {:.1e} cm-3.".format(total_charge))
+            logger.info("Charge sum: {:.1e} cm-3.".format(total_charge))
 
         # In case the Fermi level locates in between vbm and cbm, the common
         # ratio of 0.5 is okay. Otherwise, higher common ratio is needed.

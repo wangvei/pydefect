@@ -10,7 +10,7 @@ from pymatgen.core.structure import Structure
 from pymatgen.electronic_structure.core import Spin
 from pymatgen.util.testing import PymatgenTest
 
-from pydefect.core.defect import DefectEntry
+from pydefect.core.defect_entry import DefectEntry
 from pydefect.core.supercell_calc_results \
     import SupercellCalcResults
 from pydefect.util.structure_tools import defect_center, distances_from_defect_center

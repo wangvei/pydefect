@@ -6,7 +6,7 @@ from pymatgen.core.periodic_table import Element
 
 from pydefect.input_maker.defect_initial_setting import DefectInitialSetting, \
     SimpleDefectName
-from pydefect.core.defect import DefectEntry
+from pydefect.core.defect_entry import DefectEntry
 from pydefect.util.structure_tools import perturb_neighboring_atoms, \
     defect_center_from_coords
 from pydefect.util.logger import get_logger

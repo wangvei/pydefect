@@ -7,7 +7,7 @@ from pymatgen.util.testing import PymatgenTest
 from pydefect.corrections.corrections import Ewald, ExtendedFnvCorrection
 from pydefect.core.supercell_calc_results import SupercellCalcResults
 from pydefect.core.unitcell_calc_results import UnitcellCalcResults
-from pydefect.core.defect import DefectEntry
+from pydefect.core.defect_entry import DefectEntry
 
 __author__ = "Akira Takahashi"
 __copyright__ = "Copyright 2017, Oba group"

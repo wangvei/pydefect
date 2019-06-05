@@ -22,7 +22,7 @@ from pydefect.analysis.chempotdiag.make_inputs import make_vasp_inputs_from_mp
 from pydefect.analysis.defect_energies import DefectEnergies, Defect
 from pydefect.analysis.defect_energy_plotter import DefectEnergyPlotter
 from pydefect.analysis.defect_eigenvalues import DefectEigenvalue
-from pydefect.core.defect import DefectEntry
+from pydefect.core.defect_entry import DefectEntry
 from pydefect.core.interstitial_site import InterstitialSiteSet
 from pydefect.core.prior_info import PriorInfo
 from pydefect.core.supercell_calc_results import SupercellCalcResults

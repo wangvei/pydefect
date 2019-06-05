@@ -4426,16 +4426,7 @@
       "tolerance": 0.1
     }
   ],
-  "participation_ratio": {
-    "1": {
-      "vbm": 0.0,
-      "cbm": 0.0
-    },
-    "-1": {
-      "vbm": 0.0,
-      "cbm": 0.0
-    }
-  },
+  "participation_ratio": null,
   "orbital_character": {
     "1": {
       "vbm": {

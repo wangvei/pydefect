@@ -5,7 +5,7 @@ from collections import defaultdict
 from pymatgen.core.composition import Composition
 from pymatgen.core.sites import Element
 from pymatgen.core.structure import Structure
-from pymatgen.electronic_structure.core import Spin, OrbitalType
+from pymatgen.electronic_structure.core import Spin
 from pymatgen.io.vasp import Potcar, Incar, Procar
 
 __author__ = "Yu Kumagai"
@@ -101,7 +101,13 @@ def calc_orbital_character(procar: Procar,
     """ Method returning a dictionary of projections on elements.
 
     Args:
-        structure (Structure): Input structure.
+        procar (Procar):
+            Procar object to be parsed.
+        structure (Structure):
+            Input structure used for extracting symbol_set
+        spin (Spin):
+        band_index (int):
+        kpoint_index (int):
 
     Returns:
         a dictionary in the {Element:{s: value, p: value, d: value}
@@ -123,7 +129,7 @@ def calc_orbital_character(procar: Procar,
             d[name]["f"] = \
                 np.sum(procar.data[spin][kpoint_index, band_index,
                        indices, 9:16])
-        except:
+        except KeyError:
             pass
 
     return d
@@ -138,7 +144,18 @@ def calc_orbital_similarity(orbital_1: defaultdict,
     diff = 0
     for e in elements:
         for o in "s", "p", "d", "f":
-            diff += abs(orbital_1[e][o] - orbital_2[e][o])
+
+            try:
+                first = orbital_1[e][o]
+            except KeyError:
+                first = 0
+
+            try:
+                second = orbital_2[e][o]
+            except KeyError:
+                second = 0
+
+            diff += abs(first - second)
 
     return diff
 

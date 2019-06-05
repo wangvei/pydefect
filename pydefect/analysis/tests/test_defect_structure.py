@@ -8,7 +8,7 @@ from pydefect.analysis.chempotdiag.chem_pot_diag import ChemPotDiag
 from pydefect.corrections.corrections import ExtendedFnvCorrection
 from pydefect.core.supercell_calc_results import SupercellCalcResults
 from pydefect.core.unitcell_calc_results import UnitcellCalcResults
-from pydefect.core.defect import DefectEntry
+from pydefect.core.defect_entry import DefectEntry
 
 __author__ = "Yu Kumagai"
 __copyright__ = "Copyright 2017, Oba group"

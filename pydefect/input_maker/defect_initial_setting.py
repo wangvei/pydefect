@@ -110,7 +110,42 @@ def get_distances(string):
     return distances
 
 
-class SimpleDefectName(MSONable):
+class DefectName(MSONable):
+
+    def is_name_matched(self,
+                        keywords: Union[str, list, None]):
+        """ Returns if name is matched by the selected_keywords.
+
+        Args:
+            keywords (str/list): Keywords used for checking if name is selected.
+
+        When the following type names are given, constructs a set of defects.
+            "Va"    --> A set of all the vacancies.
+            "_i"     --> A set of all the interstitials.
+            "Va_O"  --> A set of all the oxygen vacancies
+            "Va_O[0-9]_0" --> All the oxygen vacancies in neutral charge states
+            "Va_O1" --> A set of oxygen vacancies at O1 site
+            "Mg_O"  --> A set of all the Mg-on-O antisite pairs.
+            "Mg_O1" --> A set of Mg-on-O1 antisite pairs.
+
+        When complete defect_name is given, constructs a particular defect.
+            e.g., "Va_O1_2",  "Mg_O1_0"
+        """
+        if keywords is None:
+            return True
+
+        try:
+            if isinstance(keywords, str):
+                keywords = [keywords]
+            else:
+                keywords = list(keywords)
+        except TypeError:
+            print("The type of keywords {} is invalid.".format(keywords))
+
+        return any([re.search(p, self.__str__()) for p in keywords])
+
+
+class SimpleDefectName(DefectName):
     """ Container for a name of vacancy, interstitial, & antisite defect."""
     def __init__(self,
                  in_atom: Union[str, None],
@@ -147,6 +182,8 @@ class SimpleDefectName(MSONable):
     @classmethod
     def from_str(cls, string):
         in_atom, out_site, charge = string.split("_")
+        if in_atom == "Va":
+            in_atom = None
         return cls(in_atom, out_site, int(charge))
 
 #    @property
@@ -158,38 +195,6 @@ class SimpleDefectName(MSONable):
 
     def __hash__(self):
         return hash(self.name_str)
-
-    def is_name_matched(self,
-                        keywords: Union[str, list, None]):
-        """ Returns if name is matched by the selected_keywords.
-
-        Args:
-            keywords (str/list): Keywords used for checking if name is selected.
-
-        When the following type names are given, constructs a set of defects.
-            "Va"    --> A set of all the vacancies.
-            "_i"     --> A set of all the interstitials.
-            "Va_O"  --> A set of all the oxygen vacancies
-            "Va_O[0-9]_0" --> All the oxygen vacancies in neutral charge states
-            "Va_O1" --> A set of oxygen vacancies at O1 site
-            "Mg_O"  --> A set of all the Mg-on-O antisite pairs.
-            "Mg_O1" --> A set of Mg-on-O1 antisite pairs.
-
-        When complete defect_name is given, constructs a particular defect.
-            e.g., "Va_O1_2",  "Mg_O1_0"
-        """
-        if keywords is None:
-            return True
-
-        try:
-            if isinstance(keywords, str):
-                keywords = [keywords]
-            else:
-                keywords = list(keywords)
-        except TypeError:
-            print("The type of keywords {} is invalid.".format(keywords))
-
-        return any([re.search(p, self.__str__()) for p in keywords])
 
 
 class DefectInitialSetting(MSONable):

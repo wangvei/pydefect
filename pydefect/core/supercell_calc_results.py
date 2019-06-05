@@ -21,12 +21,12 @@ from pymatgen.io.vasp.outputs import Outcar, Vasprun, Procar
 from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
 
 from pydefect.core.config import DEFECT_SYMMETRY_TOLERANCE, ANGLE_TOL
-from pydefect.core.defect import DefectEntry
+from pydefect.core.defect_entry import DefectEntry
 from pydefect.core.error_classes import NoConvergenceError
 from pydefect.util.logger import get_logger
 from pydefect.util.structure_tools import get_displacements
 from pydefect.vasp_util.util import calc_participation_ratio, \
-    calc_orbital_character
+    calc_orbital_character, calc_orbital_similarity
 
 __author__ = "Yu Kumagai"
 __maintainer__ = "Yu Kumagai"
@@ -52,7 +52,8 @@ class SupercellCalcResults(MSONable):
                  volume: float,
                  fermi_level: float,
                  is_converged: bool,
-                 shallow: bool = None,
+                 deep_states: dict = None,
+                 is_shallow: bool = None,
                  relative_total_energy: float = None,
                  relative_potential: list = None,
                  displacements: list = None,
@@ -84,13 +85,24 @@ class SupercellCalcResults(MSONable):
                Fermi level in the absolute scale.
             is_converged (bool):
                 Whether the calculation is converged or not.
-            symmops (list):
-                Point-group symmetry operation.
-            shallow (list):
+            deep_states (list):
+                Band indices corresponding to the deep defect states.
+                ex. {Spin.up: ["vbm", "cbm"]}
+            is_shallow (list):
                 If we don't know Whether the defect is shallow, None.
                 If the defect is detected not to be shallow, [].
                 If the defect is detected to be shallow, store the detected ways
                 like, ["not_integer_mag", "fermi_is_higher_than_cbm"]
+            symmetrized_structure (Structure):
+                Symmetrized structure with a defect.
+            symmops (list):
+                Point-group symmetry operation.
+            participation_ratio (dict):
+                ex. {Spin.up: {"vbm": 0.35,  "cbm": 0.28}, Spin.down ...}
+            orbital_character (dict):
+                ex. {Spin.up: {"vbm": {"Mg": {"s": 0.1, ...}, "O": {...},
+                               "cbm": {...},
+                     Spin.down: {...}}
         """
         self.final_structure = final_structure
         self.site_symmetry = site_symmetry
@@ -104,7 +116,8 @@ class SupercellCalcResults(MSONable):
         self.volume = volume
         self.fermi_level = fermi_level
         self.is_converged = is_converged
-        self.shallow = shallow
+        self.deep_states = deep_states
+        self.is_shallow = is_shallow
         self.relative_total_energy = relative_total_energy
         self.relative_potential = relative_potential
         self.displacements = displacements
@@ -122,7 +135,8 @@ class SupercellCalcResults(MSONable):
                 "final structure: \n" + str(self.final_structure),
                 "site_symmetry: " + str(self.site_symmetry),
                 "volume: \n" + str(self.volume),
-                "Fermi level (eV): \n" + str(self.fermi_level)]
+                "Fermi level (eV): \n" + str(self.fermi_level),
+                "Orbital character (eV): \n" + str(self.orbital_character)]
 
         return "\n".join(outs)
 
@@ -239,9 +253,7 @@ class SupercellCalcResults(MSONable):
             participation_ratio = defaultdict(dict)
             orbital_character = defaultdict(dict)
 
-            for s in Spin.up, Spin.down:
-                if s not in eigenvalues.keys():
-                    continue
+            for s in eigenvalues.keys():
                 # The k-point indices at the band edges in defect calculations.
                 for i, band_edge in enumerate(["vbm", "cbm"]):
                     band_index = vbm_index[s] + i
@@ -278,6 +290,12 @@ class SupercellCalcResults(MSONable):
             participation_ratio = None
             orbital_character = None
 
+        relative_total_energy = None
+        relative_potential = None
+        displacements = None
+        deep_states = None
+        is_shallow = None
+
         if referenced_dft_results:
             relative_total_energy = \
                 total_energy - referenced_dft_results.total_energy
@@ -305,10 +323,14 @@ class SupercellCalcResults(MSONable):
                                   defect_entry.defect_center,
                                   defect_entry.anchor_atom_index)
 
-        else:
-            relative_total_energy = None
-            relative_potential = None
-            displacements = None
+            if participation_ratio and orbital_character:
+                perfect_orbital_character = \
+                    referenced_dft_results.orbital_character
+
+                deep_states, is_shallow = \
+                    cls.diagnose_shallow_states(participation_ratio,
+                                                orbital_character,
+                                                perfect_orbital_character)
 
         return cls(final_structure=final_structure,
                    site_symmetry=site_symmetry,
@@ -322,6 +344,8 @@ class SupercellCalcResults(MSONable):
                    volume=volume,
                    fermi_level=fermi_level,
                    is_converged=vasprun.converged_ionic,
+                   deep_states=deep_states,
+                   is_shallow=is_shallow,
                    relative_total_energy=relative_total_energy,
                    relative_potential=relative_potential,
                    displacements=displacements,
@@ -330,14 +354,71 @@ class SupercellCalcResults(MSONable):
                    participation_ratio=participation_ratio,
                    orbital_character=orbital_character)
 
+    @staticmethod
+    def diagnose_shallow_states(participation_ratio: dict,
+                                orbital_character: dict,
+                                perfect_orbital_character: dict,
+                                localized_criterion: float = 0.6,
+                                similarity_criterion: float = 0.3):
+        """
+
+        Args:
+
+
+             localized_criterion (float):
+                 Determines whether the eigenstate is localized.
+             similarity_criterion:
+                 Determines whether the eigenstate is a host state.
+        """
+        if all([participation_ratio, orbital_character,
+                perfect_orbital_character]) is False:
+            logger.warning("Diagnosing shallow states is impossible.")
+            return False
+
+        deep_states = defaultdict(list)
+        is_shallow = defaultdict(dict)
+
+        for spin in participation_ratio:
+            for band_edge in "vbm", "cbm":
+                ratio = participation_ratio[spin][band_edge]
+
+                # Consider the situation where perfect has only Spin.up.
+                try:
+                    perfect = perfect_orbital_character[spin][band_edge]
+                except KeyError:
+                    perfect = perfect_orbital_character[Spin.up][band_edge]
+
+                dissimilarity = \
+                    calc_orbital_similarity(
+                        orbital_character[spin][band_edge], perfect)
+
+                print("participation_ratio, dissimilarity")
+                print(ratio, dissimilarity)
+                print("spin, band_edge")
+                print(spin, band_edge)
+
+                # band edge is a host state.
+                if dissimilarity < similarity_criterion:
+                    pass
+                # band edge is a deep state
+                elif (ratio > localized_criterion) \
+                        and (dissimilarity > similarity_criterion):
+                    deep_states[spin].append(band_edge)
+                # band edge is a perturbed host sate
+                elif (ratio <= localized_criterion) \
+                        and (dissimilarity > similarity_criterion):
+                    is_shallow[spin][band_edge] = True
+
+        return deep_states, is_shallow
+
     @classmethod
     def from_dict(cls, d):
         """ Construct a class object from a dictionary. """
 
         eigenvalues = {}
         # Programmatic access to enumeration members in Enum class.
-        for spin, v in d["eigenvalues"].items():
-            eigenvalues[Spin(int(spin))] = np.array(v)
+        for s, v in d["eigenvalues"].items():
+            eigenvalues[Spin(int(s))] = np.array(v)
 
         final_structure = d["final_structure"]
         if isinstance(final_structure, dict):
@@ -350,19 +431,19 @@ class SupercellCalcResults(MSONable):
             else:
                 symmops.append(symmop)
 
-        if d["participation_ratio"] is not None:
-            participation_ratio = {}
-            for spin, v in d["participation_ratio"].items():
-                participation_ratio[Spin(int(spin))] = v
-        else:
-            participation_ratio = None
+        def str_key_to_spin(arg: dict):
+            if arg is not None:
+                x = {}
+                for spin, value in arg.items():
+                    x[Spin(int(spin))] = value
+                return x
+            else:
+                return
 
-        if d["orbital_character"] is not None:
-            orbital_character = {}
-            for spin, v in d["orbital_character"].items():
-                orbital_character[Spin(int(spin))] = v
-        else:
-            orbital_character = None
+        participation_ratio = str_key_to_spin(d["participation_ratio"])
+        orbital_character = str_key_to_spin(d["orbital_character"])
+        deep_states = str_key_to_spin(d["deep_states"])
+        is_shallow = str_key_to_spin(d["is_shallow"])
 
         return cls(final_structure=final_structure,
                    site_symmetry=d["site_symmetry"],
@@ -376,6 +457,8 @@ class SupercellCalcResults(MSONable):
                    volume=d["volume"],
                    fermi_level=d["fermi_level"],
                    is_converged=d["is_converged"],
+                   deep_states=deep_states,
+                   is_shallow=is_shallow,
                    relative_total_energy=d["relative_total_energy"],
                    relative_potential=d["relative_potential"],
                    displacements=d["displacements"],
@@ -393,17 +476,16 @@ class SupercellCalcResults(MSONable):
         eigenvalues = \
             {str(spin): v.tolist() for spin, v in self.eigenvalues.items()}
 
-        if self.participation_ratio is not None:
-            participation_ratio = \
-                {str(spin): v for spin, v in self.participation_ratio.items()}
-        else:
-            participation_ratio = None
+        def spin_key_to_str(arg: dict):
+            if arg is not None:
+                return {str(spin): v for spin, v in arg.items()}
+            else:
+                return
 
-        if self.orbital_character is not None:
-            orbital_character = \
-                {str(spin): v for spin, v in self.orbital_character.items()}
-        else:
-            orbital_character = None
+        participation_ratio = spin_key_to_str(self.participation_ratio)
+        orbital_character = spin_key_to_str(self.orbital_character)
+        deep_states = spin_key_to_str(self.deep_states)
+        is_shallow = spin_key_to_str(self.is_shallow)
 
         d = {"@module":                 self.__class__.__module__,
              "@class":                  self.__class__.__name__,
@@ -419,6 +501,8 @@ class SupercellCalcResults(MSONable):
              "volume":                  self.volume,
              "fermi_level":             self.fermi_level,
              "is_converged":            self.is_converged,
+             "deep_states":             deep_states,
+             "is_shallow":              is_shallow,
              "relative_total_energy":   self.relative_total_energy,
              "relative_potential":      self.relative_potential,
              "displacements":           self.displacements,

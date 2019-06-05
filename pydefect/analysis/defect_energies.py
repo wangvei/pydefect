@@ -9,10 +9,22 @@ from obadb.analyzer.chempotdiag.chem_pot_diag import ChemPotDiag
 
 from pydefect.core.supercell_calc_results import SupercellCalcResults
 from pydefect.core.unitcell_calc_results import UnitcellCalcResults
+from pydefect.core.defect_entry import DefectEntry
+from pydefect.corrections.corrections import Correction
 from pydefect.database.num_symmetry_operation import num_symmetry_operation
 
 TransitionLevel = namedtuple("TransitionLevel", ("cross_points", "charges"))
-Defect = namedtuple("Defect", ("defect_entry", "dft_results", "correction"))
+
+
+class Defect:
+    def __init__(self,
+                 defect_entry: DefectEntry,
+                 dft_results: SupercellCalcResults,
+                 correction: Correction):
+
+        self.defect_entry = defect_entry
+        self.dft_results = dft_results
+        self.correction = correction
 
 
 class DefectEnergies(MSONable):
@@ -134,7 +146,9 @@ class DefectEnergies(MSONable):
 
             magnetization[name][charge] = d.dft_results.total_magnetization
             convergence[name][charge] = d.dft_results.is_converged
-            shallow[name][charge] = d.dft_results.shallow
+
+            if d.eigenvalue is not None:
+                shallow[name][charge] = d.dft_results.shallow
 
         return cls(dict(energies), dict(multiplicity), dict(magnetization),
                    dict(convergence), dict(shallow), vbm, cbm,
