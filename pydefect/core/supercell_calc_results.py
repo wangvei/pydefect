@@ -255,11 +255,12 @@ class SupercellCalcResults(MSONable):
 
             for s in eigenvalues.keys():
                 # The k-point indices at the band edges in defect calculations.
-                for i, band_edge in enumerate(["vbm", "cbm"]):
+                # hob (lub) means highest (lowest) (un)occupied state
+                for i, band_edge in enumerate(["hob", "lub"]):
                     band_index = vbm_index[s] + i
 
                     max_eigenvalue = np.amax(eigenvalues[s][:, band_index, 0])
-                    kpoint_index = \
+                    max_k = \
                         int(np.where(eigenvalues[s][:, band_index, 0]
                                      == max_eigenvalue)[0][0])
 
@@ -269,7 +270,7 @@ class SupercellCalcResults(MSONable):
                                 procar=procar,
                                 spin=s,
                                 band_index=band_index,
-                                kpoint_index=kpoint_index,
+                                kpoint_index=max_k,
                                 atom_indices=neighboring_atoms)
 
                     orbital_character[s][band_edge] = \
@@ -278,7 +279,7 @@ class SupercellCalcResults(MSONable):
                             structure=final_structure,
                             spin=s,
                             band_index=band_index,
-                            kpoint_index=kpoint_index)
+                            kpoint_index=max_k)
 
             if participation_ratio:
                 participation_ratio = dict(participation_ratio)
