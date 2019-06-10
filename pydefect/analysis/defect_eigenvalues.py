@@ -41,7 +41,6 @@ class DefectEigenvalue(MSONable):
                  supercell_cbm: float,
                  fermi_level: float,
                  total_magnetization: float,
-                 participation_ratio: dict = None,
                  orbital_character: dict = None,
                  perfect_orbital_character: dict = None,
                  eigenvalue_correction: dict = None,
@@ -93,7 +92,6 @@ class DefectEigenvalue(MSONable):
         self.supercell_cbm = supercell_cbm
         self.fermi_level = fermi_level
         self.total_magnetization = total_magnetization
-        self.participation_ratio = participation_ratio
         self.orbital_character = orbital_character
         self.perfect_orbital_character = perfect_orbital_character
         self.eigenvalue_correction = \
@@ -140,60 +138,8 @@ class DefectEigenvalue(MSONable):
                    supercell_cbm=supercell_cbm,
                    fermi_level=defect.dft_results.fermi_level,
                    total_magnetization=defect.dft_results.total_magnetization,
-                   participation_ratio=defect.dft_results.participation_ratio,
                    orbital_character=defect.dft_results.orbital_character,
                    perfect_orbital_character=perfect.orbital_character)
-
-    def diagnose_shallow_states(self,
-                                localized_criterion: float = 0.25,
-                                similarity_criterion: float = 0.3):
-        """
-
-        Args:
-             localized_criterion (float):
-                 Determines whether the eigenstate is localized.
-             similarity_criterion:
-                 Determines whether the eigenstate is a host state.
-        """
-        if all([self.participation_ratio, self.orbital_character,
-                self.perfect_orbital_character]) is False:
-            logger.warning("Diagnosing shallow states is impossible.")
-            return False
-
-        for spin in self.participation_ratio:
-            for band_edge in "vbm", "cbm":
-                participation_ratio = self.participation_ratio[spin][band_edge]
-
-                # Consider the situation where perfect has only Spin.up.
-                try:
-                    perfect = self.perfect_orbital_character[spin][band_edge]
-                except KeyError:
-                    perfect = self.perfect_orbital_character[Spin.up][band_edge]
-
-                dissimilarity = \
-                    calc_orbital_similarity(
-                        self.orbital_character[spin][band_edge], perfect)
-
-                print("participation_ratio, dissimilarity")
-                print(participation_ratio, dissimilarity)
-                print("spin, band_edge")
-                print(spin, band_edge)
-
-                if (participation_ratio < localized_criterion) \
-                        and (dissimilarity < similarity_criterion):
-                    # band edge is a host state.
-                    pass
-                elif (participation_ratio > localized_criterion) \
-                        and (dissimilarity > similarity_criterion):
-                    # band edge is a deep state
-                    self.deep_states[spin].append(band_edge)
-                elif (participation_ratio < localized_criterion) \
-                        and (dissimilarity > similarity_criterion):
-                    # band edge is a perturbed host sate
-                    self.shallow[spin][band_edge] = True
-                else:
-                    logger.warning("Orbitals are localized but similar to the "
-                                   "band edge of the perfect supercell.")
 
     def plot(self, yrange=None, add_perfect=True, title=None):
         """

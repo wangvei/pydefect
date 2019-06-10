@@ -17,6 +17,7 @@ from pydefect.util.structure_tools import count_equivalent_clusters
 from pydefect.vasp_util.util import element_diff_from_poscar_files, \
     get_defect_charge_from_vasp
 from pydefect.util.structure_tools import defect_center_from_coords
+from pydefect.core.config import DEFECT_SYMMETRY_TOLERANCE, ANGLE_TOL
 
 __author__ = "Yu Kumagai"
 __maintainer__ = "Yu Kumagai"
@@ -123,11 +124,12 @@ class DefectEntry(MSONable):
     def from_yaml(cls,
                   filename: str,
                   displacement_distance: float = 0.2,
-                  angle_tolerance: float = 10,
+                  symprec: float = DEFECT_SYMMETRY_TOLERANCE,
+                  angle_tolerance: float = ANGLE_TOL,
                   perturbed_criterion: float = 0.001):
         """Construct the DefectEntry object from perfect and defective POSCARs.
 
-        Note1: displacement_distance needs to be the same as the max
+        Note1: displacement_distance needs to be the same as the twice of max
                displacement distance for reducing the symmetry.
         Note2: Only unrelaxed but perturbed defective POSCAR structure is
                accepted.
@@ -143,7 +145,6 @@ class DefectEntry(MSONable):
             charge (optional, if none, calculated from INCAR and POTCAR): 2
             displacement_distance (optional): 0.2
         """
-
         abs_dir = os.path.split(os.path.abspath(filename))[0]
 
         with open(filename, "r") as yaml_file:
@@ -200,14 +201,18 @@ class DefectEntry(MSONable):
             raise StructureError(
                 "Atoms are not properly mapped within the displacement.")
 
+        # pristine_defect_structure is defect structure without perturbation.
         pristine_defect_structure = deepcopy(perfect_structure)
         lattice = defect_structure.lattice
         for r in sorted(removed_atoms, reverse=True):
             pristine_defect_structure.pop(r)
         # If the inserted atom locates near an original atom within the
         # displacement_distance, it is assumed to be substituted.
+        inserted_atoms = {}
         for i in sorted(inserted_atom_indices):
             inserted_atom = defect_structure[i]
+            inserted_atoms[i] = list(inserted_atom.frac_coords)
+            # substituted
             for removed_frac_coords in removed_atoms.values():
                 if lattice.get_distance_and_image(
                         inserted_atom.frac_coords, removed_frac_coords)[0] \
@@ -215,10 +220,10 @@ class DefectEntry(MSONable):
                     pristine_defect_structure.insert(i, inserted_atom.specie,
                                                      removed_frac_coords)
                     break
+            # interstitial
             else:
                 pristine_defect_structure.insert(i, inserted_atom.specie,
                                                  inserted_atom.frac_coords)
-
         perturbed_sites = []
         for i, site in enumerate(defect_structure):
             pristine_defect_site = pristine_defect_structure[i]
@@ -226,21 +231,11 @@ class DefectEntry(MSONable):
             if perturbed_criterion < distance < displacement_distance:
                 perturbed_sites.append(i)
 
-        sga = SpacegroupAnalyzer(pristine_defect_structure,
-                                 displacement_distance,
-                                 angle_tolerance)
-        initial_site_symmetry = sga.get_point_group_symbol()
+        sga = SpacegroupAnalyzer(structure=pristine_defect_structure,
+                                 symprec=symprec,
+                                 angle_tolerance=angle_tolerance)
 
-        refined_structure = sga.get_refined_structure()
-        inserted_atoms = {}
-        for i in inserted_atom_indices:
-            inserted_atom_coord = pristine_defect_structure[i]
-            for j in refined_structure:
-                if lattice.get_distance_and_image(
-                        inserted_atom_coord.frac_coords, j.frac_coords)[0] \
-                        < displacement_distance:
-                    pristine_defect_structure[i].frac_coords = j.frac_coords
-                    inserted_atoms[i] = list(j.frac_coords)
+        initial_site_symmetry = sga.get_point_group_symbol()
 
         inserted_atom_coords = list(inserted_atoms.values())
 
@@ -313,10 +308,23 @@ class DefectEntry(MSONable):
         Note that only the first occurrence is returned when using argmax.
         docs.scipy.org/doc/numpy-1.15.0/reference/generated/numpy.argmax.html
         """
-        distance_set = \
-            self.initial_structure.lattice.get_all_distances(
-                self.defect_center, self.initial_structure.frac_coords)[0]
+        # distance_set = \
+        #     self.initial_structure.lattice.get_all_distances(
+        #         self.defect_center, self.initial_structure.frac_coords)[0]
 
-        return np.argmax(distance_set)
+        return anchor_atom_index(self.initial_structure, self.defect_center)
 
+
+def anchor_atom_index(structure, center):
+    """ Returns an index of atom that is the farthest from the defect.
+
+    This atom is assumed not to displace in the defective supercell, and
+    so used for analyzing local structure around a defect.
+    Note that only the first occurrence is returned when using argmax.
+    docs.scipy.org/doc/numpy-1.15.0/reference/generated/numpy.argmax.html
+    """
+    distance_set = structure.lattice.get_all_distances(center,
+                                                       structure.frac_coords)[0]
+
+    return np.argmax(distance_set)
 

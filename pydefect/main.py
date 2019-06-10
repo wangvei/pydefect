@@ -865,6 +865,7 @@ def supercell_calc_results(args):
                     directory_path=d,
                     vasprun=args.vasprun,
                     contcar=args.contcar,
+                    procar=True,
                     outcar=args.outcar)
 
             else:
@@ -878,6 +879,7 @@ def supercell_calc_results(args):
                         vasprun=args.vasprun,
                         contcar=args.contcar,
                         outcar=args.outcar,
+                        procar=True,
                         referenced_dft_results=perfect_results,
                         defect_entry=de,
                         symprec=args.symprec,
@@ -1252,9 +1254,6 @@ def parse_eigenvalues(args):
                                                      perfect=perfect,
                                                      defect=defect)
 
-    defect_eigenvalues.diagnose_shallow_states()
-    print(defect_eigenvalues.shallow)
-    print(defect_eigenvalues.deep_states)
     defect_eigenvalues.plot()
 
 #    plt.savefig(args.save_file, format="pdf") if args.save_file else plt.show()

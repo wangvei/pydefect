@@ -28,27 +28,32 @@ class SupercellDftResultsTest(PymatgenTest):
     def setUp(self):
         """ """
         self._defect_entry_perfect = \
-            DefectEntry.load_json(os.path.join(test_dir, "MgO/defects/perfect", "defect_entry.json"))
+            DefectEntry.load_json(os.path.join(
+                test_dir, "MgO/defects/perfect", "defect_entry.json"))
 
         self._MgO_perfect = \
             SupercellCalcResults.from_vasp_files(
                 directory_path=os.path.join(test_dir, "MgO/defects/perfect"),
+                procar=True,
                 defect_entry=self._defect_entry_perfect)
 
         self._defect_entry_MgO_Va_O1_2 = \
-            DefectEntry.load_json(os.path.join(test_dir, "MgO/defects/Va_O1_2", "defect_entry.json"))
+            DefectEntry.load_json(os.path.join(
+                test_dir, "MgO/defects/Va_O1_2", "defect_entry.json"))
 
         self._MgO_Va_O1_2 = \
             SupercellCalcResults.from_vasp_files(
                 directory_path=os.path.join(test_dir, "MgO/defects/Va_O1_2"),
+                procar=True,
                 referenced_dft_results=self._MgO_perfect,
                 defect_entry=self._defect_entry_MgO_Va_O1_2)
 
     def test_nothing(self):
-        print(self._MgO_Va_O1_2.displacements)
-        print(self._MgO_Va_O1_2.participation_ratio)
-        print(self._MgO_Va_O1_2.orbital_character)
-        print(self._MgO_perfect.orbital_character)
+        pass
+#        print(self._MgO_Va_O1_2.displacements)
+#        print(self._MgO_Va_O1_2.participation_ratio)
+##        print(self._MgO_Va_O1_2.orbital_character)
+#        print(self._MgO_perfect.orbital_character)
 
     def test_from_vasp_files(self):
         # CAUTION: When constructing Structure object from Structure.from_file

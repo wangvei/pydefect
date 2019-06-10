@@ -3,6 +3,7 @@
 import json
 import numpy as np
 import os
+from typing import Union
 
 from collections import defaultdict
 from pathlib import Path
@@ -59,7 +60,6 @@ class SupercellCalcResults(MSONable):
                  displacements: list = None,
                  symmetrized_structure: Structure = None,
                  symmops: list = None,
-                 participation_ratio: dict = None,
                  orbital_character: dict = None):
         """
         Args:
@@ -97,8 +97,6 @@ class SupercellCalcResults(MSONable):
                 Symmetrized structure with a defect.
             symmops (list):
                 Point-group symmetry operation.
-            participation_ratio (dict):
-                ex. {Spin.up: {"vbm": 0.35,  "cbm": 0.28}, Spin.down ...}
             orbital_character (dict):
                 ex. {Spin.up: {"vbm": {"Mg": {"s": 0.1, ...}, "O": {...},
                                "cbm": {...},
@@ -123,7 +121,6 @@ class SupercellCalcResults(MSONable):
         self.displacements = displacements
         self.symmetrized_structure = symmetrized_structure
         self.symmops = symmops
-        self.participation_ratio = participation_ratio
         self.orbital_character = orbital_character
 
     def __str__(self):
@@ -146,8 +143,7 @@ class SupercellCalcResults(MSONable):
                         vasprun: str = None,
                         contcar: str = None,
                         outcar: str = None,
-                        procar: str = None,
-                        parse_procar: bool = True,
+                        procar: Union[str, bool] = False,
                         referenced_dft_results=None,
                         defect_entry: DefectEntry = None,
                         symmetrize: bool = True,
@@ -166,8 +162,8 @@ class SupercellCalcResults(MSONable):
                 Name of the OUTCAR file.
             procar (str):
                 Name of the PROCAR file.
-            parse_procar (bool):
-                Whether to parse the PROCAR file.
+                If True, parse the PROCAR file but file name is determined from
+                timestamp.
             referenced_dft_results (SupercellCalcResults):
                 SupercellDftResults object for referenced supercell dft results.
             defect_entry (DefectEntry):
@@ -227,70 +223,69 @@ class SupercellCalcResults(MSONable):
             symmetrized_structure = sga.get_symmetrized_structure()
             symmops = get_recp_symmetry_operation(symmetrized_structure)
         else:
+            site_symmetry = None
             symmetrized_structure = None
             symmops = None
-            site_symmetry = None
 
         outcar = parse_file(Outcar, outcar)
         total_energy = outcar.final_energy
         magnetization = 0.0 if outcar.total_mag is None else outcar.total_mag
         electrostatic_potential = outcar.electrostatic_potential
 
-        if parse_procar:
-            if procar is None:
+        if procar:
+            if procar is True:
                 procar = str(max(p.glob("**/*PROCAR*"), key=os.path.getctime))
-            procar = Procar(procar)
+            procar = parse_file(Procar, procar)
 
-            if defect_entry:
-                neighboring_atoms = defect_entry.perturbed_sites
-            else:
-                neighboring_atoms = None
-
-            vbm_index = \
+            # The k-point indices at the band edges in defect calculations.
+            # hob (lub) means highest (lowest) (un)occupied state
+            hob_index = \
                 {Spin.up: round((outcar.nelect + magnetization) / 2) - 1,
                  Spin.down: round((outcar.nelect - magnetization) / 2) - 1}
 
-            participation_ratio = defaultdict(dict)
-            orbital_character = defaultdict(dict)
+            # print("hob_index")
+            # print(hob_index)
+
+            orbital_character = {}
 
             for s in eigenvalues.keys():
-                # The k-point indices at the band edges in defect calculations.
-                # hob (lub) means highest (lowest) (un)occupied state
+                orbital_character[s] = {}
                 for i, band_edge in enumerate(["hob", "lub"]):
-                    band_index = vbm_index[s] + i
+                    orbital_character[s][band_edge] = {}
+
+                    band_index = hob_index[s] + i
 
                     max_eigenvalue = np.amax(eigenvalues[s][:, band_index, 0])
-                    max_k = \
-                        int(np.where(eigenvalues[s][:, band_index, 0]
-                                     == max_eigenvalue)[0][0])
+                    max_k = int(np.where(eigenvalues[s][:, band_index, 0]
+                                         == max_eigenvalue)[0][0])
 
-                    if neighboring_atoms:
-                        participation_ratio[s][band_edge] = \
-                            calc_participation_ratio(
+                    min_eigenvalue = np.amax(eigenvalues[s][:, band_index, 0])
+                    min_k = int(np.where(eigenvalues[s][:, band_index, 0]
+                                         == min_eigenvalue)[0][0])
+
+                    for position, k in zip(["max", "min"], [max_k, min_k]):
+                        print(position, k)
+                        orbital_character[s][band_edge][position] = \
+                            calc_orbital_character(
                                 procar=procar,
+                                structure=final_structure,
                                 spin=s,
                                 band_index=band_index,
-                                kpoint_index=max_k,
-                                atom_indices=neighboring_atoms)
+                                kpoint_index=k)
 
-                    orbital_character[s][band_edge] = \
-                        calc_orbital_character(
-                            procar=procar,
-                            structure=final_structure,
-                            spin=s,
-                            band_index=band_index,
-                            kpoint_index=max_k)
-
-            if participation_ratio:
-                participation_ratio = dict(participation_ratio)
-            else:
-                participation_ratio = None
+            # if participation_ratio:
+            #     participation_ratio = dict(participation_ratio)
+            # else:
+            #     participation_ratio = None
             orbital_character = dict(orbital_character)
 
         else:
-            participation_ratio = None
             orbital_character = None
 
+        # print("orbital_character")
+        # print(orbital_character)
+
+        # Perfect supercell does not need the below.
         relative_total_energy = None
         relative_potential = None
         displacements = None
@@ -302,9 +297,12 @@ class SupercellCalcResults(MSONable):
                 total_energy - referenced_dft_results.total_energy
 
             if defect_entry is None:
-                raise FileNotFoundError("DefectEntry is necessary.")
+                raise ValueError("DefectEntry is necessary for analyzing"
+                                 "relative values.")
 
             mapping = defect_entry.atom_mapping_to_perfect
+            print('mapping')
+            print(mapping)
             relative_potential = []
 
             for d_atom, p_atom in enumerate(mapping):
@@ -324,14 +322,13 @@ class SupercellCalcResults(MSONable):
                                   defect_entry.defect_center,
                                   defect_entry.anchor_atom_index)
 
-            if participation_ratio and orbital_character:
+            if orbital_character:
                 perfect_orbital_character = \
                     referenced_dft_results.orbital_character
 
-                deep_states, is_shallow = \
-                    cls.diagnose_shallow_states(participation_ratio,
-                                                orbital_character,
-                                                perfect_orbital_character)
+                deep_states = \
+                    cls.diagnose_band_edges(orbital_character,
+                                            perfect_orbital_character)
 
         return cls(final_structure=final_structure,
                    site_symmetry=site_symmetry,
@@ -352,65 +349,66 @@ class SupercellCalcResults(MSONable):
                    displacements=displacements,
                    symmetrized_structure=symmetrized_structure,
                    symmops=symmops,
-                   participation_ratio=participation_ratio,
                    orbital_character=orbital_character)
 
     @staticmethod
-    def diagnose_shallow_states(participation_ratio: dict,
-                                orbital_character: dict,
-                                perfect_orbital_character: dict,
-                                localized_criterion: float = 0.6,
-                                similarity_criterion: float = 0.3):
+    def diagnose_band_edges(orbital_character: dict,
+                            perfect_orbital_character: dict,
+                            criterion: float = 0.12):
         """
-
         Args:
-
-
-             localized_criterion (float):
-                 Determines whether the eigenstate is localized.
-             similarity_criterion:
-                 Determines whether the eigenstate is a host state.
+            orbital_character (dict):
+            perfect_orbital_character (dict):
+                Orbital character for perfect supercell for comparison.
+            criterion:
+                Determines whether the eigenstate is a host state.
         """
-        if all([participation_ratio, orbital_character,
-                perfect_orbital_character]) is False:
+        # print("perfect_orbital_character")
+        # print(perfect_orbital_character)
+
+        if all([orbital_character, perfect_orbital_character]) is False:
             logger.warning("Diagnosing shallow states is impossible.")
             return False
 
-        deep_states = defaultdict(list)
-        is_shallow = defaultdict(dict)
+        for spin in orbital_character:
+            # Consider the situation where perfect has only Spin.up.
+            try:
+                perfect = perfect_orbital_character[spin]
+            except KeyError:
+                perfect = perfect_orbital_character[Spin.up]
 
-        for spin in participation_ratio:
-            for band_edge in "vbm", "cbm":
-                ratio = participation_ratio[spin][band_edge]
+            # hob
+            dissimilarity_1 = \
+                calc_orbital_similarity(
+                    orbital_character[spin]["hob"]["max"],
+                    perfect["hob"]["max"])
 
-                # Consider the situation where perfect has only Spin.up.
-                try:
-                    perfect = perfect_orbital_character[spin][band_edge]
-                except KeyError:
-                    perfect = perfect_orbital_character[Spin.up][band_edge]
+            dissimilarity_2 = \
+                calc_orbital_similarity(
+                    orbital_character[spin]["hob"]["min"],
+                    perfect["lub"]["min"])
 
-                dissimilarity = \
-                    calc_orbital_similarity(
-                        orbital_character[spin][band_edge], perfect)
+            # lub
+            dissimilarity_3 = \
+                calc_orbital_similarity(
+                    orbital_character[spin]["lub"]["min"],
+                    perfect["lub"]["min"])
 
-                print("participation_ratio, dissimilarity")
-                print(ratio, dissimilarity)
-                print("spin, band_edge")
-                print(spin, band_edge)
+            dissimilarity_4 = calc_orbital_similarity(
+                orbital_character[spin]["lub"]["max"], perfect["hob"]["max"])
 
-                # band edge is a host state.
-                if dissimilarity < similarity_criterion:
-                    pass
-                # band edge is a deep state
-                elif (ratio > localized_criterion) \
-                        and (dissimilarity > similarity_criterion):
-                    deep_states[spin].append(band_edge)
-                # band edge is a perturbed host sate
-                elif (ratio <= localized_criterion) \
-                        and (dissimilarity > similarity_criterion):
-                    is_shallow[spin][band_edge] = True
+            print(dissimilarity_1, dissimilarity_2, dissimilarity_3, dissimilarity_4)
 
-        return deep_states, is_shallow
+            if dissimilarity_1 < criterion and dissimilarity_3 < criterion:
+                print("No gap state")
+            elif dissimilarity_2 < criterion * 2:
+                print("Donor PHS")
+            elif dissimilarity_4 < criterion * 2:
+                print("Acceptor PHS")
+            else:
+                print("Deep localized state")
+
+        return True
 
     @classmethod
     def from_dict(cls, d):
@@ -434,17 +432,16 @@ class SupercellCalcResults(MSONable):
 
         def str_key_to_spin(arg: dict):
             if arg is not None:
-                x = {}
+                d = {}
                 for spin, value in arg.items():
-                    x[Spin(int(spin))] = value
-                return x
+                    d[Spin(int(spin))] = value
+                return d
             else:
                 return
 
-        participation_ratio = str_key_to_spin(d["participation_ratio"])
         orbital_character = str_key_to_spin(d["orbital_character"])
-        deep_states = str_key_to_spin(d["deep_states"])
-        is_shallow = str_key_to_spin(d["is_shallow"])
+        deep_states = True
+#        deep_states = str_key_to_spin(d["deep_states"])
 
         return cls(final_structure=final_structure,
                    site_symmetry=d["site_symmetry"],
@@ -459,13 +456,11 @@ class SupercellCalcResults(MSONable):
                    fermi_level=d["fermi_level"],
                    is_converged=d["is_converged"],
                    deep_states=deep_states,
-                   is_shallow=is_shallow,
                    relative_total_energy=d["relative_total_energy"],
                    relative_potential=d["relative_potential"],
                    displacements=d["displacements"],
                    symmetrized_structure=d["symmetrized_structure"],
                    symmops=symmops,
-                   participation_ratio=participation_ratio,
                    orbital_character=orbital_character)
 
     @classmethod
@@ -483,10 +478,9 @@ class SupercellCalcResults(MSONable):
             else:
                 return
 
-        participation_ratio = spin_key_to_str(self.participation_ratio)
         orbital_character = spin_key_to_str(self.orbital_character)
-        deep_states = spin_key_to_str(self.deep_states)
-        is_shallow = spin_key_to_str(self.is_shallow)
+        deep_states = True
+#        deep_states = spin_key_to_str(self.deep_states)
 
         d = {"@module":                 self.__class__.__module__,
              "@class":                  self.__class__.__name__,
@@ -503,13 +497,11 @@ class SupercellCalcResults(MSONable):
              "fermi_level":             self.fermi_level,
              "is_converged":            self.is_converged,
              "deep_states":             deep_states,
-             "is_shallow":              is_shallow,
              "relative_total_energy":   self.relative_total_energy,
              "relative_potential":      self.relative_potential,
              "displacements":           self.displacements,
              "symmetrized_structure":   self.symmetrized_structure,
              "symmops":                 self.symmops,
-             "participation_ratio":     participation_ratio,
              "orbital_character":       orbital_character}
 
         return d

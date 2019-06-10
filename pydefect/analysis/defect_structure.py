@@ -28,8 +28,7 @@ def get_neighbors_with_distance(structure, coords, neighbor_tolerance=1.1,
     self_threshold = 1e-2
 
     def exclude_self(distance_list):
-        return [site_dist for site_dist in distance_list
-                if site_dist[1] > self_threshold]
+        return [d for d in distance_list if d[1] > self_threshold]
 
     # search neighbor
     cutoff = initial_cutoff

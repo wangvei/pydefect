@@ -29,7 +29,27 @@ __maintainer__ = "Yu Kumagai"
 logger = get_logger(__name__)
 
 
-def perturb_neighboring_atoms(structure, center, cutoff, distance):
+class ModSpacegroupAnalyzer(SpacegroupAnalyzer):
+    def get_anchored_refined_structure(self, index):
+        """
+        Get the refined structure based on detected symmetry. The refined
+        structure is a *conventional* cell setting with atoms moved to the
+        expected symmetry positions.
+
+        Returns:
+            Refined structure.
+        """
+        # Atomic positions have to be specified by scaled positions for spglib.
+        lattice, scaled_positions, numbers \
+            = spglib.refine_cell(self._cell, self._symprec, self._angle_tol)
+
+        species = [self._unique_species[i - 1] for i in numbers]
+        s = Structure(lattice, species, scaled_positions)
+        return s.get_sorted_structure(), numbers
+
+
+def perturb_neighboring_atoms(structure, center, cutoff, distance,
+                              inserted_atom_indices):
     """ Return the structure with randomly perturbed atoms near the center
 
     Args:
@@ -52,6 +72,8 @@ def perturb_neighboring_atoms(structure, center, cutoff, distance):
     sites = []
     # Since translate_sites accepts only one vector, we need to iterate this.
     for i in neighbors:
+        if i[2] in inserted_atom_indices:
+            continue
         vector = random_vector(normalized_random_3d_vector(), distance)
         site_index = i[2]
         sites.append(site_index)
