@@ -34,14 +34,14 @@ def electronegativity_not_defined(a, b):
     logger.warning("Electronegativity of {} and/or {} not defined".format(a, b))
 
 
-def extended_range(i):
+def charge_set_range(i):
     """
     Extended range method used for positive/negative input value.
     The input value is included for both positive and negative numbers.
-    E.g., extended_range(3) = [-1, 0, 1, 2, 3]
-          extended_range(-3) = [-3, -2, -1, 0, 1]
-          extended_range(2) = [0, 1, 2]
-          extended_range(-4) = [-4, -3, -2, -1, 0]
+    E.g., charge_set_range(3) = [-1, 0, 1, 2, 3]
+          charge_set_range(-3) = [-3, -2, -1, 0, 1]
+          charge_set_range(2) = [0, 1, 2]
+          charge_set_range(-4) = [-4, -3, -2, -1, 0]
 
     Args:
         i (int): an integer
@@ -185,10 +185,6 @@ class SimpleDefectName(DefectName):
         if in_atom == "Va":
             in_atom = None
         return cls(in_atom, out_site, int(charge))
-
-#    @property
-#    def to_str(self):
-#        return
 
     def __eq__(self, other):
         return True if self.name_str == other.name_str else False
@@ -641,31 +637,6 @@ class DefectInitialSetting(MSONable):
     def to_yaml_file(self, filename="defect.yaml"):
         dumpfn(self.as_dict(), filename)
 
-    # def to_defect_in_yaml_file(self, filename="defect_in.yaml"):
-    #     from collections import OrderedDict
-    #     from yaml import dump
-
-        # d = OrderedDict(
-        #     {"space_group_symbol":    self.space_group_symbol,
-        #      "transformation_matrix": self.transformation_matrix,
-        #      "cell_multiplicity":     self.cell_multiplicity,
-        #      "irreducible_sites":
-        #      [i.as_dict() for i in self.irreducible_sites],
-        #      "dopant_configs":        self.dopant_configs,
-        #      "antisite_configs":      self.antisite_configs,
-        #      "interstitial_indices":    self.interstitial_indices,
-        #      "included":              self.included,
-        #      "excluded":              self.excluded,
-        #      "displacement_distance": self.displacement_distance,
-        #      "cutoff":                self.cutoff,
-        #      "symprec":               self.symprec,
-        #      "angle_tolerance":       self.angle_tolerance,
-        #      "oxidation_states":      self.oxidation_states,
-        #      "electronegativity":     self.electronegativity})
-
-        # with open(filename, "w") as f:
-        #     f.write(dump(d))
-
     def to_json_file(self, filename):
         with open(filename, 'w') as fw:
             json.dump(self.as_dict(), fw, indent=2, cls=MontyEncoder)
@@ -682,7 +653,7 @@ class DefectInitialSetting(MSONable):
 
         # Vacancies
         for i in self.irreducible_sites:
-            for o in extended_range(self.oxidation_states[i.element]):
+            for o in charge_set_range(self.oxidation_states[i.element]):
                 in_atom = None
                 out_site = i.irreducible_name
                 # Charges are set from 0 to minus of the oxidation state.
@@ -711,7 +682,7 @@ class DefectInitialSetting(MSONable):
             tuple(self.structure.symbol_set) + tuple(self.dopants)
         for element in inserted_elements:
             for name in self.interstitials.keys():
-                for charge in extended_range(self.oxidation_states[element]):
+                for charge in charge_set_range(self.oxidation_states[element]):
                     in_atom = element
                     out_site = name
                     name_set.append(SimpleDefectName(in_atom, out_site, charge))
@@ -722,7 +693,7 @@ class DefectInitialSetting(MSONable):
                 if out_elem == i.element:
                     os_diff = self.oxidation_states[in_atom] - \
                               self.oxidation_states[out_elem]
-                    for charge in extended_range(os_diff):
+                    for charge in charge_set_range(os_diff):
                         out_site = i.irreducible_name
                         name_set.append(
                             SimpleDefectName(in_atom, out_site, charge))

@@ -63,7 +63,6 @@ class DefectEnergiesTest(unittest.TestCase):
                                       defects=defects,
                                       chem_pot=chem_pot,
                                       chem_pot_label=chem_pot_label,
-                                      shallow=True,
                                       system="MgO")
 
         # temperature = 10000
@@ -92,9 +91,9 @@ class DefectEnergiesTest(unittest.TestCase):
 #        dp = DefectEnergyPlotter(self.defect_energies, self.dc2)
 #        plt = dp.plot_energy(filtering_words=["Va_O[0-9]+"],
         plt = dp.plot_energy(x_range=[-1, 5],
-                             show_transition_levels=True,
                              show_fermi_level=True,
-                             show_all_lines=True)
+                             show_transition_levels=True,
+                             show_all_energies=True)
         plt.show()
 #        plt.savefig(fname="energy.eps")
 

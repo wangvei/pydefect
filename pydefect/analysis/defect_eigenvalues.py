@@ -42,10 +42,8 @@ class DefectEigenvalue(MSONable):
                  fermi_level: float,
                  total_magnetization: float,
                  orbital_character: dict = None,
-                 perfect_orbital_character: dict = None,
                  eigenvalue_correction: dict = None,
-                 deep_states: dict = None,
-                 shallow: dict = None):
+                 band_edges: dict = None):
         """
         Args:
             name (str):
@@ -74,9 +72,13 @@ class DefectEigenvalue(MSONable):
                 Total total_magnetization.
             eigenvalue_correction (dict):
                 Dict with key of correction name and value of correction value.
-            deep_states (list):
-                Band indices corresponding to the deep defect states.
-                ex. {Spin.up: ["vbm", "cbm"]}
+            band_edges (dict):
+                Band edge states at each spin channel.
+                None: no in gap state.
+                "Donor PHS": Donor-type perturbed host state (PHS).
+                "Acceptor PHS": Acceptor-type PHS.
+                "Localized state": With in-gap localized state.
+                    ex. {Spin.up: None, Spin.down:"Localized state}
         """
         self.name = name
         self.charge = charge
@@ -93,18 +95,15 @@ class DefectEigenvalue(MSONable):
         self.fermi_level = fermi_level
         self.total_magnetization = total_magnetization
         self.orbital_character = orbital_character
-        self.perfect_orbital_character = perfect_orbital_character
         self.eigenvalue_correction = \
             dict(eigenvalue_correction) if eigenvalue_correction else None
-        self.deep_states = deep_states if deep_states else defaultdict(list)
-        self.shallow = shallow if shallow else defaultdict(dict)
+        self.band_edges = band_edges
 
     @classmethod
     def from_files(cls,
                    unitcell: UnitcellCalcResults,
                    perfect: SupercellCalcResults,
-                   defect: Defect,
-                   diagnose_band_edges: bool = True):
+                   defect: Defect):
         """ Parse defect eigenvalues.
 
         Args:
@@ -139,11 +138,10 @@ class DefectEigenvalue(MSONable):
                    fermi_level=defect.dft_results.fermi_level,
                    total_magnetization=defect.dft_results.total_magnetization,
                    orbital_character=defect.dft_results.orbital_character,
-                   perfect_orbital_character=perfect.orbital_character)
+                   band_edges=defect.dft_results.band_edges)
 
-    def plot(self, yrange=None, add_perfect=True, title=None):
-        """
-        Plots the defect eigenvalues.
+    def plot(self, yrange=None, title=None):
+        """ Plots the defect eigenvalues.
         Args:
             yrange (list):
                 1x2 list for determining y energy range.
@@ -165,9 +163,14 @@ class DefectEigenvalue(MSONable):
         plt.axhline(y=self.fermi_level, linewidth=1, linestyle="--")
 
         mapping = self.kpt_mapping_to_perfect_kpt
-        k_index = self.add_eigenvalues_to_plot(ax, self.eigenvalues,
-                                               self.perfect_eigenvalues, mapping)
+        k_index = self.add_eigenvalues_to_plot(
+            ax, self.eigenvalues, self.perfect_eigenvalues, mapping)
         ax.set_ylim(yrange[0], yrange[1])
+
+        for i, s in enumerate(self.band_edges):
+            middle_x = len(self.eigenvalues[s]) * (i + 0.5)
+            in_gap = (self.vbm + self.cbm) / 2
+            ax.annotate(str(self.band_edges[s]), xy=(middle_x, in_gap))
 
         ax.get_xaxis().set_tick_params(direction='out')
         ax.xaxis.set_ticks_position('bottom')
@@ -239,7 +242,7 @@ class DefectEigenvalue(MSONable):
 
         k_index = 0
 
-        for s in Spin.up, Spin.down:
+        for s in eigenvalues.keys():
             for k, eigen in enumerate(eigenvalues[s]):
                 k_index += 1
                 for band_index, e in enumerate(eigen):
@@ -290,12 +293,6 @@ class DefectEigenvalue(MSONable):
     def to_json_file(self, filename):
         with open(filename, 'w') as fw:
             json.dump(self.as_dict(), fw, indent=2, cls=MontyEncoder)
-
-    def is_shallow(self, magnetization_threshold=0.1, parse_wavecar=False):
-        if abs(self.total_magnetization) > magnetization_threshold or \
-                self.fermi_level > self.supercell_cbm or \
-                self.fermi_level < self.supercell_vbm:
-            return False
 
     def __str__(self):
         pass

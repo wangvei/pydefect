@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+from enum import Enum, unique
 import json
 import numpy as np
 import os
@@ -37,6 +38,36 @@ logger = get_logger(__name__)
 MAGNETIZATION_THRESHOLD = 0.1
 
 
+@unique
+class BandEdges(Enum):
+    donor_phs = "Donor PHS"
+    acceptor_phs = "Acceptor PHS"
+    localized_state = "Localized state"
+    no_in_gap = "No in-gap state"
+
+    def __str__(self):
+        return self.value
+
+    @classmethod
+    def from_string(cls, s):
+        for m in cls:
+            if m.value == s:
+                return m
+        raise AttributeError("Band edge info: " + str(s) + " is not proper.\n" +
+                             "Supported info:\n" + cls.name_list())
+
+    @classmethod
+    def name_list(cls):
+        return ', '.join([e.value for e in cls])
+
+    @property
+    def is_shallow(self):
+        if self in [BandEdges.acceptor_phs, BandEdges.donor_phs]:
+            return True
+        else:
+            return False
+
+
 class SupercellCalcResults(MSONable):
     """ Container class with DFT results for supercell systems. """
 
@@ -53,8 +84,7 @@ class SupercellCalcResults(MSONable):
                  volume: float,
                  fermi_level: float,
                  is_converged: bool,
-                 deep_states: dict = None,
-                 is_shallow: bool = None,
+                 band_edges: dict = None,
                  relative_total_energy: float = None,
                  relative_potential: list = None,
                  displacements: list = None,
@@ -85,14 +115,13 @@ class SupercellCalcResults(MSONable):
                Fermi level in the absolute scale.
             is_converged (bool):
                 Whether the calculation is converged or not.
-            deep_states (list):
-                Band indices corresponding to the deep defect states.
-                ex. {Spin.up: ["vbm", "cbm"]}
-            is_shallow (list):
-                If we don't know Whether the defect is shallow, None.
-                If the defect is detected not to be shallow, [].
-                If the defect is detected to be shallow, store the detected ways
-                like, ["not_integer_mag", "fermi_is_higher_than_cbm"]
+            band_edges (dict):
+                Band edge states at each spin channel.
+                None: no in gap state.
+                "Donor PHS": Donor-type perturbed host state (PHS).
+                "Acceptor PHS": Acceptor-type PHS.
+                "Localized state": With in-gap localized state.
+                    ex. {Spin.up: None, Spin.down:"Localized state}
             symmetrized_structure (Structure):
                 Symmetrized structure with a defect.
             symmops (list):
@@ -114,8 +143,7 @@ class SupercellCalcResults(MSONable):
         self.volume = volume
         self.fermi_level = fermi_level
         self.is_converged = is_converged
-        self.deep_states = deep_states
-        self.is_shallow = is_shallow
+        self.band_edges = band_edges
         self.relative_total_energy = relative_total_energy
         self.relative_potential = relative_potential
         self.displacements = displacements
@@ -243,9 +271,6 @@ class SupercellCalcResults(MSONable):
                 {Spin.up: round((outcar.nelect + magnetization) / 2) - 1,
                  Spin.down: round((outcar.nelect - magnetization) / 2) - 1}
 
-            # print("hob_index")
-            # print(hob_index)
-
             orbital_character = {}
 
             for s in eigenvalues.keys():
@@ -264,7 +289,6 @@ class SupercellCalcResults(MSONable):
                                          == min_eigenvalue)[0][0])
 
                     for position, k in zip(["max", "min"], [max_k, min_k]):
-                        print(position, k)
                         orbital_character[s][band_edge][position] = \
                             calc_orbital_character(
                                 procar=procar,
@@ -273,24 +297,16 @@ class SupercellCalcResults(MSONable):
                                 band_index=band_index,
                                 kpoint_index=k)
 
-            # if participation_ratio:
-            #     participation_ratio = dict(participation_ratio)
-            # else:
-            #     participation_ratio = None
             orbital_character = dict(orbital_character)
 
         else:
             orbital_character = None
 
-        # print("orbital_character")
-        # print(orbital_character)
-
         # Perfect supercell does not need the below.
         relative_total_energy = None
         relative_potential = None
         displacements = None
-        deep_states = None
-        is_shallow = None
+        band_edges = None
 
         if referenced_dft_results:
             relative_total_energy = \
@@ -301,8 +317,6 @@ class SupercellCalcResults(MSONable):
                                  "relative values.")
 
             mapping = defect_entry.atom_mapping_to_perfect
-            print('mapping')
-            print(mapping)
             relative_potential = []
 
             for d_atom, p_atom in enumerate(mapping):
@@ -326,7 +340,7 @@ class SupercellCalcResults(MSONable):
                 perfect_orbital_character = \
                     referenced_dft_results.orbital_character
 
-                deep_states = \
+                band_edges = \
                     cls.diagnose_band_edges(orbital_character,
                                             perfect_orbital_character)
 
@@ -342,8 +356,7 @@ class SupercellCalcResults(MSONable):
                    volume=volume,
                    fermi_level=fermi_level,
                    is_converged=vasprun.converged_ionic,
-                   deep_states=deep_states,
-                   is_shallow=is_shallow,
+                   band_edges=band_edges,
                    relative_total_energy=relative_total_energy,
                    relative_potential=relative_potential,
                    displacements=displacements,
@@ -363,12 +376,11 @@ class SupercellCalcResults(MSONable):
             criterion:
                 Determines whether the eigenstate is a host state.
         """
-        # print("perfect_orbital_character")
-        # print(perfect_orbital_character)
-
         if all([orbital_character, perfect_orbital_character]) is False:
             logger.warning("Diagnosing shallow states is impossible.")
             return False
+
+        band_edges = {}
 
         for spin in orbital_character:
             # Consider the situation where perfect has only Spin.up.
@@ -378,36 +390,37 @@ class SupercellCalcResults(MSONable):
                 perfect = perfect_orbital_character[Spin.up]
 
             # hob
-            dissimilarity_1 = \
-                calc_orbital_similarity(
-                    orbital_character[spin]["hob"]["max"],
-                    perfect["hob"]["max"])
-
-            dissimilarity_2 = \
-                calc_orbital_similarity(
-                    orbital_character[spin]["hob"]["min"],
-                    perfect["lub"]["min"])
-
+            vbm_dissimilarity = calc_orbital_similarity(
+                orbital_character[spin]["hob"]["max"], perfect["hob"]["max"])
+            donor_phs_dissimilarity = calc_orbital_similarity(
+                orbital_character[spin]["hob"]["min"], perfect["lub"]["min"])
             # lub
-            dissimilarity_3 = \
-                calc_orbital_similarity(
-                    orbital_character[spin]["lub"]["min"],
-                    perfect["lub"]["min"])
-
-            dissimilarity_4 = calc_orbital_similarity(
+            cbm_dissimilarity = calc_orbital_similarity(
+                orbital_character[spin]["lub"]["min"], perfect["lub"]["min"])
+            acceptor_phs_dissimilarity = calc_orbital_similarity(
                 orbital_character[spin]["lub"]["max"], perfect["hob"]["max"])
 
-            print(dissimilarity_1, dissimilarity_2, dissimilarity_3, dissimilarity_4)
+            print("vbm_dissimilarity, donor_phs_dissimilarity, "
+                  "cbm_dissimilarity, acceptor_phs_dissimilarity")
+            print(vbm_dissimilarity, donor_phs_dissimilarity, cbm_dissimilarity,
+                  acceptor_phs_dissimilarity)
 
-            if dissimilarity_1 < criterion and dissimilarity_3 < criterion:
-                print("No gap state")
-            elif dissimilarity_2 < criterion * 2:
-                print("Donor PHS")
-            elif dissimilarity_4 < criterion * 2:
-                print("Acceptor PHS")
+            if vbm_dissimilarity < criterion and cbm_dissimilarity < criterion:
+                band_edges[spin] = BandEdges.no_in_gap
+            elif donor_phs_dissimilarity < criterion * 2:
+                band_edges[spin] = BandEdges.donor_phs
+            elif acceptor_phs_dissimilarity < criterion * 2:
+                band_edges[spin] = BandEdges.acceptor_phs
             else:
-                print("Deep localized state")
+                band_edges[spin] = BandEdges.localized_state
 
+            print(band_edges[spin])
+
+        return band_edges
+
+    def set_band_edges(self, spin: Spin, state: Union[str, None]):
+        """ Set band edges manually."""
+        self.band_edges[spin] = BandEdges.from_string(state)
         return True
 
     @classmethod
@@ -430,18 +443,20 @@ class SupercellCalcResults(MSONable):
             else:
                 symmops.append(symmop)
 
-        def str_key_to_spin(arg: dict):
+        def str_key_to_spin(arg: dict, value_to_band_edges=False):
             if arg is not None:
                 d = {}
                 for spin, value in arg.items():
-                    d[Spin(int(spin))] = value
+                    if value_to_band_edges:
+                        d[Spin(int(spin))] = BandEdges.from_string(value)
+                    else:
+                        d[Spin(int(spin))] = value
                 return d
             else:
                 return
 
         orbital_character = str_key_to_spin(d["orbital_character"])
-        deep_states = True
-#        deep_states = str_key_to_spin(d["deep_states"])
+        band_edges = str_key_to_spin(d["band_edges"], value_to_band_edges=True)
 
         return cls(final_structure=final_structure,
                    site_symmetry=d["site_symmetry"],
@@ -455,7 +470,7 @@ class SupercellCalcResults(MSONable):
                    volume=d["volume"],
                    fermi_level=d["fermi_level"],
                    is_converged=d["is_converged"],
-                   deep_states=deep_states,
+                   band_edges=band_edges,
                    relative_total_energy=d["relative_total_energy"],
                    relative_potential=d["relative_potential"],
                    displacements=d["displacements"],
@@ -472,15 +487,17 @@ class SupercellCalcResults(MSONable):
         eigenvalues = \
             {str(spin): v.tolist() for spin, v in self.eigenvalues.items()}
 
-        def spin_key_to_str(arg: dict):
+        def spin_key_to_str(arg: dict, value_to_str=False):
             if arg is not None:
-                return {str(spin): v for spin, v in arg.items()}
+                if value_to_str:
+                    return {str(spin): str(v) for spin, v in arg.items()}
+                else:
+                    return {str(spin): v for spin, v in arg.items()}
             else:
                 return
 
         orbital_character = spin_key_to_str(self.orbital_character)
-        deep_states = True
-#        deep_states = spin_key_to_str(self.deep_states)
+        band_edges = spin_key_to_str(self.band_edges, value_to_str=True)
 
         d = {"@module":                 self.__class__.__module__,
              "@class":                  self.__class__.__name__,
@@ -496,7 +513,7 @@ class SupercellCalcResults(MSONable):
              "volume":                  self.volume,
              "fermi_level":             self.fermi_level,
              "is_converged":            self.is_converged,
-             "deep_states":             deep_states,
+             "band_edges":              band_edges,
              "relative_total_energy":   self.relative_total_energy,
              "relative_potential":      self.relative_potential,
              "displacements":           self.displacements,

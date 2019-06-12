@@ -2,8 +2,8 @@
 
 from collections import defaultdict, namedtuple
 import json
-
 from monty.json import MontyEncoder, MSONable
+from typing import List
 
 from obadb.analyzer.chempotdiag.chem_pot_diag import ChemPotDiag
 
@@ -26,6 +26,11 @@ class Defect:
         self.dft_results = dft_results
         self.correction = correction
 
+    @property
+    def is_shallow(self):
+        for i in self.dft_results.band_edges.values():
+           return True if i.is_shallow else False
+
 
 class DefectEnergies(MSONable):
     def __init__(self,
@@ -33,7 +38,8 @@ class DefectEnergies(MSONable):
                  multiplicity: dict,
                  magnetization: dict,
                  convergence: dict,
-                 shallow: dict,
+                 band_edges: dict,
+                 are_shallows: dict,
                  vbm: float,
                  cbm: float,
                  supercell_vbm: float,
@@ -50,8 +56,10 @@ class DefectEnergies(MSONable):
                 Magnetization in mu_B. magnetization[name][charge]
             convergence (bool):
                 Whether to remove the unconverged defects.
-            shallow (bool):
-                Whether to remove the shallow defects.
+            band_edges (bool):
+                Band edge information
+            are_shallows (bool):
+                Whether defects are shallow or not.
             vbm (float):
                 Valence band maximum in the unitcell in the absolute scale.
             cbm (float):
@@ -67,7 +75,8 @@ class DefectEnergies(MSONable):
         self.multiplicity = multiplicity
         self.magnetization = magnetization
         self.convergence = convergence
-        self.shallow = shallow
+        self.band_edges = band_edges
+        self.are_shallows = are_shallows
         self.vbm = vbm
         self.cbm = cbm
         self.supercell_vbm = supercell_vbm
@@ -78,7 +87,7 @@ class DefectEnergies(MSONable):
     def from_files(cls,
                    unitcell: UnitcellCalcResults,
                    perfect: SupercellCalcResults,
-                   defects: list,
+                   defects: List[Defect],
                    chem_pot: ChemPotDiag,
                    chem_pot_label: str,
                    system: str = ""):
@@ -117,7 +126,8 @@ class DefectEnergies(MSONable):
         multiplicity = defaultdict(dict)
         magnetization = defaultdict(dict)
         convergence = defaultdict(dict)
-        shallow = defaultdict(dict)
+        band_edges = defaultdict(dict)
+        are_shallows = defaultdict(dict)
 
         for d in defects:
             name = d.defect_entry.name
@@ -146,13 +156,12 @@ class DefectEnergies(MSONable):
 
             magnetization[name][charge] = d.dft_results.total_magnetization
             convergence[name][charge] = d.dft_results.is_converged
-
-            if d.eigenvalue is not None:
-                shallow[name][charge] = d.dft_results.shallow
+            band_edges[name][charge] = d.dft_results.band_edges
+            are_shallows[name][charge] = d.is_shallow
 
         return cls(dict(energies), dict(multiplicity), dict(magnetization),
-                   dict(convergence), dict(shallow), vbm, cbm,
-                   supercell_vbm, supercell_cbm, title)
+                   dict(convergence), dict(band_edges), dict(are_shallows),
+                   vbm, cbm, supercell_vbm, supercell_cbm, title)
 
     def to_json_file(self, filename="defect_energy.json"):
         with open(filename, 'w') as fw:
@@ -170,7 +179,7 @@ class DefectEnergies(MSONable):
                      "Magnetization: {}".format(
                          round(self.magnetization[n][c], 2)),
                      "Convergence: {}".format(self.convergence[n][c]),
-                     "Shallow: {}".format(self.shallow[n][c])])
+                     "Band edges: {}".format(self.band_edges[n][c])])
             outs.append("")
 
         return "\n".join(outs)

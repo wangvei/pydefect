@@ -859,35 +859,39 @@ def supercell_calc_results(args):
     for d in dirs:
         if os.path.isdir(d):
             logger.info("Parsing data in {}...".format(d))
-
             if d in ["perfect", "perfect/"]:
-                dft_results = SupercellCalcResults.from_vasp_files(
-                    directory_path=d,
-                    vasprun=args.vasprun,
-                    contcar=args.contcar,
-                    procar=True,
-                    outcar=args.outcar)
-
-            else:
-                filename = join(args.perfect_results, "dft_results.json")
-                perfect_results = SupercellCalcResults.load_json(filename)
-                de = DefectEntry.load_json(join(d, args.defect_entry_name))
-
-                dft_results = \
-                    SupercellCalcResults.from_vasp_files(
+                try:
+                    dft_results = SupercellCalcResults.from_vasp_files(
                         directory_path=d,
                         vasprun=args.vasprun,
                         contcar=args.contcar,
-                        outcar=args.outcar,
                         procar=True,
-                        referenced_dft_results=perfect_results,
-                        defect_entry=de,
-                        symprec=args.symprec,
-                        angle_tolerance=args.angle_tolerance)
+                        outcar=args.outcar)
+                except:
+                    raise IOError("perfect ")
+            else:
+                try:
+                    filename = join(args.perfect_results, "dft_results.json")
+                    perfect_results = SupercellCalcResults.load_json(filename)
+                    de = DefectEntry.load_json(join(d, args.defect_entry_name))
+
+                    dft_results = \
+                        SupercellCalcResults.from_vasp_files(
+                            directory_path=d,
+                            vasprun=args.vasprun,
+                            contcar=args.contcar,
+                            outcar=args.outcar,
+                            procar=True,
+                            referenced_dft_results=perfect_results,
+                            defect_entry=de,
+                            symprec=args.symprec,
+                            angle_tolerance=args.angle_tolerance)
+                except IOError:
+                    logger.warning("Parsing data in {} failed.".format(d))
+                    continue
 
             dft_results.to_json_file(
                 filename=join(d, "dft_results.json"))
-
         else:
             logger.warning("{} does not exist, so nothing is done.".format(d))
 
@@ -1225,7 +1229,7 @@ def plot_energy(args):
                               y_range=args.y_range,
                               show_fermi_level=args.concentration,
                               show_transition_levels=args.show_tl,
-                              show_all_lines=args.show_all)
+                              show_all_energies=args.show_all)
 
     plt.savefig(args.save_file, format="pdf") if args.save_file else plt.show()
 

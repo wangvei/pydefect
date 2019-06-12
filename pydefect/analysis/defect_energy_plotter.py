@@ -10,6 +10,13 @@ import matplotlib.pyplot as plt
 from pydefect.analysis.defect_energies import DefectEnergies
 from pydefect.analysis.defect_carrier_concentration import DefectConcentration
 from pydefect.input_maker.defect_initial_setting import SimpleDefectName
+from pydefect.util.logger import get_logger
+
+
+__author__ = "Yu Kumagai"
+__maintainer__ = "Yu Kumagai"
+
+logger = get_logger(__name__)
 
 TransitionLevel = namedtuple("TransitionLevel", ("cross_points", "charges"))
 
@@ -32,7 +39,8 @@ class DefectEnergyPlotter:
         self.title = defect_energies.title
         self.energies = defect_energies.energies
         self.convergence = defect_energies.convergence
-        self.shallow = defect_energies.shallow
+        self.are_shallow = defect_energies.are_shallows
+        self.band_edges = defect_energies.band_edges
         self.vbm = defect_energies.vbm
         self.cbm = defect_energies.cbm
         self.supercell_vbm = defect_energies.supercell_vbm
@@ -58,11 +66,11 @@ class DefectEnergyPlotter:
                     filtering_words: list = None,
                     x_range: list = None,
                     y_range: list = None,
-                    show_fermi_level: bool = True,
-                    exclude_shallow_defects: bool = True,
                     exclude_unconverged_defects: bool = True,
+                    exclude_shallow_defects: bool = True,
+                    show_fermi_level: bool = True,
                     show_transition_levels: bool = False,
-                    show_all_lines: bool = False):
+                    show_all_energies: bool = False):
         """ Plots defect formation energies as a function of the Fermi level.
 
         Args:
@@ -72,12 +80,16 @@ class DefectEnergyPlotter:
                 1x2 list for determining x range.
             y_range (list):
                 1x2 list for determining y range.
+            exclude_unconverged_defects (bool):
+                Whether to exclude the unconverged defects from the plot.
+            exclude_shallow_defects (bool):
+                Whether to exclude the shallow defects from the plot.
             show_fermi_level (bool):
                 Whether to show the Fermi level(s) in the plot.
             show_transition_levels (bool):
-                Whether to show the transition levels in the plot.
-            show_all_lines (bool):
-                Whether to show all lines in the plot.
+                Whether to show values of transition levels in the plot.
+            show_all_energies (bool):
+                Whether to show all energies in the plot.
         """
         fig, ax = plt.subplots()
         plt.title(self.title, fontsize=15)
@@ -91,11 +103,14 @@ class DefectEnergyPlotter:
             for c in copy(e_of_c).keys():
                 n = SimpleDefectName.from_str("_".join([name, str(c)]))
 
-                if ((n.is_name_matched(filtering_words) is False)
-                        or (exclude_shallow_defects is True
-                            and self.shallow[name][c])
-                        or (exclude_unconverged_defects is True
-                            and self.convergence is False)):
+                if n.is_name_matched(filtering_words) is False:
+                    e_of_c.pop(c)
+                elif exclude_shallow_defects and self.are_shallow[name][c]:
+                    logger.warning("{} is shallow, so omitted.".format(n))
+                    e_of_c.pop(c)
+                elif (exclude_unconverged_defects
+                      and self.convergence[name][c] is False):
+                    logger.warning("{} is unconverged, so omitted.".format(n))
                     e_of_c.pop(c)
 
             cross_points_charge = []
@@ -158,11 +173,13 @@ class DefectEnergyPlotter:
             transition_points = []
             charge_set = set()
 
-            # must keep sequence (x_min -> transition levels -> x_max) for plot
-            # x_min
+            # must keep sequence (x_min -> transition levels -> x_max) for
+            # connecting the points.
+
+            # Add the plot point at x_min
             c, y = min_e_at_ef(energies, x_min + self.vbm)
             cross_points.append([x_min, y])
-            # Adding charge is necessary when transition level is absent.
+            # Adding charge is a must
             charge_set.add(c)
             if c < 0:
                 shallow_points.append([x_min, y])
@@ -171,20 +188,21 @@ class DefectEnergyPlotter:
             if y > y_max:
                 y_max = y
 
+            # Add points between x_min and x_max
             for cp, c in zip(tl.cross_points, tl.charges):
                 if x_min < cp[0] - self.vbm < x_max:
                     cross_points.append([cp[0] - self.vbm, cp[1]])
                     transition_points.append([cp[0] - self.vbm, cp[1]])
-                    charge_set.add(c[0])
                     charge_set.add(c[1])
                     if cp[1] < y_min:
                         y_min = cp[1]
                     if cp[1] > y_max:
                         y_max = cp[1]
 
-            # x_max
+            # Add the plot point at x_max
             c, y = min_e_at_ef(energies, x_max + self.vbm)
             cross_points.append([x_max, y])
+            charge_set.add(c)
             if c > 0:
                 shallow_points.append([x_max, y])
             if y < y_min:
@@ -233,7 +251,7 @@ class DefectEnergyPlotter:
                 s = str(sorted_charge_set[j])
                 ax.annotate(s, (x, y), color=color, fontsize=13)
 
-            if show_all_lines:
+            if show_all_energies:
                 for c, e in self.energies[name].items():
                     y1 = e + c * (x_min + self.vbm)
                     y2 = e + c * (x_max + self.vbm)

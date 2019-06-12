@@ -118,12 +118,12 @@ class DefectEntrySetMaker:
         self.cell_multiplicity = defect_initial_setting.cell_multiplicity
         self.is_displaced = defect_initial_setting.are_atoms_perturbed
 
+        # here, self.interstitials in DefectInitialSetting is constructed,
         defect_name_set = defect_initial_setting.make_defect_name_set()
         if particular_defects:
             defect_name_set = \
                 [SimpleDefectName.from_str(i) for i in particular_defects]
         else:
-            # here, self.interstitials in DefectInitialSetting is constructed,
             if keywords:
                 defect_name_set = select_defect_names(defect_name_set, keywords)
 
