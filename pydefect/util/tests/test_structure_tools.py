@@ -30,15 +30,16 @@ class PerturbNeighborsTest(unittest.TestCase):
         center = [0.0, 0.0, 0.0]
         cutoff = 3.0
         distance = 0.2
+        inserted_atom_indices = [0]
 
         # TODO: test the displacement distances
         perturbed_defect_structure, perturbed_sites = \
-            perturb_neighboring_atoms(structure, center, cutoff, distance)
-        true_perturbed_sites = [0, 40, 44, 48, 50, 56, 57]
+            perturb_neighboring_atoms(structure, center, cutoff, distance,
+                                      inserted_atom_indices)
+        true_perturbed_sites = [40, 44, 48, 50, 56, 57]
         self.assertEqual(perturbed_sites, true_perturbed_sites)
 
-
-        self.structure = Structure.from_file("POSCAR-Sn2Nb2O7")
+#        self.structure = Structure.from_file("POSCAR-Sn2Nb2O7")
 
     # def test_get_coordination_environment(self):
     #     print(get_coordination_environment(self.structure, 0))
@@ -94,7 +95,7 @@ class AtomicDistancesTest(PymatgenTest):
 
     def test(self):
         points = [[0, 0, 0], [0.5, 0.5, 0.5], [0.25, 0.15, 0.05]]
-        expected = np.array([1.1435112, 1.4864129,  2.123447])
+        expected = np.array([2.123447, 1.1435112, 1.4864129])
         actual = atomic_distances(self.lattice, points)
         self.assertArrayAlmostEqual(actual, expected)
 

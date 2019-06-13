@@ -3,13 +3,12 @@ from itertools import product, combinations, chain
 from math import acos, floor, degrees
 import numpy as np
 from tqdm import tqdm
-from typing import Union
+from typing import Union, List
 
 from pymatgen.io.vasp import Poscar
 from pymatgen.core.structure import Structure
 from pymatgen.core.lattice import Lattice
 from pymatgen.core.periodic_table import DummySpecie, Specie
-from pymatgen.core.sites import PeriodicSite
 from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
 from pymatgen.util.coord import pbc_shortest_vectors
 
@@ -48,8 +47,11 @@ class ModSpacegroupAnalyzer(SpacegroupAnalyzer):
         return s.get_sorted_structure(), numbers
 
 
-def perturb_neighboring_atoms(structure, center, cutoff, distance,
-                              inserted_atom_indices):
+def perturb_neighboring_atoms(structure: Structure,
+                              center: List[float],
+                              cutoff: float,
+                              distance: float,
+                              inserted_atom_indices: List[int]):
     """ Return the structure with randomly perturbed atoms near the center
 
     Args:
@@ -61,6 +63,8 @@ def perturb_neighboring_atoms(structure, center, cutoff, distance,
             Radius of a sphere in which atoms are perturbed.
         distance (float):
             Max displacement_distance for the perturbation.
+        inserted_atom_indices (list):
+            Inserted atom indices, which will not be perturbed.
     """
     perturbed_structure = structure.copy()
     cartesian_coords = structure.lattice.get_cartesian_coords(center)

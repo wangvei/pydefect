@@ -57,7 +57,7 @@ class PriorInfo(MSONable):
 
     @classmethod
     def load_json(cls, filename: str = "prior_info.json"):
-        return cls.from_dict(loadfn(filename))
+        return loadfn(filename)
 
     @property
     def is_magnetic(self):

@@ -7,26 +7,21 @@ from pydefect.analysis.defect_carrier_concentration import CarrierConcentration
 from pydefect.core.unitcell_calc_results import UnitcellCalcResults
 
 __author__ = "Yu Kumagai"
-__copyright__ = "Copyright 2018, Oba group"
-__version__ = "0.1"
 __maintainer__ = "Yu Kumagai"
-__email__ = "yuuukuma@gmail.com"
-__status__ = "Development"
-__date__ = "July 4, 2018"
 
 test_dir = os.path.join(os.path.dirname(__file__), "..", "..", "..",
                         "test_files", "input_maker")
 
 
-class CarrierConcentrationTest(unittest.TestCase):
+# class CarrierConcentrationTest(unittest.TestCase):
 
-    def setUp(self):
-        self.unitcell = UnitcellCalcResults.load_json("unitcell_MgSe.json")
-        print(self.unitcell)
+    # def setUp(self):
+    #     self.unitcell = UnitcellCalcResults.load_json("unitcell_MgSe.json")
+    #     print(self.unitcell)
 
-    def test(self):
-        t = 1298
-        cc = CarrierConcentration.from_unitcell(t, self.unitcell)
+    # def test(self):
+    #     t = 1298
+    #     cc = CarrierConcentration.from_unitcell(t, self.unitcell)
 
-#        print(cc)
-        cc.get_plot()
+# #        print(cc)
+#         cc.get_plot()

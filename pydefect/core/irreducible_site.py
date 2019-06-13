@@ -54,32 +54,6 @@ class IrreducibleSite(MSONable):
         self.coordination_distances = coordination_distances
         self.magmom = magmom
 
-    # These are necessary when IrreducibleSite is recovered in from_dict
-    # in the DefectInitialSetting.
-    @classmethod
-    def from_dict(cls, d):
-        return cls(d["irreducible_name"],
-                   d["element"],
-                   d["first_index"],
-                   d["last_index"],
-                   d["representative_coords"],
-                   d["wyckoff"],
-                   d["site_symmetry"],
-                   d["coordination_distances"])
-
-    def as_dict(self):
-        d = {"@module": self.__class__.__module__,
-             "@class":  self.__class__.__name__,
-             "irreducible_name": self.irreducible_name,
-             "element": self.element,
-             "first_index": self.first_index,
-             "last_index": self.last_index,
-             "representative_coords": self.representative_coords,
-             "wyckoff": self.wyckoff,
-             "site_symmetry": self.site_symmetry,
-             "coordination_distances": self.coordination_distances}
-        return d
-
     @property
     def num_atoms(self):
         return self.last_index - self.first_index + 1

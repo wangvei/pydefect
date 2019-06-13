@@ -1,20 +1,16 @@
 # -*- coding: utf-8 -*-
 
-from copy import deepcopy
 import numpy as np
 import os
 import tempfile
 import unittest
 
-from pymatgen.core.structure import Structure
 from pymatgen.electronic_structure.core import Spin
 from pymatgen.util.testing import PymatgenTest
 
 from pydefect.core.defect_entry import DefectEntry
 from pydefect.core.supercell_calc_results \
     import SupercellCalcResults
-from pydefect.util.structure_tools import distances_from_defect_center
-from pydefect.core.unitcell_calc_results import UnitcellCalcResults
 
 __author__ = "Yu Kumagai"
 __maintainer__ = "Yu Kumagai"

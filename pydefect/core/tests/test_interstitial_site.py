@@ -17,7 +17,6 @@ class InterstitialSiteTest(PymatgenTest):
     def setUp(self):
         """ """
 
-        site_name = "i1"
         representative_coords = [0.25, 0.25, 0.25]
         wyckoff = "b"
         site_symmetry = "m-3m"
@@ -26,7 +25,6 @@ class InterstitialSiteTest(PymatgenTest):
         method = "Voronoi"
 
         self.i = InterstitialSite(
-                 site_name=site_name,
                  representative_coords=representative_coords,
                  wyckoff=wyckoff,
                  site_symmetry=site_symmetry,
@@ -40,7 +38,7 @@ class InterstitialSiteTest(PymatgenTest):
         self.assertTrue(d == from_dict.as_dict())
 
 
-class InterstitialSitesTest(PymatgenTest):
+class InterstitialSiteSetTest(PymatgenTest):
 
     def setUp(self):
         """ """
@@ -106,7 +104,7 @@ class InterstitialSitesTest(PymatgenTest):
 
     def test_from_files(self):
         actual = InterstitialSiteSet.from_files(
-            poscar="BPOSCAR-MgO", filename="interstitials.yaml").as_dict()
+            structure="BPOSCAR-MgO", filename="interstitials.yaml").as_dict()
         expected = self.interstitial_site_set.as_dict()
         self.assertEqual(actual, expected)
 

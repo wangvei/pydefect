@@ -9,13 +9,8 @@ from pydefect.core.supercell_calc_results import SupercellCalcResults
 from pydefect.core.unitcell_calc_results import UnitcellCalcResults
 from pydefect.core.defect_entry import DefectEntry
 
-__author__ = "Akira Takahashi"
-__copyright__ = "Copyright 2017, Oba group"
-__version__ = "0.1"
-__maintainer__ = "Akira Takahashi"
-__email__ = "takahashi.akira.36m@gmail.com"
-__status__ = "Development"
-__date__ = "February 20, 2018"
+__author__ = "Akira Takahashi, Yu Kumagai"
+__maintainer__ = "Yu Kumagai"
 
 test_dir = os.path.join(os.path.dirname(__file__), "..", "..", "..",
                         "test_files", "core", "MgO")

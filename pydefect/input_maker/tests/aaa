@@ -1,0 +1,29 @@
+0:
+  site_name: oct
+  representative_coords: [0.125, 0.125, 0.125]
+  wyckoff: a
+  site_symmetry: -43m
+  symmetry_multiplicity: 0.125
+  coordination_distances: !!python/object/apply:collections.defaultdict
+    args: [!!python/name:builtins.list '']
+    dictitems:
+      O:
+      - !!python/object/apply:numpy.core.multiarray.scalar
+        - &id001 !!python/object/apply:numpy.dtype
+          args: [f8, 0, 1]
+          state: !!python/tuple [3, <, null, null, null, -1, -1, 0]
+        - !!binary |
+          Zna73V9s/T8=
+      - !!python/object/apply:numpy.core.multiarray.scalar
+        - *id001
+        - !!binary |
+          Zna73V9s/T8=
+      - !!python/object/apply:numpy.core.multiarray.scalar
+        - *id001
+        - !!binary |
+          Zna73V9s/T8=
+      - !!python/object/apply:numpy.core.multiarray.scalar
+        - *id001
+        - !!binary |
+          Zna73V9s/T8=
+  method: manual

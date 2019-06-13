@@ -3,6 +3,7 @@
 from copy import deepcopy
 from collections import OrderedDict
 from monty.json import MSONable
+from typing import Union
 import yaml
 
 from pymatgen.core.structure import Structure
@@ -161,8 +162,14 @@ class InterstitialSiteSet(MSONable):
                    interstitial_sites=interstitial_sites)
 
     @classmethod
-    def from_files(cls, poscar="DPOSCAR", filename="interstitials.yaml"):
-        d = {"structure": Structure.from_file(poscar)}
+    def from_files(cls,
+                   structure: Union[str, Structure] = "DPOSCAR",
+                   filename="interstitials.yaml"):
+        if isinstance(structure, str):
+            d = {"structure": Structure.from_file(structure)}
+        else:
+            d = {"structure": structure}
+
         with open(filename, "r") as f:
             d["interstitial_site_set"] = yaml.load(f)
 
@@ -191,13 +198,13 @@ class InterstitialSiteSet(MSONable):
 
             for n in neighbors:
                 # DummySpecie occupies the saturated interstitial sites.
-                if isinstance(n[0], DummySpecie):
+                if isinstance(n[0].specie, DummySpecie):
                     specie = "another interstitial site"
                 else:
                     specie = n[0].frac_coords
                 distance = n[1]
-                message = "Inserted position is too close to {}. The distance "\
-                          "is {:5.3f}".format(specie, distance)
+                message = "Inserted position is too close to {}.\n " \
+                          "The distance is {:5.3f}".format(specie, distance)
                 if force_add:
                     logger.warning(message)
                 else:

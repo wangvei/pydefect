@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
 
-from typing import Union
+from typing import Union, List
 
 from pymatgen.core.periodic_table import Element
 
+from pydefect.core.defect_entry import DefectEntry
 from pydefect.input_maker.defect_initial_setting import DefectInitialSetting, \
     SimpleDefectName
-from pydefect.core.defect_entry import DefectEntry
 from pydefect.util.structure_tools import perturb_neighboring_atoms, \
     defect_center_from_coords
 from pydefect.util.logger import get_logger
@@ -56,14 +56,14 @@ def log_is_being_constructed(name):
     logger.warning("{:>10} is being constructed.".format(name))
 
 
-def select_defect_names(name_set: list,
+def select_defect_names(name_set: List[SimpleDefectName],
                         keywords: Union[str, list],
                         return_str: bool = False):
     """ Returns names including one of keywords.
 
     Args:
         name_set (list):
-            A set of names (str/SimpleDefectName).
+            A set of names (SimpleDefectName).
         keywords (str/list):
             Keywords determining if name is selected or not.
         return_str (bool):
@@ -80,7 +80,7 @@ def select_defect_names(name_set: list,
 
         if name.is_name_matched(keywords):
             if return_str:
-                names.append(name.to_str)
+                names.append(str(name))
             else:
                 names.append(name)
 
@@ -99,8 +99,8 @@ class DefectEntrySetMaker:
 
     def __init__(self,
                  defect_initial_setting: DefectInitialSetting,
-                 keywords: list = None,
-                 particular_defects: list = None):
+                 keywords: Union[list, None] = None,
+                 particular_defects: Union[list, None] = None):
         """
         Args:
             defect_initial_setting (DefectInitialSetting):
@@ -117,8 +117,8 @@ class DefectEntrySetMaker:
             defect_initial_setting.displacement_distance
         self.cell_multiplicity = defect_initial_setting.cell_multiplicity
         self.is_displaced = defect_initial_setting.are_atoms_perturbed
+        self.interstitials = defect_initial_setting.interstitials
 
-        # here, self.interstitials in DefectInitialSetting is constructed,
         defect_name_set = defect_initial_setting.make_defect_name_set()
         if particular_defects:
             defect_name_set = \
@@ -126,9 +126,6 @@ class DefectEntrySetMaker:
         else:
             if keywords:
                 defect_name_set = select_defect_names(defect_name_set, keywords)
-
-        # This insertion needs to be after defect_name_set is set.
-        self.interstitials = defect_initial_setting.interstitials
 
         self.defect_entries = \
             [self.make_defect_entry(d) for d in defect_name_set]
@@ -191,7 +188,6 @@ class DefectEntrySetMaker:
 
         # -------------------- analyze in_atom ---------------------------------
         inserted_atoms = {}
-
         # This block must be following analyzing out_name because
         # defect coordinates is needed when inserting an in_name atom.
         if defect_name.is_vacancy:

@@ -9,7 +9,8 @@ from pydefect.input_maker.defect_entry_set_maker \
     import get_int_from_string, select_defect_names
 from pydefect.input_maker.defect_entry_set_maker import DefectEntrySetMaker
 from pydefect.core.irreducible_site import IrreducibleSite
-from pydefect.input_maker.defect_initial_setting import DefectInitialSetting
+from pydefect.input_maker.defect_initial_setting import DefectInitialSetting, \
+    SimpleDefectName
 
 
 __author__ = "Yu Kumagai"
@@ -40,34 +41,37 @@ class SelectDefectNamesTest(unittest.TestCase):
              'O_i1_-1', 'O_i1_0', 'O_Mg1_-4', 'O_Mg1_-3', 'O_Mg1_-2',
              'O_Mg1_-1', 'O_Mg1_0', 'Al_Mg1_0', 'Al_Mg1_1']
 
-        actual_Va = select_defect_names(name_set, ["Va"], return_str=True)
-        expected_Va = ['Va_Mg1_-2', 'Va_Mg1_-1', 'Va_Mg1_0', 'Va_O1_0',
+        name_set = [SimpleDefectName.from_str(name) for name in name_set]
+
+        actual_va = select_defect_names(name_set, ["Va"], return_str=True)
+        expected_va = ['Va_Mg1_-2', 'Va_Mg1_-1', 'Va_Mg1_0', 'Va_O1_0',
                        'Va_O1_-1', 'Va_O1_-2', 'Va_O2_0']
 
         actual__i = select_defect_names(name_set, ["_i"], return_str=True)
         expected__i = ['Mg_i1_0', 'Mg_i1_1', 'Mg_i1_2', 'O_i1_-2', 'O_i1_-1',
                        'O_i1_0']
 
-        actual_Va_and__i = \
+        actual_va_and__i = \
             select_defect_names(name_set, ["Va", "_i"], return_str=True)
-        expected_Va_and__i = expected_Va + expected__i
+        expected_va_and__i = expected_va + expected__i
 
-        actual_Va_O = select_defect_names(name_set, ["Va_O"], return_str=True)
-        expected_Va_O = ['Va_O1_0', 'Va_O1_-1', 'Va_O1_-2', 'Va_O2_0']
+        actual_va_o = select_defect_names(name_set, ["Va_O"], return_str=True)
+        expected_va_o = ['Va_O1_0', 'Va_O1_-1', 'Va_O1_-2', 'Va_O2_0']
 
-        actual_Va_O_0 = \
+        actual_va_o_0 = \
             select_defect_names(name_set, ["Va_O[0-9]_0"], return_str=True)
-        expected_Va_O_0 = ['Va_O1_0', 'Va_O2_0']
+        expected_va_o_0 = ['Va_O1_0', 'Va_O2_0']
 
-        actual_Va_O1 = select_defect_names(name_set, ["Va_O1"], return_str=True)
-        expected_Va_O1 = ['Va_O1_0', 'Va_O1_-1', 'Va_O1_-2']
+        actual_va_o1 = select_defect_names(name_set, ["Va_O1"], return_str=True)
+        expected_va_o1 = ['Va_O1_0', 'Va_O1_-1', 'Va_O1_-2']
 
-        self.assertEqual(sorted(actual_Va), sorted(expected_Va))
+        self.assertEqual(sorted(actual_va), sorted(expected_va))
         self.assertEqual(sorted(actual__i), sorted(expected__i))
-        self.assertEqual(sorted(actual_Va_and__i), sorted(expected_Va_and__i))
-        self.assertEqual(sorted(actual_Va_O), sorted(expected_Va_O))
-        self.assertEqual(sorted(actual_Va_O_0), sorted(expected_Va_O_0))
-        self.assertEqual(sorted(actual_Va_O1), sorted(expected_Va_O1))
+        self.assertEqual(sorted(actual_va_and__i), sorted(expected_va_and__i))
+        self.assertEqual(sorted(actual_va_o), sorted(expected_va_o))
+        self.assertEqual(sorted(actual_va_o_0), sorted(expected_va_o_0))
+        self.assertEqual(sorted(actual_va_o1), sorted(expected_va_o1))
+
 
 class DefectEntrySetMakerTest(unittest.TestCase):
 
@@ -75,7 +79,7 @@ class DefectEntrySetMakerTest(unittest.TestCase):
         structure = \
             Structure.from_file(os.path.join(test_dir, "POSCAR-MgO64atoms"))
         space_group_symbol = "Fm-3m"
-        Mg1 = IrreducibleSite(irreducible_name="Mg1",
+        mg1 = IrreducibleSite(irreducible_name="Mg1",
                               element="Mg",
                               first_index=1,
                               last_index=32,
@@ -83,16 +87,16 @@ class DefectEntrySetMakerTest(unittest.TestCase):
                               wyckoff="a",
                               site_symmetry="m3m",
                               coordination_distances=None)
-        O1 = IrreducibleSite(irreducible_name="O1", element="O",
+        o1 = IrreducibleSite(irreducible_name="O1", element="O",
                              first_index=33, last_index=64,
                              representative_coords=[0.25, 0.25, 0.25],
                              wyckoff="a",
                              site_symmetry="m3m",
                              coordination_distances=None)
-        irreducible_elements = [Mg1, O1]
+        irreducible_elements = [mg1, o1]
         dopant_configs = [["Al", "Mg"]]
         antisite_configs = [["Mg", "O"], ["O", "Mg"]]
-        interstitial_coords = [[0.1, 0.1, 0.1]]
+
         included = ["Va_O1_-1", "Va_O1_-2"]
         excluded = ["Va_O1_1", "Va_O1_2"]
         distance = 0.15
@@ -102,9 +106,22 @@ class DefectEntrySetMakerTest(unittest.TestCase):
         electronegativity = {"Mg": 1.31, "O": 3.44, "Al": 1.61, "N": 3.04}
 
         self._mgo = DefectInitialSetting(
-            structure, space_group_symbol, irreducible_elements, dopant_configs,
-            antisite_configs, interstitial_coords, included, excluded, distance,
-            cutoff, symprec, oxidation_states, electronegativity)
+            structure=structure,
+            space_group_symbol=space_group_symbol,
+            transformation_matrix= [2, 2, 2],
+            cell_multiplicity=32,
+            irreducible_sites=irreducible_elements,
+            dopant_configs=dopant_configs,
+            antisite_configs=antisite_configs,
+            interstitial_site_names=["i1"],
+            included=included,
+            excluded=excluded,
+            displacement_distance=distance,
+            cutoff=cutoff,
+            symprec=symprec,
+            angle_tolerance=5,
+            oxidation_states=oxidation_states,
+            electronegativity=electronegativity)
 
     def test_mgo(self):
         desm = DefectEntrySetMaker(defect_initial_setting=self._mgo,
@@ -114,79 +131,6 @@ class DefectEntrySetMakerTest(unittest.TestCase):
         for de in des:
             print(de)
 
-# class DefectEntryMakerTest(unittest.TestCase):
-
-    # def setUp(self):
-    #     self.structure = \
-    #         Structure.from_file(os.path.join(test_dir, "POSCAR-MgO64atoms"))
-
-        # Mg1 = IrreducibleSite(irreducible_name="Mg1", element="Mg",
-        #                       first_index=1, last_index=32,
-        #                       representative_coords=[0, 0, 0])
-        # O1 = IrreducibleSite(irreducible_name="O1", element="O",
-        #                      first_index=33, last_index=64,
-        #                      representative_coords=[0.25, 0.25, 0.25])
-        # self.irreducible_sites = [Mg1, O1]
-        # self.interstitial_coords = [[0.1, 0.1, 0.1], [0.2, 0.2, 0.2]]
-
-        # name = "Va_Mg1"
-        # test_structure = Structure.from_file(
-        #    os.path.join(test_dir, "POSCAR-MgO64atoms-Va_Mg1"))
-        # removed_atoms = {0: [0, 0, 0]}
-        # inserted_atoms = []
-        # element_diff = {"Mg": -1}
-        # charge = -2
-
-        # self.test_d = DefectEntry(name, test_structure, removed_atoms,
-        #                           inserted_atoms, element_diff, charge)
-
-    # def test_vacancies(self):
-    #     vac1_d = \
-    #         DefectEntryMaker("Va_Mg1_-2", self.structure, self.irreducible_sites,
-    #                          self.interstitial_coords)
-    #     self.assertEqual(vac1_d.defect.as_dict(), self.test_d.as_dict())
-
-
-
-class DefectStructureSetMakerTest(unittest.TestCase):
-    def setUp(self):
-        structure = \
-            Structure.from_file(os.path.join(test_dir, "POSCAR-MgO64atoms"))
-
-        Mg1 = IrreducibleSite(irreducible_name="Mg1", element="Mg",
-                              first_index=1, last_index=32,
-                              representative_coords=[0, 0, 0])
-        O1 = IrreducibleSite(irreducible_name="O1", element="O",
-                             first_index=33, last_index=64,
-                             representative_coords=[0.25, 0.25, 0.25])
-        irreducible_elements = [Mg1, O1]
-        dopant_configs = [["Al", "Mg"]]
-        antisite_configs = [["Mg", "O"], ["O", "Mg"]]
-        interstitial_coords = [[0.1, 0.1, 0.1]]
-        included = ["Va_O1_-1", "Va_O1_-2"]
-        excluded = ["Va_O1_1", "Va_O1_2"]
-        distance = 0.15
-        cutoff = 2.0
-        symprec = 0.001
-        oxidation_states = {"Mg": 2, "O": -2, "Al": 3, "N": -3}
-        electronegativity = {"Mg": 1.31, "O": 3.44, "Al": 1.61, "N": 3.04}
-
-        self._mgo = DefectInitialSetting(
-            structure, irreducible_elements, dopant_configs, antisite_configs,
-            interstitial_coords, included, excluded, distance, cutoff,
-            symprec, oxidation_states, electronegativity)
-
-    def test_mgo(self):
-        dssm = DefectStructureSetMaker(defect_initial_setting=self._mgo,
-                                       particular_defects=["Sc_Mg1_0"])
-        print(dssm)
-
-    # def test_vo_mgo(self):
-    #     if os.path.exists(test_vo_mgo_dir):
-    #         shutil.rmtree(test_vo_mgo_dir)
-    #     # Note that the type of filtering_words is list.
-    #     VaspDefectInputSetMaker(defect_initial_setting=self.MgO,
-    #                             keywords=["perfect", "Va_O"])
 
 if __name__ == "__main__":
     unittest.main()

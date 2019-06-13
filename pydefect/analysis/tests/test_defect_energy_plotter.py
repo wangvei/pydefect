@@ -4,7 +4,6 @@ import os
 import unittest
 
 from pydefect.analysis.defect_energies import DefectEnergies, Defect
-from pydefect.analysis.defect_carrier_concentration import DefectConcentration
 from pydefect.analysis.defect_energy_plotter import DefectEnergyPlotter
 from pydefect.analysis.chempotdiag.chem_pot_diag import ChemPotDiag
 from pydefect.corrections.corrections import ExtendedFnvCorrection

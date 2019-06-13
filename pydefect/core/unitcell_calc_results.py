@@ -141,8 +141,6 @@ class UnitcellCalcResults(MSONable):
                  self._ionic_dielectric_tensor, self._total_dos, self._volume:
             if i is None:
                 return False
-            else:
-                continue
 
         return True
 

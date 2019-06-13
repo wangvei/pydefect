@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from collections import defaultdict, namedtuple
+from collections import defaultdict
 from typing import Union
 from itertools import permutations
 import json
@@ -92,11 +92,16 @@ def print_dopant_info(dopant):
         logger.warnings(dopant + " is not a proper element name.")
 
 
-def get_distances(string):
+def parse_distances_from_string(string: list):
+    """
+    Arg:
+        string (list): Split string e.g. "Mg: 2.1 2.2 O: 2.3 2.4".split()
+
+    Return:
+        dict: e.g. {"Mg": [2,1, 2.2], "O": [2.3, 2.4]
+    """
     distances = {}
     key = None
-    # string = "Mg: 2.1 2.2 O: 2.3 2.4".split()
-    #          -> {"Mg": [2,1, 2.2], "O": [2.3, 2.4]
     for i in string:
         if i[-1] == ":":
             distances[i[:-1]] = []
@@ -114,7 +119,7 @@ class DefectName(MSONable):
 
     def is_name_matched(self,
                         keywords: Union[str, list, None]):
-        """ Returns if name is matched by the selected_keywords.
+        """ Return True if name is matched by the selected_keywords.
 
         Args:
             keywords (str/list): Keywords used for checking if name is selected.
@@ -187,7 +192,13 @@ class SimpleDefectName(DefectName):
         return cls(in_atom, out_site, int(charge))
 
     def __eq__(self, other):
-        return True if self.name_str == other.name_str else False
+        if isinstance(other, str):
+            return True if self.name_str == other else False
+        elif isinstance(other, SimpleDefectName):
+            return True if self.name_str == other.name_str else False
+        else:
+            raise TypeError(
+                "{} is not supported for comparison.".format(type(other)))
 
     def __hash__(self):
         return hash(self.name_str)
@@ -212,7 +223,8 @@ class DefectInitialSetting(MSONable):
                  symprec: float,
                  angle_tolerance: float,
                  oxidation_states: dict,
-                 electronegativity: dict):
+                 electronegativity: dict,
+                 interstitials_yaml: str = "interstitials.yaml"):
         """
         Args:
             structure (Structure):
@@ -257,6 +269,8 @@ class DefectInitialSetting(MSONable):
             electronegativity (dict):
                 Electronegativity for relevant elements. Used to determine the
                 substitutional defects.
+            interstitials_yaml (str):
+                interstititial yaml file name
         """
 
         self.structure = structure
@@ -278,7 +292,26 @@ class DefectInitialSetting(MSONable):
         self.oxidation_states = oxidation_states
         self.electronegativity = electronegativity
 
-        self.interstitials = {}
+        if self.interstitial_site_names:
+            try:
+                t = InterstitialSiteSet.from_files(self.structure,
+                                                   interstitials_yaml)
+            except FileNotFoundError:
+                logger.error("interstitial.yaml file is needed.")
+                raise
+
+            sites = t.interstitial_sites
+            if self.interstitial_site_names[0] == "all":
+                self.interstitials = {k: v for k, v in sites.items()}
+            else:
+                for site_name in self.interstitial_site_names:
+                    if site_name not in sites.keys():
+                        raise ValueError(
+                            "Interstitial site name {} do not exist in {}".
+                                format(site_name, interstitials_yaml))
+                self.interstitials = {k: v for k, v in sites.items()}
+        else:
+            self.interstitials = None
 
     @classmethod
     def from_dict(cls, d):
@@ -361,7 +394,7 @@ class DefectInitialSetting(MSONable):
                     site_symmetry = di.readline().split()[2]
 
                     coordination_distances = \
-                        get_distances(di.readline().split()[1:])
+                        parse_distances_from_string(di.readline().split()[1:])
                     first_index, last_index = \
                         [int(i) for i in di.readline().split()[2].split("..")]
                     representative_coords = \
@@ -612,25 +645,27 @@ class DefectInitialSetting(MSONable):
                    electronegativity=electronegativity)
 
     def as_dict(self):
-        d = {"@module":               self.__class__.__module__,
-             "@class":                self.__class__.__name__,
-             "structure":             self.structure,
-             "space_group_symbol":    self.space_group_symbol,
-             "transformation_matrix": self.transformation_matrix,
-             "cell_multiplicity":     self.cell_multiplicity,
-             "irreducible_sites":    [i.as_dict
-                                      for i in self.irreducible_sites],
-             "dopant_configs":        self.dopant_configs,
-             "antisite_configs":      self.antisite_configs,
+
+        irreducible_sites = [i.as_dict() for i in self.irreducible_sites]
+
+        d = {"@module":                 self.__class__.__module__,
+             "@class":                  self.__class__.__name__,
+             "structure":               self.structure,
+             "space_group_symbol":      self.space_group_symbol,
+             "transformation_matrix":   self.transformation_matrix,
+             "cell_multiplicity":       self.cell_multiplicity,
+             "irreducible_sites":      irreducible_sites,
+             "dopant_configs":          self.dopant_configs,
+             "antisite_configs":        self.antisite_configs,
              "interstitial_site_names": self.interstitial_site_names,
-             "included":              self.included,
-             "excluded":              self.excluded,
-             "displacement_distance": self.displacement_distance,
-             "cutoff":                self.cutoff,
-             "symprec":               self.symprec,
-             "angle_tolerance":       self.angle_tolerance,
-             "oxidation_states":      self.oxidation_states,
-             "electronegativity":     self.electronegativity}
+             "included":                self.included,
+             "excluded":                self.excluded,
+             "displacement_distance":   self.displacement_distance,
+             "cutoff":                  self.cutoff,
+             "symprec":                 self.symprec,
+             "angle_tolerance":         self.angle_tolerance,
+             "oxidation_states":        self.oxidation_states,
+             "electronegativity":       self.electronegativity}
 
         return d
 
@@ -646,37 +681,18 @@ class DefectInitialSetting(MSONable):
         self._write_defect_in(defect_in_file)
         self.structure.to(fmt="poscar", filename=poscar_file)
 
-    def make_defect_name_set(self, poscar_file="DPOSCAR",
-                             interstitials_yaml="interstitials.yaml"):
-        """ Returns a set of defect names by default. """
+    def make_defect_name_set(self):
+        """ Return a set of defect names based on DefectInitialSetting object"""
         name_set = list()
 
         # Vacancies
         for i in self.irreducible_sites:
-            for o in charge_set_range(self.oxidation_states[i.element]):
+            # Vacancy charge is minus of element charge.
+            charge = -self.oxidation_states[i.element]
+            for c in charge_set_range(charge):
                 in_atom = None
                 out_site = i.irreducible_name
-                # Charges are set from 0 to minus of the oxidation state.
-                charge = -o
-                name_set.append(SimpleDefectName(in_atom, out_site, charge))
-
-        # TODO: move setting of self.interstitials to other places.
-        # Interstitials
-        # Both intrinsic elements and dopants are considered.
-        # Charges are set from 0 to the oxidation state.
-        if self.interstitial_site_names:
-            t = InterstitialSiteSet.from_files(poscar_file, interstitials_yaml)
-            sites = t.interstitial_sites
-            if self.interstitial_site_names[0] == "all":
-                self.interstitials = {k: v for k, v in sites.items()}
-            else:
-                for site_name in self.interstitial_site_names:
-                    if site_name not in sites.keys():
-                        return ValueError(
-                            "Interstitial site name {} do not exist in "
-                            "{}".format(site_name, interstitials_yaml))
-                self.interstitials = {k: v for k, v in sites.items()
-                                      if k in self.interstitial_site_names}
+                name_set.append(SimpleDefectName(in_atom, out_site, c))
 
         inserted_elements = \
             tuple(self.structure.symbol_set) + tuple(self.dopants)
@@ -701,16 +717,16 @@ class DefectInitialSetting(MSONable):
         for i in self.included:
             defect_name = SimpleDefectName.from_str(i)
             if defect_name not in name_set:
-                name_set.append(i)
+                name_set.append(defect_name)
             else:
-                logger.warning("{} *included*, but already exists.".format(i))
+                logger.warning("{} *included*, but already exists.".format(defect_name))
 
         for e in self.excluded:
             defect_name = SimpleDefectName.from_str(e)
             if defect_name in name_set:
-                name_set.remove(e)
+                name_set.remove(defect_name)
             else:
-                logger.warning("{} *excluded*, but does not exist.".format(e))
+                logger.warning("{} *excluded*, but does not exist.".format(defect_name))
 
         return name_set
 

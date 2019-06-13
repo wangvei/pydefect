@@ -1,0 +1,68 @@
+{
+  "@module": "pydefect.corrections.corrections",
+  "@class": "Ewald",
+  "lattice": {
+    "@module": "pymatgen.core.lattice",
+    "@class": "Lattice",
+    "matrix": [
+      [
+        0.0,
+        4.246893,
+        4.246893
+      ],
+      [
+        4.246893,
+        0.0,
+        4.246893
+      ],
+      [
+        4.246893,
+        4.246893,
+        0.0
+      ]
+    ]
+  },
+  "dielectric_tensor": [
+    [
+      12.269128,
+      0.0,
+      0.0
+    ],
+    [
+      0.0,
+      12.269175,
+      0.0
+    ],
+    [
+      0.0,
+      0.0,
+      12.269269
+    ]
+  ],
+  "ewald_param": 0.1,
+  "prod_cutoff_fwhm": 0.1,
+  "real_neighbor_lattices": [
+    [
+      1,
+      1,
+      1
+    ],
+    [
+      2,
+      2,
+      2
+    ]
+  ],
+  "reciprocal_neighbor_lattices": [
+    [
+      1,
+      1,
+      1
+    ],
+    [
+      2,
+      2,
+      2
+    ]
+  ]
+}

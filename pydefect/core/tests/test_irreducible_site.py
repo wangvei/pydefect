@@ -35,8 +35,7 @@ class PriorInfoTest(unittest.TestCase):
                                       coordination_distance)
 
     def test_dict(self):
-        """ round trip test of to_dict and from_dict
-        """
+        """ round trip test of to_dict and from_dict """
         d = self.O1_MgO.as_dict()
         prior_info_from_dict = IrreducibleSite.from_dict(d)
         self.assertTrue(d == prior_info_from_dict.as_dict())

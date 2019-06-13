@@ -6,12 +6,7 @@ import unittest
 from pydefect.util.math_tools import normalized_random_3d_vector, random_vector
 
 __author__ = "Yu Kumagai"
-__copyright__ = "Copyright 2018, Oba group"
-__version__ = "0.1"
 __maintainer__ = "Yu Kumagai"
-__email__ = "yuuukuma@gmail.com"
-__status__ = "Development"
-__date__ = "April 4, 2018"
 
 
 test_dir = os.path.join(os.path.dirname(__file__), "..", "..", "..",

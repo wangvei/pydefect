@@ -5,12 +5,12 @@ from copy import deepcopy
 import numpy as np
 from typing import Union
 
-from pydefect.core.error_classes import CellSizeError
 from pymatgen.core.structure import Structure
 
 from obadb.util.structure_handler import find_spglib_standard_conventional, \
     find_spglib_standard_primitive
 
+from pydefect.core.error_classes import CellSizeError
 from pydefect.util.logger import get_logger
 
 __author__ = "Yu Kumagai"
@@ -55,11 +55,12 @@ class Supercell:
             trans_mat_str = ' '.join([str(i) for i in trans_mat])
             trans_mat = np.reshape(trans_mat, (3, 3))
         elif len(trans_mat) == 3:
-            trans_mat = np.array(trans_mat)
             if isinstance(trans_mat[0], list) and len(trans_mat[0]) == 3:
+                trans_mat = np.array(trans_mat)
                 trans_mat_str = \
                     ' '.join([str(int(i)) for i in trans_mat.flatten()])
             else:
+                trans_mat = np.array(trans_mat)
                 trans_mat_str = ' '.join([str(int(i)) for i in trans_mat])
         else:
             raise ValueError("Translation matrix: {} is not proper. 1, 3, or 9 "
@@ -86,7 +87,6 @@ class Supercell:
 
     def to_uposcar(self, uposcar_filename):
         self.base_structure.to(filename=uposcar_filename)
-
 
 
 class Supercells:

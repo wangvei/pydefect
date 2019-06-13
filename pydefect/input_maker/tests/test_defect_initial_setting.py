@@ -130,7 +130,7 @@ class DefectInitialSettingTest(unittest.TestCase):
 
         dopant_configs = [["Al", "Mg"], ["Al", "O"], ["N", "Mg"], ["N", "O"]]
         antisite_configs = [["Mg", "O"], ["O", "Mg"]]
-        interstitial_names = ["i1", "i2"]
+        interstitial_names = ["i1"]
         included = ["Va_O1_-1", "Va_O1_-2"]
         excluded = ["Va_O1_1", "Va_O1_2"]
         distance = 0.15
@@ -163,9 +163,9 @@ class DefectInitialSettingTest(unittest.TestCase):
         mgo_from_dict = DefectInitialSetting.from_dict(mgo_dict)
         # Note: irreducible_sites usually return pointers, so __eq__ is
         # overloaded in DefectInitialSetting.
-        print(mgo_from_dict.as_dict)
+        print(mgo_from_dict.as_dict())
         print(self.MgO.as_dict())
-        self.assertTrue(mgo_from_dict.as_dict == self.MgO.as_dict())
+        self.assertTrue(mgo_from_dict.as_dict() == self.MgO.as_dict())
         self.MgO.to()
 
     def test_to_json_file(self):
@@ -174,7 +174,7 @@ class DefectInitialSettingTest(unittest.TestCase):
             tmp_json = fp.name
             self.MgO.to_json_file(tmp_json)
             mgo_from_json = DefectInitialSetting.load_json(tmp_json)
-            self.assertTrue(mgo_from_json.as_dict == self.MgO.as_dict())
+            self.assertTrue(mgo_from_json.as_dict() == self.MgO.as_dict())
 
     # def test_from_defect_in(self):
     #     mgo_from_defect_in = \
@@ -193,6 +193,7 @@ class DefectInitialSettingTest(unittest.TestCase):
                 cell_multiplicity=32,
                 dopants=["Al", "N"],
                 is_antisite=True,
+                interstitial_site_names=["i1"],
                 en_diff=4.0,
                 included=["Va_O1_-1", "Va_O1_-2"],
                 excluded=["Va_O1_1", "Va_O1_2"],
@@ -200,26 +201,24 @@ class DefectInitialSettingTest(unittest.TestCase):
                 cutoff=2.0,
                 symprec=0.001)
 
-        print(mgo_from_basic_settings.irreducible_sites[0].site_symmetry)
+        print(mgo_from_basic_settings.interstitials["i1"])
 #        self.assertTrue(mgo_from_basic_settings == self.MgO)
 
     def test_make_defect_name_set(self):
         # Sequence of expected is changed for easy view. Thus, sort is needed
         # for comparison.
         expected = \
-            ['Va_Mg1_-2', 'Va_Mg1_-1', 'Va_Mg1_0', 'Va_O1_0', 'Mg_i1_0',
-             'Mg_i1_1', 'Mg_i1_2', 'Mg_i2_0', 'Mg_i2_1', 'Mg_i2_2', 'O_i1_-2',
-             'O_i1_-1', 'O_i1_0', 'O_i2_-2', 'O_i2_-1', 'O_i2_0', 'N_i1_-3',
-             'N_i1_-2', 'N_i1_-1', 'N_i1_0', 'N_i2_-3', 'N_i2_-2', 'N_i2_-1',
-             'N_i2_0', 'Al_i1_0', 'Al_i1_1', 'Al_i1_2', 'Al_i1_3', 'Al_i2_0',
-             'Al_i2_1', 'Al_i2_2', 'Al_i2_3', 'Mg_O1_0', 'Mg_O1_1', 'Mg_O1_2',
+            ['Va_Mg1_-2', 'Va_Mg1_-1', 'Va_Mg1_0', 'Va_O1_2', 'Mg_i1_0',
+             'Mg_i1_1', 'Mg_i1_2', 'O_i1_-2', 'O_i1_-1', 'O_i1_0', 'N_i1_-3',
+             'N_i1_-2', 'N_i1_-1', 'N_i1_0', 'N_i1_1', 'Al_i1_-1', 'Al_i1_0',
+             'Al_i1_1', 'Al_i1_2', 'Al_i1_3', 'Mg_O1_0', 'Mg_O1_1', 'Mg_O1_2',
              'Mg_O1_3', 'Mg_O1_4', 'O_Mg1_-4', 'O_Mg1_-3', 'O_Mg1_-2',
-             'O_Mg1_-1', 'O_Mg1_0', 'Al_Mg1_0', 'Al_Mg1_1', 'Al_O1_0',
-             'Al_O1_1', 'Al_O1_2', 'Al_O1_3', 'Al_O1_4', 'Al_O1_5', 'N_Mg1_-5',
-             'N_Mg1_-4', 'N_Mg1_-3', 'N_Mg1_-2', 'N_Mg1_-1', 'N_Mg1_0',
-             'N_O1_-1', 'N_O1_0', 'Va_O1_-1', 'Va_O1_-2']
+             'O_Mg1_-1', 'O_Mg1_0', 'Al_Mg1_-1', 'Al_Mg1_0', 'Al_Mg1_1',
+             'Al_O1_-1', 'Al_O1_0', 'Al_O1_1', 'Al_O1_2', 'Al_O1_3', 'Al_O1_4',
+             'Al_O1_5', 'N_Mg1_-5', 'N_Mg1_-4', 'N_Mg1_-3', 'N_Mg1_-2',
+             'N_Mg1_-1', 'N_Mg1_0', 'N_Mg1_1', 'N_O1_-1', 'N_O1_0', 'N_O1_1']
 
-        actual = self.MgO.make_defect_name_set()
+        actual = [str(i) for i in self.MgO.make_defect_name_set()]
         self.assertEqual(sorted(actual), sorted(expected))
 
 
