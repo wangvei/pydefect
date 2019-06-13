@@ -5,6 +5,7 @@ import argparse
 import os
 import shutil
 import warnings
+from xml.etree.cElementTree import ParseError
 
 from copy import deepcopy
 from glob import glob
@@ -175,7 +176,7 @@ def main():
         "--yaml", dest="yaml", type=str, default=defaults["filename"],
         help="defect_entry.yaml-type file name to be read.")
     parser_interstitial.add_argument(
-        "--dposcar", dest="dposcar", type=str, default=defaults["poscar"],
+        "--dposcar", dest="dposcar", type=str, default=defaults["structure"],
         help="DPOSCAR-type file name.")
     parser_interstitial.add_argument(
         "-c", dest="interstitial_coords", nargs="+", type=float,
@@ -235,6 +236,9 @@ def main():
     parser_vasp_set.add_argument(
         "-k", "--kpt_density", dest="kpt_density", default=2.3, type=float,
         help="K-points density.")
+    parser_vasp_set.add_argument(
+        "-w", "--make_wavecar", dest="wavecar", default=True, type=bool,
+        help="Whether to make WAVECAR file or not.")
     parser_vasp_set.set_defaults(func=vasp_set)
 
     # -- defect_entry ----------------------------------------------------------
@@ -818,6 +822,7 @@ def vasp_set(args):
                                     task="defect",
                                     xc=args.xc,
                                     sort_structure=False,
+                                    weak_incar_settings={"LWAVE": args.wavecar},
                                     kpt_mode="manual",
                                     kpt_density=args.kpt_density)
 
@@ -886,7 +891,7 @@ def supercell_calc_results(args):
                             defect_entry=de,
                             symprec=args.symprec,
                             angle_tolerance=args.angle_tolerance)
-                except IOError:
+                except ParseError:
                     logger.warning("Parsing data in {} failed.".format(d))
                     continue
 

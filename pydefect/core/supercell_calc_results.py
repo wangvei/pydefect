@@ -6,7 +6,6 @@ import numpy as np
 import os
 from typing import Union
 
-from collections import defaultdict
 from pathlib import Path
 
 from monty.json import MontyEncoder, MSONable
@@ -27,15 +26,13 @@ from pydefect.core.defect_entry import DefectEntry
 from pydefect.core.error_classes import NoConvergenceError
 from pydefect.util.logger import get_logger
 from pydefect.util.structure_tools import get_displacements
-from pydefect.vasp_util.util import calc_participation_ratio, \
-    calc_orbital_character, calc_orbital_similarity
+from pydefect.vasp_util.util import calc_orbital_character, \
+    calc_orbital_similarity
 
 __author__ = "Yu Kumagai"
 __maintainer__ = "Yu Kumagai"
 
 logger = get_logger(__name__)
-
-MAGNETIZATION_THRESHOLD = 0.1
 
 
 @unique
