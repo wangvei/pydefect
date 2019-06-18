@@ -201,11 +201,12 @@ class DefectEntry(MSONable):
             raise StructureError(
                 "Atoms are not properly mapped within the displacement.")
 
-        # pristine_defect_structure is defect structure without perturbation.
+        # pristine_defect_structure is defect structure without displacement.
         pristine_defect_structure = deepcopy(perfect_structure)
         lattice = defect_structure.lattice
         for r in sorted(removed_atoms, reverse=True):
             pristine_defect_structure.pop(r)
+
         # If the inserted atom locates near an original atom within the
         # displacement_distance, it is assumed to be substituted.
         inserted_atoms = {}

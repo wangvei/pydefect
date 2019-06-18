@@ -12,7 +12,7 @@ from pathlib import Path
 from monty.json import MontyEncoder, MSONable
 from monty.serialization import loadfn
 
-from xml.etree.cElementTree import ParseError
+from xml.etree.ElementTree import ParseError
 
 from pymatgen.core import Structure
 from pymatgen.core.operations import SymmOp
@@ -67,7 +67,7 @@ class BandEdges(Enum):
 
 
 class SupercellCalcResults(MSONable):
-    """ Container class with DFT results for supercell systems. """
+    """ Class with DFT results for supercell systems. """
 
     def __init__(self,
                  final_structure: Structure,
@@ -83,6 +83,7 @@ class SupercellCalcResults(MSONable):
                  fermi_level: float,
                  is_converged: bool,
                  band_edges: dict = None,
+                 band_edges_energies: dict = None,
                  relative_total_energy: float = None,
                  relative_potential: list = None,
                  displacements: list = None,
@@ -91,6 +92,8 @@ class SupercellCalcResults(MSONable):
                  participation_ratio: dict = None,
                  orbital_character: dict = None):
         """
+        None is set for some properties of perfect supercell.
+
         Args:
             final_structure (Structure):
                 pmg Structure class object. Usually relaxed structures
@@ -121,6 +124,7 @@ class SupercellCalcResults(MSONable):
                 "Acceptor PHS": Acceptor-type PHS.
                 "Localized state": With in-gap localized state.
                     ex. {Spin.up: None, Spin.down:"Localized state}
+            band_edges_energies (dict):
             symmetrized_structure (Structure):
                 Symmetrized structure with a defect.
             symmops (list):
@@ -146,6 +150,7 @@ class SupercellCalcResults(MSONable):
         self.fermi_level = fermi_level
         self.is_converged = is_converged
         self.band_edges = band_edges
+        self.band_edge_energies = band_edges_energies
         self.relative_total_energy = relative_total_energy
         self.relative_potential = relative_potential
         self.displacements = displacements
@@ -167,6 +172,19 @@ class SupercellCalcResults(MSONable):
                 "Orbital character (eV): \n" + str(self.orbital_character)]
 
         return "\n".join(outs)
+
+    @property
+    def diagnose(self):
+        band_edges = []
+        for s, v in self.band_edges.items():
+            band_edges.extend([s.name.upper(), ":", str(v).rjust(17)])
+
+        band_edges = "  ".join(band_edges)
+
+        outs = ["convergence : " + str(self.is_converged)[0],
+                "  band edge : " + band_edges]
+
+        print("  ".join(outs))
 
     @classmethod
     def from_vasp_files(cls,
@@ -277,15 +295,19 @@ class SupercellCalcResults(MSONable):
                 {Spin.up: round((outcar.nelect + magnetization) / 2) - 1,
                  Spin.down: round((outcar.nelect - magnetization) / 2) - 1}
 
+            band_edge_energies = defaultdict(dict)
             participation_ratio = defaultdict(dict)
             orbital_character = defaultdict(dict)
 
             for s in eigenvalues.keys():
                 orbital_character[s] = {}
                 for i, band_edge in enumerate(["hob", "lub"]):
+
                     orbital_character[s][band_edge] = {}
 
                     band_index = hob_index[s] + i
+                    band_edge_energies[s][band_edge] = \
+                        eigenvalues[s][0, band_index, 0]
 
                     max_eigenvalue = np.amax(eigenvalues[s][:, band_index, 0])
                     max_k = int(np.where(eigenvalues[s][:, band_index, 0]
@@ -319,10 +341,12 @@ class SupercellCalcResults(MSONable):
             else:
                 participation_ratio = None
             orbital_character = dict(orbital_character)
+            band_edge_energies = dict(band_edge_energies)
 
         else:
             participation_ratio = None
             orbital_character = None
+            band_edge_energies = None
 
         # Perfect supercell does not need the below.
         relative_total_energy = None
@@ -362,10 +386,16 @@ class SupercellCalcResults(MSONable):
                 perfect_orbital_character = \
                     referenced_dft_results.orbital_character
 
+                supercell_vbm = referenced_dft_results.eigenvalue_properties[2]
+                supercell_cbm = referenced_dft_results.eigenvalue_properties[1]
+
                 band_edges = \
                     cls.diagnose_band_edges(participation_ratio,
                                             orbital_character,
-                                            perfect_orbital_character)
+                                            perfect_orbital_character,
+                                            band_edge_energies,
+                                            supercell_vbm,
+                                            supercell_cbm)
 
         return cls(final_structure=final_structure,
                    site_symmetry=site_symmetry,
@@ -380,6 +410,7 @@ class SupercellCalcResults(MSONable):
                    fermi_level=fermi_level,
                    is_converged=vasprun.converged_ionic,
                    band_edges=band_edges,
+                   band_edges_energies=band_edge_energies,
                    relative_total_energy=relative_total_energy,
                    relative_potential=relative_potential,
                    displacements=displacements,
@@ -392,8 +423,12 @@ class SupercellCalcResults(MSONable):
     def diagnose_band_edges(participation_ratio: dict,
                             orbital_character: dict,
                             perfect_orbital_character: dict,
+                            band_edge_energies: dict,
+                            supercell_vbm: float,
+                            supercell_cbm: float,
                             dissimilarity_criterion: float = 0.12,
-                            localized_criterion: float = 0.4):
+                            localized_criterion: float = 0.4,
+                            near_edge_energy_criterion: float = 0.5):
         """
         Args:
             participation_ratio (dict):
@@ -427,29 +462,38 @@ class SupercellCalcResults(MSONable):
             acceptor_phs_dissimilarity = calc_orbital_similarity(
                 orbital_character[spin]["lub"]["max"], perfect["hob"]["max"])
 
-            print("vbm_dissimilarity, donor_phs_dissimilarity, "
-                  "cbm_dissimilarity, acceptor_phs_dissimilarity")
-            print(vbm_dissimilarity, donor_phs_dissimilarity, cbm_dissimilarity,
-                  acceptor_phs_dissimilarity)
-            print("vbm_participation_ratio", "cbm_participation_ratio")
-            print(participation_ratio[spin]["hob"],
-                  participation_ratio[spin]["lub"])
+            # print("vbm_dissimilarity, donor_phs_dissimilarity, "
+            #       "cbm_dissimilarity, acceptor_phs_dissimilarity")
+            # print(vbm_dissimilarity, donor_phs_dissimilarity, cbm_dissimilarity,
+            #       acceptor_phs_dissimilarity)
+            # print("vbm_participation_ratio", "cbm_participation_ratio")
+            # print(participation_ratio[spin]["hob"],
+            #       participation_ratio[spin]["lub"])
 
             if vbm_dissimilarity < dissimilarity_criterion \
                     and cbm_dissimilarity < dissimilarity_criterion \
                     and participation_ratio[spin]["hob"] < localized_criterion \
-                    and participation_ratio[spin]["lub"] < localized_criterion:
+                    and participation_ratio[spin]["lub"] < localized_criterion \
+                    and supercell_cbm - band_edge_energies[spin]["lub"] \
+                    < near_edge_energy_criterion \
+                    and band_edge_energies[spin]["hob"] - supercell_vbm \
+                    < near_edge_energy_criterion:
                 band_edges[spin] = BandEdges.no_in_gap
-            elif donor_phs_dissimilarity < dissimilarity_criterion * 2 and \
-                    participation_ratio[spin]["hob"] < localized_criterion:
+
+            elif donor_phs_dissimilarity < dissimilarity_criterion * 2 \
+                    and participation_ratio[spin]["hob"] < localized_criterion \
+                    and supercell_cbm - band_edge_energies[spin]["hob"] \
+                    < near_edge_energy_criterion:
                 band_edges[spin] = BandEdges.donor_phs
+
             elif acceptor_phs_dissimilarity < dissimilarity_criterion * 2 \
-                    and participation_ratio[spin]["lub"] < localized_criterion:
+                    and participation_ratio[spin]["lub"] < localized_criterion \
+                    and band_edge_energies[spin]["lub"] - supercell_vbm \
+                    < near_edge_energy_criterion:
                 band_edges[spin] = BandEdges.acceptor_phs
+
             else:
                 band_edges[spin] = BandEdges.localized_state
-
-            print(band_edges[spin])
 
         return band_edges
 
@@ -491,6 +535,7 @@ class SupercellCalcResults(MSONable):
                 return
 
         band_edges = str_key_to_spin(d["band_edges"], value_to_band_edges=True)
+        band_edge_energies = str_key_to_spin(d["band_edges"])
         participation_ratio = str_key_to_spin(d["participation_ratio"])
         orbital_character = str_key_to_spin(d["orbital_character"])
 
@@ -507,6 +552,7 @@ class SupercellCalcResults(MSONable):
                    fermi_level=d["fermi_level"],
                    is_converged=d["is_converged"],
                    band_edges=band_edges,
+                   band_edges_energies=band_edge_energies,
                    relative_total_energy=d["relative_total_energy"],
                    relative_potential=d["relative_potential"],
                    displacements=d["displacements"],
@@ -534,6 +580,7 @@ class SupercellCalcResults(MSONable):
                 return
 
         band_edges = spin_key_to_str(self.band_edges, value_to_str=True)
+        band_edge_energies = spin_key_to_str(self.band_edge_energies)
         participation_ratio = spin_key_to_str(self.participation_ratio)
         orbital_character = spin_key_to_str(self.orbital_character)
 
@@ -552,6 +599,7 @@ class SupercellCalcResults(MSONable):
              "fermi_level":             self.fermi_level,
              "is_converged":            self.is_converged,
              "band_edges":              band_edges,
+             "band_edges_energies":     band_edge_energies,
              "relative_total_energy":   self.relative_total_energy,
              "relative_potential":      self.relative_potential,
              "displacements":           self.displacements,

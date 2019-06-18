@@ -481,8 +481,11 @@ def main():
         default="perfect/dft_results.json",
         help="Json file name for the SupercellCalcResults class object of the "
              "perfect supercell result.")
+    parser_diagnose.add_argument(
+        "--json", dest="json", type=str, default="dft_results.json",
+        help="dft_results.json type file name.")
 
-    parser_diagnose.set_defaults(func=plot_energy)
+    parser_diagnose.set_defaults(func=diagnose)
 
     # -- plot_energy -----------------------------------------------------------
     parser_plot_energy = subparsers.add_parser(
@@ -736,12 +739,12 @@ def vasp_set(args):
         make_dir(defect_name, oba_set)
         de.to_json_file(json_file_name)
 
-        if de.perturbed_sites:
+        if de.neighboring_sites:
             poscar_name = os.path.join(defect_name, "POSCAR")
             with open(poscar_name, "r") as f:
                 lines = f.readlines()
                 for index, line in enumerate(lines.copy()):
-                    if index - 8 in de.perturbed_sites:
+                    if index - 8 in de.neighboring_sites:
                         lines[index] = line.strip() + "  Disp\n"
 
             with open(poscar_name, "w") as f:
@@ -989,20 +992,22 @@ def vasp_oba_set(args):
     os.chdir(original_dir)
 
 
-# def diagnose(args):
-#     try:
-#         unitcell = UnitcellCalcResults.load_json(args.unitcell)
-#     except FileNotFoundError:
-#         print("{} not found".format(args.unitcell))
+def diagnose(args):
+    # try:
+    #     unitcell = UnitcellCalcResults.load_json(args.unitcell)
+    # except FileNotFoundError:
+    #     print("{} not found".format(args.unitcell))
 
     # try:
     #     perfect = SupercellCalcResults.load_json(args.perfect)
     # except FileNotFoundError:
     #     print("{} not found".format(args.perfect))
 
-    # defects_dirs = args.defect_dirs if args.defect_dirs else glob('*[0-9]/')
-
-# #    for d in defects_dirs:
+    defects_dirs = args.defect_dirs if args.defect_dirs else glob('*[0-9]/')
+    for d in defects_dirs:
+        print(d.rjust(12), end="  ")
+        dft_results = SupercellCalcResults.load_json(join(d, args.json))
+        dft_results.diagnose
 
 
 def plot_energy(args):

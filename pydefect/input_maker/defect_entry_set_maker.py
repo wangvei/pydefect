@@ -207,17 +207,18 @@ class DefectEntrySetMaker:
                                                             defect_name))
 
         if self.is_displaced:
-            inserted_atom_coords = list([self.perfect_structure.frac_coords[k]
+            inserted_atom_coords = list([defect_structure.frac_coords[k]
                                          for k in inserted_atoms])
             removed_atom_coords = list(removed_atoms.values())
             all_defect_coords = inserted_atom_coords + removed_atom_coords
+
             center = defect_center_from_coords(all_defect_coords,
                                                self.perfect_structure)
 
             perturbed_defect_structure, perturbed_sites = \
                 perturb_neighboring_atoms(
                     defect_structure, center, self.cutoff,
-                    self.displacement_distance, inserted_atoms.keys())
+                    self.displacement_distance, list(inserted_atoms.keys()))
         else:
             perturbed_defect_structure = defect_structure.copy()
             perturbed_sites = []
