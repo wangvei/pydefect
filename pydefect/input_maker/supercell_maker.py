@@ -70,6 +70,7 @@ class Supercell:
         s = structure * trans_mat
         self.structure = s.get_sorted_structure()
         self.trans_mat = trans_mat
+        self.multiplicity = multiplicity
         self.isotropy = calc_isotropy(structure, trans_mat)
         self.num_atoms = self.structure.num_sites
 
