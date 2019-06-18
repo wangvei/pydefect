@@ -693,6 +693,6 @@
   },
   "charge": 2,
   "initial_site_symmetry": "mmm",
-  "perturbed_sites": [],
+  "neighboring_sites": [],
   "num_equiv_sites": 24
 }

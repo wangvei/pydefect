@@ -717,9 +717,9 @@
   },
   "inserted_atoms": {
     "0": [
-      0.0,
-      0.0,
-      0.0
+      0.98135,
+      0.976661,
+      0.026824
     ]
   },
   "changes_of_num_elements": {
@@ -728,7 +728,7 @@
   },
   "charge": 1,
   "initial_site_symmetry": "m-3m",
-  "perturbed_sites": [
+  "neighboring_sites": [
     0,
     9,
     10,
@@ -737,5 +737,5 @@
     13,
     14
   ],
-  "num_equiv_sites": 8
+  "num_equiv_sites": 4
 }

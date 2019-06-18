@@ -1041,6 +1041,12 @@
   "fermi_level": 3.32929791,
   "is_converged": true,
   "band_edges": null,
+  "band_edges_energies": {
+    "1": {
+      "hob": 3.0101,
+      "lub": 7.4992
+    }
+  },
   "relative_total_energy": null,
   "relative_potential": null,
   "displacements": null,
@@ -2983,6 +2989,7 @@
       "tolerance": 0.1
     }
   ],
+  "participation_ratio": null,
   "orbital_character": {
     "1": {
       "hob": {

@@ -83,7 +83,7 @@ class SupercellCalcResults(MSONable):
                  fermi_level: float,
                  is_converged: bool,
                  band_edges: dict = None,
-                 band_edges_energies: dict = None,
+                 band_edge_energies: dict = None,
                  relative_total_energy: float = None,
                  relative_potential: list = None,
                  displacements: list = None,
@@ -124,7 +124,7 @@ class SupercellCalcResults(MSONable):
                 "Acceptor PHS": Acceptor-type PHS.
                 "Localized state": With in-gap localized state.
                     ex. {Spin.up: None, Spin.down:"Localized state}
-            band_edges_energies (dict):
+            band_edge_energies (dict):
             symmetrized_structure (Structure):
                 Symmetrized structure with a defect.
             symmops (list):
@@ -150,7 +150,7 @@ class SupercellCalcResults(MSONable):
         self.fermi_level = fermi_level
         self.is_converged = is_converged
         self.band_edges = band_edges
-        self.band_edge_energies = band_edges_energies
+        self.band_edge_energies = band_edge_energies
         self.relative_total_energy = relative_total_energy
         self.relative_potential = relative_potential
         self.displacements = displacements
@@ -410,7 +410,7 @@ class SupercellCalcResults(MSONable):
                    fermi_level=fermi_level,
                    is_converged=vasprun.converged_ionic,
                    band_edges=band_edges,
-                   band_edges_energies=band_edge_energies,
+                   band_edge_energies=band_edge_energies,
                    relative_total_energy=relative_total_energy,
                    relative_potential=relative_potential,
                    displacements=displacements,
@@ -535,7 +535,7 @@ class SupercellCalcResults(MSONable):
                 return
 
         band_edges = str_key_to_spin(d["band_edges"], value_to_band_edges=True)
-        band_edge_energies = str_key_to_spin(d["band_edges"])
+        band_edge_energies = str_key_to_spin(d["band_edge_energies"])
         participation_ratio = str_key_to_spin(d["participation_ratio"])
         orbital_character = str_key_to_spin(d["orbital_character"])
 
@@ -552,7 +552,7 @@ class SupercellCalcResults(MSONable):
                    fermi_level=d["fermi_level"],
                    is_converged=d["is_converged"],
                    band_edges=band_edges,
-                   band_edges_energies=band_edge_energies,
+                   band_edge_energies=band_edge_energies,
                    relative_total_energy=d["relative_total_energy"],
                    relative_potential=d["relative_potential"],
                    displacements=d["displacements"],
@@ -599,7 +599,7 @@ class SupercellCalcResults(MSONable):
              "fermi_level":             self.fermi_level,
              "is_converged":            self.is_converged,
              "band_edges":              band_edges,
-             "band_edges_energies":     band_edge_energies,
+             "band_edge_energies":      band_edge_energies,
              "relative_total_energy":   self.relative_total_energy,
              "relative_potential":      self.relative_potential,
              "displacements":           self.displacements,

@@ -713,6 +713,6 @@
   "changes_of_num_elements": {},
   "charge": 0,
   "initial_site_symmetry": "m-3m",
-  "perturbed_sites": [],
+  "neighboring_sites": [],
   "num_equiv_sites": 1
 }

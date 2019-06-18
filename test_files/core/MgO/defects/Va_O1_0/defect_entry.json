@@ -681,7 +681,7 @@
   },
   "charge": 0,
   "initial_site_symmetry": "m-3m",
-  "perturbed_sites": [
+  "neighboring_sites": [
     1,
     2,
     3,
