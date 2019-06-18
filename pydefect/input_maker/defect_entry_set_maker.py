@@ -234,5 +234,5 @@ class DefectEntrySetMaker:
             changes_of_num_elements=changes_of_num_elements,
             charge=defect_name.charge,
             initial_site_symmetry=initial_site_symmetry,
-            perturbed_sites=perturbed_sites,
+            neighboring_sites=perturbed_sites,
             num_equiv_sites=num_equiv_sites)

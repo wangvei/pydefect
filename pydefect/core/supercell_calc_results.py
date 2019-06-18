@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+from collections import defaultdict
 from enum import Enum, unique
 import json
 import numpy as np
@@ -26,8 +27,8 @@ from pydefect.core.defect_entry import DefectEntry
 from pydefect.core.error_classes import NoConvergenceError
 from pydefect.util.logger import get_logger
 from pydefect.util.structure_tools import get_displacements
-from pydefect.vasp_util.util import calc_orbital_character, \
-    calc_orbital_similarity
+from pydefect.vasp_util.util import calc_participation_ratio, \
+    calc_orbital_character, calc_orbital_similarity
 
 __author__ = "Yu Kumagai"
 __maintainer__ = "Yu Kumagai"
@@ -48,14 +49,14 @@ class BandEdges(Enum):
     @classmethod
     def from_string(cls, s):
         for m in cls:
-            if m.value == s:
+            if m.value == s or m.name == s:
                 return m
         raise AttributeError("Band edge info: " + str(s) + " is not proper.\n" +
                              "Supported info:\n" + cls.name_list())
 
     @classmethod
     def name_list(cls):
-        return ', '.join([e.value for e in cls])
+        return ', '.join([e.name for e in cls])
 
     @property
     def is_shallow(self):
@@ -87,6 +88,7 @@ class SupercellCalcResults(MSONable):
                  displacements: list = None,
                  symmetrized_structure: Structure = None,
                  symmops: list = None,
+                 participation_ratio: dict = None,
                  orbital_character: dict = None):
         """
         Args:
@@ -123,9 +125,12 @@ class SupercellCalcResults(MSONable):
                 Symmetrized structure with a defect.
             symmops (list):
                 Point-group symmetry operation.
+            participation_ratio (dict):
+                ex. {Spin.up: {"hob": 0.72, "lub": 0.34,
+                     Spin.down: {"hob": 0.32, "lub": 0.14}}
             orbital_character (dict):
-                ex. {Spin.up: {"vbm": {"Mg": {"s": 0.1, ...}, "O": {...},
-                               "cbm": {...},
+                ex. {Spin.up: {"hob": {"Mg": {"s": 0.1, ...}, "O": {...},
+                               "lub": {...},
                      Spin.down: {...}}
         """
         self.final_structure = final_structure
@@ -146,6 +151,7 @@ class SupercellCalcResults(MSONable):
         self.displacements = displacements
         self.symmetrized_structure = symmetrized_structure
         self.symmops = symmops
+        self.participation_ratio = participation_ratio
         self.orbital_character = orbital_character
 
     def __str__(self):
@@ -262,13 +268,17 @@ class SupercellCalcResults(MSONable):
                 procar = str(max(p.glob("**/*PROCAR*"), key=os.path.getctime))
             procar = parse_file(Procar, procar)
 
+            neighboring_sites = \
+                defect_entry.neighboring_sites if defect_entry else None
+
             # The k-point indices at the band edges in defect calculations.
             # hob (lub) means highest (lowest) (un)occupied state
             hob_index = \
                 {Spin.up: round((outcar.nelect + magnetization) / 2) - 1,
                  Spin.down: round((outcar.nelect - magnetization) / 2) - 1}
 
-            orbital_character = {}
+            participation_ratio = defaultdict(dict)
+            orbital_character = defaultdict(dict)
 
             for s in eigenvalues.keys():
                 orbital_character[s] = {}
@@ -286,6 +296,16 @@ class SupercellCalcResults(MSONable):
                                          == min_eigenvalue)[0][0])
 
                     for position, k in zip(["max", "min"], [max_k, min_k]):
+
+                        if neighboring_sites:
+                            participation_ratio[s][band_edge] = \
+                                calc_participation_ratio(
+                                    procar=procar,
+                                    spin=s,
+                                    band_index=band_index,
+                                    kpoint_index=k,
+                                    atom_indices=neighboring_sites)
+
                         orbital_character[s][band_edge][position] = \
                             calc_orbital_character(
                                 procar=procar,
@@ -294,9 +314,14 @@ class SupercellCalcResults(MSONable):
                                 band_index=band_index,
                                 kpoint_index=k)
 
+            if participation_ratio:
+                participation_ratio = dict(participation_ratio)
+            else:
+                participation_ratio = None
             orbital_character = dict(orbital_character)
 
         else:
+            participation_ratio = None
             orbital_character = None
 
         # Perfect supercell does not need the below.
@@ -333,12 +358,13 @@ class SupercellCalcResults(MSONable):
                                   defect_entry.defect_center,
                                   defect_entry.anchor_atom_index)
 
-            if orbital_character:
+            if participation_ratio and orbital_character:
                 perfect_orbital_character = \
                     referenced_dft_results.orbital_character
 
                 band_edges = \
-                    cls.diagnose_band_edges(orbital_character,
+                    cls.diagnose_band_edges(participation_ratio,
+                                            orbital_character,
                                             perfect_orbital_character)
 
         return cls(final_structure=final_structure,
@@ -359,18 +385,22 @@ class SupercellCalcResults(MSONable):
                    displacements=displacements,
                    symmetrized_structure=symmetrized_structure,
                    symmops=symmops,
+                   participation_ratio=participation_ratio,
                    orbital_character=orbital_character)
 
     @staticmethod
-    def diagnose_band_edges(orbital_character: dict,
+    def diagnose_band_edges(participation_ratio: dict,
+                            orbital_character: dict,
                             perfect_orbital_character: dict,
-                            criterion: float = 0.12):
+                            dissimilarity_criterion: float = 0.12,
+                            localized_criterion: float = 0.4):
         """
         Args:
+            participation_ratio (dict):
             orbital_character (dict):
             perfect_orbital_character (dict):
                 Orbital character for perfect supercell for comparison.
-            criterion:
+            dissimilarity_criterion:
                 Determines whether the eigenstate is a host state.
         """
         if all([orbital_character, perfect_orbital_character]) is False:
@@ -401,12 +431,20 @@ class SupercellCalcResults(MSONable):
                   "cbm_dissimilarity, acceptor_phs_dissimilarity")
             print(vbm_dissimilarity, donor_phs_dissimilarity, cbm_dissimilarity,
                   acceptor_phs_dissimilarity)
+            print("vbm_participation_ratio", "cbm_participation_ratio")
+            print(participation_ratio[spin]["hob"],
+                  participation_ratio[spin]["lub"])
 
-            if vbm_dissimilarity < criterion and cbm_dissimilarity < criterion:
+            if vbm_dissimilarity < dissimilarity_criterion \
+                    and cbm_dissimilarity < dissimilarity_criterion \
+                    and participation_ratio[spin]["hob"] < localized_criterion \
+                    and participation_ratio[spin]["lub"] < localized_criterion:
                 band_edges[spin] = BandEdges.no_in_gap
-            elif donor_phs_dissimilarity < criterion * 2:
+            elif donor_phs_dissimilarity < dissimilarity_criterion * 2 and \
+                    participation_ratio[spin]["hob"] < localized_criterion:
                 band_edges[spin] = BandEdges.donor_phs
-            elif acceptor_phs_dissimilarity < criterion * 2:
+            elif acceptor_phs_dissimilarity < dissimilarity_criterion * 2 \
+                    and participation_ratio[spin]["lub"] < localized_criterion:
                 band_edges[spin] = BandEdges.acceptor_phs
             else:
                 band_edges[spin] = BandEdges.localized_state
@@ -452,8 +490,9 @@ class SupercellCalcResults(MSONable):
             else:
                 return
 
-        orbital_character = str_key_to_spin(d["orbital_character"])
         band_edges = str_key_to_spin(d["band_edges"], value_to_band_edges=True)
+        participation_ratio = str_key_to_spin(d["participation_ratio"])
+        orbital_character = str_key_to_spin(d["orbital_character"])
 
         return cls(final_structure=final_structure,
                    site_symmetry=d["site_symmetry"],
@@ -473,6 +512,7 @@ class SupercellCalcResults(MSONable):
                    displacements=d["displacements"],
                    symmetrized_structure=d["symmetrized_structure"],
                    symmops=symmops,
+                   participation_ratio=participation_ratio,
                    orbital_character=orbital_character)
 
     @classmethod
@@ -493,8 +533,9 @@ class SupercellCalcResults(MSONable):
             else:
                 return
 
-        orbital_character = spin_key_to_str(self.orbital_character)
         band_edges = spin_key_to_str(self.band_edges, value_to_str=True)
+        participation_ratio = spin_key_to_str(self.participation_ratio)
+        orbital_character = spin_key_to_str(self.orbital_character)
 
         d = {"@module":                 self.__class__.__module__,
              "@class":                  self.__class__.__name__,
@@ -516,6 +557,7 @@ class SupercellCalcResults(MSONable):
              "displacements":           self.displacements,
              "symmetrized_structure":   self.symmetrized_structure,
              "symmops":                 self.symmops,
+             "participation_ratio":     participation_ratio,
              "orbital_character":       orbital_character}
 
         return d

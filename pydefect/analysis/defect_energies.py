@@ -29,7 +29,7 @@ class Defect:
     @property
     def is_shallow(self):
         for i in self.dft_results.band_edges.values():
-           return True if i.is_shallow else False
+            return True if i.is_shallow else False
 
 
 class DefectEnergies(MSONable):
@@ -185,7 +185,7 @@ class DefectEnergies(MSONable):
         return "\n".join(outs)
 
     def u(self, name, charge):
-        """ Return the U value among three charge states.
+        """ Return the U value among three sequential charge states.
 
         Args:
             name (str):

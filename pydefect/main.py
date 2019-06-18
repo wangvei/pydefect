@@ -14,12 +14,12 @@ from itertools import chain
 from os.path import join
 
 from pymatgen.core.structure import Structure
+from pymatgen.electronic_structure.core import Spin
 
 from obadb.analyzer.chempotdiag.chem_pot_diag import ChemPotDiag
 from obadb.vasp.input_set import ObaSet
 from obadb.vasp.incar import incar_flags
 
-from pydefect.analysis.chempotdiag.make_inputs import make_vasp_inputs_from_mp
 from pydefect.analysis.defect_energies import DefectEnergies, Defect
 from pydefect.analysis.defect_energy_plotter import DefectEnergyPlotter
 from pydefect.analysis.defect_eigenvalues import DefectEigenvalue
@@ -28,7 +28,8 @@ from pydefect.core.interstitial_site import InterstitialSiteSet
 from pydefect.core.prior_info import PriorInfo
 from pydefect.core.supercell_calc_results import SupercellCalcResults
 from pydefect.core.unitcell_calc_results import UnitcellCalcResults
-from pydefect.corrections.corrections import Ewald, ExtendedFnvCorrection
+from pydefect.corrections.corrections \
+    import Ewald, NoCorrection, ExtendedFnvCorrection
 from pydefect.input_maker.defect_entry_set_maker \
     import DefectEntrySetMaker, log_is_being_removed, log_already_exist, \
     log_is_being_constructed
@@ -290,6 +291,8 @@ def main():
     parser_supercell_results.add_argument(
         "-de", dest="defect_entry_name", type=str, default="defect_entry.json")
     parser_supercell_results.add_argument(
+        "-be", dest="band_edge", type=str, nargs="+", default=None)
+    parser_supercell_results.add_argument(
         "--json", dest="json", type=str, default="dft_results.json",
         help="dft_results.json type file name.")
     parser_supercell_results.add_argument(
@@ -363,6 +366,13 @@ def main():
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
         aliases=['efc'])
 
+    # when no corrections are required for some reasons
+    parser_correction.add_argument(
+        "--nocorr", "-nc", dest="nocorr", action="store_true",
+        help="Set when no corrections are required for some reasons.")
+    parser_correction.add_argument(
+        "-m", "--manual", dest="manual", type=float, default=0.0,
+        help="Set manual correction energy.")
     # needed files
     parser_correction.add_argument(
         "--unitcell_json", dest="unitcell_json", default="unitcell.json",
@@ -400,109 +410,6 @@ def main():
         help="Print FNV correction information.")
 
     parser_correction.set_defaults(func=efnv_correction)
-
-    # -- chempotdiag -----------------------------------------------------------
-    parser_chempotdiag = subparsers.add_parser(
-        name="chempotdiag",
-        description="",
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-        aliases=['cpd'])
-
-    # get poscar from materials project
-    parser_chempotdiag.add_argument("-m", "--mat_proj_poscar",
-                                    help="",
-                                    action="store_true")
-    parser_chempotdiag.add_argument("-el", "--elements",
-                                    dest="elements", type=str, nargs='+',
-                                    default=None,
-                                    help="")
-    parser_chempotdiag.add_argument("-dp", "--dir_path",
-                                    dest="dir_path", type=str,
-                                    default=None,
-                                    help="")
-    parser_chempotdiag.add_argument("-ch", "--criterion_hull",
-                                    dest="criterion_hull", type=float,
-                                    default=None,
-                                    help="Collect materials only if energy above hull is less than criterion_hull. Unit is meV/atom.")
-    parser_chempotdiag.add_argument("-k", "--mp_api_key",
-                                    help="",
-                                    action="store_true")
-    parser_chempotdiag.add_argument("-gp", "--gets_poly",
-                                    help="",
-                                    action="store_true")
-
-    # input
-    parser_chempotdiag.add_argument("-e", "--energy", dest="energy_file",
-                                    type=str, default=None,
-                                    help="Name of text file of "
-                                         "energies of compounds")
-    parser_chempotdiag.add_argument("-v", "--vasp_dirs",
-                                    dest="vasp_dirs", type=str, nargs='+',
-                                    default=None,
-                                    help="Drawing diagram from specified "
-                                         "directories of vasp calculations")
-    parser_chempotdiag.add_argument("-p", "--poscar_name",
-                                    dest="poscar_name", type=str,
-                                    default="POSCAR",
-                                    help="Name of POSCAR, like CONTCAR, "
-                                         "POSCAR-finish,...")
-    parser_chempotdiag.add_argument("-o", "--outcar_name",
-                                    dest="outcar_name", type=str,
-                                    default="OUTCAR",
-                                    help="Name of OUTCAR, like OUTCAR-finish")
-    parser_chempotdiag.add_argument("-es", "--energy_shift", type=str,
-                                    dest="energy_shift",
-                                    nargs='+', default=None,
-                                    help="Energy shift, "
-                                         "e.g. -es N2/molecule 1 "
-                                         "-> make more unstable N2/molecule "
-                                         "by 1 eV")
-
-    # thermodynamic status (P and T) input
-    parser_chempotdiag.add_argument("-pp", "--partial_pressures",
-                                    dest="partial_pressures", type=str,
-                                    nargs='+', default=None,
-                                    help="partial pressure of system. "
-                                         "e.g. -pp O2 1e+5 N2 20000 "
-                                         "-> O2: 1e+5(Pa), N2: 20000(Pa)")
-    parser_chempotdiag.add_argument("-t", "--temperature",
-                                    dest="temperature", type=float,
-                                    default=298.15,
-                                    help="temperature of system (unit: K)"
-                                         "e.g. -t 3000 -> 3000(K)")
-
-    # drawing diagram
-    parser_chempotdiag.add_argument("-w", "--without_label",
-                                    help="Draw diagram without label.",
-                                    action="store_true")
-    parser_chempotdiag.add_argument("-c", "--remarked_compound",
-                                    dest="remarked_compound", type=str,
-                                    default=None,
-                                    help="Name of compound you are remarking."
-                                         "Outputted equilibrium_points are "
-                                         "limited to neighboring that "
-                                         "compounds, and those equilibrium "
-                                         "points are labeled in "
-                                         "chem_pot_diagram.")
-    parser_chempotdiag.add_argument("-d", "--draw_range",
-                                    dest="draw_range", type=float,
-                                    default=None,
-                                    help="Drawing range of diagram."
-                                         "If range is shallower than the "
-                                         "deepest vertex, "
-                                         "ValueError will occur")
-
-    # output
-    parser_chempotdiag.add_argument("-s", "--save_file",
-                                    dest="save_file", type=str,
-                                    default=None,
-                                    help="File name to save the drawn diagram.")
-    parser_chempotdiag.add_argument("-y", "--yaml",
-                                    action="store_const", const=True,
-                                    default=False,
-                                    help="Dumps yaml of remarked_compound")
-
-    parser_chempotdiag.set_defaults(func=chempotdiag)
 
     # -- vasp_oba_set ----------------------------------------------------------
     parser_vasp_oba_set = subparsers.add_parser(
@@ -833,7 +740,7 @@ def vasp_set(args):
             poscar_name = os.path.join(defect_name, "POSCAR")
             with open(poscar_name, "r") as f:
                 lines = f.readlines()
-                for index, line in enumerate(lines):
+                for index, line in enumerate(lines.copy()):
                     if index - 8 in de.perturbed_sites:
                         lines[index] = line.strip() + "  Disp\n"
 
@@ -864,7 +771,18 @@ def supercell_calc_results(args):
     for d in dirs:
         if os.path.isdir(d):
             logger.info("Parsing data in {}...".format(d))
-            if d in ["perfect", "perfect/"]:
+            if args.band_edge:
+                if args.band_edge[0] == "up":
+                    spin = Spin.up
+                elif args.band_edge[0] == "down":
+                    spin = Spin.down
+                else:
+                    raise ValueError("band edge flag is inadequate. "
+                                     "Ex. -be up no_in_gap")
+                state = args.band_edge[1]
+                dft_results = SupercellCalcResults.load_json(args.json)
+                dft_results.set_band_edges(spin=spin, state=state)
+            elif d in ["perfect", "perfect/"]:
                 try:
                     dft_results = SupercellCalcResults.from_vasp_files(
                         directory_path=d,
@@ -873,7 +791,7 @@ def supercell_calc_results(args):
                         procar=True,
                         outcar=args.outcar)
                 except:
-                    raise IOError("perfect ")
+                    raise IOError("Parsing data in perfect failed")
             else:
                 try:
                     filename = join(args.perfect_results, "dft_results.json")
@@ -959,6 +877,15 @@ def efnv_correction(args):
         print(ExtendedFnvCorrection.load_json(args.json_file))
         return
 
+    dirs = glob('*[0-9]/') if args.dir_all else args.dirs
+
+    if args.nocorr:
+        for directory in dirs:
+            c = NoCorrection(manual_correction_energy=args.manual)
+            c.to_json_file(join(directory, "correction.json"))
+
+        return
+
     try:
         unitcell_dft_data = UnitcellCalcResults.load_json(args.unitcell_json)
     except IOError:
@@ -993,8 +920,6 @@ def efnv_correction(args):
     else:
         raise IOError("Ewald parameter is a mandatory.")
 
-    dirs = glob('*[0-9]/') if args.dir_all else args.dirs
-
     for directory in dirs:
         json_to_make = join(directory, "correction.json")
 
@@ -1016,100 +941,6 @@ def efnv_correction(args):
 
         c.plot_distance_vs_potential(join(directory, "potential.pdf"))
         c.to_json_file(join(directory, "correction.json"))
-
-
-def chempotdiag(args):
-    if args.mat_proj_poscar:
-        kwargs_to_make_vasp_inputs = {}
-        if args.dir_path:
-            kwargs_to_make_vasp_inputs["dir_path"] = args.dir_path
-        if args.criterion_hull:
-            kwargs_to_make_vasp_inputs["criterion_e_above_hull"] \
-                = args.criterion_hull
-        if args.mp_api_key:
-            kwargs_to_make_vasp_inputs["api_key"] = args.mp_api_key
-        if args.gets_poly:
-            kwargs_to_make_vasp_inputs["gets_poly"] = True
-        make_vasp_inputs_from_mp(args.elements, **kwargs_to_make_vasp_inputs)
-    else:
-        if args.energy_file and args.vasp_dirs:
-            raise ValueError("You can not specify energy_file and vasp_dirs "
-                             "simultaneously.")
-        if args.energy_file:
-            if args.temperature or args.partial_pressures:
-                warnings.warn("Now temperature and pressures can not apply when"
-                              " reading data from energy_file")
-            cp = ChemPotDiag.from_file(args.energy_file)
-        if args.vasp_dirs:
-
-            poscar_paths = [d + args.poscar_name for d in args.vasp_dirs]
-            outcar_paths = [d + args.outcar_name for d in args.vasp_dirs]
-
-            # pressure and temperature
-            partial_pressure_dict = {}
-            if args.partial_pressures:
-                if len(args.partial_pressures) % 2 != 0:
-                    raise ValueError("Invalid partial pressures input {}".
-                                     format(args.partial_pressures))
-                for i in range(int(len(args.partial_pressures) / 2)):
-                    formula = args.partial_pressures[2 * i]
-                    pressure = args.partial_pressures[2 * i + 1]
-                    partial_pressure_dict[formula] = float(pressure)
-
-            # manually set energy
-            energy_shift_dict = {}
-            if args.energy_shift:
-                if len(args.energy_shift) % 2 != 0:
-                    raise ValueError("Invalid energy shift input {}".
-                                     format(args.energy_shift))
-                for i in range(int(len(args.energy_shift) / 2)):
-                    output_name = \
-                        args.energy_shift[2 * i] + "/" + args.outcar_name
-                    es = args.energy_shift[2 * i + 1]
-                    energy_shift_dict[output_name] = float(es)
-
-            cp = ChemPotDiag. \
-                from_vasp_calculations_files(poscar_paths,
-                                             outcar_paths,
-                                             temperature=args.temperature,
-                                             pressure=partial_pressure_dict,
-                                             energy_shift_dict=energy_shift_dict)
-            if args.elements:
-                cp.set_elements(args.elements)
-        logger.info("Energies of elements ({0}) : {1}"
-                   .format(cp.elements, cp.element_energy))
-        #  Read args of drawing diagram from parser
-        if args.remarked_compound:
-            try:
-                for vertex in cp.get_neighbor_vertices(args.remarked_compound):
-                    logger.info("vertex {}".format(vertex))
-            except ValueError:
-                logger.info("{0} is unstable. No vertex is labeled."
-                           .format(args.remarked_compound))
-
-        kwargs_for_diagram = {}
-        if args.remarked_compound:
-            kwargs_for_diagram["remarked_compound"] = args.remarked_compound
-        if args.save_file:
-            kwargs_for_diagram["save_file_name"] = args.save_file
-        if args.without_label:
-            kwargs_for_diagram["with_label"] = False
-        if args.draw_range:
-            kwargs_for_diagram["draw_range"] = args.draw_range
-
-        if cp.dim >= 4:
-            print("Currently diagram is not available for quaternary or more.")
-        else:
-            try:
-                cp.draw_diagram(**kwargs_for_diagram)
-            except ValueError:
-                kwargs_for_diagram.pop("remarked_compound")
-                cp.draw_diagram(**kwargs_for_diagram)
-
-        if args.yaml:
-            if args.remarked_compound is None:
-                raise ValueError("remarked_compound is needed to dump yaml")
-            cp.dump_vertices_yaml(os.getcwd(), args.remarked_compound)
 
 
 def vasp_oba_set(args):

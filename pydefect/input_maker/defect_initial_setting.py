@@ -233,8 +233,8 @@ class DefectInitialSetting(MSONable):
                 space group symbol
             transformation_matrix (list):
                 Diagonal component of transformation matrix.
-                Now the unitcell is expanded w/o rotations, so non-diagonal
-                components are zero.
+                Now the unitcell is assumed to be expanded w/o rotations, so
+                non-diagonal components are ignored.
             cell_multiplicity (int):
                 How much is the supercell larger than the *primitive* cell.
                 This is used for calculating the defect concentration.

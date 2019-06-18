@@ -41,7 +41,7 @@ class DefectEntryTest(PymatgenTest):
                         changes_of_num_elements=changes_of_num_elements,
                         charge=charge,
                         initial_site_symmetry=initial_site_symmetry,
-                        perturbed_sites=perturbed_sites,
+                        neighboring_sites=perturbed_sites,
                         num_equiv_sites=num_equiv_sites)
 
         # DefectEntry class object for a complex defect
@@ -66,7 +66,7 @@ class DefectEntryTest(PymatgenTest):
                         changes_of_num_elements=changes_of_num_elements,
                         charge=charge,
                         initial_site_symmetry=initial_site_symmetry,
-                        perturbed_sites=perturbed_sites,
+                        neighboring_sites=perturbed_sites,
                         num_equiv_sites=num_equiv_sites)
 
     def test_from_yaml(self):

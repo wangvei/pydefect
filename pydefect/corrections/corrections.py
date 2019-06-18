@@ -245,7 +245,34 @@ class Correction(ABC):
     #     return
 
 
+class NoCorrection(Correction, MSONable):
+
+    method = "no_correction"
+
+    def __init__(self,
+                 manual_correction_energy: float = 0.0):
+        """
+        Args:
+            manual_correction_energy (float):
+        """
+        self._manual_correction_energy = manual_correction_energy
+
+    @property
+    def correction_energy(self):
+        return self._manual_correction_energy
+
+    def to_json_file(self, filename):
+        with open(filename, 'w') as fw:
+            json.dump(self.as_dict(), fw, indent=2, cls=MontyEncoder)
+
+    @classmethod
+    def load_json(cls, filename):
+        return loadfn(filename)
+
+
 class ExtendedFnvCorrection(Correction, MSONable):
+
+    method = "extended_FNV"
 
     def __init__(self,
                  ewald_json: str,

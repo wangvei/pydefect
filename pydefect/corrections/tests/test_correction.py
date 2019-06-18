@@ -4,7 +4,8 @@ import tempfile
 
 from pymatgen.util.testing import PymatgenTest
 
-from pydefect.corrections.corrections import Ewald, ExtendedFnvCorrection
+from pydefect.corrections.corrections \
+    import Ewald, NoCorrection, ExtendedFnvCorrection
 from pydefect.core.supercell_calc_results import SupercellCalcResults
 from pydefect.core.unitcell_calc_results import UnitcellCalcResults
 from pydefect.core.defect_entry import DefectEntry
@@ -252,7 +253,18 @@ class EwaldTest(PymatgenTest):
 #        ewald.to_json_file("ewald.json")
 
 
-class CorrectionTest(PymatgenTest):
+class NoCorrectionTest(PymatgenTest):
+    def setUp(self):
+        self._correction = NoCorrection(manual_correction_energy=1.5)
+
+    def test_dict(self):
+        d = self._correction.as_dict()
+        actual = NoCorrection.from_dict(d).as_dict()
+        expected = d
+        self.assertEqual(actual, expected)
+
+
+class ExtendedFnvCorrectionTest(PymatgenTest):
 
     def setUp(self):
         self._unitcell = UnitcellCalcResults()

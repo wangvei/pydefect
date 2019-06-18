@@ -37,7 +37,7 @@ class DefectEntry(MSONable):
                  changes_of_num_elements: dict,
                  charge: int,
                  initial_site_symmetry: str,
-                 perturbed_sites: list,
+                 neighboring_sites: list,
                  num_equiv_sites: int = None):
         """
         Args:
@@ -64,7 +64,7 @@ class DefectEntry(MSONable):
                 Defect charge state. Charge is also added to the structure.
             initial_site_symmetry (str):
                 Initial site symmetry such as D4h.
-            perturbed_sites (list):
+            neighboring_sites (list):
                 Indices of the perturbed site for reducing the symmetry
             num_equiv_sites (int):
                 Number of equivalent sites in the given structure.
@@ -77,7 +77,7 @@ class DefectEntry(MSONable):
         self.changes_of_num_elements = deepcopy(changes_of_num_elements)
         self.charge = charge
         self.initial_site_symmetry = initial_site_symmetry
-        self.perturbed_sites = list(perturbed_sites)
+        self.neighboring_sites = list(neighboring_sites)
         self.num_equiv_sites = num_equiv_sites
 
     def __str__(self):
@@ -89,7 +89,7 @@ class DefectEntry(MSONable):
                 "inserted_atoms: " + str(self.inserted_atoms),
                 "changes_of_num_element: " + str(self.changes_of_num_elements),
                 "charge: " + str(self.charge),
-                "perturbed_sites: " + str(self.perturbed_sites),
+                "neighboring_sites: " + str(self.neighboring_sites),
                 "num_equiv_sites: " + str(self.num_equiv_sites)]
         return "\n".join(outs)
 
@@ -117,7 +117,7 @@ class DefectEntry(MSONable):
             changes_of_num_elements=d["changes_of_num_elements"],
             charge=d["charge"],
             initial_site_symmetry=d["initial_site_symmetry"],
-            perturbed_sites=d["perturbed_sites"],
+            neighboring_sites=d["neighboring_sites"],
             num_equiv_sites=d["num_equiv_sites"])
 
     @classmethod
@@ -224,12 +224,12 @@ class DefectEntry(MSONable):
             else:
                 pristine_defect_structure.insert(i, inserted_atom.specie,
                                                  inserted_atom.frac_coords)
-        perturbed_sites = []
+        neighboring_sites = []
         for i, site in enumerate(defect_structure):
             pristine_defect_site = pristine_defect_structure[i]
             distance = site.distance(pristine_defect_site)
             if perturbed_criterion < distance < displacement_distance:
-                perturbed_sites.append(i)
+                neighboring_sites.append(i)
 
         sga = SpacegroupAnalyzer(structure=pristine_defect_structure,
                                  symprec=symprec,
@@ -253,7 +253,7 @@ class DefectEntry(MSONable):
                    changes_of_num_elements=element_diff,
                    charge=charge,
                    initial_site_symmetry=initial_site_symmetry,
-                   perturbed_sites=perturbed_sites,
+                   neighboring_sites=neighboring_sites,
                    num_equiv_sites=num_equiv_sites)
 
     @classmethod

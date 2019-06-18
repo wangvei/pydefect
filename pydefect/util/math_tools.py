@@ -19,12 +19,14 @@ def normalized_random_3d_vector():
     return np.array([x, y, z])
 
 
-def random_vector(normed_vector, distance):
+def random_vector(normed_vector: np.array,
+                  distance: float):
     """
-    Returns a vector scaled by displacement_distance * x, where 0<x<1.
+    Returns a vector scaled by displacement_distance * x, where 0.1 < x < 1.
+    The finite minimum displacement is needed for detecting perturbed sites.
 
     Args:
         normed_vector (3x1 array): Normed 3d vector.
         distance (float): displacement_distance
     """
-    return normed_vector * distance * np.random.random()
+    return normed_vector * distance * (np.random.random() * 0.9 + 0.1)
