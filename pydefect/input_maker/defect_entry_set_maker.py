@@ -73,7 +73,6 @@ def select_defect_names(name_set: List[SimpleDefectName],
          list of names set.
     """
     names = []
-
     for name in name_set:
         if isinstance(name, str):
             name = SimpleDefectName.from_str(name)
@@ -84,7 +83,7 @@ def select_defect_names(name_set: List[SimpleDefectName],
             else:
                 names.append(name)
 
-    return list(set(names))
+    return names
 
 
 class DefectEntrySetMaker:
