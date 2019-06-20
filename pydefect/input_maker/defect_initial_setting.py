@@ -695,11 +695,12 @@ class DefectInitialSetting(MSONable):
         inserted_elements = \
             tuple(self.structure.symbol_set) + tuple(self.dopants)
         for element in inserted_elements:
-            for name in self.interstitials.keys():
-                for charge in charge_set_range(self.oxidation_states[element]):
-                    in_atom = element
-                    out_site = name
-                    name_set.append(SimpleDefectName(in_atom, out_site, charge))
+            if self.interstitials is not None:
+                for name in self.interstitials.keys():
+                    for charge in charge_set_range(self.oxidation_states[element]):
+                        in_atom = element
+                        out_site = name
+                        name_set.append(SimpleDefectName(in_atom, out_site, charge))
 
         # Antisites + Substituted dopants
         for in_atom, out_elem in self.antisite_configs + self.dopant_configs:
