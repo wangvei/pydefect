@@ -6,7 +6,7 @@ import unittest
 from pymatgen.core.structure import Structure
 
 from pydefect.input_maker.defect_initial_setting import charge_set_range, \
-    get_electronegativity, get_oxidation_state, print_dopant_info, \
+    get_electronegativity, get_oxidation_state, dopant_info, \
     SimpleDefectName, DefectInitialSetting
 from pydefect.core.irreducible_site import IrreducibleSite
 
@@ -61,7 +61,7 @@ class GetOxidationStateTest(unittest.TestCase):
 
 
 # TODO: write test_print_dopant_info
-class PrintDopantInfoTest(unittest.TestCase):
+class DopantInfoTest(unittest.TestCase):
     pass
 
 

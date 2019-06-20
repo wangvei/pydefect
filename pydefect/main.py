@@ -34,7 +34,7 @@ from pydefect.input_maker.defect_entry_set_maker \
     import DefectEntrySetMaker, log_is_being_removed, log_already_exist, \
     log_is_being_constructed
 from pydefect.input_maker.defect_initial_setting \
-    import print_dopant_info, DefectInitialSetting
+    import dopant_info, DefectInitialSetting
 from pydefect.input_maker.supercell_maker import Supercells
 from pydefect.util.logger import get_logger
 from pydefect.util.main_tools import get_default_args, list2dict
@@ -662,7 +662,7 @@ def recommend_supercell(args):
 
 def initial_setting(args):
     if args.print_dopant:
-        print_dopant_info(args.print_dopant)
+        print(dopant_info(args.print_dopant))
 
     else:
         structure = Structure.from_file(args.poscar)

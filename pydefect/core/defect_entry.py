@@ -81,9 +81,12 @@ class DefectEntry(MSONable):
         self.charge = charge
         self.initial_site_symmetry = initial_site_symmetry
         self.neighboring_sites = list(neighboring_sites)
+        self.annotation = annotation
         self.num_equiv_sites = num_equiv_sites
 
     def __str__(self):
+        annotation = "" if self.annotation is None else self.annotation
+
         outs = ["perturbed_initial_structure: \n" +
                 str(self.perturbed_initial_structure),
                 "name: " + str(self.name),
@@ -93,6 +96,7 @@ class DefectEntry(MSONable):
                 "changes_of_num_element: " + str(self.changes_of_num_elements),
                 "charge: " + str(self.charge),
                 "neighboring_sites: " + str(self.neighboring_sites),
+                "annotation: " + annotation,
                 "num_equiv_sites: " + str(self.num_equiv_sites)]
         return "\n".join(outs)
 
@@ -111,6 +115,9 @@ class DefectEntry(MSONable):
             perturbed_initial_structure = \
                 Structure.from_dict(perturbed_initial_structure)
 
+        #TODO: remove later
+        annotation = d.get("annotation", None)
+
         return cls(
             name=d["name"],
             initial_structure=initial_structure,
@@ -121,6 +128,7 @@ class DefectEntry(MSONable):
             charge=d["charge"],
             initial_site_symmetry=d["initial_site_symmetry"],
             neighboring_sites=d["neighboring_sites"],
+            annotation=annotation,
             num_equiv_sites=d["num_equiv_sites"])
 
     @classmethod
@@ -166,12 +174,14 @@ class DefectEntry(MSONable):
         defect_structure = Structure.from_file(
             os.path.join(abs_dir, yaml_data["defect_structure"]))
 
+        _, dirname = os.path.split(os.getcwd())
+        split_dirname = dirname.split("_")
+
         # set defect name
         if "name" in yaml_data.keys():
             name = yaml_data["name"]
         else:
-            _, dirname = os.path.split(os.getcwd())
-            name = "_".join(dirname.split("_")[:2])
+            name = "_".join(split_dirname[:2])
             logger.warning("name: {} is set from the directory name.".
                            format(name))
 
@@ -180,8 +190,24 @@ class DefectEntry(MSONable):
             charge = yaml_data["charge"]
         else:
             charge = get_defect_charge_from_vasp(structure=defect_structure)
+            charge_dirname = int(split_dirname[2])
             logger.warning("charge {} is set from vasp input files.".
                            format(charge))
+
+            if charge != charge_dirname:
+                logger.critical("charge {} varies from charge {} in directory "
+                                "name.".format(charge, charge_dirname))
+
+        # set annotation
+        if "annotation" in yaml_data.keys():
+            annotation = yaml_data["annotation"]
+        else:
+            if len(split_dirname) > 3:
+                annotation = "_".join(split_dirname[3:])
+                logger.warning("annotation: {} is set from the directory name.".
+                               format(annotation))
+            else:
+                annotation = None
 
         inserted_atom_indices = [i for i in range(defect_structure.num_sites)]
         removed_atoms = {}
@@ -258,6 +284,7 @@ class DefectEntry(MSONable):
                    charge=charge,
                    initial_site_symmetry=initial_site_symmetry,
                    neighboring_sites=neighboring_sites,
+                   annotation=annotation,
                    num_equiv_sites=num_equiv_sites)
 
     @classmethod

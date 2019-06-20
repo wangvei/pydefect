@@ -3,9 +3,10 @@
 import os
 import unittest
 
+from obadb.analyzer.chempotdiag.chem_pot_diag import ChemPotDiag
+
 from pydefect.analysis.defect_energies import DefectEnergies, Defect
 from pydefect.analysis.defect_energy_plotter import DefectEnergyPlotter
-from pydefect.analysis.chempotdiag.chem_pot_diag import ChemPotDiag
 from pydefect.corrections.corrections import ExtendedFnvCorrection
 from pydefect.core.supercell_calc_results import SupercellCalcResults
 from pydefect.core.unitcell_calc_results import UnitcellCalcResults
@@ -42,7 +43,8 @@ class DefectEnergiesTest(unittest.TestCase):
                 SupercellCalcResults.load_json(
                     os.path.join(d, "dft_results.json"))
             correction = \
-                ExtendedFnvCorrection.load_json(os.path.join(d, "correction.json"))
+                ExtendedFnvCorrection.load_json(
+                    os.path.join(d, "correction.json"))
 
             defect = Defect(defect_entry=defect_entry,
                             dft_results=dft_results,

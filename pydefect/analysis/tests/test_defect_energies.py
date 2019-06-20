@@ -3,8 +3,9 @@
 import os
 import unittest
 
+from obadb.analyzer.chempotdiag.chem_pot_diag import ChemPotDiag
+
 from pydefect.analysis.defect_energies import DefectEnergies, Defect
-from pydefect.analysis.chempotdiag.chem_pot_diag import ChemPotDiag
 from pydefect.corrections.corrections import ExtendedFnvCorrection
 from pydefect.core.supercell_calc_results import SupercellCalcResults
 from pydefect.core.unitcell_calc_results import UnitcellCalcResults
@@ -69,7 +70,7 @@ class DefectEnergiesTest(unittest.TestCase):
         self.assertEqual(d, dd)
 
     def test_multiplicity(self):
-        actual = self.defect_energies.multiplicity["Va_O1"][2]
+        actual = self.defect_energies.multiplicity["Va_O1"][2][0]
         expected = 8
         self.assertEqual(actual, expected)
 

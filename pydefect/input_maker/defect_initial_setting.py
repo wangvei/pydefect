@@ -73,7 +73,7 @@ def get_oxidation_state(element):
         return 0
 
 
-def print_dopant_info(dopant):
+def dopant_info(dopant):
     """ Print dopant info.
 
     This method is used to add dopant info a posteriori.
@@ -87,7 +87,7 @@ def print_dopant_info(dopant):
         out = ["   Dopant element: {}".format(dopant),
                "Electronegativity: {}".format(electronegativity),
                "  Oxidation state: {}".format(oxidation_state)]
-        print("_".join(out))
+        return "_".join(out)
     else:
         logger.warnings(dopant + " is not a proper element name.")
 

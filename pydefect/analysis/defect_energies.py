@@ -37,6 +37,7 @@ class DefectEnergies(MSONable):
                  energies: dict,
                  multiplicity: dict,
                  magnetization: dict,
+                 annotation: dict,
                  convergence: dict,
                  band_edges: dict,
                  are_shallows: dict,
@@ -54,11 +55,12 @@ class DefectEnergies(MSONable):
                 Multiplicity. multiplicity[name][charge]
             magnetization (dict):
                 Magnetization in mu_B. magnetization[name][charge]
-            convergence (bool):
+            annotation(dict):
+            convergence (dict):
                 Whether to remove the unconverged defects.
-            band_edges (bool):
+            band_edges (dict):
                 Band edge information
-            are_shallows (bool):
+            are_shallows (dict):
                 Whether defects are shallow or not.
             vbm (float):
                 Valence band maximum in the unitcell in the absolute scale.
@@ -74,6 +76,7 @@ class DefectEnergies(MSONable):
         self.energies = energies
         self.multiplicity = multiplicity
         self.magnetization = magnetization
+        self.annotation = annotation
         self.convergence = convergence
         self.band_edges = band_edges
         self.are_shallows = are_shallows
@@ -125,6 +128,7 @@ class DefectEnergies(MSONable):
         energies = defaultdict(dict)
         multiplicity = defaultdict(dict)
         magnetization = defaultdict(dict)
+        annotation = defaultdict(dict)
         convergence = defaultdict(dict)
         band_edges = defaultdict(dict)
         are_shallows = defaultdict(dict)
@@ -142,26 +146,34 @@ class DefectEnergies(MSONable):
                 - sum([v * (relative_chem_pot.elem_coords[k] + standard_e[k])
                        for k, v in element_diff.items()])
 
-            energies[name][charge] = \
-                relative_energy + correction_energy + element_interchange_energy
+            e = relative_energy + correction_energy + element_interchange_energy
+            energies[name].setdefault(charge, []).append(e)
 
             initial_num_symmops = \
                 num_symmetry_operation(d.defect_entry.initial_site_symmetry)
             final_num_symmops = \
                 num_symmetry_operation(d.dft_results.site_symmetry)
 
-            multiplicity[name][charge] = \
-                int(d.defect_entry.num_equiv_sites / final_num_symmops
-                    * initial_num_symmops)
+            mul = int(d.defect_entry.num_equiv_sites /
+                      final_num_symmops * initial_num_symmops)
+            multiplicity[name].setdefault(charge, []).append(mul)
 
-            magnetization[name][charge] = d.dft_results.total_magnetization
-            convergence[name][charge] = d.dft_results.is_converged
-            band_edges[name][charge] = d.dft_results.band_edges
-            are_shallows[name][charge] = d.is_shallow
+            magnetization[name].setdefault(charge, []).append(d.dft_results.total_magnetization)
+            annotation[name].setdefault(charge, []).append(d.defect_entry.annotation)
+            convergence[name].setdefault(charge, []).append(d.dft_results.is_converged)
+            band_edges[name].setdefault(charge, []).append(d.dft_results.band_edges)
+            are_shallows[name].setdefault(charge, []).append(d.is_shallow)
 
-        return cls(dict(energies), dict(multiplicity), dict(magnetization),
-                   dict(convergence), dict(band_edges), dict(are_shallows),
-                   vbm, cbm, supercell_vbm, supercell_cbm, title)
+        return cls(energies=dict(energies),
+                   multiplicity=dict(multiplicity),
+                   magnetization=dict(magnetization),
+                   annotation=dict(annotation),
+                   convergence=dict(convergence),
+                   band_edges=dict(band_edges),
+                   are_shallows=dict(are_shallows),
+                   vbm=vbm, cbm=cbm,
+                   supercell_vbm=supercell_vbm, supercell_cbm=supercell_cbm,
+                   title=title)
 
     def to_json_file(self, filename="defect_energy.json"):
         with open(filename, 'w') as fw:
@@ -171,16 +183,19 @@ class DefectEnergies(MSONable):
         outs = []
         for n in self.energies.keys():
             for c in self.energies[n].keys():
-                outs.extend(
-                    ["- name: {} - charge: {}".format(n, c),
-                     "Energy at e_f = 0 (eV): {}".format(
-                         round(self.energies[n][c], 4)),
-                     "Multiplicity: {}".format(self.multiplicity[n][c]),
-                     "Magnetization: {}".format(
-                         round(self.magnetization[n][c], 2)),
-                     "Convergence: {}".format(self.convergence[n][c]),
-                     "Band edges: {}".format(self.band_edges[n][c])])
-            outs.append("")
+                for i in range(len(self.energies[n][c])):
+                    outs.extend(
+                        ["name: {}:".format(n),
+                         "charge: {}".format(c),
+                         "Annotation".format(self.annotation[n][c][i]),
+                         "Energy at e_f = 0 (eV): {}".format(
+                             round(self.energies[n][c][i], 4)),
+                         "Multiplicity: {}".format(self.multiplicity[n][c][i]),
+                         "Magnetization: {}".format(
+                             round(self.magnetization[n][c][i], 2)),
+                         "Convergence: {}".format(self.convergence[n][c][i]),
+                         "Band edges: {}".format(self.band_edges[n][c][i])])
+                    outs.append("")
 
         return "\n".join(outs)
 
@@ -202,7 +217,7 @@ class DefectEnergies(MSONable):
             assert ValueError("The charge states {} {} {} are not sequential."
                               .format(*charge))
 
-        energies = [self.energies[name][c] for c in charge]
+        energies = [min(self.energies[name][c]) for c in sorted(charge)]
         return energies[0] + energies[2] - 2 * energies[1]
 
     @property
