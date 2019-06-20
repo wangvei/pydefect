@@ -3,7 +3,6 @@
 import json
 import numpy as np
 
-from collections import defaultdict
 from monty.json import MSONable, MontyEncoder
 
 import matplotlib.pyplot as plt
@@ -14,7 +13,6 @@ from pydefect.analysis.defect_energies import Defect
 from pydefect.core.supercell_calc_results import SupercellCalcResults
 from pydefect.core.unitcell_calc_results import UnitcellCalcResults
 from pydefect.core.error_classes import UnitcellCalcResultsError
-from pydefect.vasp_util.util import calc_orbital_similarity
 from pydefect.util.logger import get_logger
 
 __author__ = "Yu Kumagai"
@@ -146,60 +144,62 @@ class DefectEigenvalue(MSONable):
             yrange (list):
                 1x2 list for determining y energy range.
         """
-        fig, ax = plt.subplots()
+        num_figure = len(self.eigenvalues.keys())
+        fig, axs = plt.subplots(nrows=1, ncols=num_figure, sharey=True)
+        fig.subplots_adjust(wspace=0)
         title = \
             "_".join([self.name, str(self.charge)]) if title is None else title
+        fig.suptitle(title, fontsize=12)
 
         plt.title(title, fontsize=15)
 
-        ax.set_xlabel("K points", fontsize=15)
-        ax.set_ylabel("Eigenvalues (eV)", fontsize=15)
+        axs[0].set_ylabel("Eigenvalues (eV)", fontsize=12)
 
         if yrange is None:
-            yrange = [self.supercell_vbm - 2, self.supercell_cbm + 2]
-
-        plt.axhline(y=self.vbm, linewidth=0.3)
-        plt.axhline(y=self.cbm, linewidth=0.3)
-        plt.axhline(y=self.fermi_level, linewidth=1, linestyle="--")
+            yrange = [self.supercell_vbm - 3, self.supercell_cbm + 3]
 
         mapping = self.kpt_mapping_to_perfect_kpt
         k_index = self.add_eigenvalues_to_plot(
-            ax, self.eigenvalues, self.perfect_eigenvalues, mapping)
-        ax.set_ylim(yrange[0], yrange[1])
+            axs, self.eigenvalues, self.perfect_eigenvalues, mapping)
+
+        x_labels = ["\n".join([str(i) for i in k]) for k in self.kpoint_coords]
 
         for i, s in enumerate(self.band_edges):
-            middle_x = len(self.eigenvalues[s]) * (i + 0.5)
-            in_gap = (self.vbm + self.cbm) / 2
-            ax.annotate(str(self.band_edges[s]), xy=(middle_x, in_gap))
+            axs[i].set_title(s.name.upper() + ": " + str(self.band_edges[s]))
+            axs[i].set_ylim(yrange[0], yrange[1])
+            axs[i].set_xlim(-1, k_index + 1)
 
-        ax.get_xaxis().set_tick_params(direction='out')
-        ax.xaxis.set_ticks_position('bottom')
-        ax.set_xticks(np.arange(1, k_index + 1))
-        ax.set_xticklabels(self.kpoint_coords * 2)
-        #        ax.set_xticklabels([]
+            axs[i].get_xaxis().set_tick_params(direction='out')
+            axs[i].xaxis.set_ticks_position('bottom')
+            axs[i].set_xticks(np.arange(0, k_index + 1))
 
-        ax.annotate("vbm", xy=(k_index + 1, self.vbm), fontsize=10)
-        ax.annotate("cbm", xy=(k_index + 1, self.cbm), fontsize=10)
+            axs[i].set_xticklabels(x_labels)
 
-        if self.supercell_vbm < self.vbm - 0.05:
-            plt.axhline(y=self.supercell_vbm, linewidth=0.3,
-                        linestyle='dashed')
-            ax.annotate("supercell vbm",
-                        xy=(k_index + 1, self.supercell_vbm),
-                        fontsize=10)
-        if self.supercell_cbm > self.cbm + 0.05:
-            plt.axhline(y=self.supercell_cbm, linewidth=0.3,
-                        linestyle='dashed')
-            ax.annotate("supercell cbm",
-                        xy=(k_index + 1, self.supercell_cbm),
-                        fontsize=10)
+            axs[i].axhline(y=self.vbm, linewidth=0.3)
+            axs[i].axhline(y=self.cbm, linewidth=0.3)
+            axs[i].axhline(y=self.supercell_vbm, linewidth=0.3,
+                           linestyle='dashed')
+            axs[i].axhline(y=self.supercell_cbm, linewidth=0.3,
+                           linestyle='dashed')
+            axs[i].axhline(y=self.fermi_level, linewidth=1, linestyle="--")
 
-        # def set_axis_style(ax, labels):
-        #     ax.get_xaxis().set_tick_params(direction='out')
-        #     ax.xaxis.set_ticks_position('bottom')
-        #     ax.set_xticks(np.arange(1, len(labels) + 1))
-        #     ax.set_xticklabels(labels)
-        #     ax.set_xlim(0.25, len(labels) + 0.75)
+        axs[num_figure - 1].annotate(
+            "supercell\nvbm", xy=(k_index + 1, self.supercell_vbm - 0.2),
+            fontsize=10)
+        axs[num_figure - 1].annotate(
+            "supercell\ncbm", xy=(k_index + 1, self.supercell_cbm - 0.2),
+            fontsize=10)
+        axs[num_figure - 1].annotate("Fermi\nlevel", xy=(k_index + 1, self.fermi_level - 0.2), fontsize=10)
+        axs[0].annotate("vbm", xy=(-1, self.vbm), fontsize=10)
+        axs[0].annotate("cbm", xy=(-1, self.cbm), fontsize=10)
+
+
+#         # def set_axis_style(ax, labels):
+#         #     ax.get_xaxis().set_tick_params(direction='out')
+#         #     ax.xaxis.set_ticks_position('bottom')
+#         #     ax.set_xticks(np.arange(1, len(labels) + 1))
+#         #     ax.set_xticklabels(labels)
+#         #     ax.set_xlim(0.25, len(labels) + 0.75)
 
         plt.show()
 
@@ -224,7 +224,7 @@ class DefectEigenvalue(MSONable):
         return mapping
 
     @staticmethod
-    def add_eigenvalues_to_plot(ax, eigenvalues, perfect_eigenvalues, mapping,
+    def add_eigenvalues_to_plot(axs, eigenvalues, perfect_eigenvalues, mapping,
                                 x_offset=0.3):
         occupied_eigenvalues = []
         occupied_x = []
@@ -240,11 +240,9 @@ class DefectEigenvalue(MSONable):
         perfect_partial_occupied_eigenvalues = []
         perfect_partial_occupied_x = []
 
-        k_index = 0
-
-        for s in eigenvalues.keys():
-            for k, eigen in enumerate(eigenvalues[s]):
-                k_index += 1
+        for i, s in enumerate(eigenvalues.keys()):
+            ax = axs[i]
+            for k_index, eigen in enumerate(eigenvalues[s]):
                 for band_index, e in enumerate(eigen):
                     occupancy = e[1]
                     if occupancy < 0.1:
@@ -261,11 +259,11 @@ class DefectEigenvalue(MSONable):
 #                    if k_index == 1 and e[0] - eigen[band_index-1][0] > 0.1:
                     if band_index < len(eigen) - 1:
                         if eigen[band_index + 1][0] - e[0] > 0.1:
-                            ax.annotate(str(band_index),
+                            ax.annotate(str(band_index + 1),
                                         xy=(k_index + 0.05, e[0]),
                                         fontsize=10)
 
-                for e in perfect_eigenvalues[Spin.up][mapping[k]]:
+                for e in perfect_eigenvalues[Spin.up][mapping[k_index]]:
                     occupancy = e[1]
                     if occupancy < 0.1:
                         perfect_unoccupied_eigenvalues.append(e[0])
@@ -278,15 +276,13 @@ class DefectEigenvalue(MSONable):
                         perfect_partial_occupied_eigenvalues.append(e[0])
                         perfect_partial_occupied_x.append(k_index + x_offset)
 
-            plt.axvline(x=k_index + 0.5, linewidth=1, linestyle="--")
-
-        ax.plot(occupied_x, occupied_eigenvalues, 'o')
-        ax.plot(unoccupied_x, unoccupied_eigenvalues, 'o')
-        ax.plot(partial_occupied_x, partial_occupied_eigenvalues, 'o')
-        ax.plot(perfect_occupied_x, perfect_occupied_eigenvalues, 'o')
-        ax.plot(perfect_unoccupied_x, perfect_unoccupied_eigenvalues, 'o')
-        ax.plot(perfect_partial_occupied_x,
-                perfect_partial_occupied_eigenvalues, 'o')
+            ax.plot(occupied_x, occupied_eigenvalues, 'o')
+            ax.plot(unoccupied_x, unoccupied_eigenvalues, 'o')
+            ax.plot(partial_occupied_x, partial_occupied_eigenvalues, 'o')
+            ax.plot(perfect_occupied_x, perfect_occupied_eigenvalues, 'o')
+            ax.plot(perfect_unoccupied_x, perfect_unoccupied_eigenvalues, 'o')
+            ax.plot(perfect_partial_occupied_x,
+                    perfect_partial_occupied_eigenvalues, 'o')
 
         return k_index
 

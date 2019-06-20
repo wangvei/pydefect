@@ -184,7 +184,7 @@ class SupercellCalcResults(MSONable):
         outs = ["convergence : " + str(self.is_converged)[0],
                 "  band edge : " + band_edges]
 
-        print("  ".join(outs))
+        return "  ".join(outs)
 
     @classmethod
     def from_vasp_files(cls,

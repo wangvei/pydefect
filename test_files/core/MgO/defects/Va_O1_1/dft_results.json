@@ -3273,6 +3273,16 @@
     "1": "Localized state",
     "-1": "Localized state"
   },
+  "band_edge_energies": {
+    "1": {
+      "hob": 2.8367,
+      "lub": 8.4454
+    },
+    "-1": {
+      "hob": 2.5413,
+      "lub": 4.0087
+    }
+  },
   "relative_total_energy": 6.231475689999996,
   "relative_potential": [
     0.1635999999999953,
@@ -5336,6 +5346,16 @@
       "tolerance": 0.1
     }
   ],
+  "participation_ratio": {
+    "1": {
+      "hob": 0.2534818941504178,
+      "lub": 0.3857142857142856
+    },
+    "-1": {
+      "hob": 0.01335113484646195,
+      "lub": 0.3076923076923077
+    }
+  },
   "orbital_character": {
     "1": {
       "hob": {

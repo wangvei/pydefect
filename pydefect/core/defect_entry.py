@@ -38,6 +38,7 @@ class DefectEntry(MSONable):
                  charge: int,
                  initial_site_symmetry: str,
                  neighboring_sites: list,
+                 annotation: str = None,
                  num_equiv_sites: int = None):
         """
         Args:
@@ -66,6 +67,8 @@ class DefectEntry(MSONable):
                 Initial site symmetry such as D4h.
             neighboring_sites (list):
                 Indices of the perturbed site for reducing the symmetry
+            annotation (str):
+
             num_equiv_sites (int):
                 Number of equivalent sites in the given structure.
         """

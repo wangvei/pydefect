@@ -542,6 +542,8 @@ class DefectInitialSetting(MSONable):
             primitive = space_group_analyzer.find_primitive()
             oxi_guess = primitive.composition.oxi_state_guesses()[0]
             oxidation_states = {k: round(v) for k, v in oxi_guess.items()}
+            for d in dopants:
+                oxidation_states[d] = get_oxidation_state(d)
         else:
             for e in s.composition.elements:
                 if e not in oxidation_states.keys():

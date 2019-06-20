@@ -1041,7 +1041,7 @@
   "fermi_level": 3.32929791,
   "is_converged": true,
   "band_edges": null,
-  "band_edges_energies": {
+  "band_edge_energies": {
     "1": {
       "hob": 3.0101,
       "lub": 7.4992

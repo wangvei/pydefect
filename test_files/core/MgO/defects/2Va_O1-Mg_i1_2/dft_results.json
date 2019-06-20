@@ -2273,9 +2273,16 @@
   "volume": 153.19477710173544,
   "fermi_level": 6.44148542,
   "is_converged": true,
-  "band_edges": {
-    "1": "Localized state",
-    "-1": "Localized state"
+  "band_edges": null,
+  "band_edge_energies": {
+    "1": {
+      "hob": 4.9737,
+      "lub": 7.8663
+    },
+    "-1": {
+      "hob": 5.3558,
+      "lub": 7.8811
+    }
   },
   "relative_total_energy": 17.22271191,
   "relative_potential": [
@@ -4430,6 +4437,7 @@
       "tolerance": 0.1
     }
   ],
+  "participation_ratio": null,
   "orbital_character": {
     "1": {
       "hob": {

@@ -193,11 +193,13 @@ class DefectEnergyPlotter:
                 if x_min < cp[0] - self.vbm < x_max:
                     cross_points.append([cp[0] - self.vbm, cp[1]])
                     transition_points.append([cp[0] - self.vbm, cp[1]])
-                    charge_set.add(c[1])
+                    # need to sort the charge.
+                    charge_set.add(sorted(c, key=lambda x: x)[1])
                     if cp[1] < y_min:
                         y_min = cp[1]
                     if cp[1] > y_max:
                         y_max = cp[1]
+
 
             # Add the plot point at x_max
             c, y = min_e_at_ef(energies, x_max + self.vbm)
@@ -251,12 +253,12 @@ class DefectEnergyPlotter:
                 s = str(sorted_charge_set[j])
                 ax.annotate(s, (x, y), color=color, fontsize=13)
 
-            if show_all_energies:
-                for c, e in self.energies[name].items():
-                    y1 = e + c * (x_min + self.vbm)
-                    y2 = e + c * (x_max + self.vbm)
-                    ax.plot([x_min, x_max], [y1, y2], '-', linewidth=0.3,
-                            color=color)
+            # if show_all_energies:
+            #     for c, e in self.energies[name].items():
+            #         y1 = e + c * (x_min + self.vbm)
+            #         y2 = e + c * (x_max + self.vbm)
+            #         ax.plot([x_min, x_max], [y1, y2], '-', linewidth=0.3,
+            #                 color=color)
 
         if y_range:
             y_min = y_range[0]

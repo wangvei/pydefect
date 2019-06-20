@@ -207,14 +207,14 @@ def main():
 
     parser_interstitial.set_defaults(func=interstitial)
 
-    # -- vasp_set_maker -------------------------------------------------
+    # -- defect_vasp_set_maker -------------------------------------------------
     parser_vasp_set = subparsers.add_parser(
-        name="vasp_set",
+        name="defect_vasp_set",
         description="Tools for configuring vasp defect_set files for a set of "
                     "defect calculations. One needs to set "
                     ".pydefect.yaml for potcar setup.",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-        aliases=['vs'])
+        aliases=['dvs'])
 
     parser_vasp_set.add_argument(
         "--defect_in", dest="defect_in", default="defect.in", type=str,
@@ -240,7 +240,7 @@ def main():
     parser_vasp_set.add_argument(
         "-w", "--make_wavecar", dest="wavecar", default=True, type=bool,
         help="Whether to make WAVECAR file or not.")
-    parser_vasp_set.set_defaults(func=vasp_set)
+    parser_vasp_set.set_defaults(func=defect_vasp_set)
 
     # -- defect_entry ----------------------------------------------------------
     parser_defect_entry = subparsers.add_parser(
@@ -411,9 +411,9 @@ def main():
 
     parser_correction.set_defaults(func=efnv_correction)
 
-    # -- vasp_oba_set ----------------------------------------------------------
+    # -- vasp_set ----------------------------------------------------------
     parser_vasp_oba_set = subparsers.add_parser(
-        name="vasp_oba_set",
+        name="vasp_set",
         description="Tools for constructing vasp input set with oba_set",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
         aliases=['vos'])
@@ -459,7 +459,7 @@ def main():
         "-pi", "-prior_info", dest="prior_info", action="store_true",
         help="Set if prior_info.json is not read.")
 
-    parser_vasp_oba_set.set_defaults(func=vasp_oba_set)
+    parser_vasp_oba_set.set_defaults(func=vasp_set)
 
     # -- diagnose --------------------------------------------------------------
     parser_diagnose = subparsers.add_parser(
@@ -557,7 +557,7 @@ def main():
 
     parser_plot_energy.set_defaults(func=plot_energy)
 
-    # -- parse_eigenvalues -----------------------------------------------------------
+    # -- parse_eigenvalues -----------------------------------------------------
     parser_parse_eigenvalues = subparsers.add_parser(
         name="parse_eigenvalues",
         description="Tools for parsing defect eigenvalues",
@@ -595,6 +595,28 @@ def main():
              "are required in the directory.")
 
     parser_parse_eigenvalues.set_defaults(func=parse_eigenvalues)
+
+    # -- vasp_parchg_set -------------------------------------------------------
+    parser_vasp_parchg_set = subparsers.add_parser(
+        name="vasp_parchg_set",
+        description="Tools for constructing vasp set for generating PARCHG",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+        aliases=['vps'])
+
+    parser_vasp_parchg_set.add_argument(
+        "-rd", "--read_dir", dest="read_dir", type=str,
+        help="Read directory name.")
+    parser_vasp_parchg_set.add_argument(
+        "-wd", "--write_dir", dest="write_dir", type=str, default=".",
+        help="Write directory name.")
+    parser_vasp_parchg_set.add_argument(
+        "-b", "--bands", dest="band_indices", type=int, nargs='+',
+        help="Band indices.")
+    parser_vasp_parchg_set.add_argument(
+        "-k", "--kpoints", dest="kpoint_indices", type=int, nargs='+',
+        help="K-point indices.")
+
+    parser_vasp_parchg_set.set_defaults(func=vasp_parchg_set)
 
     args = parser.parse_args()
     args.func(args)
@@ -690,7 +712,7 @@ def interstitial(args):
     interstitial_set.site_set_to_yaml_file(filename=args.yaml)
 
 
-def vasp_set(args):
+def defect_vasp_set(args):
 
     def make_dir(name, obrs):
         """Helper function"""
@@ -946,7 +968,7 @@ def efnv_correction(args):
         c.to_json_file(join(directory, "correction.json"))
 
 
-def vasp_oba_set(args):
+def vasp_set(args):
 
     #TODO: When writing GW part, refer oba_set_main.py in obadb
 
@@ -1007,7 +1029,7 @@ def diagnose(args):
     for d in defects_dirs:
         print(d.rjust(12), end="  ")
         dft_results = SupercellCalcResults.load_json(join(d, args.json))
-        dft_results.diagnose
+        print(dft_results.diagnose)
 
 
 def plot_energy(args):
@@ -1104,6 +1126,21 @@ def parse_eigenvalues(args):
 #    plt.savefig(args.save_file, format="pdf") if args.save_file else plt.show()
 
 
+def vasp_parchg_set(args):
+    user_incar_settings = {"LPARD": True, "LSEPB": True, "KPAR": 1, "IBAND": args.band_indices}
+    if args.kpoint_indices:
+       user_incar_settings["KPUSE"] = args.kpoint_indices
+    oba_set = ObaSet.from_prev_calc(dirname=args.read_dir,
+                                    parse_calc_results=False,
+                                    parse_magnetization=False,
+                                    standardize_structure=False,
+                                    sort_structure=False,
+                                    parse_potcar=True,
+                                    parse_incar=True,
+                                    parse_kpoints=True,
+                                    copied_file_names={"WAVECAR": "L"},
+                                    user_incar_settings=user_incar_settings)
+    oba_set.write_input(args.write_dir)
 
 
 if __name__ == "__main__":
