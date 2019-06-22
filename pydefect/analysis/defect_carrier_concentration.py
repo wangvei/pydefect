@@ -184,6 +184,14 @@ def calc_equilibrium_concentration(energies,
     raise NoConvergenceError("Equilibrium condition has not been reached.")
 
 
+# initial_num_symmops = \
+#     num_symmetry_operation(d.defect_entry.initial_site_symmetry)
+# final_num_symmops = \
+#     num_symmetry_operation(d.dft_results.site_symmetry)
+
+# mul = int(d.defect_entry.num_equiv_sites /
+#           final_num_symmops * initial_num_symmops)
+
 class DefectConcentration:
     """ A class related to a set of carrier and defect concentration """
 

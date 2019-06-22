@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 
 from pymatgen.electronic_structure.core import Spin
 
-from pydefect.analysis.defect_energies import Defect
+from pydefect.analysis.defect import Defect
 from pydefect.core.supercell_calc_results import SupercellCalcResults
 from pydefect.core.unitcell_calc_results import UnitcellCalcResults
 from pydefect.core.error_classes import UnitcellCalcResultsError
@@ -189,7 +189,9 @@ class DefectEigenvalue(MSONable):
         axs[num_figure - 1].annotate(
             "supercell\ncbm", xy=(k_index + 1, self.supercell_cbm - 0.2),
             fontsize=10)
-        axs[num_figure - 1].annotate("Fermi\nlevel", xy=(k_index + 1, self.fermi_level - 0.2), fontsize=10)
+        axs[num_figure - 1].annotate(
+            "Fermi\nlevel", xy=(k_index + 1, self.fermi_level - 0.2),
+            fontsize=10)
         axs[0].annotate("vbm", xy=(-1, self.vbm), fontsize=10)
         axs[0].annotate("cbm", xy=(-1, self.cbm), fontsize=10)
 

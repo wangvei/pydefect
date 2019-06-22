@@ -6,8 +6,7 @@ import unittest
 from pymatgen.core.structure import Structure
 
 from pydefect.input_maker.defect_initial_setting import charge_set_range, \
-    get_electronegativity, get_oxidation_state, dopant_info, \
-    SimpleDefectName, DefectInitialSetting
+    get_electronegativity, get_oxidation_state, DefectInitialSetting
 from pydefect.core.irreducible_site import IrreducibleSite
 
 __author__ = "Yu Kumagai"
@@ -72,22 +71,6 @@ class DopantInfoTest(unittest.TestCase):
 #                 poscar=os.path.join(test_dir, "POSCAR-MgO64atoms"),
 #                 defect_in_file=os.path.join(test_dir, "defect.in.example"))
 #         print(element_set(mgo_from_defect_in))
-
-class SimpleDefectNameTest(unittest.TestCase):
-
-    def setUp(self):
-        """
-        """
-        self.va_o_1 = SimpleDefectName(None, "O1", 1)
-        self.mg_i1_m1 = SimpleDefectName.from_str("Mg_i1_1")
-
-    def test_to_str(self):
-        actual = str(self.va_o_1)
-        expected = "Va_O1_1"
-        self.assertEqual(actual, expected)
-
-    def test_is_name_matched(self):
-        self.assertTrue(self.va_o_1.is_name_matched("Va_O[0-9]_1"))
 
 
 class DefectInitialSettingTest(unittest.TestCase):

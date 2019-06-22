@@ -4,7 +4,6 @@
 import argparse
 import os
 import shutil
-import warnings
 from xml.etree.cElementTree import ParseError
 
 from copy import deepcopy
@@ -20,7 +19,8 @@ from obadb.analyzer.chempotdiag.chem_pot_diag import ChemPotDiag
 from obadb.vasp.input_set import ObaSet
 from obadb.vasp.incar import incar_flags
 
-from pydefect.analysis.defect_energies import DefectEnergies, Defect
+from pydefect.analysis.defect_energies import DefectEnergies
+from pydefect.analysis.defect import Defect
 from pydefect.analysis.defect_energy_plotter import DefectEnergyPlotter
 from pydefect.analysis.defect_eigenvalues import DefectEigenvalue
 from pydefect.core.defect_entry import DefectEntry

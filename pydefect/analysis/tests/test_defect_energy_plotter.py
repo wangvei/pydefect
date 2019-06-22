@@ -5,7 +5,8 @@ import unittest
 
 from obadb.analyzer.chempotdiag.chem_pot_diag import ChemPotDiag
 
-from pydefect.analysis.defect_energies import DefectEnergies, Defect
+from pydefect.analysis.defect_energies import DefectEnergies
+from pydefect.analysis.defect import Defect
 from pydefect.analysis.defect_energy_plotter import DefectEnergyPlotter
 from pydefect.corrections.corrections import ExtendedFnvCorrection
 from pydefect.core.supercell_calc_results import SupercellCalcResults

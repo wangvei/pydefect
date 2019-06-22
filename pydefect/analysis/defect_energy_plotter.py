@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 
 from pydefect.analysis.defect_energies import DefectEnergies
 from pydefect.analysis.defect_carrier_concentration import DefectConcentration
-from pydefect.input_maker.defect_initial_setting import SimpleDefectName
+from pydefect.core.defect_name import SimpleDefectName
 from pydefect.util.logger import get_logger
 
 
@@ -17,8 +17,6 @@ __author__ = "Yu Kumagai"
 __maintainer__ = "Yu Kumagai"
 
 logger = get_logger(__name__)
-
-TransitionLevel = namedtuple("TransitionLevel", ("cross_points", "charges"))
 
 
 class DefectEnergyPlotter:

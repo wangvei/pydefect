@@ -8,7 +8,7 @@ from pydefect.corrections.corrections import ExtendedFnvCorrection
 from pydefect.core.supercell_calc_results import SupercellCalcResults
 from pydefect.core.unitcell_calc_results import UnitcellCalcResults
 from pydefect.core.defect_entry import DefectEntry
-from pydefect.analysis.defect_energies import Defect
+from pydefect.analysis.defect import Defect
 
 __author__ = "Yu Kumagai"
 __maintainer__ = "Yu Kumagai"

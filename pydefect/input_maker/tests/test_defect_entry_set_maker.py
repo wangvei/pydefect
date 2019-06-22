@@ -9,9 +9,8 @@ from pydefect.input_maker.defect_entry_set_maker \
     import get_int_from_string, select_defect_names
 from pydefect.input_maker.defect_entry_set_maker import DefectEntrySetMaker
 from pydefect.core.irreducible_site import IrreducibleSite
-from pydefect.input_maker.defect_initial_setting import DefectInitialSetting, \
-    SimpleDefectName
-
+from pydefect.input_maker.defect_initial_setting import DefectInitialSetting
+from pydefect.core.defect_name import SimpleDefectName
 
 __author__ = "Yu Kumagai"
 __maintainer__ = "Yu Kumagai"

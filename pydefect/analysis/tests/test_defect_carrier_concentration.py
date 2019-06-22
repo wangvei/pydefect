@@ -3,13 +3,6 @@
 import os
 import unittest
 
-from pydefect.analysis.defect_energies import DefectEnergies, Defect
-from pydefect.analysis.defect_carrier_concentration import DefectConcentration
-from pydefect.corrections.corrections import ExtendedFnvCorrection
-from pydefect.core.supercell_calc_results import SupercellCalcResults
-from pydefect.core.unitcell_calc_results import UnitcellCalcResults
-from pydefect.core.defect_entry import DefectEntry
-
 __author__ = "Yu Kumagai"
 __maintainer__ = "Yu Kumagai"
 

@@ -5,8 +5,8 @@ from typing import Union, List
 from pymatgen.core.periodic_table import Element
 
 from pydefect.core.defect_entry import DefectEntry
-from pydefect.input_maker.defect_initial_setting import DefectInitialSetting, \
-    SimpleDefectName
+from pydefect.input_maker.defect_initial_setting import DefectInitialSetting
+from pydefect.core.defect_name import SimpleDefectName
 from pydefect.util.structure_tools import perturb_neighboring_atoms, \
     defect_center_from_coords
 from pydefect.util.logger import get_logger
