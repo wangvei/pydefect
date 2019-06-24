@@ -21,7 +21,6 @@ from obadb.vasp.incar import incar_flags
 
 from pydefect.analysis.defect_energies import DefectEnergies
 from pydefect.analysis.defect import Defect
-from pydefect.analysis.defect_energy_plotter import DefectEnergyPlotter
 from pydefect.analysis.defect_eigenvalues import DefectEigenvalue
 from pydefect.core.defect_entry import DefectEntry
 from pydefect.core.interstitial_site import InterstitialSiteSet
@@ -1085,14 +1084,12 @@ def plot_energy(args):
     # else:
 #        defect_concentration = None
 
-    plotter = DefectEnergyPlotter(defect_energies)
-    #plotter = DefectEnergyPlotter(defect_energies, defect_concentration)
-    plt = plotter.plot_energy(filtering_words=args.filtering,
-                              x_range=args.x_range,
-                              y_range=args.y_range,
-                              show_fermi_level=args.concentration,
-                              show_transition_levels=args.show_tl,
-                              show_all_energies=args.show_all)
+    plt = defect_energies.plot_energy(filtering_words=args.filtering,
+                                       x_range=args.x_range,
+                                       y_range=args.y_range,
+                                       show_fermi_level=args.concentration,
+                                       show_transition_levels=args.show_tl,
+                                       show_all_energies=args.show_all)
 
     plt.savefig(args.save_file, format="pdf") if args.save_file else plt.show()
 
@@ -1127,9 +1124,10 @@ def parse_eigenvalues(args):
 
 
 def vasp_parchg_set(args):
-    user_incar_settings = {"LPARD": True, "LSEPB": True, "KPAR": 1, "IBAND": args.band_indices}
+    user_incar_settings = {"LPARD": True, "LSEPB": True, "KPAR": 1,
+                           "IBAND": args.band_indices}
     if args.kpoint_indices:
-       user_incar_settings["KPUSE"] = args.kpoint_indices
+        user_incar_settings["KPUSE"] = args.kpoint_indices
     oba_set = ObaSet.from_prev_calc(dirname=args.read_dir,
                                     parse_calc_results=False,
                                     parse_magnetization=False,

@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import os
+import tempfile
 import unittest
 
 from obadb.analyzer.chempotdiag.chem_pot_diag import ChemPotDiag
@@ -71,6 +72,14 @@ class DefectEnergiesTest(unittest.TestCase):
         de = DefectEnergies.from_dict(d)
         dd = de.as_dict()
         self.assertEqual(d, dd)
+
+    def test_json(self):
+        """ round trip test of to_json and from_json """
+        tmp_file = tempfile.NamedTemporaryFile()
+        self.defect_energies.to_json_file(tmp_file.name)
+        defect_entry_from_json = DefectEntry.load_json(tmp_file.name)
+        self.assertEqual(defect_entry_from_json.as_dict(),
+                         self.defect_energies.as_dict())
 
     # def test_multiplicity(self):
     #     actual = self.defect_energies.multiplicity["Va_O1"][2][0]
