@@ -125,7 +125,7 @@ class InterstitialSiteSet(MSONable):
     def site_set_as_dict(self):
         d = OrderedDict()
         for k, v in self.interstitial_sites.items():
-            d[k] = v.as_dict
+            d[k] = v.as_dict()
 
         return d
 

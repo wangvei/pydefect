@@ -556,7 +556,7 @@ class DefectInitialSetting(MSONable):
 
     def as_dict(self):
 
-        irreducible_sites = [i.as_dict for i in self.irreducible_sites]
+        irreducible_sites = [i.as_dict() for i in self.irreducible_sites]
 
         d = {"@module":                 self.__class__.__module__,
              "@class":                  self.__class__.__name__,

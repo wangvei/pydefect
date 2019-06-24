@@ -226,8 +226,8 @@ class EwaldTest(PymatgenTest):
         tmp_file = tempfile.NamedTemporaryFile()
         self._ewald.to_json_file(tmp_file.name)
         ewald_from_json = DefectEntry.load_json(tmp_file.name)
-        print(ewald_from_json.as_dict)
-        self.assertTrue(ewald_from_json.as_dict ==
+        print(ewald_from_json.as_dict())
+        self.assertTrue(ewald_from_json.as_dict() ==
                         self._ewald.as_dict())
 
     def test_optimize(self):
@@ -259,7 +259,7 @@ class NoCorrectionTest(PymatgenTest):
 
     def test_dict(self):
         d = self._correction.as_dict()
-        actual = NoCorrection.from_dict(d).as_dict
+        actual = NoCorrection.from_dict(d).as_dict()
         expected = d
         self.assertEqual(actual, expected)
 
@@ -310,7 +310,7 @@ class ExtendedFnvCorrectionTest(PymatgenTest):
         # object -> dict -> object
         d = vacancy_correction.as_dict()
         correction_from_dict = ExtendedFnvCorrection.from_dict(d)
-        self.assertTrue(correction_from_dict.as_dict == vacancy_correction.as_dict())
+        self.assertTrue(correction_from_dict.as_dict() == vacancy_correction.as_dict())
 
     # def test_json(self):
     #     tmp_file = tempfile.NamedTemporaryFile()
