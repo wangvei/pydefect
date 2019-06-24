@@ -29,7 +29,9 @@ class DefectEnergiesTest(unittest.TestCase):
                                     "MgO/defects/perfect/dft_results.json")
         perfect = SupercellCalcResults.load_json(perfect_file)
 
-        defect_dirs = ["Va_O1_1", "Va_O1_2", "Va_O1_0"]
+        defect_dirs = ["Mg_O1_0", "Mg_O1_1", "Mg_O1_2", "Mg_O1_3", "Mg_O1_4",
+                       "Mg_i1_0", "Mg_i1_1", "Mg_i1_2", "Va_O1_2_inward", "Va_O1_1", "Va_O1_2",
+                       "Va_O1_2"]
         defects = []
         for dd in defect_dirs:
             d = os.path.join(test_dir, "MgO/defects", dd)
@@ -79,6 +81,17 @@ class DefectEnergiesTest(unittest.TestCase):
         actual = self.defect_energies.u(name="Va_O1", charges=[0, 1, 2])[0]
         expected = 1.82926181856907
         self.assertAlmostEqual(actual, expected)
+
+    def test_calc_transition_levels(self):
+        dp = self.defect_energies
+#        dp = DefectEnergyPlotter(self.defect_energies, self.dc2)
+#        plt = dp.plot_energy(filtering_words=["Va_O[0-9]+"],
+        plt = dp.plot_energy(x_range=[-3, 13],
+                             show_fermi_level=True,
+                             show_transition_levels=True,
+                             show_all_energies=True)
+        plt.show()
+#        plt.savefig(fname="energy.eps")
 
 
 if __name__ == "__main__":

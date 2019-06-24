@@ -87,16 +87,16 @@ class DefectEntry(MSONable):
     def __str__(self):
         annotation = "" if self.annotation is None else self.annotation
 
-        outs = ["perturbed_initial_structure: \n" +
+        outs = ["name: " + str(self.name),
+                "charge: " + str(self.charge),
+                "annotation: " + annotation,
+                "perturbed_initial_structure: \n" +
                 str(self.perturbed_initial_structure),
-                "name: " + str(self.name),
                 "initial_site_symmetry: " + str(self.initial_site_symmetry),
                 "removed_atoms: " + str(self.removed_atoms),
                 "inserted_atoms: " + str(self.inserted_atoms),
                 "changes_of_num_element: " + str(self.changes_of_num_elements),
-                "charge: " + str(self.charge),
                 "neighboring_sites: " + str(self.neighboring_sites),
-                "annotation: " + annotation,
                 "num_equiv_sites: " + str(self.num_equiv_sites)]
         return "\n".join(outs)
 
