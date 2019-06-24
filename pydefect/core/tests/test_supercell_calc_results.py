@@ -79,8 +79,8 @@ class SupercellDftResultsTest(PymatgenTest):
 
     def test_dict(self):
         """Round trip test"""
-        d = self._MgO_Va_O1_2.as_dict()
-        dd = SupercellCalcResults.from_dict(d).as_dict()
+        d = self._MgO_Va_O1_2.as_dict
+        dd = SupercellCalcResults.from_dict(d).as_dict
         self.assertEqual(d, dd)
 
     def test_json(self):

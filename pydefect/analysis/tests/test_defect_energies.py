@@ -72,12 +72,16 @@ class DefectEnergiesTest(unittest.TestCase):
         de = DefectEnergies.from_dict(d)
         dd = de.as_dict()
         self.assertEqual(d, dd)
+        print(d)
+        print(dd)
+
 
     def test_json(self):
         """ round trip test of to_json and from_json """
         tmp_file = tempfile.NamedTemporaryFile()
         self.defect_energies.to_json_file(tmp_file.name)
         defect_entry_from_json = DefectEntry.load_json(tmp_file.name)
+        print(defect_entry_from_json.as_dict())
         self.assertEqual(defect_entry_from_json.as_dict(),
                          self.defect_energies.as_dict())
 

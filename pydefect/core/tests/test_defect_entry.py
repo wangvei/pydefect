@@ -74,7 +74,7 @@ class DefectEntryTest(PymatgenTest):
             os.path.join(test_dir, "defect_entry-2Va_O1-Mg_i1_2.yaml"))
         print(defect_entry_from_yaml)
         print(self._MgO_complex)
-        self.assertTrue(defect_entry_from_yaml.as_dict() == self._MgO_complex.as_dict())
+        self.assertTrue(defect_entry_from_yaml.as_dict == self._MgO_complex.as_dict())
 
     # def test_from_simpler_yaml(self):
     #     simpler_dir = os.path.join(test_dir, "MgO/defects/2Va_O1-Mg_i1_2")
@@ -97,8 +97,8 @@ class DefectEntryTest(PymatgenTest):
         dict = self._MgO_Va_O1_2.as_dict()
         Va_O1_2_from_dict = DefectEntry.from_dict(dict)
         for i in dict.keys():
-            self.assertTrue(Va_O1_2_from_dict.as_dict()[i] ==
-                        self._MgO_Va_O1_2.as_dict()[i])
+            self.assertTrue(Va_O1_2_from_dict.as_dict[i] ==
+                            self._MgO_Va_O1_2.as_dict()[i])
 
     def test_json(self):
         """ round trip test of to_json and from_json
@@ -106,7 +106,7 @@ class DefectEntryTest(PymatgenTest):
         tmp_file = tempfile.NamedTemporaryFile()
         self._MgO_Va_O1_2.to_json_file(tmp_file.name)
         defect_entry_from_json = DefectEntry.load_json(tmp_file.name)
-        self.assertTrue(defect_entry_from_json.as_dict() ==
+        self.assertTrue(defect_entry_from_json.as_dict ==
                         self._MgO_Va_O1_2.as_dict())
 
     def test_atom_mapping_to_perfect(self):

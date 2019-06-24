@@ -5,13 +5,14 @@ from copy import copy
 from itertools import combinations
 import json
 from monty.json import MontyEncoder, MSONable
+from monty.serialization import loadfn
 import matplotlib.pyplot as plt
 import numpy as np
 from typing import List
 
 from obadb.analyzer.chempotdiag.chem_pot_diag import ChemPotDiag
-from pydefect.analysis.defect import Defect
 
+from pydefect.analysis.defect import Defect
 from pydefect.core.supercell_calc_results import SupercellCalcResults
 from pydefect.core.unitcell_calc_results import UnitcellCalcResults
 from pydefect.core.defect_name import DefectName
@@ -149,9 +150,48 @@ class DefectEnergies(MSONable):
                    supercell_cbm=supercell_cbm,
                    title=title)
 
+    def as_dict(self):
+        defect_energies = \
+            {name: {int(charge): {annotation
+                                  if annotation != 'null' else None: e.as_dict()
+                                  for annotation, e in v2.items()}
+                    for charge, v2 in v1.items()}
+             for name, v1 in self.defect_energies.items()}
+
+        d = {"@module":         self.__class__.__module__,
+             "@class":          self.__class__.__name__,
+             "defect_energies": defect_energies,
+             "vbm":             self.vbm,
+             "cbm":             self.cbm,
+             "supercell_vbm":   self.supercell_vbm,
+             "supercell_cbm":   self.supercell_cbm,
+             "title":           self.title}
+
+        return d
+
+    @classmethod
+    def from_dict(cls, d):
+        """ Construct a class object from a dictionary. """
+        defect_energies = \
+            {name: {charge: {annotation: DefectEnergy.from_dict(e)
+                             for annotation, e in v2.items()}
+                    for charge, v2 in v1.items()}
+             for name, v1 in d["defect_energies"].items()}
+
+        return cls(defect_energies=defect_energies,
+                   vbm=d["vbm"],
+                   cbm=d["cbm"],
+                   supercell_vbm=d["supercell_vbm"],
+                   supercell_cbm=d["supercell_cbm"],
+                   title=d["title"])
+
     def to_json_file(self, filename="defect_energy.json"):
         with open(filename, 'w') as fw:
             json.dump(self.as_dict(), fw, indent=2, cls=MontyEncoder)
+
+    @classmethod
+    def load_json(cls, filename):
+        return loadfn(filename)
 
     def __str__(self):
         outs = []

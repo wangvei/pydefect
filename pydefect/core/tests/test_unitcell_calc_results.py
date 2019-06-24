@@ -99,7 +99,7 @@ class UnitcellDftResultsTest(PymatgenTest):
         tmp_file = tempfile.NamedTemporaryFile()
         self.mgo_unitcell.to_json_file(tmp_file.name)
         unitcell_from_json = UnitcellCalcResults.load_json(tmp_file.name)
-        self.assertEqual(unitcell_from_json.as_dict(),
+        self.assertEqual(unitcell_from_json.as_dict,
                          self.mgo_unitcell.as_dict())
 
     def test_print(self):

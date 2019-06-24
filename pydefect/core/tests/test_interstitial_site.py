@@ -35,7 +35,7 @@ class InterstitialSiteTest(PymatgenTest):
     def test_dict(self):
         d = self.i.as_dict()
         from_dict = InterstitialSite.from_dict(d)
-        self.assertTrue(d == from_dict.as_dict())
+        self.assertTrue(d == from_dict.as_dict)
 
 
 class InterstitialSiteSetTest(PymatgenTest):
@@ -104,7 +104,7 @@ class InterstitialSiteSetTest(PymatgenTest):
 
     def test_from_files(self):
         actual = InterstitialSiteSet.from_files(
-            structure="BPOSCAR-MgO", filename="interstitials.yaml").as_dict()
+            structure="BPOSCAR-MgO", filename="interstitials.yaml").as_dict
         expected = self.interstitial_site_set.as_dict()
         self.assertEqual(actual, expected)
 
