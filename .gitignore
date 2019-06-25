@@ -16,4 +16,3 @@ test
 
 # huge test results
 test_files/input_maker/MgO*
-sphinx/build/html/
