@@ -310,7 +310,7 @@ class DefectEnergies(MSONable):
 
         for name, energy_by_charge in self.defect_energies.items():
             for charge, energy_by_annotation in copy(energy_by_charge).items():
-                for annotation, defect_energy in energy_by_annotation.items():
+                for annotation, defect_energy in copy(energy_by_annotation).items():
 
                     n = DefectName(name, charge, annotation)
                     is_shallow = defect_energy.is_shallow
@@ -327,10 +327,12 @@ class DefectEnergies(MSONable):
                     energy_by_annotation.pop(annotation)
 
                 # Store lowest energy and its annotation wrt name and charge.
-                annotation, min_defect_energy = \
-                    min(energy_by_annotation.items(), key=lambda z: z[1].energy)
-                lowest_energies[name][charge] = min_defect_energy.energy
-                lowest_energy_annotations[name][charge] = annotation
+                if energy_by_annotation:
+                    annotation, min_defect_energy = \
+                        min(energy_by_annotation.items(),
+                            key=lambda z: z[1].energy)
+                    lowest_energies[name][charge] = min_defect_energy.energy
+                    lowest_energy_annotations[name][charge] = annotation
 
             # Store cross point coord and its relevant two charge states.
             cross_points_with_charges = []
@@ -374,7 +376,7 @@ class DefectEnergies(MSONable):
             y_min, y_max = min([y, y_min]), max([y, y_max])
             # Unfilled and filled circles for shallow and transition levels
             if max(charge_set) < 0:
-                ax.plot(x_max, y, marker="o", mec="black", mfc="white")
+                ax.plot(x_min, y, marker="o", mec="black", mfc="white")
 
             # Add points between x_min and x_max
             for cp, charges in zip(tl.cross_points, tl.charges):
@@ -468,7 +470,7 @@ class DefectEnergies(MSONable):
                         (supercell_cbm, y_min * 0.9 + y_max * 0.1), fontsize=10)
 
         plt.axhline(y=0, linewidth=1.0, linestyle='dashed')
-        ax.legend()
+        ax.legend(bbox_to_anchor=(1.01, 1), loc='upper left', borderaxespad=0.)
         #        fig.subplots_adjust(right=0.75)
 
         return plt
