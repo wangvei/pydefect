@@ -3,6 +3,12 @@
 import os
 import unittest
 
+from pydefect.analysis.defect_structure import DefectStructure
+from pydefect.corrections.corrections import ExtendedFnvCorrection
+from pydefect.core.supercell_calc_results import SupercellCalcResults
+from pydefect.core.defect_entry import DefectEntry
+from pydefect.analysis.defect import Defect
+
 __author__ = "Yu Kumagai"
 __maintainer__ = "Yu Kumagai"
 
@@ -10,57 +16,48 @@ test_dir = os.path.join(os.path.dirname(__file__), "..", "..", "..",
                         "test_files", "core")
 
 
-# class DefectStructureTest(unittest.TestCase):
+class DefectStructureTest(unittest.TestCase):
 
-    # def setUp(self):
-    #     """ """
-    #     unitcell_file = os.path.join(test_dir, "MgO/defects/unitcell.json")
-    #     unitcell = UnitcellCalcResults.load_json(unitcell_file)
-    #     perfect_file = os.path.join(test_dir,
-    #                                 "MgO/defects/perfect/dft_results.json")
-    #     perfect = SupercellCalcResults.load_json(perfect_file)
+    def setUp(self):
+        """ """
+        d = os.path.join(test_dir, "MgO/defects", "Va_O1_0")
+        defect_entry = \
+            DefectEntry.load_json(os.path.join(d, "defect_entry.json"))
+        dft_results = \
+            SupercellCalcResults.load_json(
+                os.path.join(d, "dft_results.json"))
+        correction = \
+            ExtendedFnvCorrection.load_json(os.path.join(d, "correction.json"))
 
-        # # defect_dirs = ["Va_O1_1", "Va_O1_2", "Va_O1_0"]
-        # defect_dirs = ["Mg_O1_0", "Mg_O1_1", "Mg_O1_2", "Mg_O1_3", "Mg_O1_4",
-        #                "Mg_i1_0", "Mg_i1_1", "Mg_i1_2", "Va_O1_1", "Va_O1_2",
-        #                "Va_O1_0"]
-        # defects = []
-        # for dd in defect_dirs:
-        #     d = os.path.join(test_dir, "MgO/defects", dd)
-        #     defect_entry = \
-        #         DefectEntry.load_json(os.path.join(d, "defect_entry.json"))
-        #     dft_results = \
-        #         SupercellCalcResults.load_json(
-        #             os.path.join(d, "dft_results.json"))
-        #     correction = \
-        #         ExtendedFnvCorrection.load_json(os.path.join(d, "correction.json"))
+        self.va_o_0 = DefectStructure.from_defect(
+            Defect(defect_entry=defect_entry,
+                   dft_results=dft_results,
+                   correction=correction))
 
-            # defect = Defect(defect_entry=defect_entry,
-            #                 dft_results=dft_results,
-            #                 correction=correction)
+        d = os.path.join(test_dir, "MgO/defects", "Va_O1_2")
+        defect_entry = \
+            DefectEntry.load_json(os.path.join(d, "defect_entry.json"))
+        dft_results = \
+            SupercellCalcResults.load_json(
+                os.path.join(d, "dft_results.json"))
+        correction = \
+            ExtendedFnvCorrection.load_json(os.path.join(d, "correction.json"))
 
-            # defects.append(defect)
+        self.va_o_2 = DefectStructure.from_defect(
+            Defect(defect_entry=defect_entry,
+                   dft_results=dft_results,
+                   correction=correction))
 
-        # # temporary insert values
-        # chem_pot = ChemPotDiag.load_vertices_yaml(
-        #     os.path.join(test_dir, "MgO/vertices_MgO.yaml"))
+#    def test(self):
+#        print(self.va_o_0.initial_local_structure)
+#        print(self.va_o_2.show_displacements)
 
-        # chem_pot_label = "A"
+    def test2(self):
+        s = self.va_o_2.final_local_structure
+        print(s)
+        print(self.va_o_0.final_local_structure)
+        print(self.va_o_0.comparator(defect_local_structure=s))
 
-#         self.defect_energies = DefectEnergies(unitcell=unitcell,
-#                                               perfect=perfect,
-#                                               defects=defects,
-#                                               chem_pot=chem_pot,
-#                                               chem_pot_label=chem_pot_label,
-#                                               system_name="MgO")
-# #        filtering_words=["Va_O"],
-
-    # def test_energies(self):
-    #     print(self.defect_energies._defect_energies)
-    #     print(self.defect_energies.vbm)
-    #     print(self.defect_energies.cbm)
-    #     print(self.defect_energies.band_gap)
 
 if __name__ == "__main__":
     unittest.main()
-

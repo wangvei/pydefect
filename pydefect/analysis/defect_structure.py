@@ -1,8 +1,17 @@
 # -*- coding: utf-8 -*-
 
+from copy import deepcopy
 from monty.json import MSONable
 
 from pymatgen.core.structure import Structure
+
+from pydefect.analysis.defect import Defect
+from pydefect.util.logger import get_logger
+
+__author__ = "Yu Kumagai"
+__maintainer__ = "Yu Kumagai"
+
+logger = get_logger(__name__)
 
 
 def get_neighbors_with_distance(structure, coords, neighbor_tolerance=1.1,
@@ -18,7 +27,6 @@ def get_neighbors_with_distance(structure, coords, neighbor_tolerance=1.1,
     Returns:
         (list of (Site, displacement_distance))
     """
-
     # conversion to Cartesian
     if is_frac:
         cart_coords = structure.lattice.get_cartesian_coords(coords)
@@ -69,9 +77,8 @@ def get_neighbors(structure, coords, neighbor_tolerance,
 
 
 class DefectStructure(MSONable):
-    """
-    A class related to eigenvalues in a defect calculation.
-    """
+    """ A class related to local structures around defect """
+
     def __init__(self,
                  name: str,
                  volume: float,
@@ -81,10 +88,7 @@ class DefectStructure(MSONable):
                  displacements: list,
                  initial_site_symmetry: str,
                  final_site_symmetry: str,
-                 initial_symmetry_multiplicity: int,
-                 final_symmetry_multiplicity: int,
-                 perturbed_sites: list,
-                 num_equiv_sites: int):
+                 perturbed_sites: list):
         """
         Args:
             name (str):
@@ -103,28 +107,76 @@ class DefectStructure(MSONable):
                 Initial site symmetry such as D4h.
             final_site_symmetry (str):
                 Final site symmetry.
-            initial_symmetry_multiplicity (int):
-                Symmetry multiplicity in the initial structure.
-            initial_symmetry_multiplicity (int):
-                Symmetry multiplicity in the final structure.
             perturbed_sites (list):
                 Indices of the perturbed site for reducing the symmetry
-            num_equiv_sites (int):
-                Number of equivalent sites in the given supercell.
 
         """
         self.name = name
         self.volume = volume
-        self.initial_structure = initial_structure
-        self.perturbed_initial_structure = perturbed_initial_structure
-        self.final_structure = final_structure
+
+        self.initial_structure = deepcopy(initial_structure)
+        self.perturbed_initial_structure = deepcopy(perturbed_initial_structure)
+        self.final_structure = deepcopy(final_structure)
+
         self.initial_site_symmetry = initial_site_symmetry
         self.final_site_symmetry = final_site_symmetry
+
         self.displacements = displacements
-        self.initial_symmetry_multiplicity = initial_symmetry_multiplicity
-        self.final_symmetry_multiplicity = final_symmetry_multiplicity
+
         self.perturbed_sites = perturbed_sites
-        self.num_equiv_sites = num_equiv_sites
 
+        removed_sites = []
+        for i in range(len(self.final_structure)):
+            if i not in self.perturbed_sites:
+                removed_sites.append(i)
 
+        self.initial_local_structure = deepcopy(initial_structure)
+        self.initial_local_structure.remove_sites(removed_sites)
+        self.final_local_structure = deepcopy(final_structure)
+        self.final_local_structure.remove_sites(removed_sites)
 
+    @classmethod
+    def from_defect(cls, defect: Defect):
+        """ Construct class obj from Defect object.
+
+        Args:
+            defect (Defect):
+                namedtuple("Defect",
+                           "defect_entry", "dft_results", "correction")
+        """
+
+        return cls(name=defect.defect_entry.name,
+                   volume=defect.dft_results.volume,
+                   initial_structure=defect.defect_entry.initial_structure,
+                   perturbed_initial_structure=
+                   defect.defect_entry.perturbed_initial_structure,
+                   final_structure=defect.dft_results.final_structure,
+                   initial_site_symmetry=
+                   defect.defect_entry.initial_site_symmetry,
+                   final_site_symmetry=defect.dft_results.site_symmetry,
+                   displacements=defect.dft_results.displacements,
+                   perturbed_sites=defect.defect_entry.neighboring_sites)
+
+    def __repr__(self):
+        outs = ["DefectStructure Summary"]
+        return " ".join(outs)
+
+    @property
+    def show_displacements(self):
+        lines = ["initial   final   disp  angle"]
+        lines.append("dist(A)  dist(A)  dist  (deg)")
+        for s in self.perturbed_sites:
+            lines.append("  {:3.2f}     {:3.2f}   {:4.2f}  {:5.1f}".format(
+                round(self.displacements[0][s], 3),
+                round(self.displacements[1][s], 3),
+                round(self.displacements[3][s], 3),
+                round(self.displacements[4][s], 3)))
+        return "\n".join(lines)
+
+    def comparator(self,
+                   defect_local_structure: Structure,
+                   ltol: float,
+                   stol: float):
+        return self.final_local_structure.matches(
+            other=defect_local_structure, ltol=ltol, stol=stol,
+            primitive_cell=False, scale=False)
