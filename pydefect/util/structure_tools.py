@@ -28,25 +28,6 @@ __maintainer__ = "Yu Kumagai"
 logger = get_logger(__name__)
 
 
-class ModSpacegroupAnalyzer(SpacegroupAnalyzer):
-    def get_anchored_refined_structure(self, index):
-        """
-        Get the refined structure based on detected symmetry. The refined
-        structure is a *conventional* cell setting with atoms moved to the
-        expected symmetry positions.
-
-        Returns:
-            Refined structure.
-        """
-        # Atomic positions have to be specified by scaled positions for spglib.
-        lattice, scaled_positions, numbers \
-            = spglib.refine_cell(self._cell, self._symprec, self._angle_tol)
-
-        species = [self._unique_species[i - 1] for i in numbers]
-        s = Structure(lattice, species, scaled_positions)
-        return s.get_sorted_structure(), numbers
-
-
 def perturb_neighboring_atoms(structure: Structure,
                               center: List[float],
                               cutoff: float,
@@ -607,3 +588,22 @@ class ModSpacegroupAnalyzer(SpacegroupAnalyzer):
         s = Structure(lattice, species, scaled_positions)
 
         return s.get_sorted_structure() if is_sorted else s
+
+    def get_anchored_refined_structure(self, index):
+        """
+        Get the refined structure based on detected symmetry. The refined
+        structure is a *conventional* cell setting with atoms moved to the
+        expected symmetry positions.
+
+        Returns:
+            Refined structure.
+        """
+        # Atomic positions have to be specified by scaled positions for spglib.
+        lattice, scaled_positions, numbers \
+            = spglib.refine_cell(self._cell, self._symprec, self._angle_tol)
+
+        species = [self._unique_species[i - 1] for i in numbers]
+        s = Structure(lattice, species, scaled_positions)
+        return s.get_sorted_structure(), numbers
+
+

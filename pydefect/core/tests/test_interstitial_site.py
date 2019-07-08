@@ -5,10 +5,11 @@ from collections import OrderedDict
 from pymatgen.util.testing import PymatgenTest
 from pymatgen.core.structure import Structure
 
-from pydefect.core.interstitial_site import InterstitialSiteSet, InterstitialSite
+from pydefect.core.interstitial_site import InterstitialSiteSet, \
+    InterstitialSite
 
-# __author__ = "Yu Kumagai"
-# __maintainer__ = "Yu Kumagai"
+__author__ = "Yu Kumagai"
+__maintainer__ = "Yu Kumagai"
 
 test_dir = os.path.join(os.path.dirname(__file__), "..", "..", "..",
                         "test_files", "input_maker")
