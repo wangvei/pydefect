@@ -7,14 +7,14 @@
 
 # -- Project information -----------------------------------------------------
 
-project = 'Sphinx-Themes template'
-copyright = '2018, sphinx-themes.org'
-author = 'sphinx-themes.org'
+project = 'pydefect'
+copyright = '2019, Yu Kumagai'
+author = 'Yu Kumagai'
 
 # The short X.Y version
-version = ''
+version = '0.0.1'
 # The full version, including alpha/beta/rc tags
-release = '1'
+release = 'beta'
 
 
 # -- General configuration ---------------------------------------------------
