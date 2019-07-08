@@ -292,5 +292,5 @@ class DefectEigenvalue(MSONable):
         with open(filename, 'w') as fw:
             json.dump(self.as_dict(), fw, indent=2, cls=MontyEncoder)
 
-    def __str__(self):
+    def __repr__(self):
         pass

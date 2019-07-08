@@ -43,6 +43,9 @@ class BandEdges(Enum):
     localized_state = "Localized state"
     no_in_gap = "No in-gap state"
 
+    def __repr__(self):
+        return self.value
+
     def __str__(self):
         return self.value
 
@@ -60,10 +63,7 @@ class BandEdges(Enum):
 
     @property
     def is_shallow(self):
-        if self in [BandEdges.acceptor_phs, BandEdges.donor_phs]:
-            return True
-        else:
-            return False
+        return self in [BandEdges.acceptor_phs, BandEdges.donor_phs]
 
 
 class SupercellCalcResults(MSONable):
@@ -159,7 +159,7 @@ class SupercellCalcResults(MSONable):
         self.participation_ratio = participation_ratio
         self.orbital_character = orbital_character
 
-    def __str__(self):
+    def __repr__(self):
         outs = ["total energy (eV): " + str(self.total_energy),
                 "total total_magnetization (mu_B): " +
                 str(self.total_magnetization),

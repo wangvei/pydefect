@@ -193,7 +193,7 @@ class DefectEnergies(MSONable):
     def load_json(cls, filename):
         return loadfn(filename)
 
-    def __str__(self):
+    def _repr__(self):
         outs = []
         for n in self.defect_energies.keys():
             for c in self.defect_energies[n].keys():

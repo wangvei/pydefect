@@ -56,7 +56,7 @@ class InterstitialSite(MSONable):
         self.coordination_distances = coordination_distances
         self.method = method
 
-    def __str__(self):
+    def _repr__(self):
         outs = ["representative_coords: " + str(self.representative_coords),
                 "wyckoff: " + self.wyckoff,
                 "site_symmetry: " + self.site_symmetry,
@@ -204,7 +204,7 @@ class InterstitialSiteSet(MSONable):
                     specie = n[0].frac_coords
                 distance = n[1]
                 message = "Inserted position is too close to {}.\n " \
-                          "The distance is {:5.3f}".format(specie, distance)
+                          "The distance is {:5.3f} A.".format(specie, distance)
                 if force_add:
                     logger.warning(message)
                 else:

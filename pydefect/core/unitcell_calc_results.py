@@ -79,7 +79,7 @@ class UnitcellCalcResults(MSONable):
         self._volume = volume
         self.is_direct = is_direct
 
-    def __str__(self):
+    def __repr__(self):
 
         def xstr(s):
             return 'None' if s is None else str(s)

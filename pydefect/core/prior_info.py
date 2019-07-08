@@ -43,7 +43,7 @@ class PriorInfo(MSONable):
         self.mag_threshold = mag_threshold
         self.band_gap_threshold = band_gap_threshold
 
-    def __str__(self):
+    def __repr__(self):
         outs = ["energy_per_atom: " + str(self.energy_per_atom),
                 "band gap: " + str(self.band_gap),
                 "total magnetization: " + str(self.total_magnetization),

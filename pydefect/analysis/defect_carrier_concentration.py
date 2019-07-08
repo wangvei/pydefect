@@ -298,7 +298,7 @@ class DefectConcentration:
 
         # return cls(energies, temperature, e_f, p, n, previous_concentration, c)
 
-    def __str__(self):
+    def _repr__(self):
         outs = ["--------",
                 "Temperature: {} K.".format(self.temperature),
                 "Fermi level: {} eV.".format(self.e_f),
@@ -346,7 +346,7 @@ class CarrierConcentration:
     def hole_concentration(self):
         return self.ps
 
-    # def __str__(self):
+    # def __repr__(self):
     #     outs = ["Temperature [K]: " + str(self.temperatures),
     #             "E_f [eV],  n [cm-3],  p [cm-3]"]
     #     for a, b, c in zip(self.fermi_levels, self.ns, self.ps):

@@ -84,7 +84,7 @@ class DefectEntry(MSONable):
         self.annotation = annotation
         self.num_equiv_sites = num_equiv_sites
 
-    def __str__(self):
+    def __repr__(self):
         annotation = "" if self.annotation is None else self.annotation
 
         outs = ["name: " + str(self.name),
@@ -99,6 +99,9 @@ class DefectEntry(MSONable):
                 "neighboring_sites: " + str(self.neighboring_sites),
                 "num_equiv_sites: " + str(self.num_equiv_sites)]
         return "\n".join(outs)
+
+    def __str__(self):
+        return self.__repr__()
 
     @classmethod
     def from_dict(cls, d: dict):
