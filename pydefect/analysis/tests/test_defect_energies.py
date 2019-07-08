@@ -57,12 +57,12 @@ class DefectEnergiesTest(unittest.TestCase):
         chem_pot_label = "A"
 
         self.defect_energies = \
-            DefectEnergies.from_files(unitcell=unitcell,
-                                      perfect=perfect,
-                                      defects=defects,
-                                      chem_pot=chem_pot,
-                                      chem_pot_label=chem_pot_label,
-                                      system="MgO")
+            DefectEnergies.from_objects(unitcell=unitcell,
+                                        perfect=perfect,
+                                        defects=defects,
+                                        chem_pot=chem_pot,
+                                        chem_pot_label=chem_pot_label,
+                                        system="MgO")
 
     def test_print(self):
         print(self.defect_energies)

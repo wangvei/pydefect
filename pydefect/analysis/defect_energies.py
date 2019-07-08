@@ -81,13 +81,13 @@ class DefectEnergies(MSONable):
         self.title = title
 
     @classmethod
-    def from_files(cls,
-                   unitcell: UnitcellCalcResults,
-                   perfect: SupercellCalcResults,
-                   defects: List[Defect],
-                   chem_pot: ChemPotDiag,
-                   chem_pot_label: str,
-                   system: str = ""):
+    def from_objects(cls,
+                     unitcell: UnitcellCalcResults,
+                     perfect: SupercellCalcResults,
+                     defects: List[Defect],
+                     chem_pot: ChemPotDiag,
+                     chem_pot_label: str,
+                     system: str = ""):
         """ Calculates defect formation energies from several objects.
 
         Note that all the energies are calculated at 0 eV in the absolute scale.
@@ -404,7 +404,7 @@ class DefectEnergies(MSONable):
             line.set_label(name)
 
             # margin_x and _y determine the positions of the transition levels.
-            margin_x = (x_max - x_min) * 0.025
+            margin_x = (x_max - x_min) * 0.015
             margin_y = (y_max - y_min) * 0.05
 
             if show_transition_levels:
@@ -412,9 +412,9 @@ class DefectEnergies(MSONable):
                     if x_min + 1e-4 < cp[0] < x_max - 1e-4 is False:
                         continue
                     s = str(round(cp[0], 2)) + ", " + str(round(cp[1], 2))
-                    pos_x = cp[0] + margin_x
-                    pos_y = cp[1] - 1.8 * margin_y
-                    ax.annotate(s, (pos_x, pos_y), color=color[i], fontsize=10)
+                    pos_x = cp[0]
+                    pos_y = cp[1] - margin_y
+                    ax.annotate(s, (pos_x, pos_y), color=color[i], fontsize=12)
 
             # Arrange the charge states at the middle of the transition levels.
             charge_pos = [[(a[0] + b[0]) / 2, (a[1] + b[1]) / 2 + margin_y]
