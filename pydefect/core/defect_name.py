@@ -52,7 +52,7 @@ class DefectName(MSONable):
         except TypeError:
             print("The type of keywords {} is invalid.".format(keywords))
 
-        return any([re.search(p, self.__str__()) for p in keywords])
+        return any([re.search(p, str(self)) for p in keywords])
 
     def __str__(self):
         if self.annotation:
@@ -60,12 +60,21 @@ class DefectName(MSONable):
         else:
             return "_".join([self.name_str, str(self.charge)])
 
+    def __repr__(self):
+        annotation = "None" if self.annotation is None else self.annotation
+
+        outs = ["DefectName Summary",
+                "Name: " + self.name_str,
+                "Charge: " + str(self.charge),
+                "Annotation" + annotation]
+        return "\n".join(outs)
+
     def __eq__(self, other):
         # Note: charge is not compared
         if isinstance(other, str):
-            return True if self.__str__() == other else False
+            return True if self.__repr__() == other else False
         elif isinstance(other, DefectName):
-            return True if self.__str__() == other.__str__() else False
+            return True if self.__repr__() == other.__repr__() else False
         else:
             raise TypeError(
                 "{} is not supported for comparison.".format(type(other)))
@@ -87,6 +96,18 @@ class SimpleDefectName(DefectName):
         self.in_atom = in_atom
         self.out_site = out_site
         super().__init__(self.name_str, charge, annotation)
+
+    def __repr__(self):
+        removed_atom = "None" if self.out_site[0] == "i" else self.out_site
+        annotation = "None" if self.annotation is None else self.annotation
+
+        outs = ["SimpleDefectName Summary",
+                "Name: " + self.name_str,
+                "Inserted atom: " + str(self.in_atom),
+                "Removed atom: " + removed_atom,
+                "Charge: " + str(self.charge),
+                "Annotation" + annotation]
+        return "\n".join(outs)
 
     @property
     def name_str(self):
