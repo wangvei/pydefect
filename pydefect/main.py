@@ -22,6 +22,7 @@ from obadb.vasp.incar import incar_flags
 from pydefect.analysis.defect_energies import DefectEnergies
 from pydefect.analysis.defect import Defect
 from pydefect.analysis.defect_eigenvalues import DefectEigenvalue
+from pydefect.analysis.defect_structure import DefectStructure
 from pydefect.core.defect_entry import DefectEntry
 from pydefect.core.interstitial_site import InterstitialSiteSet
 from pydefect.core.prior_info import PriorInfo
@@ -617,8 +618,41 @@ def main():
 
     parser_vasp_parchg_set.set_defaults(func=vasp_parchg_set)
 
+    # -- local_structure -------------------------------------------------------
+    parser_local_structure = subparsers.add_parser(
+        name="local_structure",
+        description="Tools for analyzing local structure",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+        aliases=['ls'])
+
+    parser_local_structure.add_argument(
+        "--de", dest="defect_entry", type=str, default="defect_entry.json")
+    parser_local_structure.add_argument(
+        "--dft_results", dest="dft_results", type=str,
+        default="dft_results.json")
+    parser_local_structure.add_argument(
+        "--correction", dest="correction", type=str, default="correction.json")
+    parser_local_structure.add_argument(
+        "--defect_dir", dest="defect_dir", type=str,
+        help="Directory name for the defect supercell result. "
+             "defect_entry.json, dft_results.json, and correction.json files "
+             "are required in the directory.")
+
+    parser_local_structure.set_defaults(func=local_structure)
+
     args = parser.parse_args()
     args.func(args)
+
+
+def generate_objects(directory, files, classes):
+    objects = []
+    for f, c in zip(files, classes):
+        try:
+            objects.append(c.load_json(join(directory, f)))
+        except IOError:
+            logger.warning("Parsing {} in {} failed.".format(f, directory))
+            return False
+    return objects
 
 
 def recommend_supercell(args):
@@ -990,13 +1024,14 @@ def vasp_set(args):
         logger.info("Constructing vasp set in {}".format(d))
         user_incar_settings = deepcopy(base_user_incar_settings)
         kwargs = deepcopy(base_kwargs)
+        print(d)
 
         if args.prior_info:
             if os.path.exists("prior_info.json"):
                 prior_info = PriorInfo.load_json("prior_info.json")
-                kwargs["band_gap"] = prior_info.band_gap
-                kwargs["is_magnetic"] = prior_info.is_magnetic
-                kwargs["is_cluster"] = prior_info.is_cluster
+                kwargs["band_gap"] = prior_info["band_gap"]
+                kwargs["is_magnetization"] = True \
+                    if abs(prior_info["total_magnetization"]) > 0.1 else False
 
         if args.prev_dir:
             files = {"CHGCAR": "C", "WAVECAR": "L", "WAVEDER": "M"}
@@ -1027,8 +1062,11 @@ def diagnose(args):
     defects_dirs = args.defect_dirs if args.defect_dirs else glob('*[0-9]/')
     for d in defects_dirs:
         print(d.rjust(12), end="  ")
-        dft_results = SupercellCalcResults.load_json(join(d, args.json))
-        print(dft_results.diagnose)
+        try:
+            dft_results = SupercellCalcResults.load_json(join(d, args.json))
+            print(dft_results.diagnose)
+        except FileNotFoundError:
+            print("No supercell results file.")
 
 
 def plot_energy(args):
@@ -1040,30 +1078,29 @@ def plot_energy(args):
     defects = []
     for d in defects_dirs:
         logger.info("parsing directory {}...".format(d))
-        input_objects = []
         files = [args.defect_entry, args.dft_results, args.correction]
         classes = [DefectEntry, SupercellCalcResults, ExtendedFnvCorrection]
-        for f, c in zip(files, classes):
-            try:
-                input_objects.append(c.load_json(join(d, f)))
-            except IOError:
-                logger.warning("Parsing {} in {} failed.".format(f, d))
-                continue
 
-        defects.append(Defect(defect_entry=input_objects[0],
-                              dft_results=input_objects[1],
-                              correction=input_objects[2]))
+        input_objects = generate_objects(d, files, classes)
+
+        if input_objects:
+            defects.append(Defect(defect_entry=input_objects[0],
+                                  dft_results=input_objects[1],
+                                  correction=input_objects[2]))
+        else:
+            logger.warning("Parsing {} skipped.".format(d))
+            continue
 
     chem_pot = ChemPotDiag.load_vertices_yaml(args.chem_pot_yaml)
 
     # First construct DefectEnergies class object.
     defect_energies = \
-        DefectEnergies.from_files(unitcell=unitcell,
-                                  perfect=perfect,
-                                  defects=defects,
-                                  chem_pot=chem_pot,
-                                  chem_pot_label=args.chem_pot_label,
-                                  system=args.name)
+        DefectEnergies.from_objects(unitcell=unitcell,
+                                    perfect=perfect,
+                                    defects=defects,
+                                    chem_pot=chem_pot,
+                                    chem_pot_label=args.chem_pot_label,
+                                    system=args.name)
 
     # if args.concentration:
     #     defect_concentration = \
@@ -1098,18 +1135,10 @@ def parse_eigenvalues(args):
     unitcell = UnitcellCalcResults.load_json(args.unitcell)
     perfect = SupercellCalcResults.load_json(args.perfect)
 
-    d = args.defect_dir
-    logger.info("parsing directory {}...".format(d))
-    input_objects = []
+    logger.info("parsing directory {}...".format(args.defect_dir))
     files = [args.defect_entry, args.dft_results, args.correction]
     classes = [DefectEntry, SupercellCalcResults, ExtendedFnvCorrection]
-    for f, c in zip(files, classes):
-        try:
-            input_objects.append(c.load_json(join(d, f)))
-        except IOError:
-            logger.warning("Parsing {} in {} failed.".format(f, d))
-            continue
-
+    input_objects = generate_objects(args.defect_dir, files, classes)
     defect = Defect(defect_entry=input_objects[0],
                     dft_results=input_objects[1],
                     correction=input_objects[2])
@@ -1126,6 +1155,7 @@ def parse_eigenvalues(args):
 def vasp_parchg_set(args):
     user_incar_settings = {"LPARD": True, "LSEPB": True, "KPAR": 1,
                            "IBAND": args.band_indices}
+
     if args.kpoint_indices:
         user_incar_settings["KPUSE"] = args.kpoint_indices
     oba_set = ObaSet.from_prev_calc(dirname=args.read_dir,
@@ -1139,6 +1169,19 @@ def vasp_parchg_set(args):
                                     copied_file_names={"WAVECAR": "L"},
                                     user_incar_settings=user_incar_settings)
     oba_set.write_input(args.write_dir)
+
+
+def local_structure(args):
+    logger.info("parsing directory {}...".format(args.defect_dir))
+    files = [args.defect_entry, args.dft_results, args.correction]
+    classes = [DefectEntry, SupercellCalcResults, ExtendedFnvCorrection]
+    input_objects = generate_objects(args.defect_dir, files, classes)
+    if input_objects:
+        defect = Defect(defect_entry=input_objects[0],
+                        dft_results=input_objects[1],
+                        correction=input_objects[2])
+        defect_structure = DefectStructure.from_defect(defect)
+        print(defect_structure.show_displacements)
 
 
 if __name__ == "__main__":
