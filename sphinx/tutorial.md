@@ -122,8 +122,56 @@ With this command, one can
 
 
 ### 7. Decision of interstitial sites
+After constructing an input for standard defect set, one may want to add the interstitial-type defects.
+For this purpose, we need to determine the interstitial sites.
+Most people determine the interstitial sites by seeing the host crystal structures.
+On the contrary, there are a couple of procedures that recommend the interstitial sites.
+Still, it is difficult to predict the most likely interstitial sites because they strongly depend on the substituted atoms.
+For instance, when positively charged cations with closed shells are substituted (e.g., Mg2+, Al3+), 
+the interstitial sites with the largest vacant space should be most likely. 
+On the other hand, when a proton (H+) is inserted, it should prefer to locate near O2- or N3- to form the strong O-H or N-H bonding.
+Therefore, we need to be careful when determining the interstitial sites.
+
+To add the interstitial site, e.g., 0.375 0.375 0.375, we type
+```
+python ~/my_bin/pydefect/pydefect/main.py i -c 0.375 0.375 0.375
+```
+The interstitials.yaml is then generated, which show various information related to the interstitial sites.
+```
+i1:
+  representative_coords: [0.375, 0.375, 0.375]
+  wyckoff: a
+  site_symmetry: -43m
+  symmetry_multiplicity: 64
+  coordination_distances:
+    Mg: [1.84, 1.84, 1.84, 1.84]
+    O: [1.84, 1.84, 1.84, 1.84, 3.52, 3.52, 3.52, 3.52, 3.52, 3.52, 3.52, 3.52, 3.52,
+      3.52, 3.52, 3.52]
+  method: manual
+```
+
+If you try to add the site that is very close to the constituent atoms or other interstitial sites,
+you will get the error message as 
+
+```
+Inserted position is too close to another interstitial site.
+The distance is 0.042 A.
+```
+If you really want to add the site even in such cases, add --force_add option.
+
+Once you generate the interstitial.yaml, you also need to modify the defect.in file.
+When you modify it, add the following line to the defect.in.
+```
+Interstitials: i1
+```
+Or you can again type as follows again.
+```
+python ~/my_bin/pydefect/pydefect/main.py is --interstitial_sites i1
+```
 
 ### 8. Construction of defect calculation directories
+
+
 
 ### 9. Generation of supercell information
 
