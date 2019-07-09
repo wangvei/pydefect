@@ -33,46 +33,57 @@
   <div class="section" id="simple-tutorial-of-pydefect">
 <h1>Simple tutorial of pydefect<a class="headerlink" href="#simple-tutorial-of-pydefect" title="Permalink to this headline">¶</a></h1>
 <hr class="docutils" />
-<p>Point-defect calculations are bit complicated and performed following the flow shown below.</p>
-<!--
-![flow](flowchart.png)
---><p>Here, we suppose the following directory tree.</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>&lt;project_name&gt;
- │
- ├ unitcell/ ── structure_opt/
- │            ├ band/
- │            └ dos/
- │            
- ├ competing_phases/ ── &lt;competing_phase 1&gt;
- │                    ├ &lt;competing_phase 2&gt;
- │                    ....
- │  
- └ defects/ ── perfect/  
-             ├ Va_X_0/
-             ├ Va_X_1/
-             ├ Va_X_2/
-             ...
+<p>This web page illustrates how to use the PyDefect code.</p>
+<p>Usually, point-defect calculations are complicated following the flow below.</p>
+<p><img alt="_images/flowchart.png" src="_images/flowchart.png" /></p>
+<p>As shown, some tasks are performed concurrently.</p>
+<p>Here, we suppose the following directory tree.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>    &lt;project_name&gt;
+     │
+     ├ unitcell/ ── structure_opt/
+     │            ├ band/
+     │            └ dos/
+     │            
+     ├ competing_phases/ ── &lt;competing_phase 1&gt;
+     │                    ├ &lt;competing_phase 2&gt;
+     │                    ....
+     │  
+     └ defects/ ── perfect/  
+                 ├ Va_X_0/
+                 ├ Va_X_1/
+                 ├ Va_X_2/
+                 ...
 </pre></div>
 </div>
+<p>Details of the process are examined step by step.</p>
 <div class="section" id="relaxation-of-unit-cell">
 <h2>1. Relaxation of unit cell<a class="headerlink" href="#relaxation-of-unit-cell" title="Permalink to this headline">¶</a></h2>
-<p>The point defect calculations need to be performed at a relaxed theoretical atomic structures.
-Therefore, one needs to fully relax the atomic position of the unit cell.
-PyDefect allows us to construct the vasp input file set, namely INCAR, POTCAR,
-KPOINTS, with rather simple command line tool.
-For instance, initial setting for structure optimization of the unit-cell with the PBEsol functional can be
-generated using the following command.</p>
+<p>The point defect calculations need to be generally performed at a fully relaxed theoretical structures,
+including both lattice constants and fractional coordinates of atomic positions.
+Therefore, one begins with fully relaxing the unit cell.</p>
+<p>First, we need to prepare the POSCAR file of the pristine bulk unitcell.
+And, create <code class="docutils literal notranslate"><span class="pre">unitcell/</span></code> directory and <code class="docutils literal notranslate"><span class="pre">structure_opt</span></code> subdirectory under <code class="docutils literal notranslate"><span class="pre">unitcell/</span></code> and move there.
+PyDefect can construct the vasp input sets, namely INCAR, POTCAR, KPOINTS, for various tasks related to the point-defect calculations with simple command line tools.
+For instance, vasp input set for structure optimization of the unitcell with the PBEsol functional can be generated using the following command.</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="o">~/</span><span class="n">my_bin</span><span class="o">/</span><span class="n">pydefect</span><span class="o">/</span><span class="n">pydefect</span><span class="o">/</span><span class="n">main</span><span class="o">.</span><span class="n">py</span> <span class="n">vos</span> <span class="o">-</span><span class="n">t</span> <span class="n">structure_opt</span> <span class="o">-</span><span class="n">x</span> <span class="n">pbesol</span>
 </pre></div>
 </div>
-<p>There are many options, so please refer the help of the sub command.</p>
+<p>vos, meaning an abbreviation for vasp_oba_set, is a subparse option.
+VaspObaSet is a program that create vasp input files, analyze and visualize vasp output files.
+It is written on the basis of <a class="reference external" href="http://pymatgen.org">pymatgen</a>, a robust, open-source Python library for materials analysis.
+Please also refer the document for VaspObaSet.</p>
+<p>There are many options, so please refer the help of the sub command by</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="o">~/</span><span class="n">my_bin</span><span class="o">/</span><span class="n">pydefect</span><span class="o">/</span><span class="n">pydefect</span><span class="o">/</span><span class="n">main</span><span class="o">.</span><span class="n">py</span> <span class="n">vos</span> <span class="o">-</span><span class="n">h</span>
+</pre></div>
+</div>
 </div>
 <div class="section" id="calculation-of-band-dos-and-dielectric-tensor">
 <h2>2. Calculation of band, DOS, and dielectric tensor<a class="headerlink" href="#calculation-of-band-dos-and-dielectric-tensor" title="Permalink to this headline">¶</a></h2>
-<p>We then calculate the electronic structure, namely band and density of states (DOS) plot, and dielectric constant.
+<p>We then calculate the electronic structure, namely band structure, density of states, and dielectric constant.
 In the defect calculations, we can determine the valence band maximum (VBM) and
-conduction band minimum (CBM) from the band and DOS.</p>
-<p>First, make band/, dos/ and dielectric and type the following commands, respectively.</p>
+conduction band minimum (CBM) from the band structure and DOS.</p>
+<p>First, make <code class="docutils literal notranslate"><span class="pre">band/</span></code>, <code class="docutils literal notranslate"><span class="pre">dos/</span></code> and <code class="docutils literal notranslate"><span class="pre">dielectric/</span></code> directories under <code class="docutils literal notranslate"><span class="pre">unitcell/</span></code>.
+And then move to each directory and type the following command, respectively.</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="o">~/</span><span class="n">my_bin</span><span class="o">/</span><span class="n">pydefect</span><span class="o">/</span><span class="n">pydefect</span><span class="o">/</span><span class="n">main</span><span class="o">.</span><span class="n">py</span> <span class="n">vos</span> <span class="o">-</span><span class="n">t</span> <span class="n">band</span> <span class="o">-</span><span class="n">x</span> <span class="n">pbesol</span>
 </pre></div>
 </div>
@@ -82,7 +93,7 @@ conduction band minimum (CBM) from the band and DOS.</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="o">~/</span><span class="n">my_bin</span><span class="o">/</span><span class="n">pydefect</span><span class="o">/</span><span class="n">pydefect</span><span class="o">/</span><span class="n">main</span><span class="o">.</span><span class="n">py</span> <span class="n">vos</span> <span class="o">-</span><span class="n">t</span> <span class="n">dielectric</span> <span class="o">-</span><span class="n">x</span> <span class="n">pbesol</span>
 </pre></div>
 </div>
-<p>After finishing the vasp calculations, run</p>
+<p>After finishing the vasp calculations, type</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="o">~/</span><span class="n">my_bin</span><span class="o">/</span><span class="n">phos_pbesol</span><span class="o">/</span><span class="n">obadb</span><span class="o">/</span><span class="n">obadb</span><span class="o">/</span><span class="n">analyzer</span><span class="o">/</span><span class="n">main</span><span class="o">.</span><span class="n">py</span> <span class="n">pb</span> <span class="o">-</span><span class="n">v</span> <span class="n">vasprun</span><span class="o">.</span><span class="n">xml</span> <span class="o">-</span><span class="n">k</span> <span class="n">KPOINTS</span> <span class="o">-</span><span class="n">f</span> <span class="n">band</span><span class="o">.</span><span class="n">pdf</span>
 </pre></div>
 </div>
@@ -91,28 +102,58 @@ conduction band minimum (CBM) from the band and DOS.</p>
 </pre></div>
 </div>
 <p>for making the plot of the band structure and DOS.</p>
+<p>Here, the band path is determined based upon the <a class="reference external" href="https://www.materialscloud.org/work/tools/seekpath">seekpath code</a>,
+so if one uses the plot, please cite the following paper.</p>
+<ul class="simple">
+<li><p><a class="reference external" href="https://www.sciencedirect.com/science/article/pii/S0927025616305110?via%3Dihub">Y. Hinuma, G. Pizzi, Y. Kumagai, F. Oba, I. Tanaka, Band structure diagram paths based on crystallography, Comp. Mat. Sci. 128, 140 (2017).</a>
+DOI: 10.1016/j.commatsci.2016.10.015 (the “HPKOT” paper; arXiv version: arXiv:1602.06402).</p></li>
+</ul>
 </div>
-<div class="section" id="collection-of-unitcell-information-related-to-point-defect-calculations">
-<h2>3. Collection of unitcell information related to point-defect calculations<a class="headerlink" href="#collection-of-unitcell-information-related-to-point-defect-calculations" title="Permalink to this headline">¶</a></h2>
-<p>At this point, we can collect the unitcell information related to point-defect calculations,
-namely electronic and ionic contributions to dielectric tensor, unitcell volume, unitcell DOS.</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="o">~/</span><span class="n">my_bin</span><span class="o">/</span><span class="n">pydefect</span><span class="o">/</span><span class="n">pydefect</span><span class="o">/</span><span class="n">main</span><span class="o">.</span><span class="n">py</span> <span class="n">ur</span> <span class="o">--</span><span class="n">static_diele_dir</span> <span class="n">dielectric</span> <span class="o">--</span><span class="n">ionic_diele_dir</span> <span class="n">dielectric</span> <span class="o">--</span><span class="n">band_edge_dir</span> <span class="n">band</span> <span class="o">--</span><span class="n">volume_dir</span> <span class="n">dielectric</span> <span class="o">--</span><span class="n">total_dos_dir</span> <span class="n">dos</span> <span class="o">--</span><span class="n">json_file</span> <span class="n">unitcell</span><span class="o">.</span><span class="n">json</span> <span class="o">-</span><span class="n">o</span> <span class="n">OUTCAR</span><span class="o">-</span><span class="n">finish</span> <span class="o">-</span><span class="n">p</span> <span class="n">POSCAR</span><span class="o">-</span><span class="n">finish</span> <span class="o">-</span><span class="n">v</span> <span class="n">repeat</span><span class="o">-</span><span class="mi">1</span><span class="o">/</span><span class="n">vasprun</span><span class="o">.</span><span class="n">xml</span>
+<div class="section" id="gathering-unitcell-information-related-to-point-defect-calculations">
+<h2>3. Gathering unitcell information related to point-defect calculations<a class="headerlink" href="#gathering-unitcell-information-related-to-point-defect-calculations" title="Permalink to this headline">¶</a></h2>
+<p>At this point, we can collect the unitcell information that is essential for analyzing point-defect calculations,
+namely band edges, electronic and ionic contributions to dielectric tensor, unitcell volume, and unitcell DOS,
+using the unitcell_results or ur subparse option.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="o">~/</span><span class="n">my_bin</span><span class="o">/</span><span class="n">pydefect</span><span class="o">/</span><span class="n">pydefect</span><span class="o">/</span><span class="n">main</span><span class="o">.</span><span class="n">py</span> <span class="n">ur</span> <span class="o">--</span><span class="n">static_diele_dir</span> <span class="n">dielectric</span> <span class="o">--</span><span class="n">ionic_diele_dir</span> <span class="n">dielectric</span> <span class="o">--</span><span class="n">band_edge_dir</span> <span class="n">band</span> <span class="o">--</span><span class="n">volume_dir</span> <span class="n">dielectric</span> <span class="o">--</span><span class="n">total_dos_dir</span> <span class="n">dos</span> <span class="o">--</span><span class="n">json_file</span> <span class="n">unitcell</span><span class="o">.</span><span class="n">json</span> <span class="o">-</span><span class="n">o</span> <span class="n">OUTCAR</span> <span class="o">-</span><span class="n">p</span> <span class="n">CONTCAR</span> <span class="o">-</span><span class="n">v</span> <span class="n">vasprun</span><span class="o">.</span><span class="n">xml</span>
+</pre></div>
+</div>
+<p>Then, unitcell.json is generated.
+One can see the information with the command.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="o">~/</span><span class="n">my_bin</span><span class="o">/</span><span class="n">pydefect</span><span class="o">/</span><span class="n">pydefect</span><span class="o">/</span><span class="n">main</span><span class="o">.</span><span class="n">py</span> <span class="n">ur</span> <span class="o">--</span><span class="nb">print</span>
+</pre></div>
+</div>
+<p>which shows as follows.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">vbm</span> <span class="p">(</span><span class="n">eV</span><span class="p">):</span> <span class="mf">3.4103</span>
+<span class="n">cbm</span> <span class="p">(</span><span class="n">eV</span><span class="p">):</span> <span class="mf">4.4278</span>
+<span class="n">static</span> <span class="n">dielectric</span> <span class="n">tensor</span><span class="p">:</span>
+<span class="p">[[</span> <span class="mf">4.680097</span> <span class="o">-</span><span class="mf">0.</span>       <span class="o">-</span><span class="mf">0.</span>      <span class="p">]</span>
+ <span class="p">[</span><span class="o">-</span><span class="mf">0.</span>        <span class="mf">4.680097</span>  <span class="mf">0.</span>      <span class="p">]</span>
+ <span class="p">[</span> <span class="mf">0.</span>       <span class="o">-</span><span class="mf">0.</span>        <span class="mf">4.680097</span><span class="p">]]</span>
+<span class="n">ionic</span> <span class="n">dielectric</span> <span class="n">tensor</span><span class="p">:</span>
+<span class="p">[[</span><span class="mf">14.953044</span> <span class="o">-</span><span class="mf">0.</span>        <span class="mf">0.</span>      <span class="p">]</span>
+ <span class="p">[</span><span class="o">-</span><span class="mf">0.</span>       <span class="mf">14.953065</span> <span class="o">-</span><span class="mf">0.</span>      <span class="p">]</span>
+ <span class="p">[</span> <span class="mf">0.</span>       <span class="o">-</span><span class="mf">0.</span>       <span class="mf">14.953038</span><span class="p">]]</span>
+<span class="n">total</span> <span class="n">dielectric</span> <span class="n">tensor</span><span class="p">:</span>
+<span class="p">[[</span><span class="mf">19.633141000000002</span><span class="p">,</span> <span class="o">-</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">],</span> <span class="p">[</span><span class="o">-</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">19.633162</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">],</span> <span class="p">[</span><span class="mf">0.0</span><span class="p">,</span> <span class="o">-</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">19.633135</span><span class="p">]]</span>
+<span class="n">volume</span> <span class="p">(</span><span class="n">A</span><span class="o">^</span><span class="mi">3</span><span class="p">):</span> <span class="mf">68.98647886527607</span>
+<span class="n">Total</span> <span class="n">DOS</span><span class="p">:</span> <span class="n">Exists</span>
 </pre></div>
 </div>
 </div>
 <div class="section" id="calculation-of-competing-phases">
 <h2>4. Calculation of competing phases<a class="headerlink" href="#calculation-of-competing-phases" title="Permalink to this headline">¶</a></h2>
-<p>We then calculate the competing phases.
-First, we prepare their calculation directories including VASP input files.
-By using the chempotdiag program, we can obtain structures of the stable or slightly unstable competing phases.</p>
+<p>We then calculate the competing phases.</p>
+<p>First, we prepare their calculation directories including VASP input sets.
+By using the chempotdiag program developed and managed by Akira Takahashi, we can obtain structures of the stable or slightly unstable competing phases.</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="o">~/</span><span class="n">my_bin</span><span class="o">/</span><span class="n">phos_pbesol</span><span class="o">/</span><span class="n">obadb</span><span class="o">/</span><span class="n">obadb</span><span class="o">/</span><span class="n">analyzer</span><span class="o">/</span><span class="n">chempotdiag</span><span class="o">/</span><span class="n">main</span><span class="o">.</span><span class="n">py</span> <span class="n">cpd</span> <span class="o">-</span><span class="n">m</span> <span class="o">-</span><span class="n">el</span> <span class="n">B</span> <span class="n">N</span> <span class="o">-</span><span class="n">ch</span> <span class="mf">0.05</span>
 </pre></div>
 </div>
-<p>Then, we generate the other input files.</p>
+<p>In this case, the materials of which energy above hull is less than 0.5 meV/atom are collected.
+We then generate the other input files.</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="o">~/</span><span class="n">my_bin</span><span class="o">/</span><span class="n">pydefect</span><span class="o">/</span><span class="n">pydefect</span><span class="o">/</span><span class="n">main</span><span class="o">.</span><span class="n">py</span> <span class="n">vos</span> <span class="o">-</span><span class="n">t</span> <span class="n">structure_opt</span> <span class="o">-</span><span class="n">x</span> <span class="n">pbesol</span> <span class="o">-</span><span class="ow">is</span> <span class="n">ENCUT</span> <span class="mi">520</span> <span class="o">--</span><span class="n">dirs</span> <span class="o">*</span><span class="n">_</span><span class="o">*/</span>
 </pre></div>
 </div>
-<p>Note, if competing phases are gas phases, we need to change the ISIF to 2.
+<p>Note, if competing phases are gases, we need to change the ISIF to 2 to fix the lattice constants.
 In such case, like N2molecule_pydefect, type as follows,</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="o">~/</span><span class="n">my_bin</span><span class="o">/</span><span class="n">pydefect</span><span class="o">/</span><span class="n">pydefect</span><span class="o">/</span><span class="n">main</span><span class="o">.</span><span class="n">py</span> <span class="n">vos</span> <span class="o">-</span><span class="n">t</span> <span class="n">structure_opt</span> <span class="o">-</span><span class="n">x</span> <span class="n">pbesol</span> <span class="o">-</span><span class="ow">is</span> <span class="n">ENCUT</span> <span class="mi">520</span> <span class="n">ISIF</span> <span class="mi">2</span> <span class="o">--</span><span class="n">dirs</span> <span class="n">N2molecule_pydefect</span>
 </pre></div>
@@ -140,7 +181,7 @@ For this purpose, type</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="o">~/</span><span class="n">my_bin</span><span class="o">/</span><span class="n">pydefect</span><span class="o">/</span><span class="n">pydefect</span><span class="o">/</span><span class="n">main</span><span class="o">.</span><span class="n">py</span> <span class="ow">is</span>
 </pre></div>
 </div>
-<p>With this command, one can</p>
+<p>With this command, one can build the <code class="docutils literal notranslate"><span class="pre">defect.in</span></code> file, which contains the information which kind of defects one want to generate.</p>
 </div>
 <div class="section" id="decision-of-interstitial-sites">
 <h2>7. Decision of interstitial sites<a class="headerlink" href="#decision-of-interstitial-sites" title="Permalink to this headline">¶</a></h2>
@@ -149,9 +190,9 @@ For this purpose, we need to determine the interstitial sites.
 Most people determine the interstitial sites by seeing the host crystal structures.
 On the contrary, there are a couple of procedures that recommend the interstitial sites.
 Still, it is difficult to predict the most likely interstitial sites because they strongly depend on the substituted atoms.
-For instance, when positively charged cations with closed shells are substituted (e.g., Mg2+, Al3+),
+For instance, when positively charged cations with closed shells are substituted (e.g., Mg<sup>2+</sup>, Al<sup>3+</sup>),
 the interstitial sites with the largest vacant space should be most likely.
-On the other hand, when a proton (H+) is inserted, it should prefer to locate near O2- or N3- to form the strong O-H or N-H bonding.
+On the other hand, when a proton (H<sup>+</sup>) is inserted, it should prefer to locate near O<sup>2-</sup> or N<sup>3-</sup> to form the strong O-H or N-H bonding.
 Therefore, we need to be careful when determining the interstitial sites.</p>
 <p>To add the interstitial site, e.g., 0.375 0.375 0.375, we type</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="o">~/</span><span class="n">my_bin</span><span class="o">/</span><span class="n">pydefect</span><span class="o">/</span><span class="n">pydefect</span><span class="o">/</span><span class="n">main</span><span class="o">.</span><span class="n">py</span> <span class="n">i</span> <span class="o">-</span><span class="n">c</span> <span class="mf">0.375</span> <span class="mf">0.375</span> <span class="mf">0.375</span>
@@ -189,6 +230,7 @@ When you modify it, add the following line to the defect.in.</p>
 </div>
 <div class="section" id="construction-of-defect-calculation-directories">
 <h2>8. Construction of defect calculation directories<a class="headerlink" href="#construction-of-defect-calculation-directories" title="Permalink to this headline">¶</a></h2>
+<p>After constructing the defect.in file, we</p>
 </div>
 <div class="section" id="generation-of-supercell-information">
 <h2>9. Generation of supercell information<a class="headerlink" href="#generation-of-supercell-information" title="Permalink to this headline">¶</a></h2>
@@ -215,7 +257,7 @@ When you modify it, add the following line to the defect.in.</p>
 <li><a class="reference internal" href="#">Simple tutorial of pydefect</a><ul>
 <li><a class="reference internal" href="#relaxation-of-unit-cell">1. Relaxation of unit cell</a></li>
 <li><a class="reference internal" href="#calculation-of-band-dos-and-dielectric-tensor">2. Calculation of band, DOS, and dielectric tensor</a></li>
-<li><a class="reference internal" href="#collection-of-unitcell-information-related-to-point-defect-calculations">3. Collection of unitcell information related to point-defect calculations</a></li>
+<li><a class="reference internal" href="#gathering-unitcell-information-related-to-point-defect-calculations">3. Gathering unitcell information related to point-defect calculations</a></li>
 <li><a class="reference internal" href="#calculation-of-competing-phases">4. Calculation of competing phases</a></li>
 <li><a class="reference internal" href="#select-of-a-supercell">5. Select of a supercell</a></li>
 <li><a class="reference internal" href="#construction-of-defect-initial-setting">6. Construction of defect initial setting</a></li>

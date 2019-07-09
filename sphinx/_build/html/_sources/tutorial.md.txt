@@ -1,14 +1,17 @@
 # Simple tutorial of pydefect
 -----------------------
 
-Point-defect calculations are bit complicated and performed following the flow shown below.
+This web page illustrates how to use the PyDefect code.
 
-<!--
-![flow](flowchart.png)
--->
+Usually, point-defect calculations are complicated following the flow below.
+
+![](flowchart.png)
+
+As shown, some tasks are performed concurrently.
 
 Here, we suppose the following directory tree.
 
+```
     <project_name>
      │
      ├ unitcell/ ── structure_opt/
@@ -24,29 +27,44 @@ Here, we suppose the following directory tree.
                  ├ Va_X_1/
                  ├ Va_X_2/
                  ...
+```
+Details of the process are examined step by step.
+
 
 ### 1. Relaxation of unit cell
 
-The point defect calculations need to be performed at a relaxed theoretical atomic structures.
-Therefore, one needs to fully relax the atomic position of the unit cell.
-PyDefect allows us to construct the vasp input file set, namely INCAR, POTCAR,
-KPOINTS, with rather simple command line tool.
-For instance, initial setting for structure optimization of the unit-cell with the PBEsol functional can be
-generated using the following command.
+The point defect calculations need to be generally performed at a fully relaxed theoretical structures, 
+including both lattice constants and fractional coordinates of atomic positions. 
+Therefore, one begins with fully relaxing the unit cell.
+
+First, we need to prepare the POSCAR file of the pristine bulk unitcell.
+And, create `unitcell/` directory and `structure_opt` subdirectory under `unitcell/` and move there.
+PyDefect can construct the vasp input sets, namely INCAR, POTCAR, KPOINTS, for various tasks related to the point-defect calculations with simple command line tools.
+For instance, vasp input set for structure optimization of the unitcell with the PBEsol functional can be generated using the following command.
 
 ```
 python ~/my_bin/pydefect/pydefect/main.py vos -t structure_opt -x pbesol
 ```
 
-There are many options, so please refer the help of the sub command.
+vos, meaning an abbreviation for vasp_oba_set, is a subparse option.
+VaspObaSet is a program that create vasp input files, analyze and visualize vasp output files.
+It is written on the basis of [pymatgen](http://pymatgen.org), a robust, open-source Python library for materials analysis. 
+Please also refer the document for VaspObaSet.
+
+There are many options, so please refer the help of the sub command by 
+
+```
+python ~/my_bin/pydefect/pydefect/main.py vos -h
+```
 
 ### 2. Calculation of band, DOS, and dielectric tensor
 
-We then calculate the electronic structure, namely band and density of states (DOS) plot, and dielectric constant.
+We then calculate the electronic structure, namely band structure, density of states, and dielectric constant.
 In the defect calculations, we can determine the valence band maximum (VBM) and 
-conduction band minimum (CBM) from the band and DOS.
+conduction band minimum (CBM) from the band structure and DOS.
 
-First, make band/, dos/ and dielectric and type the following commands, respectively.
+First, make `band/`, `dos/` and `dielectric/` directories under `unitcell/`.
+And then move to each directory and type the following command, respectively.
 ```
 python ~/my_bin/pydefect/pydefect/main.py vos -t band -x pbesol
 ```
@@ -57,7 +75,7 @@ python ~/my_bin/pydefect/pydefect/main.py vos -t dos -x pbesol
 python ~/my_bin/pydefect/pydefect/main.py vos -t dielectric -x pbesol
 ```
 
-After finishing the vasp calculations, run 
+After finishing the vasp calculations, type
 ```
 python ~/my_bin/phos_pbesol/obadb/obadb/analyzer/main.py pb -v vasprun.xml -k KPOINTS -f band.pdf
 ```
@@ -67,29 +85,58 @@ python ~/my_bin/phos_pbesol/obadb/obadb/analyzer/main.py pd -v vasprun.xml -f do
 ```
 for making the plot of the band structure and DOS.
 
-### 3. Collection of unitcell information related to point-defect calculations
+Here, the band path is determined based upon the [seekpath code](https://www.materialscloud.org/work/tools/seekpath), 
+so if one uses the plot, please cite the following paper.
+- [Y. Hinuma, G. Pizzi, Y. Kumagai, F. Oba, I. Tanaka, Band structure diagram paths based on crystallography, Comp. Mat. Sci. 128, 140 (2017).](https://www.sciencedirect.com/science/article/pii/S0927025616305110?via%3Dihub) 
+  DOI: 10.1016/j.commatsci.2016.10.015 (the "HPKOT" paper; arXiv version: arXiv:1602.06402).
 
-At this point, we can collect the unitcell information related to point-defect calculations,
-namely electronic and ionic contributions to dielectric tensor, unitcell volume, unitcell DOS. 
-```
-python ~/my_bin/pydefect/pydefect/main.py ur --static_diele_dir dielectric --ionic_diele_dir dielectric --band_edge_dir band --volume_dir dielectric --total_dos_dir dos --json_file unitcell.json -o OUTCAR-finish -p POSCAR-finish -v repeat-1/vasprun.xml
-```
+### 3. Gathering unitcell information related to point-defect calculations
 
+At this point, we can collect the unitcell information that is essential for analyzing point-defect calculations,
+namely band edges, electronic and ionic contributions to dielectric tensor, unitcell volume, and unitcell DOS,
+using the unitcell_results or ur subparse option.
+```
+python ~/my_bin/pydefect/pydefect/main.py ur --static_diele_dir dielectric --ionic_diele_dir dielectric --band_edge_dir band --volume_dir dielectric --total_dos_dir dos --json_file unitcell.json -o OUTCAR -p CONTCAR -v vasprun.xml
+```
+Then, unitcell.json is generated.
+One can see the information with the command.
+```
+python ~/my_bin/pydefect/pydefect/main.py ur --print
+```
+which shows as follows.
+
+```
+vbm (eV): 3.4103
+cbm (eV): 4.4278
+static dielectric tensor:
+[[ 4.680097 -0.       -0.      ]
+ [-0.        4.680097  0.      ]
+ [ 0.       -0.        4.680097]]
+ionic dielectric tensor:
+[[14.953044 -0.        0.      ]
+ [-0.       14.953065 -0.      ]
+ [ 0.       -0.       14.953038]]
+total dielectric tensor:
+[[19.633141000000002, -0.0, 0.0], [-0.0, 19.633162, 0.0], [0.0, -0.0, 19.633135]]
+volume (A^3): 68.98647886527607
+Total DOS: Exists
+```
 
 ### 4. Calculation of competing phases
 We then calculate the competing phases. 
-First, we prepare their calculation directories including VASP input files.
-By using the chempotdiag program, we can obtain structures of the stable or slightly unstable competing phases.
+
+First, we prepare their calculation directories including VASP input sets.
+By using the chempotdiag program developed and managed by Akira Takahashi, we can obtain structures of the stable or slightly unstable competing phases.
 ```
 python ~/my_bin/phos_pbesol/obadb/obadb/analyzer/chempotdiag/main.py cpd -m -el B N -ch 0.05
 ```
-
-Then, we generate the other input files.    
+In this case, the materials of which energy above hull is less than 0.5 meV/atom are collected.
+We then generate the other input files.    
 ```
 python ~/my_bin/pydefect/pydefect/main.py vos -t structure_opt -x pbesol -is ENCUT 520 --dirs *_*/
 ```
 
-Note, if competing phases are gas phases, we need to change the ISIF to 2.
+Note, if competing phases are gases, we need to change the ISIF to 2 to fix the lattice constants.
 In such case, like N2molecule_pydefect, type as follows,
 ```
 python ~/my_bin/pydefect/pydefect/main.py vos -t structure_opt -x pbesol -is ENCUT 520 ISIF 2 --dirs N2molecule_pydefect
@@ -118,7 +165,8 @@ We then generate the defect initial setting file by typing
 python ~/my_bin/pydefect/pydefect/main.py is
 ```
 
-With this command, one can 
+With this command, one can build the `defect.in` file, which contains the information which kind of defects one want to generate.
+
 
 
 ### 7. Decision of interstitial sites
@@ -127,9 +175,9 @@ For this purpose, we need to determine the interstitial sites.
 Most people determine the interstitial sites by seeing the host crystal structures.
 On the contrary, there are a couple of procedures that recommend the interstitial sites.
 Still, it is difficult to predict the most likely interstitial sites because they strongly depend on the substituted atoms.
-For instance, when positively charged cations with closed shells are substituted (e.g., Mg2+, Al3+), 
+For instance, when positively charged cations with closed shells are substituted (e.g., Mg<sup>2+</sup>, Al<sup>3+</sup>), 
 the interstitial sites with the largest vacant space should be most likely. 
-On the other hand, when a proton (H+) is inserted, it should prefer to locate near O2- or N3- to form the strong O-H or N-H bonding.
+On the other hand, when a proton (H<sup>+</sup>) is inserted, it should prefer to locate near O<sup>2-</sup> or N<sup>3-</sup> to form the strong O-H or N-H bonding.
 Therefore, we need to be careful when determining the interstitial sites.
 
 To add the interstitial site, e.g., 0.375 0.375 0.375, we type
@@ -170,7 +218,7 @@ python ~/my_bin/pydefect/pydefect/main.py is --interstitial_sites i1
 ```
 
 ### 8. Construction of defect calculation directories
-
+After constructing the defect.in file, we 
 
 
 ### 9. Generation of supercell information
