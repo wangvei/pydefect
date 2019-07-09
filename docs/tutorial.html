@@ -55,7 +55,8 @@
                  ...
 </pre></div>
 </div>
-<p>Details of the process are examined step by step.</p>
+<p>Details of the process are examined step by step.
+Units in PyDefect package are eV and Angstrom for energy and length.</p>
 <div class="section" id="relaxation-of-unit-cell">
 <h2>1. Relaxation of unit cell<a class="headerlink" href="#relaxation-of-unit-cell" title="Permalink to this headline">¶</a></h2>
 <p>The point defect calculations need to be generally performed at a fully relaxed theoretical structures,
@@ -143,37 +144,59 @@ One can see the information with the command.</p>
 <div class="section" id="calculation-of-competing-phases">
 <h2>4. Calculation of competing phases<a class="headerlink" href="#calculation-of-competing-phases" title="Permalink to this headline">¶</a></h2>
 <p>We then calculate the competing phases.</p>
-<p>First, we prepare their calculation directories including VASP input sets.
-By using the chempotdiag program developed and managed by Akira Takahashi, we can obtain structures of the stable or slightly unstable competing phases.</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="o">~/</span><span class="n">my_bin</span><span class="o">/</span><span class="n">phos_pbesol</span><span class="o">/</span><span class="n">obadb</span><span class="o">/</span><span class="n">obadb</span><span class="o">/</span><span class="n">analyzer</span><span class="o">/</span><span class="n">chempotdiag</span><span class="o">/</span><span class="n">main</span><span class="o">.</span><span class="n">py</span> <span class="n">cpd</span> <span class="o">-</span><span class="n">m</span> <span class="o">-</span><span class="n">el</span> <span class="n">B</span> <span class="n">N</span> <span class="o">-</span><span class="n">ch</span> <span class="mf">0.05</span>
+<p>First, we create <code class="docutils literal notranslate"><span class="pre">competing_phases</span></code> and move there.
+We then create directories for competing phases including VASP input sets.
+By using the chempotdiag program developed and managed by Akira Takahashi, we can obtain POSCARs of the stable or slightly unstable competing phases.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="o">~/</span><span class="n">my_bin</span><span class="o">/</span><span class="n">phos_pbesol</span><span class="o">/</span><span class="n">obadb</span><span class="o">/</span><span class="n">obadb</span><span class="o">/</span><span class="n">analyzer</span><span class="o">/</span><span class="n">chempotdiag</span><span class="o">/</span><span class="n">main</span><span class="o">.</span><span class="n">py</span> <span class="n">cpd</span> <span class="o">-</span><span class="n">m</span> <span class="o">-</span><span class="n">el</span> <span class="n">Ba</span> <span class="n">Sn</span> <span class="n">O</span> <span class="o">-</span><span class="n">ch</span> <span class="mf">0.05</span>
 </pre></div>
 </div>
-<p>In this case, the materials of which energy above hull is less than 0.5 meV/atom are collected.
-We then generate the other input files.</p>
+<p>In this case, the materials of which energy above hull is less than 0.5 meV/atom are collected.</p>
+<p>We then generate the other input files.
+In order to fix the cutoff energy at 1.3 x maximum of the <code class="docutils literal notranslate"><span class="pre">ENMAX</span></code> for all the elements, we set <code class="docutils literal notranslate"><span class="pre">ENCUT</span> <span class="pre">=</span> <span class="pre">520</span></code>,</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="o">~/</span><span class="n">my_bin</span><span class="o">/</span><span class="n">pydefect</span><span class="o">/</span><span class="n">pydefect</span><span class="o">/</span><span class="n">main</span><span class="o">.</span><span class="n">py</span> <span class="n">vos</span> <span class="o">-</span><span class="n">t</span> <span class="n">structure_opt</span> <span class="o">-</span><span class="n">x</span> <span class="n">pbesol</span> <span class="o">-</span><span class="ow">is</span> <span class="n">ENCUT</span> <span class="mi">520</span> <span class="o">--</span><span class="n">dirs</span> <span class="o">*</span><span class="n">_</span><span class="o">*/</span>
 </pre></div>
 </div>
 <p>Note, if competing phases are gases, we need to change the ISIF to 2 to fix the lattice constants.
 In such case, like N2molecule_pydefect, type as follows,</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="o">~/</span><span class="n">my_bin</span><span class="o">/</span><span class="n">pydefect</span><span class="o">/</span><span class="n">pydefect</span><span class="o">/</span><span class="n">main</span><span class="o">.</span><span class="n">py</span> <span class="n">vos</span> <span class="o">-</span><span class="n">t</span> <span class="n">structure_opt</span> <span class="o">-</span><span class="n">x</span> <span class="n">pbesol</span> <span class="o">-</span><span class="ow">is</span> <span class="n">ENCUT</span> <span class="mi">520</span> <span class="n">ISIF</span> <span class="mi">2</span> <span class="o">--</span><span class="n">dirs</span> <span class="n">N2molecule_pydefect</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="o">~/</span><span class="n">my_bin</span><span class="o">/</span><span class="n">pydefect</span><span class="o">/</span><span class="n">pydefect</span><span class="o">/</span><span class="n">main</span><span class="o">.</span><span class="n">py</span> <span class="n">vos</span> <span class="o">-</span><span class="n">t</span> <span class="n">structure_opt</span> <span class="o">-</span><span class="n">x</span> <span class="n">pbesol</span> <span class="o">-</span><span class="ow">is</span> <span class="n">ENCUT</span> <span class="mi">520</span> <span class="n">ISIF</span> <span class="mi">2</span> <span class="o">--</span><span class="n">dirs</span> <span class="n">O2molecule_pydefect</span>
 </pre></div>
 </div>
-<p>Next, we generate the chemical potential diagram.</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="o">~/</span><span class="n">my_bin</span><span class="o">/</span><span class="n">phos_pbesol</span><span class="o">/</span><span class="n">obadb</span><span class="o">/</span><span class="n">obadb</span><span class="o">/</span><span class="n">analyzer</span><span class="o">/</span><span class="n">chempotdiag</span><span class="o">/</span><span class="n">main</span><span class="o">.</span><span class="n">py</span> <span class="n">cpd</span> <span class="o">-</span><span class="n">v</span> <span class="o">*/</span> <span class="o">-</span><span class="n">p</span> <span class="n">POSCAR</span><span class="o">-</span><span class="n">finish</span> <span class="o">-</span><span class="n">o</span> <span class="n">OUTCAR</span><span class="o">-</span><span class="n">finish</span> <span class="o">-</span><span class="n">c</span> <span class="n">BN</span> <span class="o">-</span><span class="n">y</span> <span class="o">-</span><span class="n">s</span> <span class="n">cpd</span><span class="o">.</span><span class="n">pdf</span>
+<p>After finishing the vasp calculations, we generate the chemical potential diagram.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="o">~/</span><span class="n">my_bin</span><span class="o">/</span><span class="n">phos_pbesol</span><span class="o">/</span><span class="n">obadb</span><span class="o">/</span><span class="n">obadb</span><span class="o">/</span><span class="n">analyzer</span><span class="o">/</span><span class="n">chempotdiag</span><span class="o">/</span><span class="n">main</span><span class="o">.</span><span class="n">py</span> <span class="n">cpd</span> <span class="o">-</span><span class="n">v</span> <span class="o">*/</span> <span class="o">-</span><span class="n">p</span> <span class="n">POSCAR</span><span class="o">-</span><span class="n">finish</span> <span class="o">-</span><span class="n">o</span> <span class="n">OUTCAR</span><span class="o">-</span><span class="n">finish</span> <span class="o">-</span><span class="n">c</span> <span class="n">BaSnO3</span> <span class="o">-</span><span class="n">y</span> <span class="o">-</span><span class="n">s</span> <span class="n">cpd_BaSnO3</span><span class="o">.</span><span class="n">pdf</span>
 </pre></div>
 </div>
-<p>Note that there are some parameters for gas phases, so read help for more details.</p>
+<p>Note that there are some parameters for gas phases, so read help for more details.
+In such a case, we obtain the cpd_BaSnO3.pdf</p>
+<p><img alt="_images/cpd_BaSnO3.png" src="_images/cpd_BaSnO3.png" />cpd_BaSnO3.png</p>
+<p>and values at the vertices in the chemical potential diagram (vertices_BaSnO3.yaml)</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">A</span><span class="p">:</span> <span class="p">{</span><span class="n">Ba</span><span class="p">:</span> <span class="o">-</span><span class="mf">6.339048510000005</span><span class="p">,</span> <span class="n">O</span><span class="p">:</span> <span class="o">-</span><span class="mf">0.18899787319844918</span><span class="p">,</span> <span class="n">Sn</span><span class="p">:</span> <span class="o">-</span><span class="mf">5.638818995000001</span><span class="p">}</span>
+<span class="n">B</span><span class="p">:</span> <span class="p">{</span><span class="n">Ba</span><span class="p">:</span> <span class="o">-</span><span class="mf">5.9688971474999875</span><span class="p">,</span> <span class="n">O</span><span class="p">:</span> <span class="o">-</span><span class="mf">0.22601300944845448</span><span class="p">,</span> <span class="n">Sn</span><span class="p">:</span> <span class="o">-</span><span class="mf">5.897924948750013</span><span class="p">}</span>
+<span class="n">C</span><span class="p">:</span> <span class="p">{</span><span class="n">Ba</span><span class="p">:</span> <span class="o">-</span><span class="mf">5.257239969999993</span><span class="p">,</span> <span class="n">O</span><span class="p">:</span> <span class="o">-</span><span class="mf">0.5818415981984444</span><span class="p">,</span> <span class="n">Sn</span><span class="p">:</span> <span class="o">-</span><span class="mf">5.542096360000016</span><span class="p">}</span>
+<span class="n">D</span><span class="p">:</span> <span class="p">{</span><span class="n">Ba</span><span class="p">:</span> <span class="o">-</span><span class="mf">2.4861917899999817</span><span class="p">,</span> <span class="n">O</span><span class="p">:</span> <span class="o">-</span><span class="mf">3.3528897781984526</span><span class="p">,</span> <span class="n">Sn</span><span class="p">:</span> <span class="mf">3.552713678800501e-15</span><span class="p">}</span>
+<span class="n">E</span><span class="p">:</span> <span class="p">{</span><span class="n">Ba</span><span class="p">:</span> <span class="o">-</span><span class="mf">3.2221928749999975</span><span class="p">,</span> <span class="n">O</span><span class="p">:</span> <span class="o">-</span><span class="mf">3.1075560831984568</span><span class="p">,</span> <span class="n">Sn</span><span class="p">:</span> <span class="mf">3.552713678800501e-15</span><span class="p">}</span>
+<span class="n">F</span><span class="p">:</span> <span class="p">{</span><span class="n">Ba</span><span class="p">:</span> <span class="o">-</span><span class="mf">3.6187877250000113</span><span class="p">,</span> <span class="n">O</span><span class="p">:</span> <span class="o">-</span><span class="mf">2.9092586581984463</span><span class="p">,</span> <span class="n">Sn</span><span class="p">:</span> <span class="o">-</span><span class="mf">0.19829742500001046</span><span class="p">}</span>
+<span class="n">compound</span><span class="p">:</span> <span class="n">BaSnO3</span>
+<span class="n">pressure</span><span class="p">:</span> <span class="n">null</span>
+<span class="n">standard_energy</span><span class="p">:</span> <span class="p">{</span><span class="n">Ba</span><span class="p">:</span> <span class="o">-</span><span class="mf">2.141765</span><span class="p">,</span> <span class="n">O</span><span class="p">:</span> <span class="o">-</span><span class="mf">4.872655801801549</span><span class="p">,</span> <span class="n">Sn</span><span class="p">:</span> <span class="o">-</span><span class="mf">4.1937075</span><span class="p">}</span>
+<span class="n">temperature</span><span class="p">:</span> <span class="mi">0</span>
+</pre></div>
+</div>
+<p>Here, <code class="docutils literal notranslate"><span class="pre">standard_energy</span></code> is the energy of simple substances or simple gas phases.
+And, A–F show the relative values.</p>
+<p>The yaml file will be used for plotting the defect formation energies.</p>
 </div>
 <div class="section" id="select-of-a-supercell">
 <h2>5. Select of a supercell<a class="headerlink" href="#select-of-a-supercell" title="Permalink to this headline">¶</a></h2>
-<p>So far, we have done the calculations of the unit cell and competing phases.
-So, let’s move on to defect/ and copy unitcell POSCAR file from unitcell/dos/ to defect/</p>
-<p>Firstly, we need to determine the supercell.
-pydefect recommends a supercell which usually have proper isotropy with moderate number of atoms.
-For this purpose, type</p>
+<p>So far, we have finished the calculations of the unit cell and competing phases,
+and now are ready for point defect calculations.
+Let’s create <code class="docutils literal notranslate"><span class="pre">defect/</span></code> directory and copy unitcell POSCAR file from <code class="docutils literal notranslate"><span class="pre">unitcell/dos/</span></code> to <code class="docutils literal notranslate"><span class="pre">defect/</span></code></p>
+<p>Firstly, we need to determine the shape and size of the supercell.
+PyDefect recommends a nearly isotropic supercell composed of moderate number of atoms.
+For this purpose, use <code class="docutils literal notranslate"><span class="pre">recommend_supercell</span></code> or <code class="docutils literal notranslate"><span class="pre">rs</span></code> subparse</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="o">~/</span><span class="n">my_bin</span><span class="o">/</span><span class="n">pydefect</span><span class="o">/</span><span class="n">pydefect</span><span class="o">/</span><span class="n">main</span><span class="o">.</span><span class="n">py</span> <span class="n">rs</span>
 </pre></div>
 </div>
+<p>Here, <code class="docutils literal notranslate"><span class="pre">UPOSCAR</span></code> and <code class="docutils literal notranslate"><span class="pre">SPOSCAR</span></code> are the POSCARs for the unitcell and the supercell.</p>
 </div>
 <div class="section" id="construction-of-defect-initial-setting">
 <h2>6. Construction of defect initial setting<a class="headerlink" href="#construction-of-defect-initial-setting" title="Permalink to this headline">¶</a></h2>
@@ -181,7 +204,119 @@ For this purpose, type</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="o">~/</span><span class="n">my_bin</span><span class="o">/</span><span class="n">pydefect</span><span class="o">/</span><span class="n">pydefect</span><span class="o">/</span><span class="n">main</span><span class="o">.</span><span class="n">py</span> <span class="ow">is</span>
 </pre></div>
 </div>
-<p>With this command, one can build the <code class="docutils literal notranslate"><span class="pre">defect.in</span></code> file, which contains the information which kind of defects one want to generate.</p>
+<p>With this command, we can build the <code class="docutils literal notranslate"><span class="pre">defect.in</span></code> file, which contains the information on what kind of defects are to be generated,
+as well as the DPOSCAR.
+If you follow this tutorial, DPOSCAR file is the same as SPOSCAR.</p>
+<p>An example of <code class="docutils literal notranslate"><span class="pre">defect.in</span></code> is as follows:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>  <span class="n">Space</span> <span class="n">group</span><span class="p">:</span> <span class="n">Pm</span><span class="o">-</span><span class="mi">3</span><span class="n">m</span>
+
+<span class="n">Transformation</span> <span class="n">matrix</span><span class="p">:</span>  <span class="mi">3</span>  <span class="mi">3</span>  <span class="mi">3</span>
+<span class="n">Cell</span> <span class="n">multiplicity</span><span class="p">:</span> <span class="mi">27</span>
+
+   <span class="n">Irreducible</span> <span class="n">element</span><span class="p">:</span> <span class="n">Ba1</span>
+        <span class="n">Wyckoff</span> <span class="n">letter</span><span class="p">:</span> <span class="n">a</span>
+         <span class="n">Site</span> <span class="n">symmetry</span><span class="p">:</span> <span class="n">m</span><span class="o">-</span><span class="mi">3</span><span class="n">m</span>
+          <span class="n">Coordination</span><span class="p">:</span> <span class="n">O2</span><span class="o">-</span><span class="p">:</span> <span class="mf">2.9</span> <span class="mf">2.9</span> <span class="mf">2.9</span> <span class="mf">2.9</span> <span class="mf">2.9</span> <span class="mf">2.9</span> <span class="mf">2.9</span> <span class="mf">2.9</span> <span class="mf">2.9</span> <span class="mf">2.9</span> <span class="mf">2.9</span> <span class="mf">2.9</span> 
+      <span class="n">Equivalent</span> <span class="n">atoms</span><span class="p">:</span> <span class="mf">1.</span><span class="o">.</span><span class="mi">27</span>
+<span class="n">Fractional</span> <span class="n">coordinates</span><span class="p">:</span> <span class="mf">0.1666670</span>  <span class="mf">0.1666670</span>  <span class="mf">0.1666670</span>
+     <span class="n">Electronegativity</span><span class="p">:</span> <span class="mf">0.89</span>
+       <span class="n">Oxidation</span> <span class="n">state</span><span class="p">:</span> <span class="mi">2</span>
+
+   <span class="n">Irreducible</span> <span class="n">element</span><span class="p">:</span> <span class="n">Sn1</span>
+        <span class="n">Wyckoff</span> <span class="n">letter</span><span class="p">:</span> <span class="n">b</span>
+         <span class="n">Site</span> <span class="n">symmetry</span><span class="p">:</span> <span class="n">m</span><span class="o">-</span><span class="mi">3</span><span class="n">m</span>
+          <span class="n">Coordination</span><span class="p">:</span> <span class="n">O2</span><span class="o">-</span><span class="p">:</span> <span class="mf">2.05</span> <span class="mf">2.05</span> <span class="mf">2.05</span> <span class="mf">2.05</span> <span class="mf">2.05</span> <span class="mf">2.05</span> 
+      <span class="n">Equivalent</span> <span class="n">atoms</span><span class="p">:</span> <span class="mf">28.</span><span class="o">.</span><span class="mi">54</span>
+<span class="n">Fractional</span> <span class="n">coordinates</span><span class="p">:</span> <span class="mf">0.0000000</span>  <span class="mf">0.0000000</span>  <span class="mf">0.0000000</span>
+     <span class="n">Electronegativity</span><span class="p">:</span> <span class="mf">1.96</span>
+       <span class="n">Oxidation</span> <span class="n">state</span><span class="p">:</span> <span class="mi">4</span>
+       
+   <span class="n">Irreducible</span> <span class="n">element</span><span class="p">:</span> <span class="n">O1</span>
+        <span class="n">Wyckoff</span> <span class="n">letter</span><span class="p">:</span> <span class="n">c</span>
+         <span class="n">Site</span> <span class="n">symmetry</span><span class="p">:</span> <span class="mi">4</span><span class="o">/</span><span class="n">mmm</span>
+          <span class="n">Coordination</span><span class="p">:</span> <span class="n">Ba2</span><span class="o">+</span><span class="p">:</span> <span class="mf">2.9</span> <span class="mf">2.9</span> <span class="mf">2.9</span> <span class="mf">2.9</span> <span class="n">Sn4</span><span class="o">+</span><span class="p">:</span> <span class="mf">2.05</span> <span class="mf">2.05</span> <span class="n">O2</span><span class="o">-</span><span class="p">:</span> <span class="mf">2.9</span> <span class="mf">2.9</span> <span class="mf">2.9</span> <span class="mf">2.9</span> <span class="mf">2.9</span> <span class="mf">2.9</span> <span class="mf">2.9</span> <span class="mf">2.9</span> 
+      <span class="n">Equivalent</span> <span class="n">atoms</span><span class="p">:</span> <span class="mf">55.</span><span class="o">.</span><span class="mi">135</span>
+<span class="n">Fractional</span> <span class="n">coordinates</span><span class="p">:</span> <span class="mf">0.0000000</span>  <span class="mf">0.1666670</span>  <span class="mf">0.0000000</span>
+     <span class="n">Electronegativity</span><span class="p">:</span> <span class="mf">3.44</span>
+       <span class="n">Oxidation</span> <span class="n">state</span><span class="p">:</span> <span class="o">-</span><span class="mi">2</span>
+
+<span class="n">Interstitials</span><span class="p">:</span> 
+<span class="n">Antisite</span> <span class="n">defects</span><span class="p">:</span> 
+
+<span class="n">Substituted</span> <span class="n">defects</span><span class="p">:</span> 
+
+<span class="n">Maximum</span> <span class="n">Displacement</span><span class="p">:</span> <span class="mf">0.2</span>
+
+<span class="n">Exceptionally</span> <span class="n">included</span><span class="p">:</span> 
+<span class="n">Exceptionally</span> <span class="n">excluded</span><span class="p">:</span> 
+
+<span class="n">Cutoff</span> <span class="n">region</span> <span class="n">of</span> <span class="n">atoms</span> <span class="n">perturbed</span><span class="p">:</span> <span class="mf">3.0</span>
+<span class="n">Symprec</span><span class="p">:</span> <span class="mf">0.01</span>
+<span class="n">Angle</span> <span class="n">tolerance</span><span class="p">:</span> <span class="mi">5</span>
+</pre></div>
+</div>
+<p>If you want to add dopants a posteriori, you can type as follows.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="o">~/</span><span class="n">my_bin</span><span class="o">/</span><span class="n">pydefect</span><span class="o">/</span><span class="n">pydefect</span><span class="o">/</span><span class="n">main</span><span class="o">.</span><span class="n">py</span> <span class="ow">is</span> <span class="o">--</span><span class="n">print_dopant</span> <span class="n">Na</span>
+</pre></div>
+</div>
+<p>This example of Na dopant shows</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>   <span class="n">Dopant</span> <span class="n">element</span><span class="p">:</span> <span class="n">Na</span>
+<span class="n">Electronegativity</span><span class="p">:</span> <span class="mf">0.93</span>
+  <span class="n">Oxidation</span> <span class="n">state</span><span class="p">:</span> <span class="mi">1</span>
+</pre></div>
+</div>
+<p>By inserting this to <code class="docutils literal notranslate"><span class="pre">defect.in</span></code> and modify Substituted defects as follows</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>  <span class="n">Space</span> <span class="n">group</span><span class="p">:</span> <span class="n">Pm</span><span class="o">-</span><span class="mi">3</span><span class="n">m</span>
+
+<span class="n">Transformation</span> <span class="n">matrix</span><span class="p">:</span>  <span class="mi">3</span>  <span class="mi">3</span>  <span class="mi">3</span>
+<span class="n">Cell</span> <span class="n">multiplicity</span><span class="p">:</span> <span class="mi">27</span>
+
+   <span class="n">Irreducible</span> <span class="n">element</span><span class="p">:</span> <span class="n">Ba1</span>
+        <span class="n">Wyckoff</span> <span class="n">letter</span><span class="p">:</span> <span class="n">a</span>
+         <span class="n">Site</span> <span class="n">symmetry</span><span class="p">:</span> <span class="n">m</span><span class="o">-</span><span class="mi">3</span><span class="n">m</span>
+          <span class="n">Coordination</span><span class="p">:</span> <span class="n">O2</span><span class="o">-</span><span class="p">:</span> <span class="mf">2.9</span> <span class="mf">2.9</span> <span class="mf">2.9</span> <span class="mf">2.9</span> <span class="mf">2.9</span> <span class="mf">2.9</span> <span class="mf">2.9</span> <span class="mf">2.9</span> <span class="mf">2.9</span> <span class="mf">2.9</span> <span class="mf">2.9</span> <span class="mf">2.9</span> 
+      <span class="n">Equivalent</span> <span class="n">atoms</span><span class="p">:</span> <span class="mf">1.</span><span class="o">.</span><span class="mi">27</span>
+<span class="n">Fractional</span> <span class="n">coordinates</span><span class="p">:</span> <span class="mf">0.1666670</span>  <span class="mf">0.1666670</span>  <span class="mf">0.1666670</span>
+     <span class="n">Electronegativity</span><span class="p">:</span> <span class="mf">0.89</span>
+       <span class="n">Oxidation</span> <span class="n">state</span><span class="p">:</span> <span class="mi">2</span>
+
+   <span class="n">Irreducible</span> <span class="n">element</span><span class="p">:</span> <span class="n">Sn1</span>
+        <span class="n">Wyckoff</span> <span class="n">letter</span><span class="p">:</span> <span class="n">b</span>
+         <span class="n">Site</span> <span class="n">symmetry</span><span class="p">:</span> <span class="n">m</span><span class="o">-</span><span class="mi">3</span><span class="n">m</span>
+          <span class="n">Coordination</span><span class="p">:</span> <span class="n">O2</span><span class="o">-</span><span class="p">:</span> <span class="mf">2.05</span> <span class="mf">2.05</span> <span class="mf">2.05</span> <span class="mf">2.05</span> <span class="mf">2.05</span> <span class="mf">2.05</span> 
+      <span class="n">Equivalent</span> <span class="n">atoms</span><span class="p">:</span> <span class="mf">28.</span><span class="o">.</span><span class="mi">54</span>
+<span class="n">Fractional</span> <span class="n">coordinates</span><span class="p">:</span> <span class="mf">0.0000000</span>  <span class="mf">0.0000000</span>  <span class="mf">0.0000000</span>
+     <span class="n">Electronegativity</span><span class="p">:</span> <span class="mf">1.96</span>
+       <span class="n">Oxidation</span> <span class="n">state</span><span class="p">:</span> <span class="mi">4</span>
+
+   <span class="n">Irreducible</span> <span class="n">element</span><span class="p">:</span> <span class="n">O1</span>
+        <span class="n">Wyckoff</span> <span class="n">letter</span><span class="p">:</span> <span class="n">c</span>
+         <span class="n">Site</span> <span class="n">symmetry</span><span class="p">:</span> <span class="mi">4</span><span class="o">/</span><span class="n">mmm</span>
+          <span class="n">Coordination</span><span class="p">:</span> <span class="n">Ba2</span><span class="o">+</span><span class="p">:</span> <span class="mf">2.9</span> <span class="mf">2.9</span> <span class="mf">2.9</span> <span class="mf">2.9</span> <span class="n">Sn4</span><span class="o">+</span><span class="p">:</span> <span class="mf">2.05</span> <span class="mf">2.05</span> <span class="n">O2</span><span class="o">-</span><span class="p">:</span> <span class="mf">2.9</span> <span class="mf">2.9</span> <span class="mf">2.9</span> <span class="mf">2.9</span> <span class="mf">2.9</span> <span class="mf">2.9</span> <span class="mf">2.9</span> <span class="mf">2.9</span> 
+      <span class="n">Equivalent</span> <span class="n">atoms</span><span class="p">:</span> <span class="mf">55.</span><span class="o">.</span><span class="mi">135</span>
+<span class="n">Fractional</span> <span class="n">coordinates</span><span class="p">:</span> <span class="mf">0.0000000</span>  <span class="mf">0.1666670</span>  <span class="mf">0.0000000</span>
+     <span class="n">Electronegativity</span><span class="p">:</span> <span class="mf">3.44</span>
+       <span class="n">Oxidation</span> <span class="n">state</span><span class="p">:</span> <span class="o">-</span><span class="mi">2</span>
+
+<span class="n">Interstitials</span><span class="p">:</span> 
+<span class="n">Antisite</span> <span class="n">defects</span><span class="p">:</span> 
+
+   <span class="n">Dopant</span> <span class="n">element</span><span class="p">:</span> <span class="n">Na</span>
+<span class="n">Electronegativity</span><span class="p">:</span> <span class="mf">0.93</span>
+  <span class="n">Oxidation</span> <span class="n">state</span><span class="p">:</span> <span class="mi">1</span>
+
+<span class="n">Substituted</span> <span class="n">defects</span><span class="p">:</span> <span class="n">Na_Ba</span>
+
+<span class="n">Maximum</span> <span class="n">Displacement</span><span class="p">:</span> <span class="mf">0.2</span>
+
+<span class="n">Exceptionally</span> <span class="n">included</span><span class="p">:</span> 
+<span class="n">Exceptionally</span> <span class="n">excluded</span><span class="p">:</span> 
+
+<span class="n">Cutoff</span> <span class="n">region</span> <span class="n">of</span> <span class="n">atoms</span> <span class="n">perturbed</span><span class="p">:</span> <span class="mf">3.0</span>
+<span class="n">Symprec</span><span class="p">:</span> <span class="mf">0.01</span>
+<span class="n">Angle</span> <span class="n">tolerance</span><span class="p">:</span> <span class="mi">5</span>
+</pre></div>
+</div>
 </div>
 <div class="section" id="decision-of-interstitial-sites">
 <h2>7. Decision of interstitial sites<a class="headerlink" href="#decision-of-interstitial-sites" title="Permalink to this headline">¶</a></h2>
