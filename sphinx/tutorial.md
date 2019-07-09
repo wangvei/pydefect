@@ -29,7 +29,7 @@ Here, we suppose the following directory tree.
                  ...
 ```
 Details of the process are examined step by step.
-
+Units in PyDefect package are eV and Angstrom for energy and length.
 
 ### 1. Relaxation of unit cell
 
@@ -125,13 +125,16 @@ Total DOS: Exists
 ### 4. Calculation of competing phases
 We then calculate the competing phases. 
 
-First, we prepare their calculation directories including VASP input sets.
-By using the chempotdiag program developed and managed by Akira Takahashi, we can obtain structures of the stable or slightly unstable competing phases.
+First, we create `competing_phases` and move there.
+We then create directories for competing phases including VASP input sets.
+By using the chempotdiag program developed and managed by Akira Takahashi, we can obtain POSCARs of the stable or slightly unstable competing phases.
 ```
-python ~/my_bin/phos_pbesol/obadb/obadb/analyzer/chempotdiag/main.py cpd -m -el B N -ch 0.05
+python ~/my_bin/phos_pbesol/obadb/obadb/analyzer/chempotdiag/main.py cpd -m -el Ba Sn O -ch 0.05
 ```
 In this case, the materials of which energy above hull is less than 0.5 meV/atom are collected.
-We then generate the other input files.    
+
+We then generate the other input files.
+In order to fix the cutoff energy at 1.3 x maximum of the `ENMAX` for all the elements, we set `ENCUT = 520`,
 ```
 python ~/my_bin/pydefect/pydefect/main.py vos -t structure_opt -x pbesol -is ENCUT 520 --dirs *_*/
 ```
@@ -139,33 +142,173 @@ python ~/my_bin/pydefect/pydefect/main.py vos -t structure_opt -x pbesol -is ENC
 Note, if competing phases are gases, we need to change the ISIF to 2 to fix the lattice constants.
 In such case, like N2molecule_pydefect, type as follows,
 ```
-python ~/my_bin/pydefect/pydefect/main.py vos -t structure_opt -x pbesol -is ENCUT 520 ISIF 2 --dirs N2molecule_pydefect
+python ~/my_bin/pydefect/pydefect/main.py vos -t structure_opt -x pbesol -is ENCUT 520 ISIF 2 --dirs O2molecule_pydefect
 ```
 
-Next, we generate the chemical potential diagram.
+After finishing the vasp calculations, we generate the chemical potential diagram.
 ```
-python ~/my_bin/phos_pbesol/obadb/obadb/analyzer/chempotdiag/main.py cpd -v */ -p POSCAR-finish -o OUTCAR-finish -c BN -y -s cpd.pdf
+python ~/my_bin/phos_pbesol/obadb/obadb/analyzer/chempotdiag/main.py cpd -v */ -p POSCAR-finish -o OUTCAR-finish -c BaSnO3 -y -s cpd_BaSnO3.pdf
 ```
 Note that there are some parameters for gas phases, so read help for more details.
+In such a case, we obtain the cpd_BaSnO3.pdf 
+
+![cpd_BaSnO3.png](cpd_BaSnO3.png)
+
+and values at the vertices in the chemical potential diagram (vertices_BaSnO3.yaml) 
+```
+A: {Ba: -6.339048510000005, O: -0.18899787319844918, Sn: -5.638818995000001}
+B: {Ba: -5.9688971474999875, O: -0.22601300944845448, Sn: -5.897924948750013}
+C: {Ba: -5.257239969999993, O: -0.5818415981984444, Sn: -5.542096360000016}
+D: {Ba: -2.4861917899999817, O: -3.3528897781984526, Sn: 3.552713678800501e-15}
+E: {Ba: -3.2221928749999975, O: -3.1075560831984568, Sn: 3.552713678800501e-15}
+F: {Ba: -3.6187877250000113, O: -2.9092586581984463, Sn: -0.19829742500001046}
+compound: BaSnO3
+pressure: null
+standard_energy: {Ba: -2.141765, O: -4.872655801801549, Sn: -4.1937075}
+temperature: 0
+```
+Here, `standard_energy` is the energy of simple substances or simple gas phases.
+And, A--F show the relative values. 
+
+The yaml file will be used for plotting the defect formation energies.
+
 
 ### 5. Select of a supercell
-So far, we have done the calculations of the unit cell and competing phases.
-So, let's move on to defect/ and copy unitcell POSCAR file from unitcell/dos/ to defect/
+So far, we have finished the calculations of the unit cell and competing phases,
+and now are ready for point defect calculations. 
+Let's create `defect/` directory and copy unitcell POSCAR file from `unitcell/dos/` to `defect/`
 
-Firstly, we need to determine the supercell.
-pydefect recommends a supercell which usually have proper isotropy with moderate number of atoms.
-For this purpose, type
+Firstly, we need to determine the shape and size of the supercell.
+PyDefect recommends a nearly isotropic supercell composed of moderate number of atoms.
+For this purpose, use `recommend_supercell` or `rs` subparse
 ```
 python ~/my_bin/pydefect/pydefect/main.py rs
 ```
+
+Here, `UPOSCAR` and `SPOSCAR` are the POSCARs for the unitcell and the supercell.
 
 ### 6. Construction of defect initial setting
 We then generate the defect initial setting file by typing 
 ```
 python ~/my_bin/pydefect/pydefect/main.py is
 ```
+With this command, we can build the `defect.in` file, which contains the information on what kind of defects are to be generated,
+as well as the DPOSCAR.
+If you follow this tutorial, DPOSCAR file is the same as SPOSCAR.
 
-With this command, one can build the `defect.in` file, which contains the information which kind of defects one want to generate.
+An example of `defect.in` is as follows:
+```
+  Space group: Pm-3m
+
+Transformation matrix:  3  3  3
+Cell multiplicity: 27
+
+   Irreducible element: Ba1
+        Wyckoff letter: a
+         Site symmetry: m-3m
+          Coordination: O2-: 2.9 2.9 2.9 2.9 2.9 2.9 2.9 2.9 2.9 2.9 2.9 2.9 
+      Equivalent atoms: 1..27
+Fractional coordinates: 0.1666670  0.1666670  0.1666670
+     Electronegativity: 0.89
+       Oxidation state: 2
+
+   Irreducible element: Sn1
+        Wyckoff letter: b
+         Site symmetry: m-3m
+          Coordination: O2-: 2.05 2.05 2.05 2.05 2.05 2.05 
+      Equivalent atoms: 28..54
+Fractional coordinates: 0.0000000  0.0000000  0.0000000
+     Electronegativity: 1.96
+       Oxidation state: 4
+       
+   Irreducible element: O1
+        Wyckoff letter: c
+         Site symmetry: 4/mmm
+          Coordination: Ba2+: 2.9 2.9 2.9 2.9 Sn4+: 2.05 2.05 O2-: 2.9 2.9 2.9 2.9 2.9 2.9 2.9 2.9 
+      Equivalent atoms: 55..135
+Fractional coordinates: 0.0000000  0.1666670  0.0000000
+     Electronegativity: 3.44
+       Oxidation state: -2
+
+Interstitials: 
+Antisite defects: 
+
+Substituted defects: 
+
+Maximum Displacement: 0.2
+
+Exceptionally included: 
+Exceptionally excluded: 
+
+Cutoff region of atoms perturbed: 3.0
+Symprec: 0.01
+Angle tolerance: 5
+```
+
+If you want to add dopants a posteriori, you can type as follows.
+```
+python ~/my_bin/pydefect/pydefect/main.py is --print_dopant Na
+```
+This example of Na dopant shows 
+```
+   Dopant element: Na
+Electronegativity: 0.93
+  Oxidation state: 1
+```
+
+By inserting this to `defect.in` and modify Substituted defects as follows
+```
+  Space group: Pm-3m
+
+Transformation matrix:  3  3  3
+Cell multiplicity: 27
+
+   Irreducible element: Ba1
+        Wyckoff letter: a
+         Site symmetry: m-3m
+          Coordination: O2-: 2.9 2.9 2.9 2.9 2.9 2.9 2.9 2.9 2.9 2.9 2.9 2.9 
+      Equivalent atoms: 1..27
+Fractional coordinates: 0.1666670  0.1666670  0.1666670
+     Electronegativity: 0.89
+       Oxidation state: 2
+
+   Irreducible element: Sn1
+        Wyckoff letter: b
+         Site symmetry: m-3m
+          Coordination: O2-: 2.05 2.05 2.05 2.05 2.05 2.05 
+      Equivalent atoms: 28..54
+Fractional coordinates: 0.0000000  0.0000000  0.0000000
+     Electronegativity: 1.96
+       Oxidation state: 4
+
+   Irreducible element: O1
+        Wyckoff letter: c
+         Site symmetry: 4/mmm
+          Coordination: Ba2+: 2.9 2.9 2.9 2.9 Sn4+: 2.05 2.05 O2-: 2.9 2.9 2.9 2.9 2.9 2.9 2.9 2.9 
+      Equivalent atoms: 55..135
+Fractional coordinates: 0.0000000  0.1666670  0.0000000
+     Electronegativity: 3.44
+       Oxidation state: -2
+
+Interstitials: 
+Antisite defects: 
+
+   Dopant element: Na
+Electronegativity: 0.93
+  Oxidation state: 1
+
+Substituted defects: Na_Ba
+
+Maximum Displacement: 0.2
+
+Exceptionally included: 
+Exceptionally excluded: 
+
+Cutoff region of atoms perturbed: 3.0
+Symprec: 0.01
+Angle tolerance: 5
+```
+
 
 
 
