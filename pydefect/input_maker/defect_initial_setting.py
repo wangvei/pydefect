@@ -86,7 +86,7 @@ def dopant_info(dopant):
         out = ["   Dopant element: {}".format(dopant),
                "Electronegativity: {}".format(electronegativity),
                "  Oxidation state: {}".format(oxidation_state)]
-        return "_".join(out)
+        return "\n".join(out)
     else:
         logger.warnings(dopant + " is not a proper element name.")
 
