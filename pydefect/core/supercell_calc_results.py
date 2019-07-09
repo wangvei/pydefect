@@ -291,6 +291,9 @@ class SupercellCalcResults(MSONable):
 
             # The k-point indices at the band edges in defect calculations.
             # hob (lub) means highest (lowest) (un)occupied state
+            # The tiny number needs to be added to avoid magnetization = 0.0
+            if magnetization == 0.0:
+                magnetization = 0.001
             hob_index = \
                 {Spin.up: round((outcar.nelect + magnetization) / 2) - 1,
                  Spin.down: round((outcar.nelect - magnetization) / 2) - 1}
