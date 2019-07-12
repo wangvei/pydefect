@@ -411,13 +411,14 @@ def main():
 
     parser_correction.set_defaults(func=efnv_correction)
 
-    # -- vasp_set ----------------------------------------------------------
+    # -- vasp_oba_set ----------------------------------------------------------
     parser_vasp_oba_set = subparsers.add_parser(
-        name="vasp_set",
+        name="vasp_oba_set",
         description="Tools for constructing vasp input set with oba_set",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
         aliases=['vos'])
 
+    # write use potcar setting
     parser_vasp_oba_set.add_argument(
         "-p", "--poscar", dest="poscar", default="POSCAR", type=str,
         help="POSCAR-type file name for the supercell.")
@@ -459,7 +460,7 @@ def main():
         "-pi", "-prior_info", dest="prior_info", action="store_true",
         help="Set if prior_info.json is not read.")
 
-    parser_vasp_oba_set.set_defaults(func=vasp_set)
+    parser_vasp_oba_set.set_defaults(func=vasp_oba_set)
 
     # -- diagnose --------------------------------------------------------------
     parser_diagnose = subparsers.add_parser(
@@ -773,6 +774,7 @@ def defect_vasp_set(args):
         sort_structure=False,
         kpt_mode="manual",
         kpt_density=args.kpt_density,
+        only_even=False,
         user_incar_settings={"ISPIN": 1})
 
     make_dir("perfect", oba_set)
@@ -789,7 +791,8 @@ def defect_vasp_set(args):
                                     sort_structure=False,
                                     weak_incar_settings={"LWAVE": args.wavecar},
                                     kpt_mode="manual",
-                                    kpt_density=args.kpt_density)
+                                    kpt_density=args.kpt_density,
+                                    only_even=False)
 
         make_dir(defect_name, oba_set)
         de.to_json_file(json_file_name)
@@ -1001,7 +1004,7 @@ def efnv_correction(args):
         c.to_json_file(join(directory, "correction.json"))
 
 
-def vasp_set(args):
+def vasp_oba_set(args):
 
     #TODO: When writing GW part, refer oba_set_main.py in obadb
 
@@ -1024,7 +1027,6 @@ def vasp_set(args):
         logger.info("Constructing vasp set in {}".format(d))
         user_incar_settings = deepcopy(base_user_incar_settings)
         kwargs = deepcopy(base_kwargs)
-        print(d)
 
         if args.prior_info:
             if os.path.exists("prior_info.json"):
@@ -1034,7 +1036,7 @@ def vasp_set(args):
                     if abs(prior_info["total_magnetization"]) > 0.1 else False
 
         if args.prev_dir:
-            files = {"CHGCAR": "C", "WAVECAR": "L", "WAVEDER": "M"}
+            files = {"CHGCAR": "C", "WAVECAR": "M", "WAVEDER": "M"}
             oba_set = ObaSet.from_prev_calc(args.prev_dir,
                                             copied_file_names=files, **kwargs)
         else:
