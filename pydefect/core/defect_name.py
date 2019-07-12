@@ -33,7 +33,7 @@ class DefectName(MSONable):
             "Va"    --> A set of all the vacancies.
             "_i"     --> A set of all the interstitials.
             "Va_O"  --> A set of all the oxygen vacancies
-            "Va_O[0-9]_0" --> All the oxygen vacancies in neutral charge states
+            "Va_O[0-9]+_0" --> All the oxygen vacancies in neutral charge states
             "Va_O1" --> A set of oxygen vacancies at O1 site
             "Mg_O"  --> A set of all the Mg-on-O antisite pairs.
             "Mg_O1" --> A set of Mg-on-O1 antisite pairs.
