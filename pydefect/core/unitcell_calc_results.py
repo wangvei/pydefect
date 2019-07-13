@@ -167,9 +167,12 @@ class UnitcellCalcResults(MSONable):
     # setter from vasp results
     def set_band_edge_from_vasp(self, directory_path,
                                 vasprun_name="vasprun.xml"):
+        from obadb.analyzer.band_gap import band_gap_properties
         vasprun = Vasprun(os.path.join(directory_path, vasprun_name))
-        _, cbm, vbm, self.is_direct = vasprun.eigenvalue_band_properties
-        self._band_edge = [vbm, cbm]
+
+        _, vbm_info, cbm_info = band_gap_properties(vasprun)
+        self.is_direct = vbm_info["kpoints"] = cbm_info["kpoints"]
+        self._band_edge = [vbm_info["energy"], cbm_info["energy"]]
 
     def set_static_dielectric_tensor_from_vasp(self, directory_path,
                                                outcar_name="OUTCAR"):
