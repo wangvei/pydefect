@@ -362,7 +362,7 @@ class SupercellCalcResults(MSONable):
                 total_energy - referenced_dft_results.total_energy
 
             if defect_entry is None:
-                raise ValueError("DefectEntry is necessary for analyzing"
+                raise ValueError("DefectEntry is necessary for analyzing "
                                  "relative values.")
 
             mapping = defect_entry.atom_mapping_to_perfect
