@@ -125,7 +125,6 @@ def get_displacements(final_structure: Structure,
             x = 1
         if -1 - 1e-3 < x < -1:
             x = -1
-        print(x)
         angles.append(degrees(acos(x)))
 
     # angles are nan when the displacements are zero or diverged.
