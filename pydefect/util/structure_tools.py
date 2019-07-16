@@ -120,7 +120,12 @@ def get_displacements(final_structure: Structure,
         if i < 1e-5 or d < 1e-5:
             angles.append(None)
             continue
-        angles.append(degrees(acos((i * i + d * d - f * f) / (2 * i * d))))
+        x = (i * i + d * d - f * f) / (2 * i * d)
+        if 1 < x < 1 + 1e-3:
+            x = 1
+        if -1 - 1e-3 < x < -1:
+            x = -1
+        angles.append(degrees(acos(x)))
 
     # angles are nan when the displacements are zero or diverged.
     return initial_distances, final_distances, disp_vectors, disp_norms, angles
