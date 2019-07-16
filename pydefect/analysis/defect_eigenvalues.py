@@ -138,11 +138,15 @@ class DefectEigenvalue(MSONable):
                    orbital_character=defect.dft_results.orbital_character,
                    band_edges=defect.dft_results.band_edges)
 
-    def plot(self, yrange=None, title=None):
+    def plot(self, yrange=None, title=None, filename=None):
         """ Plots the defect eigenvalues.
         Args:
             yrange (list):
                 1x2 list for determining y energy range.
+            title (str):
+                Title of the plot
+            filename (str):
+                Filename when the plot is saved; otherwise show plot.
         """
         num_figure = len(self.eigenvalues.keys())
         fig, axs = plt.subplots(nrows=1, ncols=num_figure, sharey=True)
@@ -203,7 +207,10 @@ class DefectEigenvalue(MSONable):
 #         #     ax.set_xticklabels(labels)
 #         #     ax.set_xlim(0.25, len(labels) + 0.75)
 
-        plt.show()
+        if filename:
+            plt.savefig(filename)
+        else:
+            plt.show()
 
     @property
     def kpt_mapping_to_perfect_kpt(self):

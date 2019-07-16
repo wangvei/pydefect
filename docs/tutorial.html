@@ -33,13 +33,14 @@
   <div class="section" id="tutorial-of-pydefect">
 <h1>Tutorial of pydefect<a class="headerlink" href="#tutorial-of-pydefect" title="Permalink to this headline">¶</a></h1>
 <hr class="docutils" />
-<p>We here illustrate how to use the PyDefect code.
-Note that units used in PyDefect are eV and Angstrom for energy and length.</p>
+<p>We here illustrate how to use the PyDefect code.</p>
+<p><strong>Note1: Units used in PyDefect are eV and Angstrom for energy and length following the vasp convention.</strong></p>
+<p><strong>Note2: Only nonmagnetic host materials are allowed for now.</strong></p>
 <p>Usually, point-defect calculations in non-metallic solids are intricate as shown in the workflow below;
-some tasks can be performed concurrently, while some must follow other tasks.</p>
+some tasks can be performed concurrently, while others must follow some tasks.</p>
 <p><img alt="_images/flowchart.png" src="_images/flowchart.png" /></p>
 <p>Here, we suppose the following directory tree.
-The <code class="docutils literal notranslate"><span class="pre">&lt;project_name&gt;</span></code> is usually the name of material sometimes with crystal structure, e.g., rutile-TiO2.</p>
+The <code class="docutils literal notranslate"><span class="pre">&lt;project_name&gt;</span></code> is usually the name of material or that with crystal structure, e.g., rutile-TiO2.</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span>&lt;project_name&gt;
  │
  ├ unitcell/ ── structure_opt/
@@ -72,9 +73,9 @@ For instance, vasp input files or optimizing structure of unitcell using the PBE
 </pre></div>
 </div>
 <p>where <code class="docutils literal notranslate"><span class="pre">vasp_oba_set</span></code>, or its abbreviation (<code class="docutils literal notranslate"><span class="pre">vos</span></code>) , is a sub-command option.
-In PyDefect, all the sub-commands have their abbreviated sub-commands.
-When PyDefect create vasp input files and analyze and visualize vasp output files,
-it uses the VaspObaSet library, written largely on the basis of <a class="reference external" href="http://pymatgen.org">pymatgen</a> mostly developed by Materials Project team.</p>
+In PyDefect, all the sub-commands have their own abbreviated sub-commands.
+When PyDefect creates vasp input files, analyze and visualize vasp output files,
+the VaspObaSet library, written by Kumagai largely on the basis of <a class="reference external" href="http://pymatgen.org">pymatgen</a> mostly developed by Materials Project team, is used.</p>
 <p>In such case, as shown <a class="reference external" href="https://pymatgen.org/usage.html">here</a> and <a class="reference external" href="https://pymatgen.org/_modules/pymatgen/io/vasp/inputs.html">here</a>, we need to set the PMG_DEFAULT_FUNCTIONAL and PMG_VASP_PSP_DIR at the .pmgrc.yaml file, e.g.,</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">PMG_DEFAULT_FUNCTIONAL</span><span class="p">:</span> <span class="n">PBE_54</span>
 <span class="n">PMG_MAPI_KEY</span><span class="p">:</span> <span class="n">xxxxxxxxxxxxxxxx</span>
@@ -82,7 +83,7 @@ it uses the VaspObaSet library, written largely on the basis of <a class="refere
 </pre></div>
 </div>
 <p>PMG_MAPI_KEY needs to be set as well for querying POSCARs for competing materials structures as shown later.
-In VaspObaSet, we provide the default potcar set Oba-group regularly use.
+In VaspObaSet, we provide the default potcar set regularly we use.
 CHANGE THE PROGRAM TO ALLOW USER POTCAR AND MODIFY THIS TUTORIAL.</p>
 <p>There are many options for each sub-command, so please refer the help of the sub-command, e.g., by</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="o">~/</span><span class="n">my_bin</span><span class="o">/</span><span class="n">pydefect</span><span class="o">/</span><span class="n">pydefect</span><span class="o">/</span><span class="n">main</span><span class="o">.</span><span class="n">py</span> <span class="n">vos</span> <span class="o">-</span><span class="n">h</span>
@@ -97,8 +98,8 @@ Such iteration of vasp calculations is not supported by PyDefect, but one can ea
 <h2>2. Calculation of band, DOS, and dielectric tensor<a class="headerlink" href="#calculation-of-band-dos-and-dielectric-tensor" title="Permalink to this headline">¶</a></h2>
 <p>We then calculate the band structure (BS), density of states (DOS), and dielectric constant.
 In the defect calculations, the BS and DOS are used for determining the valence band maximum (VBM) and conduction band minimum (CBM),
-while the dielectric constant that is a sum of electronic and ionic dielectric tensors is needed for correcting the defect formation energies and defect eigenvalues.</p>
-<p>First, create <code class="docutils literal notranslate"><span class="pre">band/</span></code>, <code class="docutils literal notranslate"><span class="pre">dos/</span></code> and <code class="docutils literal notranslate"><span class="pre">dielectric/</span></code> in <code class="docutils literal notranslate"><span class="pre">unitcell/</span></code> and type the following command in each directory,</p>
+while the dielectric constant, a sum of electronic and ionic dielectric tensors, is needed for correcting the defect formation energies and defect eigenvalues.</p>
+<p>First, create <code class="docutils literal notranslate"><span class="pre">band/</span></code>, <code class="docutils literal notranslate"><span class="pre">dos/</span></code> and <code class="docutils literal notranslate"><span class="pre">dielectric/</span></code> in <code class="docutils literal notranslate"><span class="pre">unitcell/</span></code> and copy POSCAR from <code class="docutils literal notranslate"><span class="pre">unitcell/structure_opt</span></code> and type the following command in each directory,</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="o">~/</span><span class="n">my_bin</span><span class="o">/</span><span class="n">pydefect</span><span class="o">/</span><span class="n">pydefect</span><span class="o">/</span><span class="n">main</span><span class="o">.</span><span class="n">py</span> <span class="n">vos</span> <span class="o">-</span><span class="n">t</span> <span class="n">band</span> <span class="o">-</span><span class="n">x</span> <span class="n">pbesol</span>
 </pre></div>
 </div>
@@ -116,7 +117,7 @@ so if one uses the plot for publication or presentation, please cite the followi
 DOI: 10.1016/j.commatsci.2016.10.015 (the “HPKOT” paper; arXiv version: arXiv:1602.06402).</p></li>
 </ul>
 <p>For drawing BS and DOS, PyDefect also provides their plotters based on VaspObaSet with <code class="docutils literal notranslate"><span class="pre">plot_band</span></code> (=<code class="docutils literal notranslate"><span class="pre">pb</span></code>) and <code class="docutils literal notranslate"><span class="pre">plot_dos</span></code> (=<code class="docutils literal notranslate"><span class="pre">pd</span></code>) sub-commands.
-Tyep the following commands in <code class="docutils literal notranslate"><span class="pre">band/</span></code> and  <code class="docutils literal notranslate"><span class="pre">dos/</span></code>, respectively.</p>
+Type the following commands in <code class="docutils literal notranslate"><span class="pre">band/</span></code> and  <code class="docutils literal notranslate"><span class="pre">dos/</span></code>, respectively.</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="o">~/</span><span class="n">my_bin</span><span class="o">/</span><span class="n">phos_pbesol</span><span class="o">/</span><span class="n">obadb</span><span class="o">/</span><span class="n">obadb</span><span class="o">/</span><span class="n">analyzer</span><span class="o">/</span><span class="n">main</span><span class="o">.</span><span class="n">py</span> <span class="n">pb</span> <span class="o">-</span><span class="n">v</span> <span class="n">vasprun</span><span class="o">.</span><span class="n">xml</span> <span class="o">-</span><span class="n">k</span> <span class="n">KPOINTS</span> <span class="o">-</span><span class="n">f</span> <span class="n">band</span><span class="o">.</span><span class="n">pdf</span>
 </pre></div>
 </div>
@@ -132,9 +133,10 @@ using the <code class="docutils literal notranslate"><span class="pre">unitcell_
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="o">~/</span><span class="n">my_bin</span><span class="o">/</span><span class="n">pydefect</span><span class="o">/</span><span class="n">pydefect</span><span class="o">/</span><span class="n">main</span><span class="o">.</span><span class="n">py</span> <span class="n">ur</span> <span class="o">--</span><span class="n">static_diele_dir</span> <span class="n">dielectric</span> <span class="o">--</span><span class="n">ionic_diele_dir</span> <span class="n">dielectric</span> <span class="o">--</span><span class="n">band_edge_dir</span> <span class="n">band</span> <span class="o">--</span><span class="n">volume_dir</span> <span class="n">dielectric</span> <span class="o">--</span><span class="n">total_dos_dir</span> <span class="n">dos</span> <span class="o">--</span><span class="n">json_file</span> <span class="n">unitcell</span><span class="o">.</span><span class="n">json</span> <span class="o">-</span><span class="n">o</span> <span class="n">OUTCAR</span><span class="o">-</span><span class="n">finish</span> <span class="o">-</span><span class="n">p</span> <span class="n">POSCAR</span><span class="o">-</span><span class="n">finish</span> <span class="o">-</span><span class="n">v</span> <span class="n">vasprun</span><span class="o">.</span><span class="n">xml</span>
 </pre></div>
 </div>
-<p>In this command, we suppose the situation where the OUTCAR and CONTCAR files are renamed and specify these files using <code class="docutils literal notranslate"><span class="pre">-o</span></code> and <code class="docutils literal notranslate"><span class="pre">-p</span></code> options, respectively.
-With this command, <code class="docutils literal notranslate"><span class="pre">unitcell.json</span></code> is generated that will be used for the analysis later.
-Generally, json file is less readable for human beings, so we usually implement <code class="docutils literal notranslate"><span class="pre">print</span></code> option to show readable information from json files, like</p>
+<p>In this command, we suppose the situation where the OUTCAR and CONTCAR files are renamed to OUTCAR-finish and POSCAR-finish, respectively,
+and specify these files using <code class="docutils literal notranslate"><span class="pre">-o</span></code> and <code class="docutils literal notranslate"><span class="pre">-p</span></code> options, respectively.
+With this command, <code class="docutils literal notranslate"><span class="pre">unitcell.json</span></code> is generated, which will be used for the analysis later.
+Generally, json files are less readable for human beings, so we usually implement <code class="docutils literal notranslate"><span class="pre">print</span></code> option to show readable information from json files, like</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="o">~/</span><span class="n">my_bin</span><span class="o">/</span><span class="n">pydefect</span><span class="o">/</span><span class="n">pydefect</span><span class="o">/</span><span class="n">main</span><span class="o">.</span><span class="n">py</span> <span class="n">ur</span> <span class="o">--</span><span class="nb">print</span>
 </pre></div>
 </div>
@@ -164,7 +166,7 @@ In order to calculate free energy of defect formation that is approximated with 
 we need to set the chemical potentials of exchanged atoms accompanied with creating defects.
 Usually, we consider the chemical potentials at the condition where competing phases coexist with the host material,
 and for this purpose, need to calculate the chemical potential diagram.</p>
-<p>First, we create <code class="docutils literal notranslate"><span class="pre">competing_phases/</span></code> and create directories for competing phases including VASP input sets in each directory.
+<p>First, we create directories in <code class="docutils literal notranslate"><span class="pre">competing_phases/</span></code> for competing phases including VASP input sets in each directory.
 Using the chempotdiag library developed and managed by Akira Takahashi, we can retrieve POSCARs of the stable or slightly unstable competing phases from <a class="reference external" href="https://materialsproject.org">the Materials Project (MP)</a>.
 For this purpose, one needs <a class="reference external" href="https://materialsproject.org/open">the API keys</a> of the MP as mentioned above.
 Here, we show an example
@@ -173,17 +175,18 @@ We obtain the competing materials with BaSnO of which energy above hull is less 
 </pre></div>
 </div>
 <p>Particular molecules, namely O2, N2, F2, H2O, N2, NH3, NO2, P2, and P4, are exceptions and their POSCARs are not retrieved from MP as they have been calculated as solids in MP, but created by chempotdiag.</p>
-<p>We then generate <code class="docutils literal notranslate"><span class="pre">INCAR</span></code>, <code class="docutils literal notranslate"><span class="pre">POTCAR</span></code>, <code class="docutils literal notranslate"><span class="pre">KPOINTS</span></code> files for each solid or molecule.
-In order to compare the total energies, we need to use the same cutoff energy, <code class="docutils literal notranslate"><span class="pre">ENCUT</span></code>.
-Furthermore, we need to increase the <code class="docutils literal notranslate"><span class="pre">ENCUT</span></code> up to 1.3 times of max <code class="docutils literal notranslate"><span class="pre">ENMAX</span></code> between the constituent POTCARs.
-In case of BaSnO3, as <code class="docutils literal notranslate"><span class="pre">ENMAX</span></code> of Ba, Sn, and O are 187.181, 103.236, 400.0, and so we need to set <code class="docutils literal notranslate"><span class="pre">ENCUT</span> <span class="pre">=</span> <span class="pre">520</span></code>,
-This is possible with <code class="docutils literal notranslate"><span class="pre">-is</span></code> option, meaning INCAR settings.</p>
+<p>The bulk structure, namely BaSnO3 in this example, has already been calculated, so we do not have to iterate the same calculations.
+Therefore, we simply remove <code class="docutils literal notranslate"><span class="pre">Ba1Sn1O3_mp-3163</span></code> and make a symbolic link by <code class="docutils literal notranslate"><span class="pre">ln</span> <span class="pre">-s</span> <span class="pre">../unitcell/structure_opt</span> <span class="pre">BaSnO3</span></code>.</p>
+<p>We then generate <code class="docutils literal notranslate"><span class="pre">INCAR</span></code>, <code class="docutils literal notranslate"><span class="pre">POTCAR</span></code>, <code class="docutils literal notranslate"><span class="pre">KPOINTS</span></code> files for other competing solids or molecules.
+In order to compare the total energies, we need to use the same cutoff energy, <code class="docutils literal notranslate"><span class="pre">ENCUT</span></code>, increased to 1.3 times of max <code class="docutils literal notranslate"><span class="pre">ENMAX</span></code> between the constituent POTCARs.
+In case of BaSnO3, <code class="docutils literal notranslate"><span class="pre">ENMAX</span></code> of Ba, Sn, and O are 187.181, 103.236, 400.0, so we need to set <code class="docutils literal notranslate"><span class="pre">ENCUT</span> <span class="pre">=</span> <span class="pre">520</span></code>,
+This is possible with <code class="docutils literal notranslate"><span class="pre">-is</span></code> option, which means <code class="docutils literal notranslate"><span class="pre">INCAR</span> <span class="pre">settings</span></code>.</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="o">~/</span><span class="n">my_bin</span><span class="o">/</span><span class="n">pydefect</span><span class="o">/</span><span class="n">pydefect</span><span class="o">/</span><span class="n">main</span><span class="o">.</span><span class="n">py</span> <span class="n">vos</span> <span class="o">-</span><span class="n">t</span> <span class="n">structure_opt</span> <span class="o">-</span><span class="n">x</span> <span class="n">pbesol</span> <span class="o">-</span><span class="ow">is</span> <span class="n">ENCUT</span> <span class="mi">520</span> <span class="o">--</span><span class="n">dirs</span> <span class="o">*</span><span class="n">_</span><span class="o">*/</span>
 </pre></div>
 </div>
-<p>Note, if competing phases are gases, we need to change the <code class="docutils literal notranslate"><span class="pre">ISIF</span></code> to 2 so as not to relax the lattice constants.
+<p>Note, if competing phases are gases, we need to change the <code class="docutils literal notranslate"><span class="pre">ISIF</span></code> to 2 so as not to relax the lattice constants, and <code class="docutils literal notranslate"><span class="pre">KPOINTS</span></code> requires only the Gamma point sampling.
 In such case, type as follows,</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="o">~/</span><span class="n">my_bin</span><span class="o">/</span><span class="n">pydefect</span><span class="o">/</span><span class="n">pydefect</span><span class="o">/</span><span class="n">main</span><span class="o">.</span><span class="n">py</span> <span class="n">vos</span> <span class="o">-</span><span class="n">t</span> <span class="n">structure_opt</span> <span class="o">-</span><span class="n">x</span> <span class="n">pbesol</span> <span class="o">-</span><span class="ow">is</span> <span class="n">ENCUT</span> <span class="mi">520</span> <span class="n">ISIF</span> <span class="mi">2</span> <span class="o">--</span><span class="n">dirs</span> <span class="n">O2molecule_pydefect</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="o">~/</span><span class="n">my_bin</span><span class="o">/</span><span class="n">pydefect</span><span class="o">/</span><span class="n">pydefect</span><span class="o">/</span><span class="n">main</span><span class="o">.</span><span class="n">py</span> <span class="n">vos</span> <span class="o">-</span><span class="n">t</span> <span class="n">structure_opt</span> <span class="o">-</span><span class="n">x</span> <span class="n">pbesol</span> <span class="o">-</span><span class="ow">is</span> <span class="n">ENCUT</span> <span class="mi">520</span> <span class="n">ISIF</span> <span class="mi">2</span> <span class="o">-</span><span class="n">kw</span> <span class="n">is_cluster</span> <span class="kc">True</span> <span class="o">--</span><span class="n">dirs</span> <span class="n">O2molecule_pydefect</span>
 </pre></div>
 </div>
 <p>where O2molecule_pydefect is a directory for the O2 molecule model.</p>
@@ -193,8 +196,8 @@ In such case, type as follows,</p>
 </div>
 <p>Note that there are parameters for gas phases that set the partial pressure and temperature for chemical potentials (read help for more details).
 With this command, we depict the Ba-Sn-O chemical potential diagram saved as <code class="docutils literal notranslate"><span class="pre">cpd_BaSnO3.pdf</span></code>
-<img alt="_images/cpd_BaSnO3.png" src="_images/cpd_BaSnO3.png" />
-and values at the vertices at the BaSnO3 region written in <code class="docutils literal notranslate"><span class="pre">vertices_BaSnO3.yaml</span></code> as shown</p>
+<img alt="_images/cpd_BaSnO3.png" src="_images/cpd_BaSnO3.png" /></p>
+<p>and values at the vertices at the BaSnO3 region written in <code class="docutils literal notranslate"><span class="pre">vertices_BaSnO3.yaml</span></code> as shown</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">A</span><span class="p">:</span> <span class="p">{</span><span class="n">Ba</span><span class="p">:</span> <span class="o">-</span><span class="mf">6.339048510000005</span><span class="p">,</span> <span class="n">O</span><span class="p">:</span> <span class="o">-</span><span class="mf">0.18899787319844918</span><span class="p">,</span> <span class="n">Sn</span><span class="p">:</span> <span class="o">-</span><span class="mf">5.638818995000001</span><span class="p">}</span>
 <span class="n">B</span><span class="p">:</span> <span class="p">{</span><span class="n">Ba</span><span class="p">:</span> <span class="o">-</span><span class="mf">5.9688971474999875</span><span class="p">,</span> <span class="n">O</span><span class="p">:</span> <span class="o">-</span><span class="mf">0.22601300944845448</span><span class="p">,</span> <span class="n">Sn</span><span class="p">:</span> <span class="o">-</span><span class="mf">5.897924948750013</span><span class="p">}</span>
 <span class="n">C</span><span class="p">:</span> <span class="p">{</span><span class="n">Ba</span><span class="p">:</span> <span class="o">-</span><span class="mf">5.257239969999993</span><span class="p">,</span> <span class="n">O</span><span class="p">:</span> <span class="o">-</span><span class="mf">0.5818415981984444</span><span class="p">,</span> <span class="n">Sn</span><span class="p">:</span> <span class="o">-</span><span class="mf">5.542096360000016</span><span class="p">}</span>

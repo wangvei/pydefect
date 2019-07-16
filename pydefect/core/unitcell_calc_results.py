@@ -170,6 +170,8 @@ class UnitcellCalcResults(MSONable):
         from obadb.analyzer.band_gap import band_gap_properties
         vasprun = Vasprun(os.path.join(directory_path, vasprun_name))
 
+        # 2019/7/13 NEVER USE Vasprun.eigenvalue_band_properties
+        # THERE IS A BUG TO ESTIMATE VBM AND CBM
         _, vbm_info, cbm_info = band_gap_properties(vasprun)
         self.is_direct = vbm_info["kpoints"] = cbm_info["kpoints"]
         self._band_edge = [vbm_info["energy"], cbm_info["energy"]]

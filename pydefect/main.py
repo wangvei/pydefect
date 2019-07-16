@@ -438,6 +438,9 @@ def main():
     parser_vasp_oba_set.add_argument(
         "-d", "--prev_dir", dest="prev_dir", type=str,
         help=".")
+    parser_vasp_oba_set.add_argument(
+        "-c", "--charge", dest="charge", type=int,
+        help="Charge state.")
     # parser_vasp_oba_set.add_argument(
     #     "-gga", "--prev_gga", dest="prev_gga",
     #     action="store_true", help=".")
@@ -507,7 +510,7 @@ def main():
         help="Two float values for the y-range of the plot.")
     parser_plot_energy.add_argument(
         "-s", "--save_file", dest="save_file", type=str, default=None,
-        help="PDF file name to save the plot.")
+        help="File name to save the plot.")
     parser_plot_energy.add_argument(
         "--unitcell", dest="unitcell", type=str, default="unitcell.json",
         help="UnitcellCalcResults class object json file name.")
@@ -566,14 +569,14 @@ def main():
         aliases=['eig'])
 
     parser_parse_eigenvalues.add_argument(
-        "--name", dest="name", type=str, default="",
-        help="System name that is written in the title.")
+        "--title", dest="title", type=str, default="",
+        help="Title of the plot.")
     parser_parse_eigenvalues.add_argument(
         "-y", "--yrange", dest="y_range", type=float, nargs='+', default=None,
         help="Two float values for the y-range of the plot.")
     parser_parse_eigenvalues.add_argument(
         "-s", "--save_file", dest="save_file", type=str, default=None,
-        help="PDF file name to save the plot.")
+        help="File name to save the plot.")
     parser_parse_eigenvalues.add_argument(
         "--unitcell", dest="unitcell", type=str, default="unitcell.json",
         help="UnitcellCalcResults class object json file name.")
@@ -1038,10 +1041,12 @@ def vasp_oba_set(args):
         if args.prev_dir:
             files = {"CHGCAR": "C", "WAVECAR": "M", "WAVEDER": "M"}
             oba_set = ObaSet.from_prev_calc(args.prev_dir,
+                                            charge=args.charge,
                                             copied_file_names=files, **kwargs)
         else:
             s = Structure.from_file(args.poscar)
             oba_set = ObaSet.make_input(structure=s,
+                                        charge=args.charge,
                                         user_incar_settings=user_incar_settings,
                                         **kwargs)
 
@@ -1149,9 +1154,8 @@ def parse_eigenvalues(args):
                                                      perfect=perfect,
                                                      defect=defect)
 
-    defect_eigenvalues.plot()
-
-#    plt.savefig(args.save_file, format="pdf") if args.save_file else plt.show()
+    defect_eigenvalues.plot(yrange=args.y_range, title=args.title,
+                            filename=args.save_file)
 
 
 def vasp_parchg_set(args):

@@ -2,15 +2,18 @@
 -----------------------
 
 We here illustrate how to use the PyDefect code.
-Note that units used in PyDefect are eV and Angstrom for energy and length.
+
+**Note1: Units used in PyDefect are eV and Angstrom for energy and length following the vasp convention.**
+
+**Note2: Only nonmagnetic host materials are allowed for now.**
 
 Usually, point-defect calculations in non-metallic solids are intricate as shown in the workflow below;
-some tasks can be performed concurrently, while some must follow other tasks.
+some tasks can be performed concurrently, while others must follow some tasks.
 
 ![](flowchart.png)
 
 Here, we suppose the following directory tree.
-The `<project_name>` is usually the name of material sometimes with crystal structure, e.g., rutile-TiO2.
+The `<project_name>` is usually the name of material or that with crystal structure, e.g., rutile-TiO2.
 ```
 <project_name>
  │
@@ -45,9 +48,9 @@ For instance, vasp input files or optimizing structure of unitcell using the PBE
 python $PATH_TO_PYDEFECT/pydefect/main.py vasp_oba_set -t structure_opt -x pbesol
 ```
 where `vasp_oba_set`, or its abbreviation (`vos`) , is a sub-command option.
-In PyDefect, all the sub-commands have their abbreviated sub-commands.
-When PyDefect create vasp input files and analyze and visualize vasp output files, 
-it uses the VaspObaSet library, written largely on the basis of [pymatgen](http://pymatgen.org) mostly developed by Materials Project team.
+In PyDefect, all the sub-commands have their own abbreviated sub-commands.
+When PyDefect creates vasp input files, analyze and visualize vasp output files, 
+the VaspObaSet library, written by Kumagai largely on the basis of [pymatgen](http://pymatgen.org) mostly developed by Materials Project team, is used.
 
 In such case, as shown [here](https://pymatgen.org/usage.html) and [here](https://pymatgen.org/_modules/pymatgen/io/vasp/inputs.html), we need to set the PMG_DEFAULT_FUNCTIONAL and PMG_VASP_PSP_DIR at the .pmgrc.yaml file, e.g.,
 ```
@@ -56,7 +59,7 @@ PMG_MAPI_KEY: xxxxxxxxxxxxxxxx
 PMG_VASP_PSP_DIR: /home/kuma/potcars/
 ```
 PMG_MAPI_KEY needs to be set as well for querying POSCARs for competing materials structures as shown later.
-In VaspObaSet, we provide the default potcar set Oba-group regularly use.
+In VaspObaSet, we provide the default potcar set regularly we use.
 CHANGE THE PROGRAM TO ALLOW USER POTCAR AND MODIFY THIS TUTORIAL.
 
 There are many options for each sub-command, so please refer the help of the sub-command, e.g., by 
@@ -73,9 +76,9 @@ Such iteration of vasp calculations is not supported by PyDefect, but one can ea
 
 We then calculate the band structure (BS), density of states (DOS), and dielectric constant.
 In the defect calculations, the BS and DOS are used for determining the valence band maximum (VBM) and conduction band minimum (CBM), 
-while the dielectric constant that is a sum of electronic and ionic dielectric tensors is needed for correcting the defect formation energies and defect eigenvalues.
+while the dielectric constant, a sum of electronic and ionic dielectric tensors, is needed for correcting the defect formation energies and defect eigenvalues.
 
-First, create `band/`, `dos/` and `dielectric/` in `unitcell/` and type the following command in each directory,
+First, create `band/`, `dos/` and `dielectric/` in `unitcell/` and copy POSCAR from `unitcell/structure_opt` and type the following command in each directory,
 ```
 python ~/my_bin/pydefect/pydefect/main.py vos -t band -x pbesol
 ```
@@ -92,7 +95,7 @@ so if one uses the plot for publication or presentation, please cite the followi
   DOI: 10.1016/j.commatsci.2016.10.015 (the "HPKOT" paper; arXiv version: arXiv:1602.06402).
 
 For drawing BS and DOS, PyDefect also provides their plotters based on VaspObaSet with `plot_band` (=`pb`) and `plot_dos` (=`pd`) sub-commands.
-Tyep the following commands in `band/` and  `dos/`, respectively. 
+Type the following commands in `band/` and  `dos/`, respectively. 
 ```
 python ~/my_bin/phos_pbesol/obadb/obadb/analyzer/main.py pb -v vasprun.xml -k KPOINTS -f band.pdf
 ```
@@ -108,9 +111,10 @@ using the `unitcell_results` (=`ur`) sub-command.
 ```
 python ~/my_bin/pydefect/pydefect/main.py ur --static_diele_dir dielectric --ionic_diele_dir dielectric --band_edge_dir band --volume_dir dielectric --total_dos_dir dos --json_file unitcell.json -o OUTCAR-finish -p POSCAR-finish -v vasprun.xml
 ```
-In this command, we suppose the situation where the OUTCAR and CONTCAR files are renamed and specify these files using `-o` and `-p` options, respectively.
-With this command, `unitcell.json` is generated that will be used for the analysis later.
-Generally, json file is less readable for human beings, so we usually implement `print` option to show readable information from json files, like
+In this command, we suppose the situation where the OUTCAR and CONTCAR files are renamed to OUTCAR-finish and POSCAR-finish, respectively, 
+and specify these files using `-o` and `-p` options, respectively.
+With this command, `unitcell.json` is generated, which will be used for the analysis later.
+Generally, json files are less readable for human beings, so we usually implement `print` option to show readable information from json files, like
 ```
 python ~/my_bin/pydefect/pydefect/main.py ur --print
 ```
@@ -140,7 +144,7 @@ we need to set the chemical potentials of exchanged atoms accompanied with creat
 Usually, we consider the chemical potentials at the condition where competing phases coexist with the host material,
 and for this purpose, need to calculate the chemical potential diagram.
 
-First, we create `competing_phases/` and create directories for competing phases including VASP input sets in each directory.
+First, we create directories in `competing_phases/` for competing phases including VASP input sets in each directory.
 Using the chempotdiag library developed and managed by Akira Takahashi, we can retrieve POSCARs of the stable or slightly unstable competing phases from [the Materials Project (MP)](https://materialsproject.org).
 For this purpose, one needs [the API keys](https://materialsproject.org/open) of the MP as mentioned above.
 Here, we show an example
@@ -150,19 +154,21 @@ python ~/my_bin/phos_pbesol/obadb/obadb/analyzer/chempotdiag/main.py cpd -m -el 
 ```
 Particular molecules, namely O2, N2, F2, H2O, N2, NH3, NO2, P2, and P4, are exceptions and their POSCARs are not retrieved from MP as they have been calculated as solids in MP, but created by chempotdiag.
 
-We then generate `INCAR`, `POTCAR`, `KPOINTS` files for each solid or molecule.
-In order to compare the total energies, we need to use the same cutoff energy, `ENCUT`.
-Furthermore, we need to increase the `ENCUT` up to 1.3 times of max `ENMAX` between the constituent POTCARs.
-In case of BaSnO3, as `ENMAX` of Ba, Sn, and O are 187.181, 103.236, 400.0, and so we need to set `ENCUT = 520`,
-This is possible with `-is` option, meaning INCAR settings.
+The bulk structure, namely BaSnO3 in this example, has already been calculated, so we do not have to iterate the same calculations.
+Therefore, we simply remove `Ba1Sn1O3_mp-3163` and make a symbolic link by `ln -s ../unitcell/structure_opt BaSnO3`.
+
+We then generate `INCAR`, `POTCAR`, `KPOINTS` files for other competing solids or molecules.
+In order to compare the total energies, we need to use the same cutoff energy, `ENCUT`, increased to 1.3 times of max `ENMAX` between the constituent POTCARs.
+In case of BaSnO3, `ENMAX` of Ba, Sn, and O are 187.181, 103.236, 400.0, so we need to set `ENCUT = 520`,
+This is possible with `-is` option, which means `INCAR settings`.
 ```
 python ~/my_bin/pydefect/pydefect/main.py vos -t structure_opt -x pbesol -is ENCUT 520 --dirs *_*/
 ```
 
-Note, if competing phases are gases, we need to change the `ISIF` to 2 so as not to relax the lattice constants.
+Note, if competing phases are gases, we need to change the `ISIF` to 2 so as not to relax the lattice constants, and `KPOINTS` requires only the Gamma point sampling.
 In such case, type as follows,
 ```
-python ~/my_bin/pydefect/pydefect/main.py vos -t structure_opt -x pbesol -is ENCUT 520 ISIF 2 --dirs O2molecule_pydefect
+python ~/my_bin/pydefect/pydefect/main.py vos -t structure_opt -x pbesol -is ENCUT 520 ISIF 2 -kw is_cluster True --dirs O2molecule_pydefect
 ```
 where O2molecule_pydefect is a directory for the O2 molecule model. 
 
@@ -173,6 +179,7 @@ python ~/my_bin/phos_pbesol/obadb/obadb/analyzer/chempotdiag/main.py cpd -v */ -
 Note that there are parameters for gas phases that set the partial pressure and temperature for chemical potentials (read help for more details).
 With this command, we depict the Ba-Sn-O chemical potential diagram saved as `cpd_BaSnO3.pdf` 
 ![](cpd_BaSnO3.png)
+
 and values at the vertices at the BaSnO3 region written in `vertices_BaSnO3.yaml` as shown
 ```
 A: {Ba: -6.339048510000005, O: -0.18899787319844918, Sn: -5.638818995000001}
