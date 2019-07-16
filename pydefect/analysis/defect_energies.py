@@ -363,16 +363,11 @@ class DefectEnergies(MSONable):
         # Note: len(self.defect_energies) <= len(transition_levels)
         for i, (name, tl) in enumerate(transition_levels.items()):
 
+            line_type = '-' if i < 5 else '--' if i < 10 else '-.'
             # ---------- Calculate cross points including edges ----------------
             cross_points = []
             charge_set = set()
 
-            if i < 5:
-                line_type = '-'
-            elif 5 <= i < 10:
-                line_type = '--'
-            else:
-                line_type = '-.'
 
             # keep x_min -> transition levels -> x_max for connecting points.
             # Add the plot point at x_min
