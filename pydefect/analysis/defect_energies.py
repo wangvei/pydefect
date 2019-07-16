@@ -295,8 +295,8 @@ class DefectEnergies(MSONable):
         if color is None:
             color =  \
                 ["xkcd:blue", "xkcd:brown", "xkcd:crimson", "xkcd:darkgreen",
-                 "xkcd:gold", "xkcd:magenta", "xkcd:darkblue", "xkcd:navy",
-                 "xkcd:orange", "xkcd:red", "xkcd:olive", "xkcd:black",
+                 "xkcd:gold", "xkcd:magenta", "xkcd:orange", "xkcd:darkblue",
+                 "xkcd:navy", "xkcd:red", "xkcd:olive", "xkcd:black",
                  "xkcd:indigo"]
 
         ax.set_xlabel("Fermi level (eV)", fontsize=15)
@@ -367,6 +367,13 @@ class DefectEnergies(MSONable):
             cross_points = []
             charge_set = set()
 
+            if i < 5:
+                line_type = '-'
+            elif 5 <= i < 10:
+                line_type = '--'
+            else:
+                line_type = '-.'
+
             # keep x_min -> transition levels -> x_max for connecting points.
             # Add the plot point at x_min
             charge, y = min_e_at_ef(lowest_energies[name], x_min + self.vbm)
@@ -400,7 +407,7 @@ class DefectEnergies(MSONable):
             # set x and y arrays to be compatible with matplotlib style.
             # e.g., x = [0.0, 0.3, 0.5, ...], y = [2.1, 3.2, 1.2, ...]
             x, y = np.array(cross_points).transpose()
-            line, = ax.plot(x, y, '-', color=color[i], label=name)
+            line, = ax.plot(x, y, line_type, color=color[i], label=name)
             line.set_label(name)
 
             # margin_x and _y determine the positions of the transition levels.
@@ -436,7 +443,7 @@ class DefectEnergies(MSONable):
                 for c, e in lowest_energies[name].items():
                     y1 = e + c * (x_min + self.vbm)
                     y2 = e + c * (x_max + self.vbm)
-                    ax.plot([x_min, x_max], [y1, y2], '-', linewidth=0.3,
+                    ax.plot([x_min, x_max], [y1, y2], line_type, linewidth=0.3,
                             color=color[i])
 
         if y_range:
