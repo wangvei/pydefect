@@ -251,6 +251,9 @@ def main():
         aliases=['de'])
 
     parser_defect_entry.add_argument(
+        "--print", dest="print", action="store_true",
+        help="Print DefectEntry class object information.")
+    parser_defect_entry.add_argument(
         "--make_defect_entry", dest="make_defect_entry", action="store_true",
         help="Make defect_entry.json from yaml file.")
     parser_defect_entry.add_argument(
@@ -814,11 +817,13 @@ def defect_vasp_set(args):
 
 
 def defect_entry(args):
-    if args.make_defect_entry:
+    if args.print:
+        print(DefectEntry.load_json(args.json))
+    elif args.make_defect_entry:
         defect_entry_from_yaml = DefectEntry.from_yaml(args.yaml)
         defect_entry_from_yaml.to_json_file(args.json)
     else:
-        print(DefectEntry.load_json(args.json))
+        logger.warning("Set make_defect_entry or print option.")
 
 
 def supercell_calc_results(args):
