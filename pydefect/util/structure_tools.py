@@ -360,6 +360,7 @@ def count_equivalent_clusters(perfect_structure: Structure,
         displacement_distance (float)
         symprec (float):
         angle_tolerance (float):
+            Angle tolerance in degree used for identifying the space group.
 
     Returns:
         count (int):

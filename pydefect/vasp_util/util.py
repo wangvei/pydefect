@@ -12,16 +12,13 @@ __author__ = "Yu Kumagai"
 __maintainer__ = "Yu Kumagai"
 
 
-def element_diff_from_poscar_files(poscar1, poscar2):
+def element_diff_from_structures(structure1, structure2):
     """
-    Returns a dict of change of numbers of elements from poscar2 to poscar1
-    For defect calculations, poscar2 should be "perfect".
+    Returns dict of change of numbers of elements from structure2 to structure1
+    For defect calculations, structure2 should be "perfect".
     """
-    c1 = Composition(
-        Structure.from_file(poscar1).composition, allow_negative=True)
-    c2 = Composition(
-        Structure.from_file(poscar2).composition, allow_negative=True)
-    c_diff = c1 - c2
+    c_diff = (Composition(structure1.composition, allow_negative=True)
+              - Composition(structure2.composition, allow_negative=True))
 
     return {str(e): int(c_diff[e]) for e in c_diff}
 

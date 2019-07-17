@@ -171,6 +171,7 @@ python ~/my_bin/pydefect/pydefect/main.py vos -t structure_opt -x pbesol -is ENC
 
 <p>Note, if competing phases are gases, we need to change `ISIF` to 2 so as not to relax the lattice constants (see [vasp manual](https://cms.mpi.univie.ac.at/wiki/index.php/ISIF)), 
 and `KPOINTS` requires only the &Gamma; point sampling.</p>
+
 In such case, type as follows,
 ```
 python ~/my_bin/pydefect/pydefect/main.py vos -t structure_opt -x pbesol -is ENCUT 520 ISIF 2 -kw is_cluster True --dirs O2molecule_pydefect

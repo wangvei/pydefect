@@ -54,7 +54,7 @@ class DefectEntryTest(PymatgenTest):
         changes_of_num_elements = {"O": -2, "Mg": 1}
         charge = 2
         initial_site_symmetry = "mmm"
-        perturbed_sites = []
+        neighboring_sites = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
         num_equiv_sites = 24
 
         self._MgO_complex = \
@@ -66,7 +66,7 @@ class DefectEntryTest(PymatgenTest):
                         changes_of_num_elements=changes_of_num_elements,
                         charge=charge,
                         initial_site_symmetry=initial_site_symmetry,
-                        neighboring_sites=perturbed_sites,
+                        neighboring_sites=neighboring_sites,
                         num_equiv_sites=num_equiv_sites)
 
     def test_from_yaml(self):
@@ -91,18 +91,16 @@ class DefectEntryTest(PymatgenTest):
 
             # self.assertTrue('This is broken' in context.exception)
 
-    def test_dict_roundtrip(self):
-        """ round trip test of as_dict and from_dict
-        """
+    def test_dict_round_trip(self):
+        """ round trip test of as_dict and from_dict """
         dict = self._MgO_Va_O1_2.as_dict()
         Va_O1_2_from_dict = DefectEntry.from_dict(dict)
         for i in dict.keys():
             self.assertTrue(Va_O1_2_from_dict.as_dict()[i] ==
                         self._MgO_Va_O1_2.as_dict()[i])
 
-    def test_json(self):
-        """ round trip test of to_json and from_json
-        """
+    def test_json_round_trip(self):
+        """ round trip test of to_json and from_json """
         tmp_file = tempfile.NamedTemporaryFile()
         self._MgO_Va_O1_2.to_json_file(tmp_file.name)
         defect_entry_from_json = DefectEntry.load_json(tmp_file.name)

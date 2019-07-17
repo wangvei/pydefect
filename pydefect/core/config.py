@@ -9,7 +9,8 @@ __maintainer__ = "Yu Kumagai"
 ELECTRONEGATIVITY_DIFFERENCE = 1.0
 # Maximum displacement displacement_distance
 DISPLACEMENT_DISTANCE = 0.2
-# Cutoff radius in which atoms are perturbed.
+# Cutoff radius in which atoms are considered as neighbors of a defect, and
+# perturbed when DISPLACEMENT_DISTANCE is set.
 CUTOFF_RADIUS = 3.0
 SYMMETRY_TOLERANCE = 0.01
 DEFECT_SYMMETRY_TOLERANCE = 0.1
