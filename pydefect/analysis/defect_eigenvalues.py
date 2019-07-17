@@ -135,8 +135,9 @@ class DefectEigenvalue(MSONable):
                 Filename when the plot is saved; otherwise show plot.
         """
         num_figure = len(self.eigenvalues.keys())
-        fig, axs = plt.subplots(nrows=1, ncols=num_figure, sharey=True)
+        fig, axs = plt.subplots(nrows=1, ncols=num_figure, sharey='all')
         fig.subplots_adjust(wspace=0)
+
         title = \
             "_".join([self.name, str(self.charge)]) if title is None else title
         fig.suptitle(title, fontsize=12)
@@ -148,11 +149,12 @@ class DefectEigenvalue(MSONable):
         if yrange is None:
             yrange = [self.supercell_vbm - 3, self.supercell_cbm + 3]
 
-        k_index = self.add_eigenvalues_to_plot(axs, self.eigenvalues)
+        k_index = self.add_eigenvalues_to_plot(axs)
 
         x_labels = ["\n".join([str(i) for i in k]) for k in self.kpoint_coords]
 
         for i, s in enumerate(self.band_edges):
+            # show band-edge states
             axs[i].set_title(s.name.upper() + ": " + str(self.band_edges[s]))
             axs[i].set_ylim(yrange[0], yrange[1])
             axs[i].set_xlim(-1, k_index + 1)
@@ -175,8 +177,8 @@ class DefectEigenvalue(MSONable):
         axs[num_figure - 1].annotate(
             "Fermi\nlevel", xy=(k_index + 1, self.fermi_level - 0.2),
             fontsize=10)
-        axs[0].annotate("vbm", xy=(-1, self.vbm), fontsize=10)
-        axs[0].annotate("cbm", xy=(-1, self.cbm), fontsize=10)
+#        axs[0].annotate("vbm", xy=(-1, self.vbm), fontsize=10)
+#        axs[0].annotate("cbm", xy=(-1, self.cbm), fontsize=10)
 
 
 #         # def set_axis_style(ax, labels):
@@ -191,8 +193,7 @@ class DefectEigenvalue(MSONable):
         else:
             plt.show()
 
-    @staticmethod
-    def add_eigenvalues_to_plot(axs, eigenvalues):
+    def add_eigenvalues_to_plot(self, axs):
         occupied_eigenvalues = []
         occupied_x = []
         unoccupied_eigenvalues = []
@@ -200,9 +201,9 @@ class DefectEigenvalue(MSONable):
         partial_occupied_eigenvalues = []
         partial_occupied_x = []
 
-        for i, s in enumerate(eigenvalues.keys()):
+        for i, s in enumerate(self.eigenvalues.keys()):
             ax = axs[i]
-            for k_index, eigen in enumerate(eigenvalues[s]):
+            for k_index, eigen in enumerate(self.eigenvalues[s]):
                 for band_index, e in enumerate(eigen):
                     occupancy = e[1]
                     if occupancy < 0.1:
@@ -218,7 +219,10 @@ class DefectEigenvalue(MSONable):
 
 #                    if k_index == 1 and e[0] - eigen[band_index-1][0] > 0.1:
                     if band_index < len(eigen) - 1:
-                        if eigen[band_index + 1][0] - e[0] > 0.1:
+                        if (e[0] < self.fermi_level and
+                            eigen[band_index + 1][0] - e[0] > 0.2) or \
+                                (e[0] > self.fermi_level
+                                 and e[0] - eigen[band_index - 1][0] > 0.2):
                             ax.annotate(str(band_index + 1),
                                         xy=(k_index + 0.05, e[0]),
                                         fontsize=10)

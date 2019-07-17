@@ -174,10 +174,10 @@ class DefectEnergies(MSONable):
     def from_dict(cls, d):
         """ Construct a class object from a dictionary. """
         defect_energies = \
-            {name: {int(charge):
-                        {None if annotation == "null" else annotation:
-                             DefectEnergy.from_dict(e)
-                         for annotation, e in v2.items()}
+            {name: {int(charge): {None if annotation == "null"
+                                  else annotation:
+                                      DefectEnergy.from_dict(e)
+                                  for annotation, e in v2.items()}
                     for charge, v2 in v1.items()}
              for name, v1 in d["defect_energies"].items()}
 
@@ -196,7 +196,7 @@ class DefectEnergies(MSONable):
     def load_json(cls, filename):
         return loadfn(filename)
 
-    def _repr__(self):
+    def __repr__(self):
         outs = []
         for n in self.defect_energies.keys():
             for c in self.defect_energies[n].keys():
@@ -313,7 +313,8 @@ class DefectEnergies(MSONable):
 
         for name, energy_by_charge in self.defect_energies.items():
             for charge, energy_by_annotation in copy(energy_by_charge).items():
-                for annotation, defect_energy in copy(energy_by_annotation).items():
+                for annotation, defect_energy \
+                        in copy(energy_by_annotation).items():
 
                     n = DefectName(name, charge, annotation)
                     is_shallow = defect_energy.is_shallow
@@ -408,7 +409,7 @@ class DefectEnergies(MSONable):
             line.set_label(name)
 
             # margin_x and _y determine the positions of the transition levels.
-            margin_x = (x_max - x_min) * 0.015
+#            margin_x = (x_max - x_min) * 0.015
             margin_y = (y_max - y_min) * 0.05
 
             if show_transition_levels:
