@@ -34,7 +34,7 @@
 <h1>Tutorial of pydefect<a class="headerlink" href="#tutorial-of-pydefect" title="Permalink to this headline">¶</a></h1>
 <hr class="docutils" />
 <p>We here illustrate how to use the PyDefect code.</p>
-<p><strong>Note1: Units used in PyDefect are eV for energy and Angstrom for length following the vasp convention.</strong></p>
+<p><strong>Note1: Units used in PyDefect are eV for energy and <span>Å</span> for length following the vasp convention.</strong></p>
 <p><strong>Note2: Only nonmagnetic host materials are allowed.</strong></p>
 <p>Usually, point-defect calculations in non-metallic solids are intricate as shown in the workflow below;
 some tasks can be performed concurrently, while others must follow some other tasks.</p>
@@ -187,14 +187,13 @@ In case of BaSnO<sub>3</sub>, <code class="docutils literal notranslate"><span c
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="o">~/</span><span class="n">my_bin</span><span class="o">/</span><span class="n">pydefect</span><span class="o">/</span><span class="n">pydefect</span><span class="o">/</span><span class="n">main</span><span class="o">.</span><span class="n">py</span> <span class="n">vos</span> <span class="o">-</span><span class="n">t</span> <span class="n">structure_opt</span> <span class="o">-</span><span class="n">x</span> <span class="n">pbesol</span> <span class="o">-</span><span class="ow">is</span> <span class="n">ENCUT</span> <span class="mi">520</span> <span class="o">--</span><span class="n">dirs</span> <span class="o">*</span><span class="n">_</span><span class="o">*/</span>
 </pre></div>
 </div>
-<p>Note, if competing phases are gases, we need to change <code class="docutils literal notranslate"><span class="pre">ISIF</span></code> to 2 so as not to relax the lattice constants (see <a class="reference external" href="https://cms.mpi.univie.ac.at/wiki/index.php/ISIF">vasp manual</a>),
-and <code class="docutils literal notranslate"><span class="pre">KPOINTS</span></code> requires only the Gamma point sampling.
-In such case, type as follows,</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="o">~/</span><span class="n">my_bin</span><span class="o">/</span><span class="n">pydefect</span><span class="o">/</span><span class="n">pydefect</span><span class="o">/</span><span class="n">main</span><span class="o">.</span><span class="n">py</span> <span class="n">vos</span> <span class="o">-</span><span class="n">t</span> <span class="n">structure_opt</span> <span class="o">-</span><span class="n">x</span> <span class="n">pbesol</span> <span class="o">-</span><span class="ow">is</span> <span class="n">ENCUT</span> <span class="mi">520</span> <span class="n">ISIF</span> <span class="mi">2</span> <span class="o">-</span><span class="n">kw</span> <span class="n">is_cluster</span> <span class="kc">True</span> <span class="o">--</span><span class="n">dirs</span> <span class="n">O2molecule_pydefect</span>
-</pre></div>
-</div>
-<p>where O2molecule_pydefect is a directory for the O2 molecule model.</p>
-<p>After finishing the vasp calculations, we generate the chemical potential diagram with</p>
+<p>Note, if competing phases are gases, we need to change `ISIF` to 2 so as not to relax the lattice constants (see [vasp manual](https://cms.mpi.univie.ac.at/wiki/index.php/ISIF)), 
+and `KPOINTS` requires only the &Gamma; point sampling.</p>
+In such case, type as follows,
+```
+python ~/my_bin/pydefect/pydefect/main.py vos -t structure_opt -x pbesol -is ENCUT 520 ISIF 2 -kw is_cluster True --dirs O2molecule_pydefect
+```
+where O2molecule_pydefect is a directory for the O2 molecule model. <p>After finishing the vasp calculations, we generate the chemical potential diagram with</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="o">~/</span><span class="n">my_bin</span><span class="o">/</span><span class="n">phos_pbesol</span><span class="o">/</span><span class="n">obadb</span><span class="o">/</span><span class="n">obadb</span><span class="o">/</span><span class="n">analyzer</span><span class="o">/</span><span class="n">chempotdiag</span><span class="o">/</span><span class="n">main</span><span class="o">.</span><span class="n">py</span> <span class="n">cpd</span> <span class="o">-</span><span class="n">v</span> <span class="o">*/</span> <span class="o">-</span><span class="n">p</span> <span class="n">POSCAR</span><span class="o">-</span><span class="n">finish</span> <span class="o">-</span><span class="n">o</span> <span class="n">OUTCAR</span><span class="o">-</span><span class="n">finish</span> <span class="o">-</span><span class="n">c</span> <span class="n">BaSnO3</span> <span class="o">-</span><span class="n">y</span> <span class="o">-</span><span class="n">s</span> <span class="n">cpd_BaSnO3</span><span class="o">.</span><span class="n">pdf</span>
 </pre></div>
 </div>
@@ -217,10 +216,10 @@ With this command, we depict the Ba-Sn-O chemical potential diagram saved as <co
 <p>Here, <code class="docutils literal notranslate"><span class="pre">standard_energy</span></code> are the energies of the most stable simple substances or simple gas phases,
 and A–F show the relative chemical potentials at the vertices shown in <code class="docutils literal notranslate"><span class="pre">cpd_BaSnO3.pdf</span></code>.</p>
 </div>
-<div class="section" id="select-of-a-supercell">
-<h2>5. Select of a supercell<a class="headerlink" href="#select-of-a-supercell" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="selection-of-a-supercell">
+<h2>5. Selection of a supercell<a class="headerlink" href="#selection-of-a-supercell" title="Permalink to this headline">¶</a></h2>
 <p>So far, we have finished the calculations of the unit cell and competing phases, and are eventually ready for point-defect calculations.
-Let’s create <code class="docutils literal notranslate"><span class="pre">defect/</span></code> directory and copy unitcell <code class="docutils literal notranslate"><span class="pre">POSCAR</span></code> file from e.g. <code class="docutils literal notranslate"><span class="pre">unitcell/dos/</span></code> to <code class="docutils literal notranslate"><span class="pre">defect/</span></code></p>
+Let’s create <code class="docutils literal notranslate"><span class="pre">defect/</span></code> directory and copy unitcell <code class="docutils literal notranslate"><span class="pre">POSCAR</span></code> file from <em>e.g.</em> <code class="docutils literal notranslate"><span class="pre">unitcell/dos/</span></code> to <code class="docutils literal notranslate"><span class="pre">defect/</span></code></p>
 <p>Firstly, we need to determine the shape and size of the supercell.
 PyDefect recommends a nearly isotropic supercell composed of moderate number of atoms.
 For this purpose, use the <code class="docutils literal notranslate"><span class="pre">recommend_supercell</span></code> (=<code class="docutils literal notranslate"><span class="pre">rs</span></code>) sub-command,</p>
@@ -228,7 +227,13 @@ For this purpose, use the <code class="docutils literal notranslate"><span class
 </pre></div>
 </div>
 <p>Then, <code class="docutils literal notranslate"><span class="pre">UPOSCAR</span></code> and <code class="docutils literal notranslate"><span class="pre">SPOSCAR</span></code> that are the POSCARs for the unitcell and supercell, respectively, are generated.</p>
-</div>
+<p>Although PyDefect constructs <code class="docutils literal notranslate"><span class="pre">SPOSCAR</span></code> based on the <em>conventional</em> unitcell by default,
+it can also expand the <em>primitive</em> unitcell with <code class="docutils literal notranslate"><span class="pre">-pr</span></code> option.
+(If centering is absent, these two are the same.)</p>
+<p>It is also possible to change the lattice angle of the supercell from those of the conventional or primitive unitcell,
+but not a good idea for point-defect calculations.</p>
+<p> For example, &Gamma;, we can make a supercell in which a-, b-, and c-axes are mutually orthogonal.</p>
+However, its lattice breaks the original hexagonal symmetry, which reduces the accuracy of the point-defect calculations.</div>
 <div class="section" id="construction-of-defect-initial-setting">
 <h2>6. Construction of defect initial setting<a class="headerlink" href="#construction-of-defect-initial-setting" title="Permalink to this headline">¶</a></h2>
 <p>We then create the initial setting file for point defects with the <code class="docutils literal notranslate"><span class="pre">initial_setting</span></code> (=<code class="docutils literal notranslate"><span class="pre">is</span></code>) sub-command.</p>
@@ -237,8 +242,8 @@ For this purpose, use the <code class="docutils literal notranslate"><span class
 </div>
 <p>With this command, we can build the <code class="docutils literal notranslate"><span class="pre">defect.in</span></code> file, which contains the full information on what kind of defects are to be generated automatically.
 At the same time, <code class="docutils literal notranslate"><span class="pre">DPOSCAR</span></code>, POSCAR used for the defect calculations, is created.
-If one follows this tutorial, DPOSCAR file is the same as SPOSCAR, while if one uses their own supercell POSCAR, the sequence of elements could be changed.</p>
-<p>An example of <code class="docutils literal notranslate"><span class="pre">defect.in</span></code> is as follows:</p>
+If one follows this tutorial, <code class="docutils literal notranslate"><span class="pre">DPOSCAR</span></code> should be the same as <code class="docutils literal notranslate"><span class="pre">SPOSCAR</span></code>, while if one prepares their own supercell <code class="docutils literal notranslate"><span class="pre">POSCAR</span></code>, an order of elements may be changed.</p>
+<p>An example of <code class="docutils literal notranslate"><span class="pre">defect.in</span></code> looks as follows:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span>  <span class="n">Space</span> <span class="n">group</span><span class="p">:</span> <span class="n">Pm</span><span class="o">-</span><span class="mi">3</span><span class="n">m</span>
 
 <span class="n">Transformation</span> <span class="n">matrix</span><span class="p">:</span>  <span class="mi">3</span>  <span class="mi">3</span>  <span class="mi">3</span>
@@ -286,17 +291,17 @@ If one follows this tutorial, DPOSCAR file is the same as SPOSCAR, while if one 
 <span class="n">Angle</span> <span class="n">tolerance</span><span class="p">:</span> <span class="mi">5</span>
 </pre></div>
 </div>
-<p>If we want to add dopants a posteriori, we can type as follows.</p>
+<p>If we want to add dopants <em>a posteriori</em>, we can type as follows.</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="o">~/</span><span class="n">my_bin</span><span class="o">/</span><span class="n">pydefect</span><span class="o">/</span><span class="n">pydefect</span><span class="o">/</span><span class="n">main</span><span class="o">.</span><span class="n">py</span> <span class="ow">is</span> <span class="o">--</span><span class="n">print_dopant</span> <span class="n">Na</span>
 </pre></div>
 </div>
-<p>This example of Na dopant shows</p>
+<p>This example of Na dopant prints</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span>   <span class="n">Dopant</span> <span class="n">element</span><span class="p">:</span> <span class="n">Na</span>
 <span class="n">Electronegativity</span><span class="p">:</span> <span class="mf">0.93</span>
   <span class="n">Oxidation</span> <span class="n">state</span><span class="p">:</span> <span class="mi">1</span>
 </pre></div>
 </div>
-<p>By inserting this to <code class="docutils literal notranslate"><span class="pre">defect.in</span></code> and modify <code class="docutils literal notranslate"><span class="pre">Substituted</span> <span class="pre">defects</span></code> as follows</p>
+<p>By inserting this with an editor to <code class="docutils literal notranslate"><span class="pre">defect.in</span></code> and modify <code class="docutils literal notranslate"><span class="pre">Substituted</span> <span class="pre">defects</span></code> as follows</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span>  <span class="n">Space</span> <span class="n">group</span><span class="p">:</span> <span class="n">Pm</span><span class="o">-</span><span class="mi">3</span><span class="n">m</span>
 
 <span class="n">Transformation</span> <span class="n">matrix</span><span class="p">:</span>  <span class="mi">3</span>  <span class="mi">3</span>  <span class="mi">3</span>
@@ -351,7 +356,7 @@ If one follows this tutorial, DPOSCAR file is the same as SPOSCAR, while if one 
 <p>There are so many tips related to <code class="docutils literal notranslate"><span class="pre">defect.in</span></code>.</p>
 <ol>
 <li><p>The antisites and substituted defects are determined from the difference of the electronegativity.
-Although default is 1.0, you can change it using <code class="docutils literal notranslate"><span class="pre">-e</span></code> option, e.g., 1.5.</p>
+Although default is 1.0 <span>Å</span>, you can change it using <code class="docutils literal notranslate"><span class="pre">-e</span></code> option to e.g., 1.5.</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="o">~/</span><span class="n">my_bin</span><span class="o">/</span><span class="n">pydefect</span><span class="o">/</span><span class="n">pydefect</span><span class="o">/</span><span class="n">main</span><span class="o">.</span><span class="n">py</span> <span class="ow">is</span> <span class="o">-</span><span class="n">e</span> <span class="mf">1.5</span>
 </pre></div>
 </div>
@@ -436,7 +441,7 @@ you will get the error message as</p>
 </div>
 <div class="section" id="creation-of-defect-calculation-directories">
 <h2>8. Creation of defect calculation directories<a class="headerlink" href="#creation-of-defect-calculation-directories" title="Permalink to this headline">¶</a></h2>
-<p>We next create directories for point defect supercell calculations.</p>
+<p>We next create directories for point-defect calculations.</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="o">~/</span><span class="n">my_bin</span><span class="o">/</span><span class="n">pydefect</span><span class="o">/</span><span class="n">pydefect</span><span class="o">/</span><span class="n">main</span><span class="o">.</span><span class="n">py</span> <span class="n">dvs</span>
 </pre></div>
 </div>
@@ -445,37 +450,26 @@ you will get the error message as</p>
 <span class="n">Va_O1_0</span><span class="p">,</span> <span class="n">Va_O1_1</span><span class="p">,</span> <span class="n">Va_O1_2</span><span class="p">,</span> <span class="n">Va_Sn1_0</span><span class="p">,</span> <span class="n">Va_Sn1_</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">Va_Sn1_</span><span class="o">-</span><span class="mi">2</span><span class="p">,</span> <span class="n">Va_Sn1_</span><span class="o">-</span><span class="mi">3</span><span class="p">,</span> <span class="n">Va_Sn1_</span><span class="o">-</span><span class="mi">4</span>
 </pre></div>
 </div>
-<p>If you want to calculate only oxygen vacancies, you can restrict the calculated defects with a python regular expression,</p>
+<p>If you want to calculate only oxygen vacancies, you can restrict the calculated defects with <code class="docutils literal notranslate"><span class="pre">-kw</span></code> option and a python regular expression,</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="o">~/</span><span class="n">my_bin</span><span class="o">/</span><span class="n">pydefect</span><span class="o">/</span><span class="n">pydefect</span><span class="o">/</span><span class="n">main</span><span class="o">.</span><span class="n">py</span> <span class="n">dvs</span> <span class="o">-</span><span class="n">kw</span> <span class="s2">&quot;Va_O[0-9]?_[0-9]+&quot;</span>
 </pre></div>
 </div>
-<p>With this command, these directories are created.</p>
+<p>, which create these directories.</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">perfect</span><span class="o">/</span> <span class="n">Va_O1_0</span><span class="o">/</span> <span class="n">Va_O1_1</span><span class="o">/</span> <span class="n">Va_O1_2</span><span class="o">/</span>
 </pre></div>
 </div>
 <p>If you again type the same command, the following information is shown,</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="mi">2019</span><span class="o">-</span><span class="mi">07</span><span class="o">-</span><span class="mi">09</span> <span class="mi">17</span><span class="p">:</span><span class="mi">22</span><span class="p">:</span><span class="mi">21</span><span class="p">,</span><span class="mi">044</span> <span class="n">INFO</span> <span class="n">obadb</span><span class="o">.</span><span class="n">vasp</span><span class="o">.</span><span class="n">input_set</span> <span class="n">Band</span> <span class="n">gap</span> <span class="n">info</span><span class="p">:</span> <span class="kc">None</span>
-<span class="mi">2019</span><span class="o">-</span><span class="mi">07</span><span class="o">-</span><span class="mi">09</span> <span class="mi">17</span><span class="p">:</span><span class="mi">22</span><span class="p">:</span><span class="mi">21</span><span class="p">,</span><span class="mi">057</span> <span class="n">INFO</span> <span class="n">obadb</span><span class="o">.</span><span class="n">vasp</span><span class="o">.</span><span class="n">input_set</span> <span class="n">Magnetization</span><span class="p">:</span> <span class="kc">False</span>
-<span class="mi">2019</span><span class="o">-</span><span class="mi">07</span><span class="o">-</span><span class="mi">09</span> <span class="mi">17</span><span class="p">:</span><span class="mi">22</span><span class="p">:</span><span class="mi">21</span><span class="p">,</span><span class="mi">078</span> <span class="n">WARNING</span> <span class="n">pydefect</span><span class="o">.</span><span class="n">input_maker</span><span class="o">.</span><span class="n">defect_entry_set_maker</span>    <span class="n">perfect</span> <span class="n">already</span> <span class="n">exists</span><span class="p">,</span> <span class="n">so</span> <span class="n">nothing</span> <span class="ow">is</span> <span class="n">done</span><span class="o">.</span>
-<span class="mi">2019</span><span class="o">-</span><span class="mi">07</span><span class="o">-</span><span class="mi">09</span> <span class="mi">17</span><span class="p">:</span><span class="mi">22</span><span class="p">:</span><span class="mi">21</span><span class="p">,</span><span class="mi">086</span> <span class="n">INFO</span> <span class="n">obadb</span><span class="o">.</span><span class="n">vasp</span><span class="o">.</span><span class="n">input_set</span> <span class="n">Band</span> <span class="n">gap</span> <span class="n">info</span><span class="p">:</span> <span class="kc">None</span>
-<span class="mi">2019</span><span class="o">-</span><span class="mi">07</span><span class="o">-</span><span class="mi">09</span> <span class="mi">17</span><span class="p">:</span><span class="mi">22</span><span class="p">:</span><span class="mi">21</span><span class="p">,</span><span class="mi">379</span> <span class="n">INFO</span> <span class="n">obadb</span><span class="o">.</span><span class="n">vasp</span><span class="o">.</span><span class="n">input_set</span> <span class="n">The</span> <span class="n">given</span> <span class="n">structure</span> <span class="ow">is</span> <span class="n">a</span> <span class="n">standardized</span> <span class="n">primitive</span><span class="o">.</span>
-<span class="mi">2019</span><span class="o">-</span><span class="mi">07</span><span class="o">-</span><span class="mi">09</span> <span class="mi">17</span><span class="p">:</span><span class="mi">22</span><span class="p">:</span><span class="mi">21</span><span class="p">,</span><span class="mi">384</span> <span class="n">INFO</span> <span class="n">obadb</span><span class="o">.</span><span class="n">vasp</span><span class="o">.</span><span class="n">input_set</span> <span class="n">Magnetization</span><span class="p">:</span> <span class="kc">False</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="mi">2019</span><span class="o">-</span><span class="mi">07</span><span class="o">-</span><span class="mi">09</span> <span class="mi">17</span><span class="p">:</span><span class="mi">22</span><span class="p">:</span><span class="mi">21</span><span class="p">,</span><span class="mi">078</span> <span class="n">WARNING</span> <span class="n">pydefect</span><span class="o">.</span><span class="n">input_maker</span><span class="o">.</span><span class="n">defect_entry_set_maker</span>    <span class="n">perfect</span> <span class="n">already</span> <span class="n">exists</span><span class="p">,</span> <span class="n">so</span> <span class="n">nothing</span> <span class="ow">is</span> <span class="n">done</span><span class="o">.</span>
 <span class="mi">2019</span><span class="o">-</span><span class="mi">07</span><span class="o">-</span><span class="mi">09</span> <span class="mi">17</span><span class="p">:</span><span class="mi">22</span><span class="p">:</span><span class="mi">21</span><span class="p">,</span><span class="mi">399</span> <span class="n">WARNING</span> <span class="n">pydefect</span><span class="o">.</span><span class="n">input_maker</span><span class="o">.</span><span class="n">defect_entry_set_maker</span>    <span class="n">Va_O1_0</span> <span class="n">already</span> <span class="n">exists</span><span class="p">,</span> <span class="n">so</span> <span class="n">nothing</span> <span class="ow">is</span> <span class="n">done</span><span class="o">.</span>
-<span class="mi">2019</span><span class="o">-</span><span class="mi">07</span><span class="o">-</span><span class="mi">09</span> <span class="mi">17</span><span class="p">:</span><span class="mi">22</span><span class="p">:</span><span class="mi">21</span><span class="p">,</span><span class="mi">438</span> <span class="n">INFO</span> <span class="n">obadb</span><span class="o">.</span><span class="n">vasp</span><span class="o">.</span><span class="n">input_set</span> <span class="n">Band</span> <span class="n">gap</span> <span class="n">info</span><span class="p">:</span> <span class="kc">None</span>
-<span class="mi">2019</span><span class="o">-</span><span class="mi">07</span><span class="o">-</span><span class="mi">09</span> <span class="mi">17</span><span class="p">:</span><span class="mi">22</span><span class="p">:</span><span class="mi">21</span><span class="p">,</span><span class="mi">726</span> <span class="n">INFO</span> <span class="n">obadb</span><span class="o">.</span><span class="n">vasp</span><span class="o">.</span><span class="n">input_set</span> <span class="n">The</span> <span class="n">given</span> <span class="n">structure</span> <span class="ow">is</span> <span class="n">a</span> <span class="n">standardized</span> <span class="n">primitive</span><span class="o">.</span>
-<span class="mi">2019</span><span class="o">-</span><span class="mi">07</span><span class="o">-</span><span class="mi">09</span> <span class="mi">17</span><span class="p">:</span><span class="mi">22</span><span class="p">:</span><span class="mi">21</span><span class="p">,</span><span class="mi">730</span> <span class="n">INFO</span> <span class="n">obadb</span><span class="o">.</span><span class="n">vasp</span><span class="o">.</span><span class="n">input_set</span> <span class="n">Magnetization</span><span class="p">:</span> <span class="kc">False</span>
 <span class="mi">2019</span><span class="o">-</span><span class="mi">07</span><span class="o">-</span><span class="mi">09</span> <span class="mi">17</span><span class="p">:</span><span class="mi">22</span><span class="p">:</span><span class="mi">21</span><span class="p">,</span><span class="mi">744</span> <span class="n">WARNING</span> <span class="n">pydefect</span><span class="o">.</span><span class="n">input_maker</span><span class="o">.</span><span class="n">defect_entry_set_maker</span>    <span class="n">Va_O1_1</span> <span class="n">already</span> <span class="n">exists</span><span class="p">,</span> <span class="n">so</span> <span class="n">nothing</span> <span class="ow">is</span> <span class="n">done</span><span class="o">.</span>
-<span class="mi">2019</span><span class="o">-</span><span class="mi">07</span><span class="o">-</span><span class="mi">09</span> <span class="mi">17</span><span class="p">:</span><span class="mi">22</span><span class="p">:</span><span class="mi">21</span><span class="p">,</span><span class="mi">782</span> <span class="n">INFO</span> <span class="n">obadb</span><span class="o">.</span><span class="n">vasp</span><span class="o">.</span><span class="n">input_set</span> <span class="n">Band</span> <span class="n">gap</span> <span class="n">info</span><span class="p">:</span> <span class="kc">None</span>
-<span class="mi">2019</span><span class="o">-</span><span class="mi">07</span><span class="o">-</span><span class="mi">09</span> <span class="mi">17</span><span class="p">:</span><span class="mi">22</span><span class="p">:</span><span class="mi">22</span><span class="p">,</span><span class="mi">068</span> <span class="n">INFO</span> <span class="n">obadb</span><span class="o">.</span><span class="n">vasp</span><span class="o">.</span><span class="n">input_set</span> <span class="n">The</span> <span class="n">given</span> <span class="n">structure</span> <span class="ow">is</span> <span class="n">a</span> <span class="n">standardized</span> <span class="n">primitive</span><span class="o">.</span>
-<span class="mi">2019</span><span class="o">-</span><span class="mi">07</span><span class="o">-</span><span class="mi">09</span> <span class="mi">17</span><span class="p">:</span><span class="mi">22</span><span class="p">:</span><span class="mi">22</span><span class="p">,</span><span class="mi">072</span> <span class="n">INFO</span> <span class="n">obadb</span><span class="o">.</span><span class="n">vasp</span><span class="o">.</span><span class="n">input_set</span> <span class="n">Magnetization</span><span class="p">:</span> <span class="kc">False</span>
 <span class="mi">2019</span><span class="o">-</span><span class="mi">07</span><span class="o">-</span><span class="mi">09</span> <span class="mi">17</span><span class="p">:</span><span class="mi">22</span><span class="p">:</span><span class="mi">22</span><span class="p">,</span><span class="mi">085</span> <span class="n">WARNING</span> <span class="n">pydefect</span><span class="o">.</span><span class="n">input_maker</span><span class="o">.</span><span class="n">defect_entry_set_maker</span>    <span class="n">Va_O1_2</span> <span class="n">already</span> <span class="n">exists</span><span class="p">,</span> <span class="n">so</span> <span class="n">nothing</span> <span class="ow">is</span> <span class="n">done</span><span class="o">.</span>
 </pre></div>
 </div>
 <p>and no directories are newly created, which is a fail-safe treatment not to delete the calculated directories by mistake.
 If you really overwrite the directories, you can use the <code class="docutils literal notranslate"><span class="pre">--force_overwrite</span></code> option.</p>
-<p>In each directory, we can find the <code class="docutils literal notranslate"><span class="pre">defect_entry.json</span></code> file, which contains the information about the point defect obtained before the first-principles calculations.
+<p>In each directory, we can find the <code class="docutils literal notranslate"><span class="pre">defect_entry.json</span></code> file, containing information about a point defect obtained before the first-principles calculations.
 To see summary of <code class="docutils literal notranslate"><span class="pre">defect_entry.json</span></code>, type</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="o">~/</span><span class="n">my_bin</span><span class="o">/</span><span class="n">pydefect</span><span class="o">/</span><span class="n">pydefect</span><span class="o">/</span><span class="n">main</span><span class="o">.</span><span class="n">py</span> <span class="n">de</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="o">~/</span><span class="n">my_bin</span><span class="o">/</span><span class="n">pydefect</span><span class="o">/</span><span class="n">pydefect</span><span class="o">/</span><span class="n">main</span><span class="o">.</span><span class="n">py</span> <span class="n">de</span> <span class="o">--</span><span class="nb">print</span>
 </pre></div>
 </div>
 <p>When you’d like to add some particular defects, you can use</p>
@@ -483,42 +477,41 @@ To see summary of <code class="docutils literal notranslate"><span class="pre">d
 </pre></div>
 </div>
 <p>With this command, <code class="docutils literal notranslate"><span class="pre">Va_O1_-1/</span></code> is created.</p>
-<p>In some cases, complex defects or some peculiar defects, e.g., DX centers, need to be generated.
-Then, we need to construct <code class="docutils literal notranslate"><span class="pre">POSCAR</span></code>s by ourselves.
-However, PyDefect can generate <code class="docutils literal notranslate"><span class="pre">defect_entry.json</span></code> by parsing the defect POSCAR and INCAR files.</p>
-<p>First, make POSCAR as you want and type the following command to generate the other vasp input set.</p>
+<p>In some cases, complex defects or peculiar defects such as DX centers need to be generated.
+Then, we need to construct <code class="docutils literal notranslate"><span class="pre">POSCAR</span></code>s by hand.
+However, PyDefect can generate <code class="docutils literal notranslate"><span class="pre">defect_entry.json</span></code> by parsing the <code class="docutils literal notranslate"><span class="pre">POSCAR</span></code> and <code class="docutils literal notranslate"><span class="pre">INCAR</span></code> files with a defect.</p>
+<p>Make <code class="docutils literal notranslate"><span class="pre">POSCAR</span></code> as you want and type the following command to generate the other vasp input set.</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="o">~/</span><span class="n">my_bin</span><span class="o">/</span><span class="n">pydefect</span><span class="o">/</span><span class="n">pydefect</span><span class="o">/</span><span class="n">main</span><span class="o">.</span><span class="n">py</span> <span class="n">vos</span> <span class="o">-</span><span class="n">t</span> <span class="n">defect</span> <span class="o">-</span><span class="n">x</span> <span class="n">pbesol</span> <span class="o">--</span><span class="n">dirs</span> <span class="o">.</span> <span class="o">--</span><span class="n">charge</span> <span class="o">-</span><span class="mi">1</span>
 </pre></div>
 </div>
-<p>In this case, the charge is assumed to be -1.
-And then, type</p>
+<p>where the charge is assumed to be -1.</p>
+<p>And then, type</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="o">~/</span><span class="n">my_bin</span><span class="o">/</span><span class="n">pydefect</span><span class="o">/</span><span class="n">pydefect</span><span class="o">/</span><span class="n">main</span><span class="o">.</span><span class="n">py</span> <span class="n">de</span> <span class="o">--</span><span class="n">make_defect_entry</span>
 </pre></div>
 </div>
 <p>to generate <code class="docutils literal notranslate"><span class="pre">defect_entry.json</span></code>.</p>
-<p>We also suggest the users to user Gamma version of vasp if the k-point sampling is only Gamma point.</p>
-</div>
+<p> We also recommend the users to user &Gamma; version of vasp if the k-point sampling is only &Gamma; point for very large supercells.</p></div>
 <div class="section" id="generation-of-supercell-information-related-to-point-defect-calculations">
 <h2>9. Generation of supercell information related to point-defect calculations<a class="headerlink" href="#generation-of-supercell-information-related-to-point-defect-calculations" title="Permalink to this headline">¶</a></h2>
 <p>After (partly) finishing the vasp calculations, we next parse the calculation results and generate the <code class="docutils literal notranslate"><span class="pre">dft_results.json</span></code>
-that contains the first-principles calculation results related to defect properties.
-By typing,</p>
+that contains the first-principles calculation results related to the defect properties.</p>
+<p>By typing,</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="o">~/</span><span class="n">my_bin</span><span class="o">/</span><span class="n">pydefect</span><span class="o">/</span><span class="n">pydefect</span><span class="o">/</span><span class="n">main</span><span class="o">.</span><span class="n">py</span> <span class="n">sr</span> <span class="o">--</span><span class="n">dir_all</span>
 </pre></div>
 </div>
 <p>you can generate <code class="docutils literal notranslate"><span class="pre">dft_results.json</span></code> in all the directories.
-When you want to parse some particular directories, e.g., Va_O1_0, type</p>
+When you want to parse some particular directories, <em>e.g.</em>, Va_O1_0, type</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="o">~/</span><span class="n">my_bin</span><span class="o">/</span><span class="n">pydefect</span><span class="o">/</span><span class="n">pydefect</span><span class="o">/</span><span class="n">main</span><span class="o">.</span><span class="n">py</span> <span class="n">sr</span> <span class="o">--</span><span class="n">dirs</span> <span class="n">Va_O1_0</span>
 </pre></div>
 </div>
-<p>Here, we note that the name of <code class="docutils literal notranslate"><span class="pre">perfect/</span></code> has special meaning, so users must use this name for the supercells w/o defects.</p>
-<p>Some calculations might not be finished properly
+<p>Here, the name of <code class="docutils literal notranslate"><span class="pre">perfect/</span></code> has special meaning, so users <strong>must</strong> use this name for the supercells without defects.</p>
+<p>Some calculations might not be finished properly or still ongoing.
 To see whether the calculations are properly finished, one can use the <code class="docutils literal notranslate"><span class="pre">diagnose</span></code> (=<code class="docutils literal notranslate"><span class="pre">d</span></code>) sub-command</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="o">~/</span><span class="n">my_bin</span><span class="o">/</span><span class="n">pydefect</span><span class="o">/</span><span class="n">pydefect</span><span class="o">/</span><span class="n">main</span><span class="o">.</span><span class="n">py</span> <span class="n">d</span>
 </pre></div>
 </div>
-<p>which shows</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>  <span class="n">Va_Ba1_</span><span class="o">-</span><span class="mi">1</span><span class="o">/</span>  <span class="n">convergence</span> <span class="p">:</span> <span class="n">T</span>    <span class="n">band</span> <span class="n">edge</span> <span class="p">:</span> <span class="n">UP</span>  <span class="p">:</span>    <span class="n">No</span> <span class="ow">in</span><span class="o">-</span><span class="n">gap</span> <span class="n">state</span>  <span class="n">DOWN</span>  <span class="p">:</span>       <span class="n">Acceptor</span> <span class="n">PHS</span>
+<p>which shows like</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>  <span class="n">Va_Ba1_</span><span class="o">-</span><span class="mi">1</span><span class="o">/</span>  <span class="n">convergence</span> <span class="p">:</span> <span class="n">F</span>    <span class="n">band</span> <span class="n">edge</span> <span class="p">:</span> <span class="n">UP</span>  <span class="p">:</span>    <span class="n">No</span> <span class="ow">in</span><span class="o">-</span><span class="n">gap</span> <span class="n">state</span>  <span class="n">DOWN</span>  <span class="p">:</span>       <span class="n">Acceptor</span> <span class="n">PHS</span>
   <span class="n">Va_Ba1_</span><span class="o">-</span><span class="mi">2</span><span class="o">/</span>  <span class="n">convergence</span> <span class="p">:</span> <span class="n">T</span>    <span class="n">band</span> <span class="n">edge</span> <span class="p">:</span> <span class="n">UP</span>  <span class="p">:</span>    <span class="n">No</span> <span class="ow">in</span><span class="o">-</span><span class="n">gap</span> <span class="n">state</span>  <span class="n">DOWN</span>  <span class="p">:</span>    <span class="n">No</span> <span class="ow">in</span><span class="o">-</span><span class="n">gap</span> <span class="n">state</span>
    <span class="n">Va_Ba1_0</span><span class="o">/</span>  <span class="n">No</span> <span class="n">supercell</span> <span class="n">results</span> <span class="n">file</span><span class="o">.</span>
     <span class="n">Va_O1_0</span><span class="o">/</span>  <span class="n">convergence</span> <span class="p">:</span> <span class="n">T</span>    <span class="n">band</span> <span class="n">edge</span> <span class="p">:</span> <span class="n">UP</span>  <span class="p">:</span>    <span class="n">Localized</span> <span class="n">state</span>  <span class="n">DOWN</span>  <span class="p">:</span>    <span class="n">Localized</span> <span class="n">state</span>
@@ -532,20 +525,20 @@ To see whether the calculations are properly finished, one can use the <code cla
 </pre></div>
 </div>
 <p>If the convergences at the electronic and/or ionic step are not attained, convergence is shown as <code class="docutils literal notranslate"><span class="pre">F</span></code>.
-After the convergence, we can see band edge information at the spin up (UP) and down (DOWN) channels, which will be explained later.</p>
+Net to the convergence, we can see band edge information at the spin up (UP) and down (DOWN) channels, which will be explained later.</p>
 </div>
-<div class="section" id="corrections-of-defect-formation-energies-in-finite-size-supercell">
-<h2>10. Corrections of defect formation energies in finite-size supercell<a class="headerlink" href="#corrections-of-defect-formation-energies-in-finite-size-supercell" title="Permalink to this headline">¶</a></h2>
-<p>When supercell method is adopted, because of interaction between a defect, its images, and background charge, the obtained total energies for <strong>charged defects</strong> are not properly estimated
-Therefore, we need to correct the total energies of charged defect supercells to predict those in dilute limit.</p>
+<div class="section" id="corrections-of-defect-formation-energies-in-finite-size-supercells">
+<h2>10. Corrections of defect formation energies in finite-size supercells<a class="headerlink" href="#corrections-of-defect-formation-energies-in-finite-size-supercells" title="Permalink to this headline">¶</a></h2>
+<p>When supercell method is adopted, obtained total energies for <strong>charged defects</strong> are not properly estimated due to interaction between a defect, its images, and background charge.
+Therefore, we need to correct total energies of charged defect supercells to predict those in dilute limit.</p>
 <p>The corrections are attained using the <code class="docutils literal notranslate"><span class="pre">extended_fnv_correction</span></code> (=<code class="docutils literal notranslate"><span class="pre">efc</span></code>) sub-command,</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="o">~/</span><span class="n">my_bin</span><span class="o">/</span><span class="n">pydefect</span><span class="o">/</span><span class="n">pydefect</span><span class="o">/</span><span class="n">main</span><span class="o">.</span><span class="n">py</span> <span class="n">efc</span> <span class="o">--</span><span class="n">unitcell_json</span> <span class="o">../</span><span class="n">unitcell</span><span class="o">/</span><span class="n">unitcell</span><span class="o">.</span><span class="n">json</span> <span class="o">--</span><span class="n">perfect_json</span> <span class="n">perfect</span><span class="o">/</span><span class="n">dft_results</span><span class="o">.</span><span class="n">json</span>
 </pre></div>
 </div>
 <p>For the corrections, we need the dielectric constants and atomic site potential of perfect supercell.
 Therefore, the paths to <code class="docutils literal notranslate"><span class="pre">unitcell.json</span></code> and <code class="docutils literal notranslate"><span class="pre">dft_results.json</span></code> of <code class="docutils literal notranslate"><span class="pre">perfect</span></code> must be assigned.
-Bear also in mind that this command takes some time, so we recommend the users to prepare coffee or go on a walk outside.</p>
-<p>The correction method used in PyDefect at this moment is the so-called extended Freysoldt-Neugebauer-VandeWalle (eFNV) method.
+Bear also in mind that this command takes some time, so we recommend the users to prepare coffee or go on a walk outside during this process.</p>
+<p>The correction method adopted in PyDefect at this moment is the so-called extended Freysoldt-Neugebauer-VandeWalle (eFNV) method.
 so if one uses the corrections, please cite the following papers.</p>
 <ul class="simple">
 <li><p><a class="reference external" href="https://journals.aps.org/prb/abstract/10.1103/PhysRevB.89.195205">Y. Kumagai*, and F. Oba, Electrostatics-based finite-size corrections for first-principles point defect calculations, Phys. Rev. B, 89 195205 (2014).</a></p></li>
@@ -612,12 +605,12 @@ To make the</p>
 <li><a class="reference internal" href="#calculation-of-band-dos-and-dielectric-tensor">2. Calculation of band, DOS, and dielectric tensor</a></li>
 <li><a class="reference internal" href="#gathering-unitcell-information-related-to-point-defect-calculations">3. Gathering unitcell information related to point-defect calculations</a></li>
 <li><a class="reference internal" href="#calculation-of-competing-phases">4. Calculation of competing phases</a></li>
-<li><a class="reference internal" href="#select-of-a-supercell">5. Select of a supercell</a></li>
+<li><a class="reference internal" href="#selection-of-a-supercell">5. Selection of a supercell</a></li>
 <li><a class="reference internal" href="#construction-of-defect-initial-setting">6. Construction of defect initial setting</a></li>
 <li><a class="reference internal" href="#decision-of-interstitial-sites">7. Decision of interstitial sites</a></li>
 <li><a class="reference internal" href="#creation-of-defect-calculation-directories">8. Creation of defect calculation directories</a></li>
 <li><a class="reference internal" href="#generation-of-supercell-information-related-to-point-defect-calculations">9. Generation of supercell information related to point-defect calculations</a></li>
-<li><a class="reference internal" href="#corrections-of-defect-formation-energies-in-finite-size-supercell">10. Corrections of defect formation energies in finite-size supercell</a></li>
+<li><a class="reference internal" href="#corrections-of-defect-formation-energies-in-finite-size-supercells">10. Corrections of defect formation energies in finite-size supercells</a></li>
 <li><a class="reference internal" href="#check-defect-eigenvalues">11. Check defect eigenvalues</a></li>
 <li><a class="reference internal" href="#plot-defect-formation-energies">12. Plot defect formation energies</a></li>
 </ul>

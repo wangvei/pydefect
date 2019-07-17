@@ -7,8 +7,6 @@ from monty.json import MSONable, MontyEncoder
 
 import matplotlib.pyplot as plt
 
-from pymatgen.electronic_structure.core import Spin
-
 from pydefect.analysis.defect import Defect
 from pydefect.core.supercell_calc_results import SupercellCalcResults
 from pydefect.core.unitcell_calc_results import UnitcellCalcResults
@@ -28,11 +26,8 @@ class DefectEigenvalue(MSONable):
                  name: str,
                  charge: int,
                  kpoint_coords: list,
-                 perfect_kpoint_coords: list,
                  kpoint_weights: list,
                  eigenvalues: np.array,
-                 perfect_eigenvalues: np.array,
-                 perfect_symmops: list,
                  vbm: float,
                  cbm: float,
                  supercell_vbm: float,
@@ -81,11 +76,8 @@ class DefectEigenvalue(MSONable):
         self.name = name
         self.charge = charge
         self.kpoint_coords = kpoint_coords
-        self.perfect_kpoint_coords = perfect_kpoint_coords
         self.kpoint_weights = kpoint_weights
         self.eigenvalues = eigenvalues
-        self.perfect_eigenvalues = perfect_eigenvalues
-        self.perfect_symmops = perfect_symmops
         self.vbm = vbm
         self.cbm = cbm
         self.supercell_vbm = supercell_vbm
@@ -118,21 +110,15 @@ class DefectEigenvalue(MSONable):
                 "All the unitcell-related property is not set yet. ")
 
         # Note: vbm, cbm, perfect_vbm, perfect_cbm are in absolute energy.
-        vbm, cbm = unitcell.band_edge
-        supercell_cbm, supercell_vbm = perfect.eigenvalue_properties[1:3]
-
         return cls(name=defect.defect_entry.name,
                    charge=defect.defect_entry.charge,
                    kpoint_coords=defect.dft_results.kpoint_coords,
-                   perfect_kpoint_coords=perfect.kpoint_coords,
                    kpoint_weights=defect.dft_results.kpoint_weights,
                    eigenvalues=defect.dft_results.eigenvalues,
-                   perfect_eigenvalues=perfect.eigenvalues,
-                   perfect_symmops=perfect.symmops,
-                   vbm=vbm,
-                   cbm=cbm,
-                   supercell_vbm=supercell_vbm,
-                   supercell_cbm=supercell_cbm,
+                   vbm=unitcell.band_edge[0],
+                   cbm=unitcell.band_edge[1],
+                   supercell_vbm=perfect.vbm,
+                   supercell_cbm=perfect.cbm,
                    fermi_level=defect.dft_results.fermi_level,
                    total_magnetization=defect.dft_results.total_magnetization,
                    orbital_character=defect.dft_results.orbital_character,
@@ -162,9 +148,7 @@ class DefectEigenvalue(MSONable):
         if yrange is None:
             yrange = [self.supercell_vbm - 3, self.supercell_cbm + 3]
 
-        mapping = self.kpt_mapping_to_perfect_kpt
-        k_index = self.add_eigenvalues_to_plot(
-            axs, self.eigenvalues, self.perfect_eigenvalues, mapping)
+        k_index = self.add_eigenvalues_to_plot(axs, self.eigenvalues)
 
         x_labels = ["\n".join([str(i) for i in k]) for k in self.kpoint_coords]
 
@@ -179,20 +163,15 @@ class DefectEigenvalue(MSONable):
 
             axs[i].set_xticklabels(x_labels)
 
-            axs[i].axhline(y=self.vbm, linewidth=0.3)
-            axs[i].axhline(y=self.cbm, linewidth=0.3)
-            axs[i].axhline(y=self.supercell_vbm, linewidth=0.3,
-                           linestyle='dashed')
-            axs[i].axhline(y=self.supercell_cbm, linewidth=0.3,
-                           linestyle='dashed')
-            axs[i].axhline(y=self.fermi_level, linewidth=1, linestyle="--")
+            axs[i].axhline(y=self.vbm, linewidth=0.7, linestyle="-", color='b')
+            axs[i].axhline(y=self.cbm, linewidth=0.7, linestyle="-", color='b')
+            axs[i].axhline(y=self.supercell_vbm, linewidth=0.7,
+                           linestyle="-", color='r')
+            axs[i].axhline(y=self.supercell_cbm, linewidth=0.7,
+                           linestyle="-", color='r')
+            axs[i].axhline(y=self.fermi_level, linewidth=1, linestyle="--",
+                           color='g')
 
-        axs[num_figure - 1].annotate(
-            "supercell\nvbm", xy=(k_index + 1, self.supercell_vbm - 0.2),
-            fontsize=10)
-        axs[num_figure - 1].annotate(
-            "supercell\ncbm", xy=(k_index + 1, self.supercell_cbm - 0.2),
-            fontsize=10)
         axs[num_figure - 1].annotate(
             "Fermi\nlevel", xy=(k_index + 1, self.fermi_level - 0.2),
             fontsize=10)
@@ -212,42 +191,14 @@ class DefectEigenvalue(MSONable):
         else:
             plt.show()
 
-    @property
-    def kpt_mapping_to_perfect_kpt(self):
-        mapping = []
-        for kc in self.kpoint_coords:
-            x = False
-            for so in self.perfect_symmops:
-                for i, pkc in enumerate(self.perfect_kpoint_coords):
-                    if so.are_symmetrically_related(kc, pkc):
-                        mapping.append(i)
-                        x = True
-                        break
-
-                if x is True:
-                    break
-
-            else:
-                raise ValueError("kpt in defects cannot be mapped.")
-
-        return mapping
-
     @staticmethod
-    def add_eigenvalues_to_plot(axs, eigenvalues, perfect_eigenvalues, mapping,
-                                x_offset=0.3):
+    def add_eigenvalues_to_plot(axs, eigenvalues):
         occupied_eigenvalues = []
         occupied_x = []
         unoccupied_eigenvalues = []
         unoccupied_x = []
         partial_occupied_eigenvalues = []
         partial_occupied_x = []
-
-        perfect_occupied_eigenvalues = []
-        perfect_occupied_x = []
-        perfect_unoccupied_eigenvalues = []
-        perfect_unoccupied_x = []
-        perfect_partial_occupied_eigenvalues = []
-        perfect_partial_occupied_x = []
 
         for i, s in enumerate(eigenvalues.keys()):
             ax = axs[i]
@@ -272,26 +223,9 @@ class DefectEigenvalue(MSONable):
                                         xy=(k_index + 0.05, e[0]),
                                         fontsize=10)
 
-                for e in perfect_eigenvalues[Spin.up][mapping[k_index]]:
-                    occupancy = e[1]
-                    if occupancy < 0.1:
-                        perfect_unoccupied_eigenvalues.append(e[0])
-                        perfect_unoccupied_x.append(k_index + x_offset)
-
-                    elif occupancy > 0.9:
-                        perfect_occupied_eigenvalues.append(e[0])
-                        perfect_occupied_x.append(k_index + x_offset)
-                    else:
-                        perfect_partial_occupied_eigenvalues.append(e[0])
-                        perfect_partial_occupied_x.append(k_index + x_offset)
-
             ax.plot(occupied_x, occupied_eigenvalues, 'o')
             ax.plot(unoccupied_x, unoccupied_eigenvalues, 'o')
             ax.plot(partial_occupied_x, partial_occupied_eigenvalues, 'o')
-            ax.plot(perfect_occupied_x, perfect_occupied_eigenvalues, 'o')
-            ax.plot(perfect_unoccupied_x, perfect_unoccupied_eigenvalues, 'o')
-            ax.plot(perfect_partial_occupied_x,
-                    perfect_partial_occupied_eigenvalues, 'o')
 
         return k_index
 

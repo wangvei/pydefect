@@ -14,6 +14,8 @@ from monty.serialization import loadfn
 
 from xml.etree.ElementTree import ParseError
 
+from obadb.analyzer.band_gap import band_gap_properties
+
 from pymatgen.core import Structure
 from pymatgen.core.operations import SymmOp
 from pymatgen.core.surface import get_recp_symmetry_operation
@@ -78,7 +80,8 @@ class SupercellCalcResults(MSONable):
                  kpoint_coords: list,
                  kpoint_weights: list,
                  electrostatic_potential: list,
-                 eigenvalue_properties,
+                 vbm: dict,
+                 cbm: dict,
                  volume: float,
                  fermi_level: float,
                  is_converged: bool,
@@ -145,7 +148,8 @@ class SupercellCalcResults(MSONable):
         self.kpoint_coords = kpoint_coords
         self.kpoint_weights = kpoint_weights
         self.electrostatic_potential = electrostatic_potential
-        self.eigenvalue_properties = eigenvalue_properties
+        self.vbm = vbm
+        self.cbm = cbm
         self.volume = volume
         self.fermi_level = fermi_level
         self.is_converged = is_converged
@@ -164,7 +168,8 @@ class SupercellCalcResults(MSONable):
                 "total total_magnetization (mu_B): " +
                 str(self.total_magnetization),
                 "electrostatic potential: " + str(self.electrostatic_potential),
-                "eigenvalues_properties: " + str(self.eigenvalue_properties),
+                "vbm: " + str(self.vbm),
+                "cbm: " + str(self.cbm),
                 "final structure: \n" + str(self.final_structure),
                 "site_symmetry: " + str(self.site_symmetry),
                 "volume: \n" + str(self.volume),
@@ -248,9 +253,15 @@ class SupercellCalcResults(MSONable):
 
         vasprun = parse_file(Vasprun, vasprun)
         eigenvalues = vasprun.eigenvalues
-        # (band gap, cbm, vbm, is_band_gap_direct)
-        eigenvalue_properties = vasprun.eigenvalue_band_properties
         fermi_level = vasprun.efermi
+        gap_properties = band_gap_properties(vasprun)
+
+        if gap_properties:
+            vbm = gap_properties[1]["energy"]
+            cbm = gap_properties[2]["energy"]
+        else:
+            vbm = fermi_level
+            cbm = fermi_level
 
         # Check if the electronic and ionic steps are converged.
         if vasprun.converged_electronic is False:
@@ -389,16 +400,12 @@ class SupercellCalcResults(MSONable):
                 perfect_orbital_character = \
                     referenced_dft_results.orbital_character
 
-                supercell_vbm = referenced_dft_results.eigenvalue_properties[2]
-                supercell_cbm = referenced_dft_results.eigenvalue_properties[1]
-
                 band_edges = \
                     cls.diagnose_band_edges(participation_ratio,
                                             orbital_character,
                                             perfect_orbital_character,
                                             band_edge_energies,
-                                            supercell_vbm,
-                                            supercell_cbm)
+                                            vbm, cbm)
 
         return cls(final_structure=final_structure,
                    site_symmetry=site_symmetry,
@@ -408,7 +415,8 @@ class SupercellCalcResults(MSONable):
                    kpoint_coords=kpoint_coords,
                    kpoint_weights=kpoint_weights,
                    electrostatic_potential=electrostatic_potential,
-                   eigenvalue_properties=eigenvalue_properties,
+                   vbm=vbm,
+                   cbm=cbm,
                    volume=volume,
                    fermi_level=fermi_level,
                    is_converged=vasprun.converged_ionic,
@@ -550,7 +558,8 @@ class SupercellCalcResults(MSONable):
                    kpoint_coords=d["kpoint_coords"],
                    kpoint_weights=d["kpoint_weights"],
                    electrostatic_potential=d["electrostatic_potential"],
-                   eigenvalue_properties=d["eigenvalue_properties"],
+                   vbm=d["vbm"],
+                   cbm=d["cbm"],
                    volume=d["volume"],
                    fermi_level=d["fermi_level"],
                    is_converged=d["is_converged"],
@@ -597,7 +606,8 @@ class SupercellCalcResults(MSONable):
              "kpoint_coords":           self.kpoint_coords,
              "kpoint_weights":          self.kpoint_weights,
              "electrostatic_potential": self.electrostatic_potential,
-             "eigenvalue_properties":   self.eigenvalue_properties,
+             "vbm":                     self.vbm,
+             "cbm":                     self.cbm,
              "volume":                  self.volume,
              "fermi_level":             self.fermi_level,
              "is_converged":            self.is_converged,

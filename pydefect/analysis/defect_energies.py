@@ -110,7 +110,8 @@ class DefectEnergies(MSONable):
         """
         # Note: vbm, cbm, perfect_vbm, perfect_cbm are in absolute energy.
         vbm, cbm = unitcell.band_edge
-        supercell_cbm, supercell_vbm = perfect.eigenvalue_properties[1:3]
+        supercell_vbm = perfect.vbm
+        supercell_cbm = perfect.cbm
 
         title = system + " condition " + chem_pot_label
 
@@ -152,9 +153,9 @@ class DefectEnergies(MSONable):
 
     def as_dict(self):
         defect_energies = \
-            {name: {int(charge): {annotation
-                                  if annotation != 'null' else None: e.as_dict()
-                                  for annotation, e in v2.items()}
+            {name: {charge: {annotation
+                             if annotation != 'null' else None: e.as_dict()
+                             for annotation, e in v2.items()}
                     for charge, v2 in v1.items()}
              for name, v1 in self.defect_energies.items()}
 
@@ -173,8 +174,10 @@ class DefectEnergies(MSONable):
     def from_dict(cls, d):
         """ Construct a class object from a dictionary. """
         defect_energies = \
-            {name: {charge: {annotation: DefectEnergy.from_dict(e)
-                             for annotation, e in v2.items()}
+            {name: {int(charge):
+                        {None if annotation == "null" else annotation:
+                             DefectEnergy.from_dict(e)
+                         for annotation, e in v2.items()}
                     for charge, v2 in v1.items()}
              for name, v1 in d["defect_energies"].items()}
 
@@ -185,7 +188,7 @@ class DefectEnergies(MSONable):
                    supercell_cbm=d["supercell_cbm"],
                    title=d["title"])
 
-    def to_json_file(self, filename="defect_energy.json"):
+    def to_json_file(self, filename="defect_energies.json"):
         with open(filename, 'w') as fw:
             json.dump(self.as_dict(), fw, indent=2, cls=MontyEncoder)
 
@@ -295,8 +298,8 @@ class DefectEnergies(MSONable):
         if color is None:
             color =  \
                 ["xkcd:blue", "xkcd:brown", "xkcd:crimson", "xkcd:darkgreen",
-                 "xkcd:gold", "xkcd:magenta", "xkcd:darkblue", "xkcd:navy",
-                 "xkcd:orange", "xkcd:red", "xkcd:olive", "xkcd:black",
+                 "xkcd:gold", "xkcd:magenta", "xkcd:orange", "xkcd:darkblue",
+                 "xkcd:navy", "xkcd:red", "xkcd:olive", "xkcd:black",
                  "xkcd:indigo"]
 
         ax.set_xlabel("Fermi level (eV)", fontsize=15)
@@ -363,6 +366,7 @@ class DefectEnergies(MSONable):
         # Note: len(self.defect_energies) <= len(transition_levels)
         for i, (name, tl) in enumerate(transition_levels.items()):
 
+            line_type = '-' if i < 5 else '--' if i < 10 else '-.'
             # ---------- Calculate cross points including edges ----------------
             cross_points = []
             charge_set = set()
@@ -400,7 +404,7 @@ class DefectEnergies(MSONable):
             # set x and y arrays to be compatible with matplotlib style.
             # e.g., x = [0.0, 0.3, 0.5, ...], y = [2.1, 3.2, 1.2, ...]
             x, y = np.array(cross_points).transpose()
-            line, = ax.plot(x, y, '-', color=color[i], label=name)
+            line, = ax.plot(x, y, line_type, color=color[i], label=name)
             line.set_label(name)
 
             # margin_x and _y determine the positions of the transition levels.
@@ -436,7 +440,7 @@ class DefectEnergies(MSONable):
                 for c, e in lowest_energies[name].items():
                     y1 = e + c * (x_min + self.vbm)
                     y2 = e + c * (x_max + self.vbm)
-                    ax.plot([x_min, x_max], [y1, y2], '-', linewidth=0.3,
+                    ax.plot([x_min, x_max], [y1, y2], line_type, linewidth=0.3,
                             color=color[i])
 
         if y_range:
@@ -470,7 +474,11 @@ class DefectEnergies(MSONable):
                         (supercell_cbm, y_min * 0.9 + y_max * 0.1), fontsize=10)
 
         plt.axhline(y=0, linewidth=1.0, linestyle='dashed')
-        ax.legend(bbox_to_anchor=(1.01, 1), loc='upper left', borderaxespad=0.)
+
+        # Shrink current axis by 20%
+        box = ax.get_position()
+        ax.set_position([box.x0, box.y0, box.width * 0.8, box.height])
+        ax.legend(bbox_to_anchor=(1, 0.5), loc='center left')
         #        fig.subplots_adjust(right=0.75)
 
         return plt

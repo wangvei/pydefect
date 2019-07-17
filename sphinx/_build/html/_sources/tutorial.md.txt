@@ -3,7 +3,7 @@
 
 We here illustrate how to use the PyDefect code.
 
-**Note1: Units used in PyDefect are eV for energy and Angstrom for length following the vasp convention.**
+**Note1: Units used in PyDefect are eV for energy and <span>&#8491;</span> for length following the vasp convention.**
 
 **Note2: Only nonmagnetic host materials are allowed.**
 
@@ -169,8 +169,8 @@ In case of BaSnO<sub>3</sub>, `ENMAX` of Ba, Sn, and O are 187.181, 103.236, 400
 python ~/my_bin/pydefect/pydefect/main.py vos -t structure_opt -x pbesol -is ENCUT 520 --dirs *_*/
 ```
 
-Note, if competing phases are gases, we need to change `ISIF` to 2 so as not to relax the lattice constants (see [vasp manual](https://cms.mpi.univie.ac.at/wiki/index.php/ISIF)), 
-and `KPOINTS` requires only the Gamma point sampling.
+<p>Note, if competing phases are gases, we need to change `ISIF` to 2 so as not to relax the lattice constants (see [vasp manual](https://cms.mpi.univie.ac.at/wiki/index.php/ISIF)), 
+and `KPOINTS` requires only the &Gamma; point sampling.</p>
 In such case, type as follows,
 ```
 python ~/my_bin/pydefect/pydefect/main.py vos -t structure_opt -x pbesol -is ENCUT 520 ISIF 2 -kw is_cluster True --dirs O2molecule_pydefect
@@ -202,9 +202,9 @@ temperature: 0
 Here, `standard_energy` are the energies of the most stable simple substances or simple gas phases, 
 and A--F show the relative chemical potentials at the vertices shown in `cpd_BaSnO3.pdf`. 
 
-### 5. Select of a supercell
+### 5. Selection of a supercell
 So far, we have finished the calculations of the unit cell and competing phases, and are eventually ready for point-defect calculations. 
-Let's create `defect/` directory and copy unitcell `POSCAR` file from e.g. `unitcell/dos/` to `defect/`
+Let's create `defect/` directory and copy unitcell `POSCAR` file from *e.g.* `unitcell/dos/` to `defect/`
 
 Firstly, we need to determine the shape and size of the supercell.
 PyDefect recommends a nearly isotropic supercell composed of moderate number of atoms.
@@ -214,6 +214,16 @@ python ~/my_bin/pydefect/pydefect/main.py rs
 ```
 Then, `UPOSCAR` and `SPOSCAR` that are the POSCARs for the unitcell and supercell, respectively, are generated.
 
+Although PyDefect constructs `SPOSCAR` based on the *conventional* unitcell by default, 
+it can also expand the *primitive* unitcell with `-pr` option.
+(If centering is absent, these two are the same.)
+
+It is also possible to change the lattice angle of the supercell from those of the conventional or primitive unitcell,
+but not a good idea for point-defect calculations.
+<p> For example, &Gamma;, we can make a supercell in which a-, b-, and c-axes are mutually orthogonal.</p>
+However, its lattice breaks the original hexagonal symmetry, which reduces the accuracy of the point-defect calculations.
+
+
 ### 6. Construction of defect initial setting
 We then create the initial setting file for point defects with the `initial_setting` (=`is`) sub-command.
 ```
@@ -221,9 +231,9 @@ python ~/my_bin/pydefect/pydefect/main.py is
 ```
 With this command, we can build the `defect.in` file, which contains the full information on what kind of defects are to be generated automatically.
 At the same time, `DPOSCAR`, POSCAR used for the defect calculations, is created. 
-If one follows this tutorial, DPOSCAR file is the same as SPOSCAR, while if one uses their own supercell POSCAR, the sequence of elements could be changed.
+If one follows this tutorial, `DPOSCAR` should be the same as `SPOSCAR`, while if one prepares their own supercell `POSCAR`, an order of elements may be changed.
 
-An example of `defect.in` is as follows:
+An example of `defect.in` looks as follows:
 ```
   Space group: Pm-3m
 
@@ -272,18 +282,19 @@ Symprec: 0.01
 Angle tolerance: 5
 ```
 
-If we want to add dopants a posteriori, we can type as follows.
+If we want to add dopants *a posteriori*, we can type as follows.
 ```
 python ~/my_bin/pydefect/pydefect/main.py is --print_dopant Na
 ```
-This example of Na dopant shows 
+
+This example of Na dopant prints 
 ```
    Dopant element: Na
 Electronegativity: 0.93
   Oxidation state: 1
 ```
 
-By inserting this to `defect.in` and modify `Substituted defects` as follows
+By inserting this with an editor to `defect.in` and modify `Substituted defects` as follows
 ```
   Space group: Pm-3m
 
@@ -338,7 +349,7 @@ Angle tolerance: 5
 
 There are so many tips related to `defect.in`.
 1. The antisites and substituted defects are determined from the difference of the electronegativity. 
-   Although default is 1.0, you can change it using `-e` option, e.g., 1.5.
+   Although default is 1.0 <span>&#8491;</span>, you can change it using `-e` option to e.g., 1.5.
    ```
    python ~/my_bin/pydefect/pydefect/main.py is -e 1.5
    ```
@@ -425,49 +436,40 @@ python ~/my_bin/pydefect/pydefect/main.py is --interstitial_sites i1 i2
 ```
 
 ### 8. Creation of defect calculation directories
-We next create directories for point defect supercell calculations.
+We next create directories for point-defect calculations.
 ```
 python ~/my_bin/pydefect/pydefect/main.py dvs
 ```
+
 With this command, these directories are created.
 ```
 perfect, Na_Ba1_-1, Na_Ba1_0, Na_Ba1_1, Va_Ba1_-2, Va_Ba1_-1, Va_Ba1_0, 
 Va_O1_0, Va_O1_1, Va_O1_2, Va_Sn1_0, Va_Sn1_-1, Va_Sn1_-2, Va_Sn1_-3, Va_Sn1_-4
 ```
 
-If you want to calculate only oxygen vacancies, you can restrict the calculated defects with a python regular expression,
+If you want to calculate only oxygen vacancies, you can restrict the calculated defects with `-kw` option and a python regular expression,
 ```
 python ~/my_bin/pydefect/pydefect/main.py dvs -kw "Va_O[0-9]?_[0-9]+"
 ```
-With this command, these directories are created.
+, which create these directories.
 ```
 perfect/ Va_O1_0/ Va_O1_1/ Va_O1_2/
 ```
+
 If you again type the same command, the following information is shown,
 ```
-2019-07-09 17:22:21,044 INFO obadb.vasp.input_set Band gap info: None
-2019-07-09 17:22:21,057 INFO obadb.vasp.input_set Magnetization: False
 2019-07-09 17:22:21,078 WARNING pydefect.input_maker.defect_entry_set_maker    perfect already exists, so nothing is done.
-2019-07-09 17:22:21,086 INFO obadb.vasp.input_set Band gap info: None
-2019-07-09 17:22:21,379 INFO obadb.vasp.input_set The given structure is a standardized primitive.
-2019-07-09 17:22:21,384 INFO obadb.vasp.input_set Magnetization: False
 2019-07-09 17:22:21,399 WARNING pydefect.input_maker.defect_entry_set_maker    Va_O1_0 already exists, so nothing is done.
-2019-07-09 17:22:21,438 INFO obadb.vasp.input_set Band gap info: None
-2019-07-09 17:22:21,726 INFO obadb.vasp.input_set The given structure is a standardized primitive.
-2019-07-09 17:22:21,730 INFO obadb.vasp.input_set Magnetization: False
 2019-07-09 17:22:21,744 WARNING pydefect.input_maker.defect_entry_set_maker    Va_O1_1 already exists, so nothing is done.
-2019-07-09 17:22:21,782 INFO obadb.vasp.input_set Band gap info: None
-2019-07-09 17:22:22,068 INFO obadb.vasp.input_set The given structure is a standardized primitive.
-2019-07-09 17:22:22,072 INFO obadb.vasp.input_set Magnetization: False
 2019-07-09 17:22:22,085 WARNING pydefect.input_maker.defect_entry_set_maker    Va_O1_2 already exists, so nothing is done.
 ```
 and no directories are newly created, which is a fail-safe treatment not to delete the calculated directories by mistake.
 If you really overwrite the directories, you can use the `--force_overwrite` option.
 
-In each directory, we can find the `defect_entry.json` file, which contains the information about the point defect obtained before the first-principles calculations.
+In each directory, we can find the `defect_entry.json` file, containing information about a point defect obtained before the first-principles calculations.
 To see summary of `defect_entry.json`, type
 ```
-python ~/my_bin/pydefect/pydefect/main.py de
+python ~/my_bin/pydefect/pydefect/main.py de --print
 ```
 
 When you'd like to add some particular defects, you can use
@@ -476,47 +478,48 @@ python ~/my_bin/pydefect/pydefect/main.py dvs -d Va_O1_-1
 ```
 With this command, `Va_O1_-1/` is created.
 
+In some cases, complex defects or peculiar defects such as DX centers need to be generated.
+Then, we need to construct `POSCAR`s by hand.
+However, PyDefect can generate `defect_entry.json` by parsing the `POSCAR` and `INCAR` files with a defect.
 
-In some cases, complex defects or some peculiar defects, e.g., DX centers, need to be generated.
-Then, we need to construct `POSCAR`s by ourselves.
-However, PyDefect can generate `defect_entry.json` by parsing the defect POSCAR and INCAR files.
-
-First, make POSCAR as you want and type the following command to generate the other vasp input set.
+Make `POSCAR` as you want and type the following command to generate the other vasp input set.
 ```
 python ~/my_bin/pydefect/pydefect/main.py vos -t defect -x pbesol --dirs . --charge -1
 ```
-In this case, the charge is assumed to be -1.
+where the charge is assumed to be -1.
+
 And then, type 
 ```
 python ~/my_bin/pydefect/pydefect/main.py de --make_defect_entry
 ```
 to generate `defect_entry.json`.
 
-We also suggest the users to user Gamma version of vasp if the k-point sampling is only Gamma point.
+<p> We also recommend the users to user &Gamma; version of vasp if the k-point sampling is only &Gamma; point for very large supercells.</p>
 
 ### 9. Generation of supercell information related to point-defect calculations
 After (partly) finishing the vasp calculations, we next parse the calculation results and generate the `dft_results.json` 
-that contains the first-principles calculation results related to defect properties.
+that contains the first-principles calculation results related to the defect properties.
+
 By typing,
 ```
 python ~/my_bin/pydefect/pydefect/main.py sr --dir_all
 ```
 you can generate `dft_results.json` in all the directories.
-When you want to parse some particular directories, e.g., Va_O1_0, type
+When you want to parse some particular directories, *e.g.*, Va_O1_0, type
 ```
 python ~/my_bin/pydefect/pydefect/main.py sr --dirs Va_O1_0
 ```
 
-Here, we note that the name of `perfect/` has special meaning, so users must use this name for the supercells w/o defects.
+Here, the name of `perfect/` has special meaning, so users **must** use this name for the supercells without defects.
 
-Some calculations might not be finished properly
+Some calculations might not be finished properly or still ongoing.
 To see whether the calculations are properly finished, one can use the `diagnose` (=`d`) sub-command
 ```
 python ~/my_bin/pydefect/pydefect/main.py d
 ```
-which shows 
+which shows like
 ```
-  Va_Ba1_-1/  convergence : T    band edge : UP  :    No in-gap state  DOWN  :       Acceptor PHS
+  Va_Ba1_-1/  convergence : F    band edge : UP  :    No in-gap state  DOWN  :       Acceptor PHS
   Va_Ba1_-2/  convergence : T    band edge : UP  :    No in-gap state  DOWN  :    No in-gap state
    Va_Ba1_0/  No supercell results file.
     Va_O1_0/  convergence : T    band edge : UP  :    Localized state  DOWN  :    Localized state
@@ -529,24 +532,27 @@ which shows
    Va_Sn1_0/  convergence : T    band edge : UP  :    No in-gap state  DOWN  :    Localized state
 ```
 If the convergences at the electronic and/or ionic step are not attained, convergence is shown as `F`.
-After the convergence, we can see band edge information at the spin up (UP) and down (DOWN) channels, which will be explained later.
+Net to the convergence, we can see band edge information at the spin up (UP) and down (DOWN) channels, which will be explained later.
 
-### 10. Corrections of defect formation energies in finite-size supercell 
-When supercell method is adopted, because of interaction between a defect, its images, and background charge, the obtained total energies for **charged defects** are not properly estimated
-Therefore, we need to correct the total energies of charged defect supercells to predict those in dilute limit.
+### 10. Corrections of defect formation energies in finite-size supercells 
+When supercell method is adopted, obtained total energies for **charged defects** are not properly estimated due to interaction between a defect, its images, and background charge. 
+Therefore, we need to correct total energies of charged defect supercells to predict those in dilute limit.
 
 The corrections are attained using the `extended_fnv_correction` (=`efc`) sub-command,
 ```
 python ~/my_bin/pydefect/pydefect/main.py efc --unitcell_json ../unitcell/unitcell.json --perfect_json perfect/dft_results.json
 ```
+
 For the corrections, we need the dielectric constants and atomic site potential of perfect supercell.
 Therefore, the paths to `unitcell.json` and `dft_results.json` of `perfect` must be assigned.
-Bear also in mind that this command takes some time, so we recommend the users to prepare coffee or go on a walk outside.
+Bear also in mind that this command takes some time, so we recommend the users to prepare coffee or go on a walk outside during this process.
 
-The correction method used in PyDefect at this moment is the so-called extended Freysoldt-Neugebauer-VandeWalle (eFNV) method.
+The correction method adopted in PyDefect at this moment is the so-called extended Freysoldt-Neugebauer-VandeWalle (eFNV) method.
 so if one uses the corrections, please cite the following papers.
 - [Y. Kumagai*, and F. Oba, Electrostatics-based finite-size corrections for first-principles point defect calculations, Phys. Rev. B, 89 195205 (2014).](https://journals.aps.org/prb/abstract/10.1103/PhysRevB.89.195205)
 - [C. Freysoldt, J. Neugebauer, C. Van de Walle, Fully Ab Initio Finite-Size Corrections for Charged-Defect Supercell Calculations, Phys. Rev. Lett., 102 016402 (2009).](https://journals.aps.org/prl/abstract/10.1103/PhysRevLett.102.016402)
+
+
 
 ### 11. Check defect eigenvalues
 Generally, point defects are divided into three types.
