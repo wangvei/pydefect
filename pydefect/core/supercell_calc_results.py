@@ -254,10 +254,13 @@ class SupercellCalcResults(MSONable):
         vasprun = parse_file(Vasprun, vasprun)
         eigenvalues = vasprun.eigenvalues
         fermi_level = vasprun.efermi
-        # (band gap, cbm, vbm, is_band_gap_direct)
-        _, vbm, cbm = band_gap_properties(vasprun)
-        vbm = vbm["energy"] if vbm["energy"] else fermi_level
-        cbm = cbm["energy"] if cbm["energy"] else fermi_level
+        gap_properties = band_gap_properties(vasprun)
+        if gap_properties:
+            vbm = gap_properties[1]["energy"]
+            cbm = gap_properties[2]["energy"]
+        else:
+            vbm = fermi_level
+            cbm = fermi_level
 
         # Check if the electronic and ionic steps are converged.
         if vasprun.converged_electronic is False:
