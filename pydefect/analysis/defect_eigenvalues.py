@@ -110,18 +110,15 @@ class DefectEigenvalue(MSONable):
                 "All the unitcell-related property is not set yet. ")
 
         # Note: vbm, cbm, perfect_vbm, perfect_cbm are in absolute energy.
-        vbm, cbm = unitcell.band_edge
-        supercell_cbm, supercell_vbm = perfect.eigenvalue_properties[1:3]
-
         return cls(name=defect.defect_entry.name,
                    charge=defect.defect_entry.charge,
                    kpoint_coords=defect.dft_results.kpoint_coords,
                    kpoint_weights=defect.dft_results.kpoint_weights,
                    eigenvalues=defect.dft_results.eigenvalues,
-                   vbm=vbm,
-                   cbm=cbm,
-                   supercell_vbm=supercell_vbm,
-                   supercell_cbm=supercell_cbm,
+                   vbm=unitcell.band_edge[0],
+                   cbm=unitcell.band_edge[1],
+                   supercell_vbm=perfect.vbm,
+                   supercell_cbm=perfect.cbm,
                    fermi_level=defect.dft_results.fermi_level,
                    total_magnetization=defect.dft_results.total_magnetization,
                    orbital_character=defect.dft_results.orbital_character,

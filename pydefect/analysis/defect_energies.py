@@ -110,7 +110,8 @@ class DefectEnergies(MSONable):
         """
         # Note: vbm, cbm, perfect_vbm, perfect_cbm are in absolute energy.
         vbm, cbm = unitcell.band_edge
-        supercell_cbm, supercell_vbm = perfect.eigenvalue_properties[1:3]
+        supercell_vbm = perfect.vbm
+        supercell_cbm = perfect.cbm
 
         title = system + " condition " + chem_pot_label
 
