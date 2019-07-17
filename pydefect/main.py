@@ -515,6 +515,9 @@ def main():
         "-s", "--save_file", dest="save_file", type=str, default=None,
         help="File name to save the plot.")
     parser_plot_energy.add_argument(
+        "--energies", dest="energies", type=str, default="defect_energies.json",
+        help="DefectEnergies class object json file name.")
+    parser_plot_energy.add_argument(
         "--unitcell", dest="unitcell", type=str, default="unitcell.json",
         help="UnitcellCalcResults class object json file name.")
     parser_plot_energy.add_argument(
@@ -1082,37 +1085,43 @@ def diagnose(args):
 
 
 def plot_energy(args):
-    unitcell = UnitcellCalcResults.load_json(args.unitcell)
-    perfect = SupercellCalcResults.load_json(args.perfect)
 
-    defects_dirs = args.defect_dirs if args.defect_dirs else glob('*[0-9]/')
+    try:
+        defect_energies = DefectEnergies.load_json(args.energies)
+    except FileNotFoundError:
+        unitcell = UnitcellCalcResults.load_json(args.unitcell)
+        perfect = SupercellCalcResults.load_json(args.perfect)
 
-    defects = []
-    for d in defects_dirs:
-        logger.info("parsing directory {}...".format(d))
-        files = [args.defect_entry, args.dft_results, args.correction]
-        classes = [DefectEntry, SupercellCalcResults, ExtendedFnvCorrection]
+        defects_dirs = args.defect_dirs if args.defect_dirs else glob('*[0-9]/')
 
-        input_objects = generate_objects(d, files, classes)
+        defects = []
+        for d in defects_dirs:
+            logger.info("parsing directory {}...".format(d))
+            files = [args.defect_entry, args.dft_results, args.correction]
+            classes = [DefectEntry, SupercellCalcResults, ExtendedFnvCorrection]
 
-        if input_objects:
-            defects.append(Defect(defect_entry=input_objects[0],
-                                  dft_results=input_objects[1],
-                                  correction=input_objects[2]))
-        else:
-            logger.warning("Parsing {} skipped.".format(d))
-            continue
+            input_objects = generate_objects(d, files, classes)
 
-    chem_pot = ChemPotDiag.load_vertices_yaml(args.chem_pot_yaml)
+            if input_objects:
+                defects.append(Defect(defect_entry=input_objects[0],
+                                      dft_results=input_objects[1],
+                                      correction=input_objects[2]))
+            else:
+                logger.warning("Parsing {} skipped.".format(d))
+                continue
 
-    # First construct DefectEnergies class object.
-    defect_energies = \
-        DefectEnergies.from_objects(unitcell=unitcell,
-                                    perfect=perfect,
-                                    defects=defects,
-                                    chem_pot=chem_pot,
-                                    chem_pot_label=args.chem_pot_label,
-                                    system=args.name)
+        chem_pot = ChemPotDiag.load_vertices_yaml(args.chem_pot_yaml)
+
+        # First construct DefectEnergies class object.
+        defect_energies = \
+            DefectEnergies.from_objects(unitcell=unitcell,
+                                        perfect=perfect,
+                                        defects=defects,
+                                        chem_pot=chem_pot,
+                                        chem_pot_label=args.chem_pot_label,
+                                        system=args.name)
+
+        defect_energies.to_json_file(filename=args.energies)
 
     # if args.concentration:
     #     defect_concentration = \
@@ -1134,11 +1143,11 @@ def plot_energy(args):
 #        defect_concentration = None
 
     plt = defect_energies.plot_energy(filtering_words=args.filtering,
-                                       x_range=args.x_range,
-                                       y_range=args.y_range,
-                                       show_fermi_level=args.concentration,
-                                       show_transition_levels=args.show_tl,
-                                       show_all_energies=args.show_all)
+                                      x_range=args.x_range,
+                                      y_range=args.y_range,
+                                      show_fermi_level=args.concentration,
+                                      show_transition_levels=args.show_tl,
+                                      show_all_energies=args.show_all)
 
     plt.savefig(args.save_file, format="pdf") if args.save_file else plt.show()
 

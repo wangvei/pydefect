@@ -255,6 +255,7 @@ class SupercellCalcResults(MSONable):
         eigenvalues = vasprun.eigenvalues
         fermi_level = vasprun.efermi
         gap_properties = band_gap_properties(vasprun)
+
         if gap_properties:
             vbm = gap_properties[1]["energy"]
             cbm = gap_properties[2]["energy"]

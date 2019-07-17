@@ -153,9 +153,9 @@ class DefectEnergies(MSONable):
 
     def as_dict(self):
         defect_energies = \
-            {name: {int(charge): {annotation
-                                  if annotation != 'null' else None: e.as_dict()
-                                  for annotation, e in v2.items()}
+            {name: {charge: {annotation
+                             if annotation != 'null' else None: e.as_dict()
+                             for annotation, e in v2.items()}
                     for charge, v2 in v1.items()}
              for name, v1 in self.defect_energies.items()}
 
@@ -174,8 +174,10 @@ class DefectEnergies(MSONable):
     def from_dict(cls, d):
         """ Construct a class object from a dictionary. """
         defect_energies = \
-            {name: {charge: {annotation: DefectEnergy.from_dict(e)
-                             for annotation, e in v2.items()}
+            {name: {int(charge):
+                        {None if annotation == "null" else annotation:
+                             DefectEnergy.from_dict(e)
+                         for annotation, e in v2.items()}
                     for charge, v2 in v1.items()}
              for name, v1 in d["defect_energies"].items()}
 
@@ -186,7 +188,7 @@ class DefectEnergies(MSONable):
                    supercell_cbm=d["supercell_cbm"],
                    title=d["title"])
 
-    def to_json_file(self, filename="defect_energy.json"):
+    def to_json_file(self, filename="defect_energies.json"):
         with open(filename, 'w') as fw:
             json.dump(self.as_dict(), fw, indent=2, cls=MontyEncoder)
 

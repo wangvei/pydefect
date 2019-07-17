@@ -7,6 +7,8 @@ import os
 from monty.json import MontyEncoder, MSONable
 from monty.serialization import loadfn
 
+from obadb.analyzer.band_gap import band_gap_properties
+
 from pymatgen.io.vasp.outputs import Outcar, Vasprun, Poscar
 from pymatgen.electronic_structure.core import Spin
 
@@ -33,23 +35,29 @@ def make_symmetric_matrix(d):
         len(d) == 6: Suppose the other system
     """
     if isinstance(d, float):
-        tensor = np.array([[d, 0, 0], [0, d, 0], [0, 0, d]])
+        tensor = np.array([[d, 0, 0],
+                           [0, d, 0],
+                           [0, 0, d]])
     elif len(d) == 1:
-        tensor = np.array([[d[0], 0, 0], [0, d[0], 0], [0, 0, d[0]]])
+        tensor = np.array([[d[0], 0,  0],
+                           [0,  d[0], 0],
+                           [0,  0,  d[0]]])
     elif len(d) == 3:
-        tensor = np.array([[d[0], 0, 0], [0, d[1], 0], [0, 0, d[2]]])
+        tensor = np.array([[d[0], 0, 0],
+                           [0, d[1], 0],
+                           [0, 0, d[2]]])
     elif len(d) == 6:
         from pymatgen.util.num import make_symmetric_matrix_from_upper_tri
         """ 
         Given a symmetric matrix in upper triangular matrix form as flat array 
         indexes as:
-        [A_xx,A_yy,A_zz,A_xy,A_xz,A_yz]
+        [A_xx, A_yy, A_zz, A_xy, A_xz, A_yz]
         This will generate the full matrix:
-        [[A_xx,A_xy,A_xz],[A_xy,A_yy,A_yz],[A_xz,A_yz,A_zz]
+        [[A_xx, A_xy, A_xz], [A_xy, A_yy, A_yz], [A_xz, A_yz, A_zz]
         """
         tensor = make_symmetric_matrix_from_upper_tri(d)
     else:
-        raise ValueError("{} is not valid for making symmetric matrix".format(d))
+        raise ValueError("{} is not valid to make symmetric matrix".format(d))
 
     return tensor
 
@@ -167,7 +175,6 @@ class UnitcellCalcResults(MSONable):
     # setter from vasp results
     def set_band_edge_from_vasp(self, directory_path,
                                 vasprun_name="vasprun.xml"):
-        from obadb.analyzer.band_gap import band_gap_properties
         vasprun = Vasprun(os.path.join(directory_path, vasprun_name))
 
         # 2019/7/13 NEVER USE Vasprun.eigenvalue_band_properties
