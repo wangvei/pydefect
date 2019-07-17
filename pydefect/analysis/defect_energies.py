@@ -369,7 +369,6 @@ class DefectEnergies(MSONable):
             cross_points = []
             charge_set = set()
 
-
             # keep x_min -> transition levels -> x_max for connecting points.
             # Add the plot point at x_min
             charge, y = min_e_at_ef(lowest_energies[name], x_min + self.vbm)
@@ -473,7 +472,11 @@ class DefectEnergies(MSONable):
                         (supercell_cbm, y_min * 0.9 + y_max * 0.1), fontsize=10)
 
         plt.axhline(y=0, linewidth=1.0, linestyle='dashed')
-        ax.legend(bbox_to_anchor=(1.01, 1), loc='upper left', borderaxespad=0.)
+
+        # Shrink current axis by 20%
+        box = ax.get_position()
+        ax.set_position([box.x0, box.y0, box.width * 0.8, box.height])
+        ax.legend(bbox_to_anchor=(1, 0.5), loc='center left')
         #        fig.subplots_adjust(right=0.75)
 
         return plt
