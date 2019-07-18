@@ -85,7 +85,7 @@ class DefectEnergies(MSONable):
                      unitcell: UnitcellCalcResults,
                      perfect: SupercellCalcResults,
                      defects: List[Defect],
-                     chem_pot: ChemPotDiag,
+                     chem_pot: tuple,
                      chem_pot_label: str,
                      system: str = ""):
         """ Calculates defect formation energies from several objects.
@@ -101,8 +101,8 @@ class DefectEnergies(MSONable):
                 List of the Defect namedtuple object.
                 Defect = namedtuple(
                     "Defect", "defect_entry", "dft_results", "correction")
-            chem_pot (ChemPot):
-                Chemical potentials of the competing phases.
+            chem_pot (tuple):
+                Return of ChemPotDiag.load_vertices_yaml
             chem_pot_label (str):
                 Equilibrium point specified in ChemPot.
             system (str):
