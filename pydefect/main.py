@@ -226,6 +226,10 @@ def main():
         "-kw", "--keywords", dest="keywords", type=str, default=None,
         nargs="+", help="Filtering keywords.")
     parser_vasp_set.add_argument(
+        "-vos_kw", "--vos_kwargs", dest="vos_kwargs", type=str,
+        default={}, nargs="+",
+        help="Keywords for vasp_oba_set.")
+    parser_vasp_set.add_argument(
         "-d", dest="particular_defects", type=str, default=None, nargs="+",
         help="Particular defect names to be added.")
     parser_vasp_set.add_argument(
@@ -240,7 +244,7 @@ def main():
     parser_vasp_set.add_argument(
         "-w", "--make_wavecar", dest="wavecar", default=True, type=bool,
         help="Whether to make WAVECAR file or not.")
-    parser_vasp_set.set_defaults(func=defect_vasp_set)
+    parser_vasp_set.set_defaults(func=defect_vasp_oba_set)
 
     # -- defect_entry ----------------------------------------------------------
     parser_defect_entry = subparsers.add_parser(
@@ -459,7 +463,7 @@ def main():
     #     "-gw", "--prev_dir_gw0", dest="prev_dir_gw0", type=str,
     #     help=".")
     parser_vasp_oba_set.add_argument(
-        "-kw", "--kwargs", dest="kwargs", type=str, nargs="+",
+        "-vos_kw", "--vos_kwargs", dest="vos_kwargs", type=str, nargs="+",
         default=None, help="keyword arguments.")
     parser_vasp_oba_set.add_argument(
         "-is", "--incar_setting", dest="incar_setting", type=str, nargs="+",
@@ -760,7 +764,11 @@ def interstitial(args):
     interstitial_set.site_set_to_yaml_file(filename=args.yaml)
 
 
-def defect_vasp_set(args):
+def defect_vasp_oba_set(args):
+
+    flags = list(signature(ObaSet.make_input).parameters.keys())
+    kwargs = list2dict(args.vos_kwargs, flags)
+    print(kwargs)
 
     def make_dir(name, obrs):
         """Helper function"""
@@ -789,7 +797,8 @@ def defect_vasp_set(args):
         kpt_mode="manual",
         kpt_density=args.kpt_density,
         only_even=False,
-        user_incar_settings={"ISPIN": 1})
+        user_incar_settings={"ISPIN": 1},
+        **kwargs)
 
     make_dir("perfect", oba_set)
 
@@ -806,7 +815,8 @@ def defect_vasp_set(args):
                                     weak_incar_settings={"LWAVE": args.wavecar},
                                     kpt_mode="manual",
                                     kpt_density=args.kpt_density,
-                                    only_even=False)
+                                    only_even=False,
+                                    **kwargs)
 
         make_dir(defect_name, oba_set)
         de.to_json_file(json_file_name)
@@ -1034,7 +1044,7 @@ def vasp_oba_set(args):
     base_user_incar_settings = list2dict(args.incar_setting, flags)
 
     flags = list(signature(ObaSet.make_input).parameters.keys())
-    base_kwargs.update(list2dict(args.kwargs, flags))
+    base_kwargs.update(list2dict(args.vos_kwargs, flags))
 
     original_dir = os.getcwd()
     dirs = args.dirs if args.dirs else ["."]
