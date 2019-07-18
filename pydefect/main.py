@@ -1082,6 +1082,8 @@ def diagnose(args):
             print(dft_results.diagnose)
         except FileNotFoundError:
             print("No supercell results file.")
+        except:
+            print("An error is caught.")
 
 
 def plot_energy(args):
