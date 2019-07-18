@@ -366,7 +366,9 @@ class DefectEnergies(MSONable):
 
         # Note: len(self.defect_energies) <= len(transition_levels)
         for i, (name, tl) in enumerate(transition_levels.items()):
-
+            # lowest_energies[name] is {} when all results are omitted above.
+            if not lowest_energies[name]:
+                continue
             line_type = '-' if i < 5 else '--' if i < 10 else '-.'
             # ---------- Calculate cross points including edges ----------------
             cross_points = []

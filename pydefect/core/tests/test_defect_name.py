@@ -22,3 +22,4 @@ class SimpleDefectNameTest(unittest.TestCase):
 
     def test_is_name_matched(self):
         self.assertTrue(self.va_o_1.is_name_matched("Va_O[0-9]_1"))
+        self.assertFalse(self.va_o_1.is_name_matched(["Va_N[0-9]_1", "Va_Mg[0-9]"]))
