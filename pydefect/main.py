@@ -209,12 +209,12 @@ def main():
 
     # -- defect_vasp_set_maker -------------------------------------------------
     parser_vasp_set = subparsers.add_parser(
-        name="defect_vasp_set",
+        name="defect_vasp_oba_set",
         description="Tools for configuring vasp defect_set files for a set of "
                     "defect calculations. One needs to set "
                     ".pydefect.yaml for potcar setup.",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-        aliases=['dvs'])
+        aliases=['dvos'])
 
     parser_vasp_set.add_argument(
         "--defect_in", dest="defect_in", default="defect.in", type=str,
