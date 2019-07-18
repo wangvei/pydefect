@@ -706,7 +706,7 @@ class DefectInitialSetting(MSONable):
                      ' '.join(i for i in self.excluded) + "\n")
 
         lines.append(
-            "Cutoff region of atoms perturbed: {}".format(self.cutoff))
+            "Cutoff region of neighboring atoms: {}".format(self.cutoff))
         lines.append("Symprec: {}".format(self.symprec))
         lines.append("Angle tolerance: {}\n".format(self.angle_tolerance))
 

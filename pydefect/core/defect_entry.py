@@ -14,10 +14,11 @@ from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
 from pydefect.core.error_classes import StructureError
 from pydefect.util.logger import get_logger
 from pydefect.util.structure_tools import count_equivalent_clusters
-from pydefect.vasp_util.util import element_diff_from_poscar_files, \
+from pydefect.vasp_util.util import element_diff_from_structures, \
     get_defect_charge_from_vasp
 from pydefect.util.structure_tools import defect_center_from_coords
-from pydefect.core.config import DEFECT_SYMMETRY_TOLERANCE, ANGLE_TOL
+from pydefect.core.config \
+    import DEFECT_SYMMETRY_TOLERANCE, ANGLE_TOL, CUTOFF_RADIUS
 
 __author__ = "Yu Kumagai"
 __maintainer__ = "Yu Kumagai"
@@ -80,6 +81,8 @@ class DefectEntry(MSONable):
         self.changes_of_num_elements = deepcopy(changes_of_num_elements)
         self.charge = charge
         self.initial_site_symmetry = initial_site_symmetry
+        if not neighboring_sites:
+            raise StructureError("No neighboring site. Increase cutoff radius.")
         self.neighboring_sites = list(neighboring_sites)
         self.annotation = annotation
         self.num_equiv_sites = num_equiv_sites
@@ -118,9 +121,6 @@ class DefectEntry(MSONable):
             perturbed_initial_structure = \
                 Structure.from_dict(perturbed_initial_structure)
 
-        #TODO: remove later
-        annotation = d.get("annotation", None)
-
         return cls(
             name=d["name"],
             initial_structure=initial_structure,
@@ -131,16 +131,16 @@ class DefectEntry(MSONable):
             charge=d["charge"],
             initial_site_symmetry=d["initial_site_symmetry"],
             neighboring_sites=d["neighboring_sites"],
-            annotation=annotation,
+            annotation=d["annotation"],
             num_equiv_sites=d["num_equiv_sites"])
 
     @classmethod
     def from_yaml(cls,
-                  filename: str,
+                  filename: str = None,
                   displacement_distance: float = 0.2,
                   symprec: float = DEFECT_SYMMETRY_TOLERANCE,
                   angle_tolerance: float = ANGLE_TOL,
-                  perturbed_criterion: float = 0.001):
+                  cutoff: float = CUTOFF_RADIUS):
         """Construct the DefectEntry object from perfect and defective POSCARs.
 
         Note1: displacement_distance needs to be the same as the twice of max
@@ -148,9 +148,18 @@ class DefectEntry(MSONable):
         Note2: Only unrelaxed but perturbed defective POSCAR structure is
                accepted.
 
-        filename (str): yaml filename.
-        displacement_distance (float): Tolerance to determine the same atom
+        filename (str):
+            yaml filename.
+        displacement_distance (float):
+            Tolerance to judge whether the atoms are the same between the given
+            defective and perfect supercell structures.
+        symprec (float):
+
         angle_tolerance (float):
+            Angle tolerance in degree used for identifying the space group.
+        cutoff (str):
+            Radius of sphere in which atoms are considered as neighbors of a
+            defect.
 
         An example of the yaml file.
             name (optional): 2Va_O1 + Mg_i_2
@@ -159,6 +168,13 @@ class DefectEntry(MSONable):
             charge (optional, if none, calculated from INCAR and POTCAR): 2
             displacement_distance (optional): 0.2
         """
+        if filename is None:
+            import shutil
+            org_file = os.path.join(os.path.dirname(__file__),
+                                    "default_defect_entry.yaml")
+            shutil.copyfile(org_file, "defect_entry.yaml")
+            filename = "defect_entry.yaml"
+
         abs_dir = os.path.split(os.path.abspath(filename))[0]
 
         with open(filename, "r") as yaml_file:
@@ -167,26 +183,19 @@ class DefectEntry(MSONable):
         displacement_distance = \
             yaml_data.get("displacement_distance", displacement_distance)
 
-        element_diff = element_diff_from_poscar_files(
-            os.path.join(abs_dir, yaml_data["defect_structure"]),
-            os.path.join(abs_dir, yaml_data["perfect_structure"]))
-
         # Perfect and perturbed defect structures.
         perfect_structure = Structure.from_file(
             os.path.join(abs_dir, yaml_data["perfect_structure"]))
         defect_structure = Structure.from_file(
             os.path.join(abs_dir, yaml_data["defect_structure"]))
+        element_diff = element_diff_from_structures(
+            defect_structure, perfect_structure)
 
         _, dirname = os.path.split(os.getcwd())
         split_dirname = dirname.split("_")
 
-        # set defect name
-        if "name" in yaml_data.keys():
-            name = yaml_data["name"]
-        else:
-            name = "_".join(split_dirname[:2])
-            logger.warning("name: {} is set from the directory name.".
-                           format(name))
+        # In the latter case, "Va_Mg_-2" -> name = "Va_Mg"
+        name = yaml_data.get("name", "_".join(split_dirname[:2]))
 
         # set charge state
         if "charge" in yaml_data.keys():
@@ -257,11 +266,13 @@ class DefectEntry(MSONable):
             else:
                 pristine_defect_structure.insert(i, inserted_atom.specie,
                                                  inserted_atom.frac_coords)
+
+        defect_center = cls.calc_defect_center(removed_atoms, inserted_atoms,
+                                               defect_structure)
         neighboring_sites = []
-        for i, site in enumerate(defect_structure):
-            pristine_defect_site = pristine_defect_structure[i]
-            distance = site.distance(pristine_defect_site)
-            if perturbed_criterion < distance < displacement_distance:
+        for i, site in enumerate(pristine_defect_structure):
+            if site.distance_and_image_from_frac_coords(defect_center)[0] \
+                    < cutoff:
                 neighboring_sites.append(i)
 
         sga = SpacegroupAnalyzer(structure=pristine_defect_structure,
@@ -322,16 +333,20 @@ class DefectEntry(MSONable):
         with open(filename, 'w') as fw:
             json.dump(self.as_dict(), fw, indent=2, cls=MontyEncoder)
 
+    @staticmethod
+    def calc_defect_center(removed_atoms: dict,
+                           inserted_atoms: dict,
+                           structure: Structure):
+        """ Calculates arithmetic average to determine center in frac coords."""
+        defect_coords = \
+            list(removed_atoms.values()) + list(inserted_atoms.values())
+        return defect_center_from_coords(defect_coords, structure)
+
     @property
     def defect_center(self):
-        """ Return fractional coordinates of the defect center.
-
-        Calculates the arithmetic average of the defect positions.
-        """
-        total_defect_coords = (list(self.removed_atoms.values()) +
-                               list(self.inserted_atoms.values()))
-        return defect_center_from_coords(total_defect_coords,
-                                         self.initial_structure)
+        """ Return fractional coordinates of the defect center. """
+        return self.calc_defect_center(self.removed_atoms, self.inserted_atoms,
+                                       self.initial_structure)
 
     @property
     def anchor_atom_index(self):

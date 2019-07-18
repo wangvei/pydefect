@@ -6,7 +6,7 @@ from pymatgen.core.structure import Structure
 from pymatgen.electronic_structure.core import Spin
 from pymatgen.io.vasp import Procar
 
-from pydefect.vasp_util.util import element_diff_from_poscar_files, \
+from pydefect.vasp_util.util import element_diff_from_structures, \
     calc_participation_ratio, calc_orbital_character, calc_orbital_similarity
 
 __author__ = "Yu Kumagai"
@@ -22,7 +22,7 @@ class ElementDiffFromPoscarFilesTest(unittest.TestCase):
         poscar1 = os.path.join(test_dir, "POSCAR-MgO8atoms")
         poscar2 = os.path.join(test_dir, "POSCAR-MgO8atoms-Va_O1+N_O")
 
-        actual = element_diff_from_poscar_files(poscar1, poscar2)
+        actual = element_diff_from_structures(poscar1, poscar2)
         expected = {"O": 2, "N": -1}
         self.assertEqual(actual, expected)
 

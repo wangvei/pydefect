@@ -209,12 +209,12 @@ def main():
 
     # -- defect_vasp_set_maker -------------------------------------------------
     parser_vasp_set = subparsers.add_parser(
-        name="defect_vasp_set",
+        name="defect_vasp_oba_set",
         description="Tools for configuring vasp defect_set files for a set of "
                     "defect calculations. One needs to set "
                     ".pydefect.yaml for potcar setup.",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-        aliases=['dvs'])
+        aliases=['dvos'])
 
     parser_vasp_set.add_argument(
         "--defect_in", dest="defect_in", default="defect.in", type=str,
@@ -225,6 +225,10 @@ def main():
     parser_vasp_set.add_argument(
         "-kw", "--keywords", dest="keywords", type=str, default=None,
         nargs="+", help="Filtering keywords.")
+    parser_vasp_set.add_argument(
+        "-vos_kw", "--vos_kwargs", dest="vos_kwargs", type=str,
+        default={}, nargs="+",
+        help="Keywords for vasp_oba_set.")
     parser_vasp_set.add_argument(
         "-d", dest="particular_defects", type=str, default=None, nargs="+",
         help="Particular defect names to be added.")
@@ -240,7 +244,7 @@ def main():
     parser_vasp_set.add_argument(
         "-w", "--make_wavecar", dest="wavecar", default=True, type=bool,
         help="Whether to make WAVECAR file or not.")
-    parser_vasp_set.set_defaults(func=defect_vasp_set)
+    parser_vasp_set.set_defaults(func=defect_vasp_oba_set)
 
     # -- defect_entry ----------------------------------------------------------
     parser_defect_entry = subparsers.add_parser(
@@ -250,6 +254,8 @@ def main():
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
         aliases=['de'])
 
+    defaults = get_default_args(DefectEntry.from_yaml)
+
     parser_defect_entry.add_argument(
         "--print", dest="print", action="store_true",
         help="Print DefectEntry class object information.")
@@ -257,11 +263,14 @@ def main():
         "--make_defect_entry", dest="make_defect_entry", action="store_true",
         help="Make defect_entry.json from yaml file.")
     parser_defect_entry.add_argument(
-        "--yaml", dest="yaml", type=str, default="defect_entry.yaml",
+        "--yaml", dest="yaml", type=str, default=None,
         help="defect_entry.yaml-type file name to be read.")
     parser_defect_entry.add_argument(
         "--json", dest="json", type=str, default="defect_entry.json",
         help="defect_entry.json type file name.")
+    parser_defect_entry.add_argument(
+        "--cutoff", "-c", dest="cutoff", type=float, default=defaults["cutoff"],
+        help="Cutoff radius to determine the neighboring atoms.")
 
     parser_defect_entry.set_defaults(func=defect_entry)
 
@@ -454,7 +463,7 @@ def main():
     #     "-gw", "--prev_dir_gw0", dest="prev_dir_gw0", type=str,
     #     help=".")
     parser_vasp_oba_set.add_argument(
-        "-kw", "--kwargs", dest="kwargs", type=str, nargs="+",
+        "-vos_kw", "--vos_kwargs", dest="vos_kwargs", type=str, nargs="+",
         default=None, help="keyword arguments.")
     parser_vasp_oba_set.add_argument(
         "-is", "--incar_setting", dest="incar_setting", type=str, nargs="+",
@@ -755,7 +764,11 @@ def interstitial(args):
     interstitial_set.site_set_to_yaml_file(filename=args.yaml)
 
 
-def defect_vasp_set(args):
+def defect_vasp_oba_set(args):
+
+    flags = list(signature(ObaSet.make_input).parameters.keys())
+    kwargs = list2dict(args.vos_kwargs, flags)
+    print(kwargs)
 
     def make_dir(name, obrs):
         """Helper function"""
@@ -784,7 +797,8 @@ def defect_vasp_set(args):
         kpt_mode="manual",
         kpt_density=args.kpt_density,
         only_even=False,
-        user_incar_settings={"ISPIN": 1})
+        user_incar_settings={"ISPIN": 1},
+        **kwargs)
 
     make_dir("perfect", oba_set)
 
@@ -801,7 +815,8 @@ def defect_vasp_set(args):
                                     weak_incar_settings={"LWAVE": args.wavecar},
                                     kpt_mode="manual",
                                     kpt_density=args.kpt_density,
-                                    only_even=False)
+                                    only_even=False,
+                                    **kwargs)
 
         make_dir(defect_name, oba_set)
         de.to_json_file(json_file_name)
@@ -823,7 +838,8 @@ def defect_entry(args):
     if args.print:
         print(DefectEntry.load_json(args.json))
     elif args.make_defect_entry:
-        defect_entry_from_yaml = DefectEntry.from_yaml(args.yaml)
+        defect_entry_from_yaml = DefectEntry.from_yaml(filename=args.yaml,
+                                                       cutoff=args.cutoff)
         defect_entry_from_yaml.to_json_file(args.json)
     else:
         logger.warning("Set make_defect_entry or print option.")
@@ -1028,7 +1044,7 @@ def vasp_oba_set(args):
     base_user_incar_settings = list2dict(args.incar_setting, flags)
 
     flags = list(signature(ObaSet.make_input).parameters.keys())
-    base_kwargs.update(list2dict(args.kwargs, flags))
+    base_kwargs.update(list2dict(args.vos_kwargs, flags))
 
     original_dir = os.getcwd()
     dirs = args.dirs if args.dirs else ["."]
@@ -1082,6 +1098,8 @@ def diagnose(args):
             print(dft_results.diagnose)
         except FileNotFoundError:
             print("No supercell results file.")
+        except:
+            print("An error is caught.")
 
 
 def plot_energy(args):

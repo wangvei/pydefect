@@ -205,22 +205,20 @@ class DefectEntrySetMaker:
             raise ValueError("{} in {} is improper.".format(defect_name.in_atom,
                                                             defect_name))
 
-        if self.is_displaced:
-            inserted_atom_coords = list([defect_structure.frac_coords[k]
-                                         for k in inserted_atoms])
-            removed_atom_coords = list(removed_atoms.values())
-            all_defect_coords = inserted_atom_coords + removed_atom_coords
+        inserted_atom_coords = list([defect_structure.frac_coords[k]
+                                     for k in inserted_atoms])
+        removed_atom_coords = list(removed_atoms.values())
+        all_defect_coords = inserted_atom_coords + removed_atom_coords
 
-            center = defect_center_from_coords(all_defect_coords,
-                                               self.perfect_structure)
+        center = defect_center_from_coords(all_defect_coords,
+                                           self.perfect_structure)
 
-            perturbed_defect_structure, perturbed_sites = \
-                perturb_neighboring_atoms(
-                    defect_structure, center, self.cutoff,
-                    self.displacement_distance, list(inserted_atoms.keys()))
-        else:
-            perturbed_defect_structure = defect_structure.copy()
-            perturbed_sites = []
+        # By default, neighboring atoms are perturbed.
+        # If one wants to avoid it, set displacement_distance = 0
+        perturbed_defect_structure, neighboring_sites = \
+            perturb_neighboring_atoms(
+                defect_structure, center, self.cutoff,
+                self.displacement_distance, list(inserted_atoms.keys()))
 
         defect_structure.set_charge(defect_name.charge)
         perturbed_defect_structure.set_charge(defect_name.charge)
@@ -234,5 +232,5 @@ class DefectEntrySetMaker:
             changes_of_num_elements=changes_of_num_elements,
             charge=defect_name.charge,
             initial_site_symmetry=initial_site_symmetry,
-            neighboring_sites=perturbed_sites,
+            neighboring_sites=neighboring_sites,
             num_equiv_sites=num_equiv_sites)

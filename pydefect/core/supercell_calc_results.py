@@ -369,6 +369,7 @@ class SupercellCalcResults(MSONable):
         band_edges = None
 
         if referenced_dft_results:
+            print(referenced_dft_results)
             relative_total_energy = \
                 total_energy - referenced_dft_results.total_energy
 
@@ -455,6 +456,8 @@ class SupercellCalcResults(MSONable):
 
         band_edges = {}
 
+        print(orbital_character)
+
         for spin in orbital_character:
             # Consider the situation where perfect has only Spin.up.
             try:
@@ -505,6 +508,9 @@ class SupercellCalcResults(MSONable):
 
             else:
                 band_edges[spin] = BandEdges.localized_state
+
+        print("band_edges")
+        print(band_edges)
 
         return band_edges
 
