@@ -250,6 +250,8 @@ def main():
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
         aliases=['de'])
 
+    defaults = get_default_args(DefectEntry.from_yaml)
+
     parser_defect_entry.add_argument(
         "--print", dest="print", action="store_true",
         help="Print DefectEntry class object information.")
@@ -257,11 +259,14 @@ def main():
         "--make_defect_entry", dest="make_defect_entry", action="store_true",
         help="Make defect_entry.json from yaml file.")
     parser_defect_entry.add_argument(
-        "--yaml", dest="yaml", type=str, default="defect_entry.yaml",
+        "--yaml", dest="yaml", type=str, default=None,
         help="defect_entry.yaml-type file name to be read.")
     parser_defect_entry.add_argument(
         "--json", dest="json", type=str, default="defect_entry.json",
         help="defect_entry.json type file name.")
+    parser_defect_entry.add_argument(
+        "--cutoff", "-c", dest="cutoff", type=float, default=defaults["cutoff"],
+        help="Cutoff radius to determine the neighboring atoms.")
 
     parser_defect_entry.set_defaults(func=defect_entry)
 
@@ -823,7 +828,8 @@ def defect_entry(args):
     if args.print:
         print(DefectEntry.load_json(args.json))
     elif args.make_defect_entry:
-        defect_entry_from_yaml = DefectEntry.from_yaml(args.yaml)
+        defect_entry_from_yaml = DefectEntry.from_yaml(filename=args.yaml,
+                                                       cutoff=args.cutoff)
         defect_entry_from_yaml.to_json_file(args.json)
     else:
         logger.warning("Set make_defect_entry or print option.")

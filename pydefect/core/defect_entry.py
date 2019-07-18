@@ -136,7 +136,7 @@ class DefectEntry(MSONable):
 
     @classmethod
     def from_yaml(cls,
-                  filename: str = "default_defect_entry.yaml",
+                  filename: str = None,
                   displacement_distance: float = 0.2,
                   symprec: float = DEFECT_SYMMETRY_TOLERANCE,
                   angle_tolerance: float = ANGLE_TOL,
@@ -168,6 +168,13 @@ class DefectEntry(MSONable):
             charge (optional, if none, calculated from INCAR and POTCAR): 2
             displacement_distance (optional): 0.2
         """
+        if filename is None:
+            import shutil
+            org_file = os.path.join(os.path.dirname(__file__),
+                                    "default_defect_entry.yaml")
+            shutil.copyfile(org_file, "defect_entry.yaml")
+            filename = "defect_entry.yaml"
+
         abs_dir = os.path.split(os.path.abspath(filename))[0]
 
         with open(filename, "r") as yaml_file:
