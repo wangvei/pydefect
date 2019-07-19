@@ -180,7 +180,7 @@ class UnitcellCalcResults(MSONable):
         # 2019/7/13 NEVER USE Vasprun.eigenvalue_band_properties
         # THERE IS A BUG TO ESTIMATE VBM AND CBM
         _, vbm_info, cbm_info = band_gap_properties(vasprun)
-        self.is_direct = vbm_info["kpoints"] = cbm_info["kpoints"]
+        self.is_direct = vbm_info["kpoints"] == cbm_info["kpoints"]
         self._band_edge = [vbm_info["energy"], cbm_info["energy"]]
 
     def set_static_dielectric_tensor_from_vasp(self, directory_path,
