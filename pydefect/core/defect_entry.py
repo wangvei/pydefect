@@ -192,34 +192,7 @@ class DefectEntry(MSONable):
             defect_structure, perfect_structure)
 
         _, dirname = os.path.split(os.getcwd())
-        split_dirname = dirname.split("_")
-
-        # In the latter case, "Va_Mg_-2" -> name = "Va_Mg"
-        name = yaml_data.get("name", "_".join(split_dirname[:2]))
-
-        # set charge state
-        if "charge" in yaml_data.keys():
-            charge = yaml_data["charge"]
-        else:
-            charge = get_defect_charge_from_vasp(structure=defect_structure)
-            charge_dirname = int(split_dirname[2])
-            logger.warning("charge {} is set from vasp input files.".
-                           format(charge))
-
-            if charge != charge_dirname:
-                logger.critical("charge {} varies from charge {} in directory "
-                                "name.".format(charge, charge_dirname))
-
-        # set annotation
-        if "annotation" in yaml_data.keys():
-            annotation = yaml_data["annotation"]
-        else:
-            if len(split_dirname) > 3:
-                annotation = "_".join(split_dirname[3:])
-                logger.warning("annotation: {} is set from the directory name.".
-                               format(annotation))
-            else:
-                annotation = None
+        name, charge, annotation = divide_dirname(dirname)
 
         inserted_atom_indices = [i for i in range(defect_structure.num_sites)]
         removed_atoms = {}
@@ -288,6 +261,9 @@ class DefectEntry(MSONable):
                                       inserted_atom_coords,
                                       list(removed_atoms.keys()),
                                       displacement_distance)
+
+        pristine_defect_structure.set_charge(charge)
+        defect_structure.set_charge(charge)
 
         return cls(name=name,
                    initial_structure=pristine_defect_structure,
@@ -376,4 +352,39 @@ def anchor_atom_index(structure, center):
                                                        structure.frac_coords)[0]
 
     return np.argmax(distance_set)
+
+
+def divide_dirname(dirname):
+    """
+
+    After the dirname is split by "_", there must be only one digit in the list,
+    which is considered as a charge state, and Front (back) part corresponds to
+    name (annotation).
+
+    "Va_Mg1_2" -> name = "Va_Mg1", charge = 2, annotation = None
+    "Va_O1_2_inward" -> name = "Va_O1", charge = 2, annotation = "inward"
+    "Mg_i+Va_O1*2_2_coord1"
+            -> name = "Mg_i+Va_O1*2", charge = 2, annotation = "coord1"
+    """
+    def is_digit(n):
+        try:
+            int(n)
+            return True
+        except ValueError:
+            return False
+
+    split_dirname = dirname.split("_")
+    digit_positions = [x for x, y in enumerate(split_dirname) if is_digit(y)]
+
+    if len(digit_positions) != 1:
+        raise ValueError("The dirname {} is not valid".format(dirname))
+    else:
+        digit_pos = digit_positions[0]
+        name = "_".join(split_dirname[:digit_pos])
+        charge = int(split_dirname[digit_pos])
+        annotation = "_".join(split_dirname[digit_pos + 1:])
+        annotation = None if not annotation else annotation
+
+    return name, charge, annotation
+
 

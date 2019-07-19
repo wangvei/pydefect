@@ -7,7 +7,7 @@ import numpy as np
 from pymatgen.core.structure import Structure
 from pymatgen.util.testing import PymatgenTest
 
-from pydefect.core.defect_entry import DefectEntry
+from pydefect.core.defect_entry import DefectEntry, divide_dirname
 
 __author__ = "Yu Kumagai"
 __maintainer__ = "Yu Kumagai"
@@ -129,6 +129,26 @@ class DefectEntryTest(PymatgenTest):
         actual = self._MgO_Va_O1_2.anchor_atom_index
 
         self.assertEqual(actual, expected)
+
+class DivideDirnameTest(PymatgenTest):
+    def setUp(self):
+        """ """
+        # DefectEntry class object for a single vacancy
+        self.dirname1 = "Va_Mg1_2"
+        self.dirname2 = "Va_O1_2_inward"
+        self.dirname3 = "Mg_i+Va_O1*2_-2_coord1"
+
+    def test_dirname1(self):
+        self.assertEqual(divide_dirname(self.dirname1),
+                         ("Va_Mg1", 2, None))
+
+    def test_dirname2(self):
+        self.assertEqual(divide_dirname(self.dirname2),
+                         ("Va_O1", 2, "inward"))
+
+    def test_dirname3(self):
+        self.assertEqual(divide_dirname(self.dirname3),
+                         ("Mg_i+Va_O1*2", -2, "coord1"))
 
 
 if __name__ == "__main__":
