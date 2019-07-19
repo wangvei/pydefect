@@ -362,14 +362,7 @@ class SupercellCalcResults(MSONable):
             orbital_character = None
             band_edge_energies = None
 
-        # Perfect supercell does not need the below.
-        relative_total_energy = None
-        relative_potential = None
-        displacements = None
-        band_edges = None
-
         if referenced_dft_results:
-            print(referenced_dft_results)
             relative_total_energy = \
                 total_energy - referenced_dft_results.total_energy
 
@@ -408,6 +401,13 @@ class SupercellCalcResults(MSONable):
                                             band_edge_energies,
                                             vbm, cbm)
 
+        else:
+            # Perfect supercell does not need the below.
+            relative_total_energy = None
+            relative_potential = None
+            displacements = None
+            band_edges = None
+
         return cls(final_structure=final_structure,
                    site_symmetry=site_symmetry,
                    total_energy=total_energy,
@@ -444,19 +444,35 @@ class SupercellCalcResults(MSONable):
         """
         Args:
             participation_ratio (dict):
+                keys: [spin][band_edge], where band_edge is "hob" or "lub",
+                      meaning "highest-occupied band", "lowest-unoccupied band".
+                values: participation ratio at the neighboring sites
             orbital_character (dict):
+                keys: [s][band_edge][position], where position is "max" or "min"
+                values (dict): [element_name][orbital]
+                               orbital = "s", "p", "d" or "f" (if exists)
             perfect_orbital_character (dict):
                 Orbital character for perfect supercell for comparison.
+            band_edge_energies:
+                keys: [spin][band_edge]
+                values (float): eigenvalue in absolute scale.
+            supercell_vbm (float):
+                VBM in the perfect supercell.
+            supercell_cbm (float):
+                CBM in the perfect supercell.
             dissimilarity_criterion:
                 Determines whether the eigenstate is a host state.
+            localized_criterion (float):
+                Judge the orbital is localized if the participation ratio is
+                larger than this value.
+            near_edge_energy_criterion (float):
+                Judge whether the orbital energy is close to the band edge.
         """
         if all([orbital_character, perfect_orbital_character]) is False:
             logger.warning("Diagnosing shallow states is impossible.")
             return False
 
         band_edges = {}
-
-        print(orbital_character)
 
         for spin in orbital_character:
             # Consider the situation where perfect has only Spin.up.
@@ -476,14 +492,6 @@ class SupercellCalcResults(MSONable):
             acceptor_phs_dissimilarity = calc_orbital_similarity(
                 orbital_character[spin]["lub"]["max"], perfect["hob"]["max"])
 
-            # print("vbm_dissimilarity, donor_phs_dissimilarity, "
-            #       "cbm_dissimilarity, acceptor_phs_dissimilarity")
-            # print(vbm_dissimilarity, donor_phs_dissimilarity, cbm_dissimilarity,
-            #       acceptor_phs_dissimilarity)
-            # print("vbm_participation_ratio", "cbm_participation_ratio")
-            # print(participation_ratio[spin]["hob"],
-            #       participation_ratio[spin]["lub"])
-
             if vbm_dissimilarity < dissimilarity_criterion \
                     and cbm_dissimilarity < dissimilarity_criterion \
                     and participation_ratio[spin]["hob"] < localized_criterion \
@@ -494,6 +502,8 @@ class SupercellCalcResults(MSONable):
                     < near_edge_energy_criterion:
                 band_edges[spin] = BandEdges.no_in_gap
 
+            # To determine the dissimilarity of perturbed host state (phs),
+            # the criterion is doubled from that of regular band edge.
             elif donor_phs_dissimilarity < dissimilarity_criterion * 2 \
                     and participation_ratio[spin]["hob"] < localized_criterion \
                     and supercell_cbm - band_edge_energies[spin]["hob"] \
@@ -508,9 +518,6 @@ class SupercellCalcResults(MSONable):
 
             else:
                 band_edges[spin] = BandEdges.localized_state
-
-        print("band_edges")
-        print(band_edges)
 
         return band_edges
 

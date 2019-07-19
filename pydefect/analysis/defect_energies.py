@@ -10,8 +10,6 @@ import matplotlib.pyplot as plt
 import numpy as np
 from typing import List
 
-from obadb.analyzer.chempotdiag.chem_pot_diag import ChemPotDiag
-
 from pydefect.analysis.defect import Defect
 from pydefect.core.supercell_calc_results import SupercellCalcResults
 from pydefect.core.unitcell_calc_results import UnitcellCalcResults
@@ -102,7 +100,7 @@ class DefectEnergies(MSONable):
                 Defect = namedtuple(
                     "Defect", "defect_entry", "dft_results", "correction")
             chem_pot (tuple):
-                Return of ChemPotDiag.load_vertices_yaml
+                Return of ChemPotDiag.load_vertices_yaml method
             chem_pot_label (str):
                 Equilibrium point specified in ChemPot.
             system (str):
@@ -459,7 +457,8 @@ class DefectEnergies(MSONable):
         # plot vbm, cbm, supercell_vbm, supercell_cbm lines.
         plt.axvline(x=0, linewidth=1.0, linestyle="-", color='b')
         plt.axvline(x=self.band_gap, linewidth=1.0, linestyle="-", color='b')
-        ax.annotate("vbm", (0, y_min * 0.9 + y_max * 0.1), fontsize=10, color='b')
+        ax.annotate("vbm", (0, y_min * 0.9 + y_max * 0.1),
+                    fontsize=10, color='b')
         ax.annotate("cbm", (self.band_gap, y_min * 0.9 + y_max * 0.1),
                     fontsize=10, color='b')
 
@@ -468,13 +467,13 @@ class DefectEnergies(MSONable):
 
 #        if supercell_vbm < - 0.05:
         plt.axvline(x=supercell_vbm, linewidth=1.0, linestyle='-', color='r')
-        ax.annotate("supercell vbm",
-                    (supercell_vbm, y_min * 0.8 + y_max * 0.2), fontsize=10, color='r')
+        ax.annotate("supercell vbm", (supercell_vbm, y_min * 0.8 + y_max * 0.2),
+                    fontsize=10, color='r')
 
 #        if supercell_cbm > self.band_gap + 0.05:
         plt.axvline(x=supercell_cbm, linewidth=1.0, linestyle='-', color='r')
-        ax.annotate("supercell cbm",
-                    (supercell_cbm, y_min * 0.8 + y_max * 0.2), fontsize=10, color='r')
+        ax.annotate("supercell cbm", (supercell_cbm, y_min * 0.8 + y_max * 0.2),
+                    fontsize=10, color='r')
 
         plt.axhline(y=0, linewidth=1.0, linestyle='dashed')
 

@@ -208,7 +208,7 @@ def main():
     parser_interstitial.set_defaults(func=interstitial)
 
     # -- defect_vasp_set_maker -------------------------------------------------
-    parser_vasp_set = subparsers.add_parser(
+    parser_defect_vasp_set = subparsers.add_parser(
         name="defect_vasp_oba_set",
         description="Tools for configuring vasp defect_set files for a set of "
                     "defect calculations. One needs to set "
@@ -216,35 +216,38 @@ def main():
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
         aliases=['dvos'])
 
-    parser_vasp_set.add_argument(
+    parser_defect_vasp_set.add_argument(
         "--defect_in", dest="defect_in", default="defect.in", type=str,
         help="defect.in-type file name.")
-    parser_vasp_set.add_argument(
+    parser_defect_vasp_set.add_argument(
         "--dposcar", dest="dposcar", default="DPOSCAR", type=str,
         help="DPOSCAR-type file name.")
-    parser_vasp_set.add_argument(
+    parser_defect_vasp_set.add_argument(
+        "-py", "--potcar_yaml", dest="potcar", default=None, type=str,
+        help="User specifying Potcar yaml file.")
+    parser_defect_vasp_set.add_argument(
         "-kw", "--keywords", dest="keywords", type=str, default=None,
         nargs="+", help="Filtering keywords.")
-    parser_vasp_set.add_argument(
+    parser_defect_vasp_set.add_argument(
         "-vos_kw", "--vos_kwargs", dest="vos_kwargs", type=str,
         default={}, nargs="+",
         help="Keywords for vasp_oba_set.")
-    parser_vasp_set.add_argument(
+    parser_defect_vasp_set.add_argument(
         "-d", dest="particular_defects", type=str, default=None, nargs="+",
         help="Particular defect names to be added.")
-    parser_vasp_set.add_argument(
+    parser_defect_vasp_set.add_argument(
         "--force_overwrite", dest="force_overwrite", action="store_true",
         help="Set if the existing folders are overwritten.")
-    parser_vasp_set.add_argument(
+    parser_defect_vasp_set.add_argument(
         "-x", "--xc", dest="xc", default="pbe", type=str,
         help="XC interaction treatment.")
-    parser_vasp_set.add_argument(
+    parser_defect_vasp_set.add_argument(
         "-k", "--kpt_density", dest="kpt_density", default=2.3, type=float,
         help="K-points density.")
-    parser_vasp_set.add_argument(
+    parser_defect_vasp_set.add_argument(
         "-w", "--make_wavecar", dest="wavecar", default=True, type=bool,
         help="Whether to make WAVECAR file or not.")
-    parser_vasp_set.set_defaults(func=defect_vasp_oba_set)
+    parser_defect_vasp_set.set_defaults(func=defect_vasp_oba_set)
 
     # -- defect_entry ----------------------------------------------------------
     parser_defect_entry = subparsers.add_parser(
@@ -434,6 +437,9 @@ def main():
     parser_vasp_oba_set.add_argument(
         "-p", "--poscar", dest="poscar", default="POSCAR", type=str,
         help="POSCAR-type file name for the supercell.")
+    parser_vasp_oba_set.add_argument(
+        "-py", "--potcar_yaml", dest="potcar", default=None, type=str,
+        help="User specifying Potcar yaml file.")
     parser_vasp_oba_set.add_argument(
         "-x", "--xc", dest="xc", default="pbesol", type=str,
         help="XC interaction treatment.")
@@ -768,7 +774,6 @@ def defect_vasp_oba_set(args):
 
     flags = list(signature(ObaSet.make_input).parameters.keys())
     kwargs = list2dict(args.vos_kwargs, flags)
-    print(kwargs)
 
     def make_dir(name, obrs):
         """Helper function"""
@@ -793,6 +798,7 @@ def defect_vasp_oba_set(args):
         standardize_structure=False,
         task="defect",
         xc=args.xc,
+        additional_user_potcar_yaml=args.potcar,
         sort_structure=False,
         kpt_mode="manual",
         kpt_density=args.kpt_density,
@@ -811,6 +817,7 @@ def defect_vasp_oba_set(args):
                                     standardize_structure=False,
                                     task="defect",
                                     xc=args.xc,
+                                    additional_user_potcar_yaml=args.potcar,
                                     sort_structure=False,
                                     weak_incar_settings={"LWAVE": args.wavecar},
                                     kpt_mode="manual",
@@ -1072,6 +1079,7 @@ def vasp_oba_set(args):
             oba_set = ObaSet.make_input(structure=s,
                                         charge=args.charge,
                                         user_incar_settings=user_incar_settings,
+                                        user_potcar_yaml=args.potcar,
                                         **kwargs)
 
         oba_set.write_input(".")

@@ -171,6 +171,7 @@ python ~/my_bin/pydefect/pydefect/main.py vos -t structure_opt -x pbesol -is ENC
 
 <p>Note, if competing phases are gases, we need to change `ISIF` to 2 so as not to relax the lattice constants (see [vasp manual](https://cms.mpi.univie.ac.at/wiki/index.php/ISIF)), 
 and `KPOINTS` requires only the &Gamma; point sampling.</p>
+
 In such case, type as follows,
 ```
 python ~/my_bin/pydefect/pydefect/main.py vos -t structure_opt -x pbesol -is ENCUT 520 ISIF 2 -kw is_cluster True --dirs O2molecule_pydefect
@@ -547,23 +548,31 @@ For the corrections, we need the dielectric constants and atomic site potential 
 Therefore, the paths to `unitcell.json` and `dft_results.json` of `perfect` must be assigned.
 Bear also in mind that this command takes some time, so we recommend the users to prepare coffee or go on a walk outside during this process.
 
-The correction method adopted in PyDefect at this moment is the so-called extended Freysoldt-Neugebauer-VandeWalle (eFNV) method.
+The correction method adopted in PyDefect at this moment is the so-called extended Freysoldt-Neugebauer-Van de Walle (eFNV) method.
 so if one uses the corrections, please cite the following papers.
 - [Y. Kumagai*, and F. Oba, Electrostatics-based finite-size corrections for first-principles point defect calculations, Phys. Rev. B, 89 195205 (2014).](https://journals.aps.org/prb/abstract/10.1103/PhysRevB.89.195205)
 - [C. Freysoldt, J. Neugebauer, C. Van de Walle, Fully Ab Initio Finite-Size Corrections for Charged-Defect Supercell Calculations, Phys. Rev. Lett., 102 016402 (2009).](https://journals.aps.org/prl/abstract/10.1103/PhysRevLett.102.016402)
 
+You obtain potential.eps file, which contains information about defect-induced and point-charge potential, 
+and their differences at each atomic site as shown below.
+
+The width and height of the horizontal line indicate the averaged region and ∆VPC, q/b|far, respectively. 
+When performing the corrections, I strongly recommend you to check all the potential.eps files of your calculated defects so as to reduce careless mistakes as much as possible.
 
 
 ### 11. Check defect eigenvalues
 Generally, point defects are divided into three types.
-First type is the defects with deep localized states in the band gap. 
+
+First type is the defects with deep localized states inside the band gap. 
 This type of defect is considered to be detrimental for device performances as the carriers are trapped by the localized states.
 Therefore, in the theoretical researches, it is important to know the position of the localized state and its origin.
+
 Second type is the defects without any defect states, which should not affect the electronic properties as long as their concentrations are sufficiently low.
-The third type is the defects with hydrogenic states, or perturbed host states (PHS), which are carriers locating at the band edges loosely trapped by the defects.
+
+Third type is the defects with hydrogenic states, or perturbed host states (PHS), which are carriers locating at the band edges loosely trapped by the defects.
 An examples are the B-on-Si (p-type) and P-on-Si (n-type) in Si.
-The wavefunctions of the PHS widespread to several million atoms, and therefore we need such supergiant supercells to estimate their thermodynamical transition levels.  
-Therefore, instead, we describe that `the defects have PHS and their transition energies locate near band edges` only qualitatively.
+The wavefunctions of the PHS widespread to several million atoms, so we need such supergiant supercells to estimate their thermodynamical transition levels.  
+Instead, we thus describe that `the defects have PHS and their transition energies locate near band edges` only qualitatively.
 See, for examples.
 - [Y. Kumagai*, M. Choi, Y. Nose, and F. Oba, First-principles study of point defects in chalcopyrite ZnSnP2, Phys. Rev. B, 90 125202 (2014).](https://link.aps.org/pdf/10.1103/PhysRevB.90.125202)
 - [Y. Kumagai*, L. A. Burton, A. Walsh, and F. Oba, Electronic structure and defect physics of tin sulfides: SnS, Sn2S3, and SnS2, Phys. Rev. Applied, 6 014009 (2016).](https://link.aps.org/doi/10.1103/PhysRevApplied.6.014009)
@@ -571,7 +580,7 @@ See, for examples.
 - [Y. Kumagai*, N. Tsunoda, and F. Oba, Point defects and p-type doping in ScN from first principles, Phys. Rev. Applied, 9 034019 (2018).](https://journals.aps.org/prapplied/abstract/10.1103/PhysRevApplied.9.034019)
 - [N. Tsunoda, Y. Kumagai*, A. Takahashi, and F. Oba, Electrically benign defect behavior in ZnSnN2 revealed from first principles, Phys. Rev. Applied, 10 011001 (2018).](https://journals.aps.org/prapplied/abstract/10.1103/PhysRevApplied.10.011001)
 
-Due to such a situation, it is important to see the defect levels and determine if the carriers occupy the PHS or defect localized states.
+Due to such a situation, it is important to see the defect levels and judge if the carriers create the PHS or defect localized states.
 PyDefect show the calculated eigenvalues and the band-edge states by
 ```
 python ~/my_bin/pydefect/pydefect/main.py eig --defect_dir . --unitcell ../../unitcell/unitcell.json --perfect ../perfect/dft_results.json -s eig.png
@@ -584,7 +593,7 @@ The given `eig.png` looks like
 This is an example of V<sub>Ba</sub><sup>+1</sup>.
 Here, one can see occupations of single-particle levels in the spin-up and -down channels.
 The x-axis and y-axis are k-point fractional coordinates and energy in the absolute scale, respectively.
-The dots on the left and right sides are eigenenergies in the defect (thus V<sub>Ba</sub><sup>+1</sup> here) and the perfect supercells, respectively.
+Dots on the left and right sides are eigenenergies in the defect (thus V<sub>Ba</sub><sup>+1</sup> here) and the perfect supercells, respectively.
 There are also five lines, namely VBM and CBM in the unitcell, those in the perfect supercell, and the Fermi level in the defect supercell.
 The numbers in the figure indicate the band indices.
 
@@ -599,3 +608,14 @@ Therefore, please carefully check the band-edge states, and draw the band-decomp
 To make the  
 
 ### 12. Plot defect formation energies
+Here, we show how to plot the defect formation energies.
+
+The plot of the defect formation energies requires a wide variety of information, namely
+band edges, chemical potentials of competing phases, total energy of perfect supercell.
+
+Here, we show an example
+```
+python ~/my_bin/pydefect/pydefect/main.py pe --unitcell ../unitcell/unitcell.json --perfect perfect/dft_results.json --defect_dirs Va*_* --chem_pot_yaml ../competing_phases/vertices_*.yaml -x -1 8 -s energy_A.pdf
+```
+which shows like,
+![](energy.png)

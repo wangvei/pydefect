@@ -188,12 +188,12 @@ In case of BaSnO<sub>3</sub>, <code class="docutils literal notranslate"><span c
 </pre></div>
 </div>
 <p>Note, if competing phases are gases, we need to change `ISIF` to 2 so as not to relax the lattice constants (see [vasp manual](https://cms.mpi.univie.ac.at/wiki/index.php/ISIF)), 
-and `KPOINTS` requires only the &Gamma; point sampling.</p>
-In such case, type as follows,
-```
-python ~/my_bin/pydefect/pydefect/main.py vos -t structure_opt -x pbesol -is ENCUT 520 ISIF 2 -kw is_cluster True --dirs O2molecule_pydefect
-```
-where O2molecule_pydefect is a directory for the O2 molecule model. <p>After finishing the vasp calculations, we generate the chemical potential diagram with</p>
+and `KPOINTS` requires only the &Gamma; point sampling.</p><p>In such case, type as follows,</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="o">~/</span><span class="n">my_bin</span><span class="o">/</span><span class="n">pydefect</span><span class="o">/</span><span class="n">pydefect</span><span class="o">/</span><span class="n">main</span><span class="o">.</span><span class="n">py</span> <span class="n">vos</span> <span class="o">-</span><span class="n">t</span> <span class="n">structure_opt</span> <span class="o">-</span><span class="n">x</span> <span class="n">pbesol</span> <span class="o">-</span><span class="ow">is</span> <span class="n">ENCUT</span> <span class="mi">520</span> <span class="n">ISIF</span> <span class="mi">2</span> <span class="o">-</span><span class="n">kw</span> <span class="n">is_cluster</span> <span class="kc">True</span> <span class="o">--</span><span class="n">dirs</span> <span class="n">O2molecule_pydefect</span>
+</pre></div>
+</div>
+<p>where O2molecule_pydefect is a directory for the O2 molecule model.</p>
+<p>After finishing the vasp calculations, we generate the chemical potential diagram with</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="o">~/</span><span class="n">my_bin</span><span class="o">/</span><span class="n">phos_pbesol</span><span class="o">/</span><span class="n">obadb</span><span class="o">/</span><span class="n">obadb</span><span class="o">/</span><span class="n">analyzer</span><span class="o">/</span><span class="n">chempotdiag</span><span class="o">/</span><span class="n">main</span><span class="o">.</span><span class="n">py</span> <span class="n">cpd</span> <span class="o">-</span><span class="n">v</span> <span class="o">*/</span> <span class="o">-</span><span class="n">p</span> <span class="n">POSCAR</span><span class="o">-</span><span class="n">finish</span> <span class="o">-</span><span class="n">o</span> <span class="n">OUTCAR</span><span class="o">-</span><span class="n">finish</span> <span class="o">-</span><span class="n">c</span> <span class="n">BaSnO3</span> <span class="o">-</span><span class="n">y</span> <span class="o">-</span><span class="n">s</span> <span class="n">cpd_BaSnO3</span><span class="o">.</span><span class="n">pdf</span>
 </pre></div>
 </div>
@@ -538,23 +538,27 @@ Therefore, we need to correct total energies of charged defect supercells to pre
 <p>For the corrections, we need the dielectric constants and atomic site potential of perfect supercell.
 Therefore, the paths to <code class="docutils literal notranslate"><span class="pre">unitcell.json</span></code> and <code class="docutils literal notranslate"><span class="pre">dft_results.json</span></code> of <code class="docutils literal notranslate"><span class="pre">perfect</span></code> must be assigned.
 Bear also in mind that this command takes some time, so we recommend the users to prepare coffee or go on a walk outside during this process.</p>
-<p>The correction method adopted in PyDefect at this moment is the so-called extended Freysoldt-Neugebauer-VandeWalle (eFNV) method.
+<p>The correction method adopted in PyDefect at this moment is the so-called extended Freysoldt-Neugebauer-Van de Walle (eFNV) method.
 so if one uses the corrections, please cite the following papers.</p>
 <ul class="simple">
 <li><p><a class="reference external" href="https://journals.aps.org/prb/abstract/10.1103/PhysRevB.89.195205">Y. Kumagai*, and F. Oba, Electrostatics-based finite-size corrections for first-principles point defect calculations, Phys. Rev. B, 89 195205 (2014).</a></p></li>
 <li><p><a class="reference external" href="https://journals.aps.org/prl/abstract/10.1103/PhysRevLett.102.016402">C. Freysoldt, J. Neugebauer, C. Van de Walle, Fully Ab Initio Finite-Size Corrections for Charged-Defect Supercell Calculations, Phys. Rev. Lett., 102 016402 (2009).</a></p></li>
 </ul>
+<p>You obtain potential.eps file, which contains information about defect-induced and point-charge potential,
+and their differences at each atomic site as shown below.</p>
+<p>The width and height of the horizontal line indicate the averaged region and ∆VPC, q/b|far, respectively.
+When performing the corrections, I strongly recommend you to check all the potential.eps files of your calculated defects so as to reduce careless mistakes as much as possible.</p>
 </div>
 <div class="section" id="check-defect-eigenvalues">
 <h2>11. Check defect eigenvalues<a class="headerlink" href="#check-defect-eigenvalues" title="Permalink to this headline">¶</a></h2>
-<p>Generally, point defects are divided into three types.
-First type is the defects with deep localized states in the band gap.
+<p>Generally, point defects are divided into three types.</p>
+<p>First type is the defects with deep localized states inside the band gap.
 This type of defect is considered to be detrimental for device performances as the carriers are trapped by the localized states.
-Therefore, in the theoretical researches, it is important to know the position of the localized state and its origin.
-Second type is the defects without any defect states, which should not affect the electronic properties as long as their concentrations are sufficiently low.
-The third type is the defects with hydrogenic states, or perturbed host states (PHS), which are carriers locating at the band edges loosely trapped by the defects.
+Therefore, in the theoretical researches, it is important to know the position of the localized state and its origin.</p>
+<p>Second type is the defects without any defect states, which should not affect the electronic properties as long as their concentrations are sufficiently low.</p>
+<p>Third type is the defects with hydrogenic states, or perturbed host states (PHS), which are carriers locating at the band edges loosely trapped by the defects.
 An examples are the B-on-Si (p-type) and P-on-Si (n-type) in Si.
-The wavefunctions of the PHS widespread to several million atoms, and therefore we need such supergiant supercells to estimate their thermodynamical transition levels.Therefore, instead, we describe that <code class="docutils literal notranslate"><span class="pre">the</span> <span class="pre">defects</span> <span class="pre">have</span> <span class="pre">PHS</span> <span class="pre">and</span> <span class="pre">their</span> <span class="pre">transition</span> <span class="pre">energies</span> <span class="pre">locate</span> <span class="pre">near</span> <span class="pre">band</span> <span class="pre">edges</span></code> only qualitatively.
+The wavefunctions of the PHS widespread to several million atoms, so we need such supergiant supercells to estimate their thermodynamical transition levels.Instead, we thus describe that <code class="docutils literal notranslate"><span class="pre">the</span> <span class="pre">defects</span> <span class="pre">have</span> <span class="pre">PHS</span> <span class="pre">and</span> <span class="pre">their</span> <span class="pre">transition</span> <span class="pre">energies</span> <span class="pre">locate</span> <span class="pre">near</span> <span class="pre">band</span> <span class="pre">edges</span></code> only qualitatively.
 See, for examples.</p>
 <ul class="simple">
 <li><p><a class="reference external" href="https://link.aps.org/pdf/10.1103/PhysRevB.90.125202">Y. Kumagai*, M. Choi, Y. Nose, and F. Oba, First-principles study of point defects in chalcopyrite ZnSnP2, Phys. Rev. B, 90 125202 (2014).</a></p></li>
@@ -563,7 +567,7 @@ See, for examples.</p>
 <li><p><a class="reference external" href="https://journals.aps.org/prapplied/abstract/10.1103/PhysRevApplied.9.034019">Y. Kumagai*, N. Tsunoda, and F. Oba, Point defects and p-type doping in ScN from first principles, Phys. Rev. Applied, 9 034019 (2018).</a></p></li>
 <li><p><a class="reference external" href="https://journals.aps.org/prapplied/abstract/10.1103/PhysRevApplied.10.011001">N. Tsunoda, Y. Kumagai*, A. Takahashi, and F. Oba, Electrically benign defect behavior in ZnSnN2 revealed from first principles, Phys. Rev. Applied, 10 011001 (2018).</a></p></li>
 </ul>
-<p>Due to such a situation, it is important to see the defect levels and determine if the carriers occupy the PHS or defect localized states.
+<p>Due to such a situation, it is important to see the defect levels and judge if the carriers create the PHS or defect localized states.
 PyDefect show the calculated eigenvalues and the band-edge states by</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="o">~/</span><span class="n">my_bin</span><span class="o">/</span><span class="n">pydefect</span><span class="o">/</span><span class="n">pydefect</span><span class="o">/</span><span class="n">main</span><span class="o">.</span><span class="n">py</span> <span class="n">eig</span> <span class="o">--</span><span class="n">defect_dir</span> <span class="o">.</span> <span class="o">--</span><span class="n">unitcell</span> <span class="o">../../</span><span class="n">unitcell</span><span class="o">/</span><span class="n">unitcell</span><span class="o">.</span><span class="n">json</span> <span class="o">--</span><span class="n">perfect</span> <span class="o">../</span><span class="n">perfect</span><span class="o">/</span><span class="n">dft_results</span><span class="o">.</span><span class="n">json</span> <span class="o">-</span><span class="n">s</span> <span class="n">eig</span><span class="o">.</span><span class="n">png</span>
 </pre></div>
@@ -574,7 +578,7 @@ PyDefect show the calculated eigenvalues and the band-edge states by</p>
 <p>This is an example of V<sub>Ba</sub><sup>+1</sup>.
 Here, one can see occupations of single-particle levels in the spin-up and -down channels.
 The x-axis and y-axis are k-point fractional coordinates and energy in the absolute scale, respectively.
-The dots on the left and right sides are eigenenergies in the defect (thus V<sub>Ba</sub><sup>+1</sup> here) and the perfect supercells, respectively.
+Dots on the left and right sides are eigenenergies in the defect (thus V<sub>Ba</sub><sup>+1</sup> here) and the perfect supercells, respectively.
 There are also five lines, namely VBM and CBM in the unitcell, those in the perfect supercell, and the Fermi level in the defect supercell.
 The numbers in the figure indicate the band indices.</p>
 <p>The dots are categorized into 5 colors.</p>
@@ -589,6 +593,15 @@ To make the</p>
 </div>
 <div class="section" id="plot-defect-formation-energies">
 <h2>12. Plot defect formation energies<a class="headerlink" href="#plot-defect-formation-energies" title="Permalink to this headline">¶</a></h2>
+<p>Here, we show how to plot the defect formation energies.</p>
+<p>The plot of the defect formation energies requires a wide variety of information, namely
+band edges, chemical potentials of competing phases, total energy of perfect supercell.</p>
+<p>Here, we show an example</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="o">~/</span><span class="n">my_bin</span><span class="o">/</span><span class="n">pydefect</span><span class="o">/</span><span class="n">pydefect</span><span class="o">/</span><span class="n">main</span><span class="o">.</span><span class="n">py</span> <span class="n">pe</span> <span class="o">--</span><span class="n">unitcell</span> <span class="o">../</span><span class="n">unitcell</span><span class="o">/</span><span class="n">unitcell</span><span class="o">.</span><span class="n">json</span> <span class="o">--</span><span class="n">perfect</span> <span class="n">perfect</span><span class="o">/</span><span class="n">dft_results</span><span class="o">.</span><span class="n">json</span> <span class="o">--</span><span class="n">defect_dirs</span> <span class="n">Va</span><span class="o">*</span><span class="n">_</span><span class="o">*</span> <span class="o">--</span><span class="n">chem_pot_yaml</span> <span class="o">../</span><span class="n">competing_phases</span><span class="o">/</span><span class="n">vertices_</span><span class="o">*.</span><span class="n">yaml</span> <span class="o">-</span><span class="n">x</span> <span class="o">-</span><span class="mi">1</span> <span class="mi">8</span> <span class="o">-</span><span class="n">s</span> <span class="n">energy_A</span><span class="o">.</span><span class="n">pdf</span>
+</pre></div>
+</div>
+<p>which shows like,
+<img alt="_images/energy.png" src="_images/energy.png" /></p>
 </div>
 </div>
 
