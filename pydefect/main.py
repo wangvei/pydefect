@@ -1079,7 +1079,7 @@ def vasp_oba_set(args):
             oba_set = ObaSet.make_input(structure=s,
                                         charge=args.charge,
                                         user_incar_settings=user_incar_settings,
-                                        user_potcar_yaml=args.potcar,
+                                        additional_user_potcar_yaml=args.potcar,
                                         **kwargs)
 
         oba_set.write_input(".")
