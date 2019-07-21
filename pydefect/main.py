@@ -669,14 +669,21 @@ def main():
     args.func(args)
 
 
-def generate_objects(directory, files, classes):
+def generate_objects(directory: list,
+                     files: list,
+                     classes: list,
+                     raise_error: bool = True):
     objects = []
     for f, c in zip(files, classes):
         try:
             objects.append(c.load_json(join(directory, f)))
         except IOError:
             logger.warning("Parsing {} in {} failed.".format(f, directory))
-            return False
+            if raise_error:
+                raise
+            else:
+                logger.warning("Parsing {} in {} failed.".format(f, directory))
+                return False
     return objects
 
 
@@ -1126,14 +1133,15 @@ def plot_energy(args):
             files = [args.defect_entry, args.dft_results, args.correction]
             classes = [DefectEntry, SupercellCalcResults, ExtendedFnvCorrection]
 
-            input_objects = generate_objects(d, files, classes)
+            input_objects = generate_objects(d, files, classes,
+                                             raise_error=False)
 
             if input_objects:
                 defects.append(Defect(defect_entry=input_objects[0],
                                       dft_results=input_objects[1],
                                       correction=input_objects[2]))
             else:
-                logger.warning("Parsing {} skipped.".format(d))
+                logger.warning("Parsing {} failed.".format(d))
                 continue
 
         chem_pot = ChemPotDiag.load_vertices_yaml(args.chem_pot_yaml)
@@ -1186,6 +1194,8 @@ def parse_eigenvalues(args):
     files = [args.defect_entry, args.dft_results, args.correction]
     classes = [DefectEntry, SupercellCalcResults, ExtendedFnvCorrection]
     input_objects = generate_objects(args.defect_dir, files, classes)
+    if input_objects is False:
+        raise IOError
     defect = Defect(defect_entry=input_objects[0],
                     dft_results=input_objects[1],
                     correction=input_objects[2])
