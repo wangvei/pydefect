@@ -161,23 +161,34 @@ class DefectStructure(MSONable):
         outs = ["DefectStructure Summary"]
         return " ".join(outs)
 
-    @property
-    def show_displacements(self):
-        lines = ["element initial   final   disp  angle",
-                 " name   dist(A)  dist(A)  dist  (deg)"]
-        for s in self.neighboring_sites:
+    def show_displacements(self, all_atoms=False):
+        lines = ["element initial   final   disp  angle            ",
+                 " name   dist(A)  dist(A)  dist  (deg)   direction"]
+        if all_atoms:
+            candidate = range(len(self.final_structure))
+        else:
+            candidate = self.neighboring_sites
+        for s in candidate:
 
             element = str(self.final_structure[s].specie)
             try:
-                angle = str(int(round(self.displacements[4][s], 0)))
+                angle = int(round(self.displacements[4][s], 0))
+                if angle < 60:
+                    direction = "inward"
+                elif angle > 120:
+                    direction = "outward"
+                else:
+                    direction = "tangent"
+                angle = str(angle)
             except TypeError:
                 angle = "None"
+                direction = "None"
 
-            lines.append(" {:>5}    {:3.2f}     {:3.2f}   {:4.2f}  {:>4}".format(
+            lines.append(" {:>5}    {:3.2f}     {:3.2f}   {:4.2f}  {:>4} {:>12}".format(
                 element,
                 round(self.displacements[0][s], 3),
                 round(self.displacements[1][s], 3),
-                round(self.displacements[3][s], 3), angle))
+                round(self.displacements[3][s], 3), angle, direction))
         return "\n".join(lines)
 
     def comparator(self,

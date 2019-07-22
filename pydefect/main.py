@@ -662,6 +662,8 @@ def main():
         "--dft_results", dest="dft_results", type=str,
         default="dft_results.json")
     parser_local_structure.add_argument(
+        "--show_all", dest="show_all", action="store_true")
+    parser_local_structure.add_argument(
         "--defect_dir", dest="defect_dir", type=str, default='.',
         help="Directory name for the defect supercell result. "
              "defect_entry.json, dft_results.json, and correction.json files "
@@ -1244,7 +1246,7 @@ def local_structure(args):
                         dft_results=input_objects[1],
                         correction=None)
         defect_structure = DefectStructure.from_defect(defect)
-        print(defect_structure.show_displacements)
+        print(defect_structure.show_displacements(all_atoms=args.show_all))
 
 
 if __name__ == "__main__":
