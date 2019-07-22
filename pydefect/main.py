@@ -245,8 +245,11 @@ def main():
         "-k", "--kpt_density", dest="kpt_density", default=2.3, type=float,
         help="K-points density.")
     parser_defect_vasp_set.add_argument(
-        "-w", "--make_wavecar", dest="wavecar", default=True, type=bool,
-        help="Whether to make WAVECAR file or not.")
+        "-nw", "--no_wavecar", dest="wavecar", action="store_false",
+        help="Do not make WAVECAR file or not.")
+#    parser_recommend_supercell.add_argument(
+#        "-set", dest="set", action="store_true",
+#        help="Output all the supercells satisfying the criterion.")
     parser_defect_vasp_set.set_defaults(func=defect_vasp_oba_set)
 
     # -- defect_entry ----------------------------------------------------------
@@ -274,6 +277,9 @@ def main():
     parser_defect_entry.add_argument(
         "--cutoff", "-c", dest="cutoff", type=float, default=defaults["cutoff"],
         help="Cutoff radius to determine the neighboring atoms.")
+    parser_defect_entry.add_argument(
+        "--no_calc_sites", dest="calc_sites", action="store_false",
+        help="Do not calculate number of equivalent sites (clusters).")
 
     parser_defect_entry.set_defaults(func=defect_entry)
 
@@ -807,6 +813,7 @@ def defect_vasp_oba_set(args):
         xc=args.xc,
         additional_user_potcar_yaml=args.potcar,
         sort_structure=False,
+        weak_incar_settings={"LWAVE": args.wavecar},
         kpt_mode="manual",
         kpt_density=args.kpt_density,
         only_even=False,
@@ -852,8 +859,10 @@ def defect_entry(args):
     if args.print:
         print(DefectEntry.load_json(args.json))
     elif args.make_defect_entry:
-        defect_entry_from_yaml = DefectEntry.from_yaml(filename=args.yaml,
-                                                       cutoff=args.cutoff)
+        defect_entry_from_yaml = \
+            DefectEntry.from_yaml(filename=args.yaml,
+                                  cutoff=args.cutoff,
+                                  calc_num_equiv_site=args.calc_sites)
         defect_entry_from_yaml.to_json_file(args.json)
     else:
         logger.warning("Set make_defect_entry or print option.")

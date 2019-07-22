@@ -69,7 +69,8 @@ class DefectEntry(MSONable):
             neighboring_sites (list):
                 Indices of the perturbed site for reducing the symmetry
             annotation (str):
-
+                Annotation used for distinguishing defects with same
+                net atom exchange but different local structures.
             num_equiv_sites (int):
                 Number of equivalent sites in the given structure.
         """
@@ -140,7 +141,8 @@ class DefectEntry(MSONable):
                   displacement_distance: float = 0.2,
                   symprec: float = DEFECT_SYMMETRY_TOLERANCE,
                   angle_tolerance: float = ANGLE_TOL,
-                  cutoff: float = CUTOFF_RADIUS):
+                  cutoff: float = CUTOFF_RADIUS,
+                  calc_num_equiv_site: bool = True):
         """Construct the DefectEntry object from perfect and defective POSCARs.
 
         Note1: displacement_distance needs to be the same as the twice of max
@@ -154,9 +156,9 @@ class DefectEntry(MSONable):
             Tolerance to judge whether the atoms are the same between the given
             defective and perfect supercell structures.
         symprec (float):
-
+            Lenght tolerance in Angstrom used for identifying the space group.
         angle_tolerance (float):
-            Angle tolerance in degree used for identifying the space group.
+            Angle tolerance used for identifying the space group.
         cutoff (str):
             Radius of sphere in which atoms are considered as neighbors of a
             defect.
@@ -256,11 +258,14 @@ class DefectEntry(MSONable):
 
         inserted_atom_coords = list(inserted_atoms.values())
 
-        num_equiv_sites = \
-            count_equivalent_clusters(perfect_structure,
-                                      inserted_atom_coords,
-                                      list(removed_atoms.keys()),
-                                      displacement_distance)
+        if calc_num_equiv_site:
+            num_equiv_sites = \
+                count_equivalent_clusters(perfect_structure,
+                                          inserted_atom_coords,
+                                          list(removed_atoms.keys()),
+                                          displacement_distance)
+        else:
+            num_equiv_sites = None
 
         pristine_defect_structure.set_charge(charge)
         defect_structure.set_charge(charge)
