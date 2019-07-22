@@ -11,7 +11,7 @@ class Defect:
     def __init__(self,
                  defect_entry: DefectEntry,
                  dft_results: SupercellCalcResults,
-                 correction: Correction):
+                 correction: Correction = None):
 
         self.defect_entry = defect_entry
         self.dft_results = dft_results
