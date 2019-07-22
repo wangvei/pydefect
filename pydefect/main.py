@@ -662,9 +662,7 @@ def main():
         "--dft_results", dest="dft_results", type=str,
         default="dft_results.json")
     parser_local_structure.add_argument(
-        "--correction", dest="correction", type=str, default="correction.json")
-    parser_local_structure.add_argument(
-        "--defect_dir", dest="defect_dir", type=str,
+        "--defect_dir", dest="defect_dir", type=str, default='.',
         help="Directory name for the defect supercell result. "
              "defect_entry.json, dft_results.json, and correction.json files "
              "are required in the directory.")
@@ -1238,13 +1236,13 @@ def vasp_parchg_set(args):
 
 def local_structure(args):
     logger.info("parsing directory {}...".format(args.defect_dir))
-    files = [args.defect_entry, args.dft_results, args.correction]
-    classes = [DefectEntry, SupercellCalcResults, ExtendedFnvCorrection]
+    files = [args.defect_entry, args.dft_results]
+    classes = [DefectEntry, SupercellCalcResults]
     input_objects = generate_objects(args.defect_dir, files, classes)
     if input_objects:
         defect = Defect(defect_entry=input_objects[0],
                         dft_results=input_objects[1],
-                        correction=input_objects[2])
+                        correction=None)
         defect_structure = DefectStructure.from_defect(defect)
         print(defect_structure.show_displacements)
 

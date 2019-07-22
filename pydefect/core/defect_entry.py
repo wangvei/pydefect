@@ -246,8 +246,7 @@ class DefectEntry(MSONable):
                                                defect_structure)
         neighboring_sites = []
         for i, site in enumerate(pristine_defect_structure):
-            if site.distance_and_image_from_frac_coords(defect_center)[0] \
-                    < cutoff:
+            if 1e-5 < site.distance_and_image_from_frac_coords(defect_center)[0] < cutoff:
                 neighboring_sites.append(i)
 
         sga = SpacegroupAnalyzer(structure=pristine_defect_structure,

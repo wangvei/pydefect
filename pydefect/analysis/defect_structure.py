@@ -88,7 +88,7 @@ class DefectStructure(MSONable):
                  displacements: list,
                  initial_site_symmetry: str,
                  final_site_symmetry: str,
-                 perturbed_sites: list):
+                 neighboring_sites: list):
         """
         Args:
             name (str):
@@ -107,7 +107,7 @@ class DefectStructure(MSONable):
                 Initial site symmetry such as D4h.
             final_site_symmetry (str):
                 Final site symmetry.
-            perturbed_sites (list):
+            neighboring_sites (list):
                 Indices of the perturbed site for reducing the symmetry
 
         """
@@ -123,11 +123,11 @@ class DefectStructure(MSONable):
 
         self.displacements = displacements
 
-        self.perturbed_sites = perturbed_sites
+        self.neighboring_sites = neighboring_sites
 
         removed_sites = []
         for i in range(len(self.final_structure)):
-            if i not in self.perturbed_sites:
+            if i not in self.neighboring_sites:
                 removed_sites.append(i)
 
         self.initial_local_structure = deepcopy(initial_structure)
@@ -155,7 +155,7 @@ class DefectStructure(MSONable):
                    defect.defect_entry.initial_site_symmetry,
                    final_site_symmetry=defect.dft_results.site_symmetry,
                    displacements=defect.dft_results.displacements,
-                   perturbed_sites=defect.defect_entry.neighboring_sites)
+                   neighboring_sites=defect.defect_entry.neighboring_sites)
 
     def __repr__(self):
         outs = ["DefectStructure Summary"]
@@ -163,14 +163,21 @@ class DefectStructure(MSONable):
 
     @property
     def show_displacements(self):
-        lines = ["initial   final   disp  angle"]
-        lines.append("dist(A)  dist(A)  dist  (deg)")
-        for s in self.perturbed_sites:
-            lines.append("  {:3.2f}     {:3.2f}   {:4.2f}  {:5.1f}".format(
+        lines = ["element initial   final   disp  angle",
+                 " name   dist(A)  dist(A)  dist  (deg)"]
+        for s in self.neighboring_sites:
+
+            element = str(self.final_structure[s].specie)
+            try:
+                angle = str(int(round(self.displacements[4][s], 0)))
+            except TypeError:
+                angle = "None"
+
+            lines.append(" {:>5}    {:3.2f}     {:3.2f}   {:4.2f}  {:>4}".format(
+                element,
                 round(self.displacements[0][s], 3),
                 round(self.displacements[1][s], 3),
-                round(self.displacements[3][s], 3),
-                round(self.displacements[4][s], 3)))
+                round(self.displacements[3][s], 3), angle))
         return "\n".join(lines)
 
     def comparator(self,

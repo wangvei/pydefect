@@ -109,9 +109,16 @@ class DefectEigenvalue(MSONable):
             raise UnitcellCalcResultsError(
                 "All the unitcell-related property is not set yet. ")
 
+        if defect.defect_entry is None:
+            name = None
+            charge = 0
+        else:
+            name = defect.defect_entry.name
+            charge = defect.defect_entry.charge
+
         # Note: vbm, cbm, perfect_vbm, perfect_cbm are in absolute energy.
-        return cls(name=defect.defect_entry.name,
-                   charge=defect.defect_entry.charge,
+        return cls(name=name,
+                   charge=charge,
                    kpoint_coords=defect.dft_results.kpoint_coords,
                    kpoint_weights=defect.dft_results.kpoint_weights,
                    eigenvalues=defect.dft_results.eigenvalues,
