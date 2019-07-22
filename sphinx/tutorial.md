@@ -626,10 +626,10 @@ Filled circles inside the figures are eigenenergies in the defect supercells.
 There are also five lines, namely VBM and CBM in the unitcell (**blue**), those in the perfect supercell (**red**), and the Fermi level in the defect supercells.
 The numbers in the figure indicate the band indices, which are shown discretely.
 
-The filled circles are categorized into 3 colors, i.e., blue, green, orange which are the occupied, partially occupied (from 0.1 to 0.9), unoccupied eigenstates in the defect supercell, respectively. 
+The filled circles are categorized into blue, green, orange ones which mean the occupied, partially occupied (from 0.1 to 0.9), unoccupied eigenstates in the defect supercell, respectively. 
 The  
 
-We emphasize that the automatically determined band-edge states might be incorrect as it is difficult to determine them.
+We emphasize that the automatically determined band-edge states could be incorrect as it is difficult to determine them.
 Therefore, please carefully check the band-edge states, and draw the band-decomposed charge density states if the band-edge states are not so obvious.
 
 If you find the automatically determined band-edge states are incorrect, you can modify it by
@@ -642,6 +642,7 @@ python ~/my_bin/pydefect/pydefect/main.py sr -be down acceptor_phs --dirs .
 ```
 for both spin-up and -down states.
 There are four supported states `donor_phs`, `acceptor_phs`, `localized_state`, `no_in_gap`, the former two are considered as shallow states, and omitted for energy plot by default.
+
 
 
 ### 12. Plot defect formation energies
