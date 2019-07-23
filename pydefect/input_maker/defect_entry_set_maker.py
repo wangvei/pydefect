@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+from collections import defaultdict
 from typing import Union, List
 
 from pymatgen.core.periodic_table import Element
@@ -150,7 +151,7 @@ class DefectEntrySetMaker:
 
         defect_structure = self.perfect_structure.copy()
 
-        changes_of_num_elements = {}
+        changes_of_num_elements = defaultdict(int)
         # -------------------- analyze out_site --------------------------------
         removed_atoms = {}
         # interstitial
@@ -168,7 +169,7 @@ class DefectEntrySetMaker:
         else:
             for i in self.irreducible_sites:
                 if defect_name.out_site == i.irreducible_name:
-                    changes_of_num_elements[i.element] = -1
+                    changes_of_num_elements[i.element] -= 1
                     removed_index = i.first_index - 1
                     defect_coords = i.representative_coords
                     removed_atoms[removed_index] = i.representative_coords
@@ -195,7 +196,7 @@ class DefectEntrySetMaker:
             # There may be multiple irreducible sites for inserted element,
             # e.g., Mg1 and Mg2, element of in_atom is inserted to just before
             # the same elements, otherwise to the 1st index.
-            changes_of_num_elements[defect_name.in_atom] = 1
+            changes_of_num_elements[defect_name.in_atom] += 1
             inserted_index = first_appearance_index(defect_structure,
                                                     defect_name.in_atom)
             inserted_atoms[inserted_index] = defect_coords
@@ -229,7 +230,7 @@ class DefectEntrySetMaker:
             perturbed_initial_structure=perturbed_defect_structure,
             removed_atoms=removed_atoms,
             inserted_atoms=inserted_atoms,
-            changes_of_num_elements=changes_of_num_elements,
+            changes_of_num_elements=dict(changes_of_num_elements),
             charge=defect_name.charge,
             initial_site_symmetry=initial_site_symmetry,
             neighboring_sites=neighboring_sites,

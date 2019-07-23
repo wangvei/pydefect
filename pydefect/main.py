@@ -806,21 +806,22 @@ def defect_vasp_oba_set(args):
     defect_entry_set_maker = \
         DefectEntrySetMaker(dis, args.keywords, args.particular_defects)
 
-    oba_set = ObaSet.make_input(
-        structure=defect_entry_set_maker.perfect_structure,
-        standardize_structure=False,
-        task="defect",
-        xc=args.xc,
-        additional_user_potcar_yaml=args.potcar,
-        sort_structure=False,
-        weak_incar_settings={"LWAVE": args.wavecar},
-        kpt_mode="manual",
-        kpt_density=args.kpt_density,
-        only_even=False,
-        user_incar_settings={"ISPIN": 1},
-        **kwargs)
+    if not args.particular_defects:
+        oba_set = ObaSet.make_input(
+            structure=defect_entry_set_maker.perfect_structure,
+            standardize_structure=False,
+            task="defect",
+            xc=args.xc,
+            additional_user_potcar_yaml=args.potcar,
+            sort_structure=False,
+            weak_incar_settings={"LWAVE": args.wavecar},
+            kpt_mode="manual",
+            kpt_density=args.kpt_density,
+            only_even=False,
+            user_incar_settings={"ISPIN": 1},
+            **kwargs)
 
-    make_dir("perfect", oba_set)
+        make_dir("perfect", oba_set)
 
     for de in defect_entry_set_maker.defect_entries:
         defect_name = "_".join([de.name, str(de.charge)])
