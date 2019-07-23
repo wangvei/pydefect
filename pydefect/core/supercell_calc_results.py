@@ -180,16 +180,19 @@ class SupercellCalcResults(MSONable):
 
     @property
     def diagnose(self):
+
         band_edges = []
         for s, v in self.band_edges.items():
-            band_edges.extend([s.name.upper(), ":", str(v).rjust(17)])
+            band_edges.extend([s.name.upper(), "->", str(v).rjust(17)])
 
         band_edges = "  ".join(band_edges)
 
-        outs = ["convergence : " + str(self.is_converged)[0],
+        outs = ["conv. : " + str(self.is_converged)[0],
+                "  mag. : {}".format(str(round(self.total_magnetization, 1))),
+                "  sym. : {:>4}".format(self.site_symmetry),
                 "  band edge : " + band_edges]
 
-        return "  ".join(outs)
+        return " ".join(outs)
 
     @classmethod
     def from_vasp_files(cls,
