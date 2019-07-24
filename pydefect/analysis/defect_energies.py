@@ -14,6 +14,8 @@ from pydefect.analysis.defect import Defect
 from pydefect.core.supercell_calc_results import SupercellCalcResults
 from pydefect.core.unitcell_calc_results import UnitcellCalcResults
 from pydefect.core.defect_name import DefectName
+from pydefect.database.num_symmetry_operation \
+    import num_symmetry_operation as nsymop
 from pydefect.util.logger import get_logger
 
 __author__ = "Yu Kumagai"
@@ -49,6 +51,8 @@ class DefectEnergy(MSONable):
 class DefectEnergies(MSONable):
     def __init__(self,
                  defect_energies: dict,
+                 multiplicities: dict,
+                 magnetization: dict,
                  vbm: float,
                  cbm: float,
                  supercell_vbm: float,
@@ -60,6 +64,13 @@ class DefectEnergies(MSONable):
             defect_energies (dict):
                 DefectEnergy as a function of name, charge, and annotation.
                 defect_energies[name][charge][annotation] = DefectEnergy object
+            multiplicities (dict):
+                Spatial multiplicities as a function of name, charge,
+                and annotation.
+                multiplicities[name][charge][annotation] = int
+            magnetization (dict):
+                Magnetization as a function of name, charge, and annotation.
+                magnetization[name][charge][annotation] = float
             vbm (float):
                 Valence band maximum in the unitcell in the absolute scale.
             cbm (float):
@@ -72,6 +83,8 @@ class DefectEnergies(MSONable):
                 Title of the system.
         """
         self.defect_energies = defect_energies
+        self.multiplicities = multiplicities
+        self.magnetization = magnetization
         self.vbm = vbm
         self.cbm = cbm
         self.supercell_vbm = supercell_vbm
@@ -85,7 +98,7 @@ class DefectEnergies(MSONable):
                      defects: List[Defect],
                      chem_pot: tuple,
                      chem_pot_label: str,
-                     system: str = ""):
+                     system: str = None):
         """ Calculates defect formation energies from several objects.
 
         Note that all the energies are calculated at 0 eV in the absolute scale.
@@ -111,6 +124,8 @@ class DefectEnergies(MSONable):
         supercell_vbm = perfect.vbm
         supercell_cbm = perfect.cbm
 
+        if system is None:
+            system = ""
         title = system + " condition " + chem_pot_label
 
         # Chemical potentials
@@ -118,10 +133,11 @@ class DefectEnergies(MSONable):
         relative_chem_pot = relative_chem_pots[chem_pot_label]
 
         defect_energies = defaultdict(dict)
+        multiplicities = defaultdict(dict)
+        magnetization = defaultdict(dict)
 
         for d in defects:
             name = d.defect_entry.name
-
             charge = d.defect_entry.charge
             annotation = d.defect_entry.annotation
 
@@ -140,9 +156,34 @@ class DefectEnergies(MSONable):
                              convergence=d.dft_results.is_converged,
                              is_shallow=d.is_shallow)
 
+            initial_sym = d.defect_entry.initial_site_symmetry
+            final_sym = d.dft_results.site_symmetry
+            initial_nsymop = nsymop(initial_sym)
+            final_nsymop = nsymop(final_sym)
+            n_sites = d.defect_entry.num_equiv_sites
+            mul = n_sites * initial_nsymop / final_nsymop
+
+            print(mul, initial_nsymop, final_nsymop)
+
+            if not mul.is_integer():
+                logger.warning(
+                    "Multiplicity of {} in charge {} is invalid. equiv site: "
+                    "{}, initial sym: {}, final sym: {}".
+                        format(name, charge, n_sites, initial_sym, final_sym))
+
+            mag = round(d.dft_results.total_magnetization, 1)
+            if not mag.is_integer() and not d.is_shallow:
+                logger.warning(
+                    "{} in charge {} is not shallow but with fractional "
+                    "magnetization: {}".format(name, charge, mag))
+
             defect_energies[name].setdefault(charge, {}).update({annotation: e})
+            multiplicities[name].setdefault(charge, {}).update({annotation: mul})
+            magnetization[name].setdefault(charge, {}).update({annotation: mag})
 
         return cls(defect_energies=dict(defect_energies),
+                   multiplicities=dict(multiplicities),
+                   magnetization=dict(magnetization),
                    vbm=vbm,
                    cbm=cbm,
                    supercell_vbm=supercell_vbm,
@@ -160,6 +201,8 @@ class DefectEnergies(MSONable):
         d = {"@module":         self.__class__.__module__,
              "@class":          self.__class__.__name__,
              "defect_energies": defect_energies,
+             "multiplicities":  self.multiplicities,
+             "magnetization":   self.magnetization,
              "vbm":             self.vbm,
              "cbm":             self.cbm,
              "supercell_vbm":   self.supercell_vbm,
@@ -179,7 +222,23 @@ class DefectEnergies(MSONable):
                     for charge, v2 in v1.items()}
              for name, v1 in d["defect_energies"].items()}
 
+        multiplicities = \
+            {name: {int(charge): {None if annotation == "null"
+                                  else annotation: float(m)
+                                  for annotation, m in v2.items()}
+                    for charge, v2 in v1.items()}
+             for name, v1 in d["multiplicities"].items()}
+
+        magnetization = \
+            {name: {int(charge): {None if annotation == "null"
+                                  else annotation: float(m)
+                                  for annotation, m in v2.items()}
+                    for charge, v2 in v1.items()}
+             for name, v1 in d["magnetization"].items()}
+
         return cls(defect_energies=defect_energies,
+                   multiplicities=multiplicities,
+                   magnetization=magnetization,
                    vbm=d["vbm"],
                    cbm=d["cbm"],
                    supercell_vbm=d["supercell_vbm"],
@@ -205,7 +264,11 @@ class DefectEnergies(MSONable):
                          "Annotation: {}".format(a),
                          "Energy @ ef = 0 (eV): {}".format(round(de.energy, 4)),
                          "Convergence: {}".format(de.convergence),
-                         "Is shallow: {}".format(de.is_shallow)])
+                         "Is shallow: {}".format(de.is_shallow),
+                         "multiplicity: {}".format(
+                             self.multiplicities[n][c][a]),
+                         "magnetization: {}".format(
+                             self.magnetization[n][c][a])])
                     outs.append("")
 
         return "\n".join(outs)

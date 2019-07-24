@@ -81,6 +81,7 @@ class DefectEnergiesTest(unittest.TestCase):
         self.defect_energies.to_json_file(tmp_file.name)
         defect_entry_from_json = DefectEntry.load_json(tmp_file.name)
         print(defect_entry_from_json.as_dict())
+        print(self.defect_energies.as_dict())
         self.assertEqual(defect_entry_from_json.as_dict(),
                          self.defect_energies.as_dict())
 
