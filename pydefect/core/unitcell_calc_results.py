@@ -74,11 +74,12 @@ class UnitcellCalcResults(MSONable):
                  is_direct: bool = None):
         """
         Args:
-            band_edge (1x2 list): VBM and CBM.
+            band_edge (list): [VBM, CBM].
             static_dielectric_tensor (3x3 numpy array):
             ionic_dielectric_tensor (3x3 numpy array):
-            total_dos (2xN numpy array): [[energy1, dos1], [energy2, dos2],...]
-            volume (float):
+            total_dos (2xN numpy array):
+                [[energy1, energy2, ...], [dos1, dos2, ...]]
+            volume (float): Volume in A-3.
         """
         self._band_edge = None if band_edge is None else list(band_edge)
         self._static_dielectric_tensor = static_dielectric_tensor

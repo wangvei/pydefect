@@ -46,7 +46,7 @@ def get_default_args(class_method):
 
 def list2dict(arg_list, flags):
     """
-    flags: incar flags
+    flags: string flags
 
     arg_list = ["ENCUT", "500", "MAGMOM", "4", "4", "LWAVE": "F"]
     return {"ENCUT": 500, "MAGMOM": [4, 4], "LWAVE": False}

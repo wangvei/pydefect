@@ -247,6 +247,12 @@ def main():
     parser_defect_vasp_set.add_argument(
         "-nw", "--no_wavecar", dest="wavecar", action="store_false",
         help="Do not make WAVECAR file or not.")
+    parser_defect_vasp_set.add_argument(
+        "-ldauu", dest="ldauu", type=str, default=None, nargs="+",
+        help=".")
+    parser_defect_vasp_set.add_argument(
+        "-ldaul", dest="ldaul", type=str, default=None, nargs="+",
+        help=".")
 #    parser_recommend_supercell.add_argument(
 #        "-set", dest="set", action="store_true",
 #        help="Output all the supercells satisfying the criterion.")
@@ -486,6 +492,15 @@ def main():
     parser_vasp_oba_set.add_argument(
         "-pi", "-prior_info", dest="prior_info", action="store_true",
         help="Set if prior_info.json is not read.")
+    parser_vasp_oba_set.add_argument(
+        "-nw", "--no_wavecar", dest="wavecar", action="store_false",
+        help="Do not make WAVECAR file or not.")
+    parser_vasp_oba_set.add_argument(
+        "-ldauu", dest="ldauu", type=str, default=None, nargs="+",
+        help=".")
+    parser_vasp_oba_set.add_argument(
+        "-ldaul", dest="ldaul", type=str, default=None, nargs="+",
+        help=".")
 
     parser_vasp_oba_set.set_defaults(func=vasp_oba_set)
 
@@ -1059,10 +1074,17 @@ def vasp_oba_set(args):
 
     #TODO: When writing GW part, refer oba_set_main.py in obadb
 
+    from pymatgen.core.periodic_table import Element
+    flags = [str(s) for s in list(Element)]
+    ldauu = list2dict(args.ldauu, flags)
+    ldaul = list2dict(args.ldaul, flags)
+
     base_kwargs = {"task":                  args.task,
                    "xc":                    args.xc,
                    "kpt_density":           args.kpt_density,
-                   "standardize_structure": args.standardize}
+                   "standardize_structure": args.standardize,
+                   "ldauu": ldauu,
+                   "ldaul": ldaul}
 
     flags = list(chain.from_iterable(incar_flags.values()))
     base_user_incar_settings = list2dict(args.incar_setting, flags)
@@ -1093,11 +1115,13 @@ def vasp_oba_set(args):
                                             copied_file_names=files, **kwargs)
         else:
             s = Structure.from_file(args.poscar)
-            oba_set = ObaSet.make_input(structure=s,
-                                        charge=args.charge,
-                                        user_incar_settings=user_incar_settings,
-                                        additional_user_potcar_yaml=args.potcar,
-                                        **kwargs)
+            oba_set = \
+                ObaSet.make_input(structure=s,
+                                  charge=args.charge,
+                                  user_incar_settings=user_incar_settings,
+                                  weak_incar_settings={"LWAVE": args.wavecar},
+                                  additional_user_potcar_yaml=args.potcar,
+                                  **kwargs)
 
         oba_set.write_input(".")
 
