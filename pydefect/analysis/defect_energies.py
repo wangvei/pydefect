@@ -51,7 +51,7 @@ class DefectEnergy(MSONable):
 class DefectEnergies(MSONable):
     def __init__(self,
                  defect_energies: dict,
-                 multiplicities: dict,
+                 multiplicity: dict,
                  magnetization: dict,
                  vbm: float,
                  cbm: float,
@@ -64,10 +64,10 @@ class DefectEnergies(MSONable):
             defect_energies (dict):
                 DefectEnergy as a function of name, charge, and annotation.
                 defect_energies[name][charge][annotation] = DefectEnergy object
-            multiplicities (dict):
-                Spatial multiplicities as a function of name, charge,
+            multiplicity (dict):
+                Spatial multiplicity as a function of name, charge,
                 and annotation.
-                multiplicities[name][charge][annotation] = int
+                multiplicity[name][charge][annotation] = int
             magnetization (dict):
                 Magnetization as a function of name, charge, and annotation.
                 magnetization[name][charge][annotation] = float
@@ -83,7 +83,7 @@ class DefectEnergies(MSONable):
                 Title of the system.
         """
         self.defect_energies = defect_energies
-        self.multiplicities = multiplicities
+        self.multiplicity = multiplicity
         self.magnetization = magnetization
         self.vbm = vbm
         self.cbm = cbm
@@ -133,7 +133,7 @@ class DefectEnergies(MSONable):
         relative_chem_pot = relative_chem_pots[chem_pot_label]
 
         defect_energies = defaultdict(dict)
-        multiplicities = defaultdict(dict)
+        multiplicity = defaultdict(dict)
         magnetization = defaultdict(dict)
 
         for d in defects:
@@ -178,11 +178,11 @@ class DefectEnergies(MSONable):
                     "magnetization: {}".format(name, charge, mag))
 
             defect_energies[name].setdefault(charge, {}).update({annotation: e})
-            multiplicities[name].setdefault(charge, {}).update({annotation: mul})
+            multiplicity[name].setdefault(charge, {}).update({annotation: mul})
             magnetization[name].setdefault(charge, {}).update({annotation: mag})
 
         return cls(defect_energies=dict(defect_energies),
-                   multiplicities=dict(multiplicities),
+                   multiplicity=dict(multiplicity),
                    magnetization=dict(magnetization),
                    vbm=vbm,
                    cbm=cbm,
@@ -201,7 +201,7 @@ class DefectEnergies(MSONable):
         d = {"@module":         self.__class__.__module__,
              "@class":          self.__class__.__name__,
              "defect_energies": defect_energies,
-             "multiplicities":  self.multiplicities,
+             "multiplicity":    self.multiplicity,
              "magnetization":   self.magnetization,
              "vbm":             self.vbm,
              "cbm":             self.cbm,
@@ -222,12 +222,12 @@ class DefectEnergies(MSONable):
                     for charge, v2 in v1.items()}
              for name, v1 in d["defect_energies"].items()}
 
-        multiplicities = \
+        multiplicity = \
             {name: {int(charge): {None if annotation == "null"
                                   else annotation: float(m)
                                   for annotation, m in v2.items()}
                     for charge, v2 in v1.items()}
-             for name, v1 in d["multiplicities"].items()}
+             for name, v1 in d["multiplicity"].items()}
 
         magnetization = \
             {name: {int(charge): {None if annotation == "null"
@@ -237,7 +237,7 @@ class DefectEnergies(MSONable):
              for name, v1 in d["magnetization"].items()}
 
         return cls(defect_energies=defect_energies,
-                   multiplicities=multiplicities,
+                   multiplicity=multiplicity,
                    magnetization=magnetization,
                    vbm=d["vbm"],
                    cbm=d["cbm"],
@@ -266,7 +266,7 @@ class DefectEnergies(MSONable):
                          "Convergence: {}".format(de.convergence),
                          "Is shallow: {}".format(de.is_shallow),
                          "multiplicity: {}".format(
-                             self.multiplicities[n][c][a]),
+                             self.multiplicity[n][c][a]),
                          "magnetization: {}".format(
                              self.magnetization[n][c][a])])
                     outs.append("")
