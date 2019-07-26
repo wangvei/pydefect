@@ -8,6 +8,9 @@ from pymatgen.util.testing import PymatgenTest
 
 from pydefect.analysis.defect_carrier_concentration import *
 from pydefect.core.unitcell_calc_results import UnitcellCalcResults
+from pydefect.core.supercell_calc_results import SupercellCalcResults
+from pydefect.core.defect_entry import DefectEntry
+from pydefect.corrections.corrections import ExtendedFnvCorrection
 
 __author__ = "Yu Kumagai"
 __maintainer__ = "Yu Kumagai"
@@ -67,11 +70,11 @@ class CalcCarrierConcentrationTest(PymatgenTest):
 class CalcConcentrationTest(PymatgenTest):
     def setUp(self):
         self.defect_energies = defaultdict(dict)
-#        self.defect_energies["Va_O1"][0] = {None: 4.0}
-#        self.defect_energies["Va_O1"][1] = {None: 3.0}
+#        self.energies["Va_O1"][0] = {None: 4.0}
+#        self.energies["Va_O1"][1] = {None: 3.0}
         self.defect_energies["Va_O1"][2] = {None: 1.0}
-#        self.defect_energies["Va_Mg1"][0] = {None: 4.0}
-#        self.defect_energies["Va_Mg1"][-1] = {None: 5.0}
+#        self.energies["Va_Mg1"][0] = {None: 4.0}
+#        self.energies["Va_Mg1"][-1] = {None: 5.0}
         self.defect_energies["Va_Mg1"][-2] = {None: 6.0}
 
         self.vbm = 0
@@ -104,7 +107,7 @@ class CalcConcentrationTest(PymatgenTest):
 
     def test(self):
         concentration = \
-            calc_concentration(defect_energies=self.defect_energies,
+            calc_concentration(energies=self.defect_energies,
                                temperature=self.temperature,
                                e_f=4,
                                vbm=self.vbm,
@@ -126,7 +129,7 @@ class CalcConcentrationTest(PymatgenTest):
 
     def test2(self):
         equiv_concentration = \
-            calc_equilibrium_concentration(defect_energies=self.defect_energies,
+            calc_equilibrium_concentration(energies=self.defect_energies,
                                            temperature=self.temperature,
                                            vbm=self.vbm,
                                            cbm=self.cbm,
@@ -139,57 +142,29 @@ class CalcConcentrationTest(PymatgenTest):
         print(equiv_concentration[1])
 
 
-# class DefectConcentrationTest(unittest.TestCase):
+class DefectConcentrationTest(PymatgenTest):
 
-    # def setUp(self):
-    #     """ """
-    #     unitcell_file = os.path.join(test_dir, "MgO/defects/unitcell.json")
-    #     self.unitcell = UnitcellCalcResults.load_json(unitcell_file)
-    #     perfect_file = os.path.join(test_dir,
-    #                                 "MgO/defects/perfect/dft_results.json")
-    #     perfect = SupercellCalcResults.load_json(perfect_file)
+    def setUp(self):
+        """ """
+        file = os.path.join(test_dir, "MgO/defects/defect_energies.json")
+        defect_energies = DefectEnergies.load_json(file)
+        unitcell_file = os.path.join(test_dir, "MgO/defects/unitcell.json")
+        unitcell = UnitcellCalcResults.load_json(unitcell_file)
 
-        # defect_dirs = ["Mg_O1_0", "Mg_O1_1", "Mg_O1_2", "Mg_O1_3", "Mg_O1_4",
-        #                "Mg_i1_0", "Mg_i1_1", "Mg_i1_2", "Va_O1_1", "Va_O1_2",
-        #                "Va_O1_0"]
-        # defects = []
-        # for dd in defect_dirs:
-        #     d = os.path.join(test_dir, "MgO/defects", dd)
-        #     defect_entry = \
-        #         DefectEntry.load_json(os.path.join(d, "defect_entry.json"))
-        #     dft_results = \
-        #         SupercellCalcResults.load_json(
-        #             os.path.join(d, "dft_results.json"))
-        #     correction = \
-        #         ExtendedFnvCorrection.load_json(os.path.join(d, "correction.json"))
+        self.defect_concentration = \
+            DefectConcentration.from_calc_results(
+                defect_energies=defect_energies, unitcell=unitcell)
 
-            # defect = Defect(defect_entry=defect_entry,
-            #                 dft_results=dft_results,
-            #                 correction=correction)
-
-            # defects.append(defect)
-
-        # # temporary insert values
-        # chem_pot = ChemPotDiag.load_vertices_yaml(
-        #     os.path.join(test_dir, "MgO/vertices_MgO.yaml"))
-
-        # chem_pot_label = "A"
-
-        # self.defect_energies = \
-        #     DefectEnergies.from_files(unitcell=self.unitcell,
-        #                               perfect=perfect,
-        #                               defects=defects,
-        #                               chem_pot=chem_pot,
-        #                               chem_pot_label=chem_pot_label,
-        #                               system="MgO")
-
+    def test(self):
+        self.defect_concentration.calc_concentrations(temp=1000)
+        print(self.defect_concentration.concentrations)
     # def test_from_defect_energies(self):
     #     temperature = 10000
     #     num_sites_filename = os.path.join(test_dir,
     #                                       "MgO/defects/num_sites.yaml")
 
         # dc1 = DefectConcentration.from_defect_energies(
-        #     defect_energies=self.defect_energies,
+        #     energies=self.energies,
         #     temperature=temperature,
         #     unitcell=self.unitcell,
         #     num_sites_filename=num_sites_filename)
@@ -204,7 +179,7 @@ class CalcConcentrationTest(PymatgenTest):
         # temperature2 = 1000
 
 #         # dc2 = DefectConcentration.from_defect_energies(
-#         #     defect_energies=self.defect_energies,
+#         #     energies=self.energies,
 #         #     temperature=temperature2,
 #         #     unitcell=self.unitcell,
 #         #     num_sites_filename=num_sites_filename,

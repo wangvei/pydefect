@@ -1196,7 +1196,7 @@ def plot_energy(args):
     # if args.concentration:
     #     defect_concentration = \
     #         DefectConcentration.from_defect_energies(
-    #             defect_energies=defect_energies,
+    #             energies=energies,
     #             temperature=args.temperature[0],
     #             unitcell=unitcell,
     #             num_sites_filename=args.num_site_file)
@@ -1204,7 +1204,7 @@ def plot_energy(args):
     #     if len(args.temperature) == 2:
     #         defect_concentration = \
     #             DefectConcentration.from_defect_energies(
-    #                 defect_energies=defect_energies,
+    #                 energies=energies,
     #                 temperature=args.temperature[1],
     #                 unitcell=unitcell,
     #                 num_sites_filename=args.num_site_file,

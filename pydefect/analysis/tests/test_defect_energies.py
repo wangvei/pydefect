@@ -86,7 +86,7 @@ class DefectEnergiesTest(unittest.TestCase):
                          self.defect_energies.as_dict())
 
     # def test_multiplicity(self):
-    #     actual = self.defect_energies.multiplicity["Va_O1"][2][0]
+    #     actual = self.energies.multiplicity["Va_O1"][2][0]
     #     expected = 8
     #     self.assertEqual(actual, expected)
 
@@ -97,7 +97,7 @@ class DefectEnergiesTest(unittest.TestCase):
 
     def test_calc_transition_levels(self):
         dp = self.defect_energies
-#        dp = DefectEnergyPlotter(self.defect_energies, self.dc2)
+#        dp = DefectEnergyPlotter(self.energies, self.dc2)
 #        plt = dp.plot_energy(filtering_words=["Va_O[0-9]+"],
         plt = dp.plot_energy(x_range=[-3, 13],
                              show_fermi_level=True,

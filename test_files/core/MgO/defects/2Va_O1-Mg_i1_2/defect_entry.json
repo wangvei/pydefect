@@ -1,11 +1,11 @@
 {
   "@module": "pydefect.core.defect_entry",
   "@class": "DefectEntry",
-  "name": "2Va_O1-Mg",
+  "name": "2Va_O1-Mg_i1",
   "initial_structure": {
     "@module": "pymatgen.core.structure",
     "@class": "Structure",
-    "charge": null,
+    "charge": 2,
     "lattice": {
       "matrix": [
         [
@@ -338,7 +338,7 @@
   "perturbed_initial_structure": {
     "@module": "pymatgen.core.structure",
     "@class": "Structure",
-    "charge": null,
+    "charge": 2,
     "lattice": {
       "matrix": [
         [
@@ -693,6 +693,22 @@
   },
   "charge": 2,
   "initial_site_symmetry": "mmm",
-  "neighboring_sites": [],
+  "neighboring_sites": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13
+  ],
+  "annotation": null,
   "num_equiv_sites": 24
 }

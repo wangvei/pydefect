@@ -452,7 +452,7 @@
   },
   "site_symmetry": "m-3m",
   "total_energy": -95.3639567,
-  "total_magnetization": 0.0,
+  "total_magnetization": 0.001,
   "eigenvalues": {
     "1": [
       [
@@ -1031,12 +1031,8 @@
     -69.7919,
     -69.7919
   ],
-  "eigenvalue_properties": [
-    4.4891000000000005,
-    7.4992,
-    3.0101,
-    true
-  ],
+  "vbm": 3.0101,
+  "cbm": 7.4992,
   "volume": 153.19477497796296,
   "fermi_level": 3.32929791,
   "is_converged": true,

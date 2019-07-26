@@ -2264,16 +2264,15 @@
     -69.9203,
     -71.1364
   ],
-  "eigenvalue_properties": [
-    0.10280000000000022,
-    6.6422,
-    6.5394,
-    false
-  ],
+  "vbm": 6.44148542,
+  "cbm": 6.44148542,
   "volume": 153.19477710173544,
   "fermi_level": 6.44148542,
   "is_converged": true,
-  "band_edges": null,
+  "band_edges": {
+    "1": "Localized state",
+    "-1": "Localized state"
+  },
   "band_edge_energies": {
     "1": {
       "hob": 4.9737,
@@ -4437,7 +4436,16 @@
       "tolerance": 0.1
     }
   ],
-  "participation_ratio": null,
+  "participation_ratio": {
+    "1": {
+      "hob": 0.8952095808383232,
+      "lub": 0.9975550122249389
+    },
+    "-1": {
+      "hob": 0.8970588235294117,
+      "lub": 0.9975369458128078
+    }
+  },
   "orbital_character": {
     "1": {
       "hob": {

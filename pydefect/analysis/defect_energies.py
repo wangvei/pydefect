@@ -63,7 +63,7 @@ class DefectEnergies(MSONable):
         Args:
             defect_energies (dict):
                 DefectEnergy as a function of name, charge, and annotation.
-                defect_energies[name][charge][annotation] = DefectEnergy object
+                energies[name][charge][annotation] = DefectEnergy object
             multiplicity (dict):
                 Spatial multiplicity as a function of name, charge,
                 and annotation.
@@ -200,7 +200,7 @@ class DefectEnergies(MSONable):
 
         d = {"@module":         self.__class__.__module__,
              "@class":          self.__class__.__name__,
-             "defect_energies": defect_energies,
+             "energies": defect_energies,
              "multiplicity":    self.multiplicity,
              "magnetization":   self.magnetization,
              "vbm":             self.vbm,
@@ -425,7 +425,7 @@ class DefectEnergies(MSONable):
         x_min, x_max = x_range if x_range else (0, self.band_gap)
         y_min, y_max = float("inf"), -float("inf")
 
-        # Note: len(self.defect_energies) <= len(transition_levels)
+        # Note: len(self.energies) <= len(transition_levels)
         for i, (name, tl) in enumerate(transition_levels.items()):
             # lowest_energies[name] is {} when all results are omitted above.
             if not lowest_energies[name]:

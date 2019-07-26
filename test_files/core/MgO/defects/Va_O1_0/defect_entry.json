@@ -5,7 +5,7 @@
   "initial_structure": {
     "@module": "pymatgen.core.structure",
     "@class": "Structure",
-    "charge": null,
+    "charge": 0,
     "lattice": {
       "matrix": [
         [
@@ -338,7 +338,7 @@
   "perturbed_initial_structure": {
     "@module": "pymatgen.core.structure",
     "@class": "Structure",
-    "charge": null,
+    "charge": 0,
     "lattice": {
       "matrix": [
         [
@@ -687,7 +687,14 @@
     3,
     4,
     5,
-    6
+    6,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13
   ],
+  "annotation": null,
   "num_equiv_sites": 8
 }

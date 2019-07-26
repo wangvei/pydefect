@@ -13,6 +13,7 @@ def num_symmetry_operation(point_group):
          "222":   4,
          "2mm":   4,
          "mm2":   4,
+         "mmm":   8,
          "2/mmm": 8,
          "4":     4,
          "-4":    4,
