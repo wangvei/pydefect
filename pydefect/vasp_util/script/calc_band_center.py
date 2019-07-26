@@ -49,7 +49,7 @@ def calc_o2p_band_center(vasprun_file):
     plotter = ModDosPlotter(zero_at_efermi=False)
     plotter.add_dos_dict(dos)
 
-    p = plotter.get_plot(xlim=(-5, 8))
+    p = plotter.plot_carrier_concentrations(xlim=(-5, 8))
     p.show()
     p.savefig(fname="dos-O2p.eps", format="eps")
 

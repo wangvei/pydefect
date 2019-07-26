@@ -8,6 +8,7 @@ from typing import List
 
 from pydefect.analysis.defect import Defect
 from pydefect.analysis.defect_energies import DefectEnergies
+from pydefect.core.defect_name import DefectName
 from pydefect.core.error_classes import NoConvergenceError
 from pydefect.core.unitcell_calc_results import UnitcellCalcResults
 from pydefect.util.distribution_function \
@@ -35,7 +36,7 @@ def hole_concentration(temperature: float,
             Fermi level in the absolute scale.
         total_dos (np.array):
             Total density of states as a function of absolute energy.
-                [[energy1, energy2, ...], [dos1, dos2, ...]]
+                [[dos1, dos2, ...], [energy1, energy2, ...]]
             The units of energy and dos are [eV] and [1/eV], respectively.
         vbm (float):
             Valence band maximum in the unitcell in the absolute scale.
@@ -47,10 +48,10 @@ def hole_concentration(temperature: float,
             compared to band structure, so threshold is needed.
     """
     mesh_distance \
-        = (total_dos[0][-1] - total_dos[0][0]) / (len(total_dos[0]) - 1)
+        = (total_dos[1][-1] - total_dos[1][0]) / (len(total_dos[1]) - 1)
     # Note that e_f and e are opposite for holes.
     hole = sum(fermi_dirac_distribution(e_f, e, temperature) * td
-               for e, td in zip(total_dos[0], total_dos[1])
+               for td, e in zip(total_dos[0], total_dos[1])
                if e <= vbm + threshold)
 
     return hole * mesh_distance / (volume / 10 ** 24)
@@ -71,7 +72,7 @@ def electron_concentration(temperature: float,
             Fermi level in the absolute scale.
         total_dos (np.array):
             Total density of states as a function of absolute energy.
-                [[energy1, energy2, ...], [dos1, dos2, ...]]
+                [[dos1, dos2, ...], [energy1, energy2, ...]]
         cbm (float):
             Valence band maximum in the unitcell in the absolute scale.
         volume (float):
@@ -82,9 +83,9 @@ def electron_concentration(temperature: float,
             compared to band structure, so threshold is needed.
     """
     mesh_distance \
-        = (total_dos[0][-1] - total_dos[0][0]) / (len(total_dos[0]) - 1)
+        = (total_dos[1][-1] - total_dos[1][0]) / (len(total_dos[1]) - 1)
     electron = sum(fermi_dirac_distribution(e, e_f, temperature) * td
-                   for e, td in zip(total_dos[0], total_dos[1])
+                   for td, e in zip(total_dos[0], total_dos[1])
                    if e >= cbm - threshold)
 
     return electron * mesh_distance / (volume / 10 ** 24)
@@ -117,7 +118,7 @@ def calc_concentration(energies: dict,
         cbm (float):
             Conduction band minimum in the unitcell in the absolute scale.
         total_dos (2xN numpy array):
-                [[energy1, energy2, ...], [dos1, dos2, ...]]
+                [[dos1, dos2, ...], [energy1, energy2, ...]]
         multiplicity (dict):
             Multiplicity in the supercell. It depends on the number of sites
             in the supercell and the site symmetry.
@@ -153,12 +154,12 @@ def calc_concentration(energies: dict,
                 mul = multiplicity[name][charge][annotation]
                 mag = magnetization[name][charge][annotation]
 
-                if abs(mag - round(mag)) > 0.1:
-                    logger.warning(
-                        "The total_magnetization of {} in {} is {}, and not "
-                        "integer".format(name, charge, mag))
+                # if abs(mag - round(mag)) > 0.1:
+                #     logger.warning(
+                #         "The total_magnetization of {} in {} is {}, and not "
+                #         "integer".format(name, charge, mag))
 
-                num_mag_conf = round(mag) + 1
+                num_mag_conf = abs(round(mag)) + 1
                 degree_of_freedom = mul * num_mag_conf
 
                 # volume unit conversion from [A^3] to [cm^3]
@@ -297,6 +298,7 @@ class DefectConcentration:
                  cbm: float,
                  total_dos: np.array,
                  temperature: float = None,
+                 fermi_mesh: list = None,
                  concentrations: list = None,
                  equilibrium_ef: list = None,
                  equilibrium_concentration: list = None,
@@ -322,7 +324,8 @@ class DefectConcentration:
             cbm (float):
                 Conduction band minimum in the unitcell in the absolute scale.
             total_dos (np.array):
-                Total density of states.
+                Total density of states as a function of absolute energy.
+                [[dos1, dos2, ...], [energy1, energy2, ...]]
 
         Attributes:
             temp (float):
@@ -356,6 +359,7 @@ class DefectConcentration:
         self.total_dos = total_dos
 
         self.temp = temperature
+        self.fermi_mesh = fermi_mesh
         self.concentrations = concentrations
 
         self.equilibrium_ef = equilibrium_ef
@@ -369,6 +373,7 @@ class DefectConcentration:
     def from_calc_results(cls,
                           defect_energies: DefectEnergies,
                           unitcell: UnitcellCalcResults,
+                          filtering_words: list = None,
                           exclude_unconverged_defects: bool = True,
                           exclude_shallow_defects: bool = True,
                           fractional_magnetization_to_one: bool = True):
@@ -385,6 +390,8 @@ class DefectConcentration:
                 DefectEnergies object used for calculating concentration.
             unitcell (UnitcellCalcResults):
                 UnitcellDftResults object for volume and total_dos
+            filtering_words (list):
+                List of words used for filtering the defects
             fermi_range (list):
                 Range of Fermi level, [lower_limit, upper_limit]
             fermi_mesh_num (float):
@@ -393,18 +400,48 @@ class DefectConcentration:
                 Whether print the carrier and defect concentration during the
                 seek of the selfconsistent results.
         """
-        energies = defect_energies.defect_energies
-        multiplicity = defect_energies.multiplicity
-        magnetization = defect_energies.magnetization
+        energies = defaultdict(dict)
+        multiplicity = defaultdict(dict)
+        magnetization = defaultdict(dict)
+
+        for name, energy_by_charge in defect_energies.defect_energies.items():
+            for charge, energy_by_annotation in energy_by_charge.items():
+                for annotation, defect_energy in energy_by_annotation.items():
+
+                    n = DefectName(name, charge, annotation)
+
+                    if n.is_name_matched(filtering_words) is False:
+                        logger.info("{} filtered out, so omitted.".format(n))
+                        continue
+                    elif exclude_shallow_defects and defect_energy.is_shallow:
+                        logger.info("{} is shallow, so omitted.".format(n))
+                        continue
+                    elif exclude_unconverged_defects and \
+                            defect_energy.convergence is False:
+                        logger.info("{} unconverged, so omitted.".format(n))
+                        continue
+
+                    e = defect_energy.energy
+
+                    mul = defect_energies.multiplicity[name][charge][annotation]
+                    mag = \
+                        defect_energies.magnetization[name][charge][annotation]
+
+                    energies[name].setdefault(charge, {}).update(
+                        {annotation: e})
+                    multiplicity[name].setdefault(charge, {}).update(
+                        {annotation: mul})
+                    magnetization[name].setdefault(charge, {}).update(
+                        {annotation: mag})
 
         volume = unitcell.volume  # [A^3]
         total_dos = unitcell.total_dos
         vbm = defect_energies.vbm
         cbm = defect_energies.cbm
 
-        return cls(energies=energies,
-                   multiplicity=multiplicity,
-                   magnetization=magnetization,
+        return cls(energies=dict(energies),
+                   multiplicity=dict(multiplicity),
+                   magnetization=dict(magnetization),
                    volume=volume, vbm=vbm, cbm=cbm, total_dos=total_dos)
 
     # def _repr__(self):
@@ -440,20 +477,24 @@ class DefectConcentration:
                 seek of the selfconsistent results.
         """
         self.temp = temp
-        if fermi_range is None:
-            fermi_range = [self.vbm, self.cbm]
-        fermi_mesh = np.linspace(fermi_range[0], fermi_range[1], num_mesh)
+        fermi_range = fermi_range if fermi_range else [self.vbm, self.cbm]
+        self.fermi_mesh = np.linspace(fermi_range[0], fermi_range[1], num_mesh)
 
-        for e_f in fermi_mesh:
+        self.concentrations = {}
+        for e_f in self.fermi_mesh:
             self.concentrations[e_f] = \
                 calc_concentration(
                     energies=self.energies,
-                    temperature=self.temp, e_f=e_f, vbm=self.vbm, cbm=self.cbm,
-                    total_dos=self.total_dos, multiplicity=self.multiplicity,
-                    magnetization=self.magnetization, volume=self.volume)
+                    temperature=self.temp,
+                    e_f=e_f,
+                    vbm=self.vbm,
+                    cbm=self.cbm,
+                    total_dos=self.total_dos,
+                    multiplicity=self.multiplicity,
+                    magnetization=self.magnetization,
+                    volume=self.volume)
 
     def calc_equilibrium_concentration(self,
-                                       temp: float = None,
                                        verbose: bool = True):
         """
 
@@ -464,8 +505,8 @@ class DefectConcentration:
                 Whether print the carrier and defect concentration during the
                 seek of the selfconsistent results.
         """
-        if temp:
-            self.temp = temp
+#        if temp:
+#            self.temp = temp
 
         self.equilibrium_ef, self.equilibrium_concentration = \
             calc_equilibrium_concentration(
@@ -474,8 +515,8 @@ class DefectConcentration:
                 total_dos=self.total_dos, multiplicity=self.multiplicity,
                 magnetization=self.magnetization, volume=self.volume)
 
-    def get_plot(self, title: str = None, xlim: list = None, ylim: list = None,
-                 set_vbm_zero=True, filename: str = None):
+    def plot_carrier_concentrations(self, title: str = None, xlim: list = None, ylim: list = None,
+                                    set_vbm_zero=True, filename: str = None):
         """ Get a matplotlib plot.
 
         Args:
@@ -519,233 +560,238 @@ class DefectConcentration:
         if set_vbm_zero is True:
             vbm = 0.0
             cbm = self.cbm - self.vbm
-            fermi_levels = [f - self.vbm for f in self.concentrations.keys()]
+            fermi_mesh = [f - self.vbm for f in self.fermi_mesh]
         else:
             vbm = self.vbm
             cbm = self.cbm
-            fermi_levels = self.concentrations.keys()
+            fermi_mesh = self.fermi_mesh
 
         plt.axvline(x=vbm, linewidth=1.0, linestyle='dashed')
         plt.axvline(x=cbm, linewidth=1.0, linestyle='dashed')
 
-        ax.plot(fermi_levels, self.concentrations["n"][-1][None], '-', color="red", label="n")
-        ax.plot(fermi_levels, self.concentrations["p"][1][None], '-', color="blue", label="p")
+        holes = [v["p"][1][None] for v in self.concentrations.values()]
+        electrons = [v["n"][-1][None] for v in self.concentrations.values()]
+
+        ax.plot(fermi_mesh, holes, '-', color="blue", label="p")
+        ax.plot(fermi_mesh, electrons, '-', color="red", label="n")
+
+        plt.axvline(x=self.equilibrium_ef, linewidth=1.0, linestyle='--')
 
         plt.show()
 
 #    def calc_quenched_equilibrium_concentration(self, temp):
 
 
-class CarrierConcentration:
-    """ Container class for carrier concentration """
+# class CarrierConcentration:
+#     """ Container class for carrier concentration """
 
-    def __init__(self,
-                 temperature: float,
-                 vbm: float,
-                 cbm: float,
-                 fermi_levels: list,
-                 ns: list,
-                 ps: list):
-        """
-        Args:
-            temperature (float): list of temperature considered.
-            fermi_levels: Fermi levels considered in the absolute scale in eV.
-            ns[temperature][Fermi level]: Carrier electron concentrations.
-            ps[temperature][Fermi level]: Carrier hole concentrations.
-        """
-        self.temperature = temperature
-        self.vbm = vbm
-        self.cbm = cbm
-        self.fermi_levels = fermi_levels
-        self.ns = ns
-        self.ps = ps
+    # def __init__(self,
+    #              temperature: float,
+    #              vbm: float,
+    #              cbm: float,
+    #              fermi_levels: list,
+    #              ns: list,
+    #              ps: list):
+    #     """
+    #     Args:
+    #         temperature (float): list of temperature considered.
+    #         fermi_levels: Fermi levels considered in the absolute scale in eV.
+    #         ns[temperature][Fermi level]: Carrier electron concentrations.
+    #         ps[temperature][Fermi level]: Carrier hole concentrations.
+    #     """
+    #     self.temperature = temperature
+    #     self.vbm = vbm
+    #     self.cbm = cbm
+    #     self.fermi_levels = fermi_levels
+    #     self.ns = ns
+    #     self.ps = ps
 
-    @property
-    def electron_concentration(self):
-        return self.ns
+    # @property
+    # def electron_concentration(self):
+    #     return self.ns
 
-    @property
-    def hole_concentration(self):
-        return self.ps
+    # @property
+    # def hole_concentration(self):
+    #     return self.ps
 
-    # def __repr__(self):
-    #     outs = ["Temperature [K]: " + str(self.temperatures),
-    #             "E_f [eV],  n [cm-3],  p [cm-3]"]
-    #     for a, b, c in zip(self.fermi_levels, self.ns, self.ps):
-    #         outs.append('%8.4f'%a + "   " + '%.2e'%b + "   " + '%.2e'%c)
+#     # def __repr__(self):
+#     #     outs = ["Temperature [K]: " + str(self.temperatures),
+#     #             "E_f [eV],  n [cm-3],  p [cm-3]"]
+#     #     for a, b, c in zip(self.fermi_levels, self.ns, self.ps):
+#     #         outs.append('%8.4f'%a + "   " + '%.2e'%b + "   " + '%.2e'%c)
 
-    # return "\n".join(outs)
+#     # return "\n".join(outs)
 
-    @classmethod
-    def from_unitcell(cls, temperature, unitcell, e_range=None):
-        """ Calculates carrier concentration.
+    # @classmethod
+    # def from_unitcell(cls, temperature, unitcell, e_range=None):
+    #     """ Calculates carrier concentration.
 
-        Args:
-            temperature (float):
-            unitcell (UnitcellCalcResults):
-            e_range (list):
-        """
-        volume = unitcell.volume
-        total_dos = unitcell.total_dos  # [eV] and [1/eV]
-        vbm, cbm = unitcell.band_edge
+        # Args:
+        #     temperature (float):
+        #     unitcell (UnitcellCalcResults):
+        #     e_range (list):
+        # """
+        # volume = unitcell.volume
+        # total_dos = unitcell.total_dos  # [eV] and [1/eV]
+        # vbm, cbm = unitcell.band_edge
 
-        if e_range is None:
-            e_range = [vbm - 1, cbm + 1]
+        # if e_range is None:
+        #     e_range = [vbm - 1, cbm + 1]
 
-        num_mesh = (cbm - vbm) / 0.01
-        fermi_levels = list(np.linspace(e_range[0], e_range[1], num_mesh))
+        # num_mesh = (cbm - vbm) / 0.01
+        # fermi_levels = list(np.linspace(e_range[0], e_range[1], num_mesh))
 
-        ns = []
-        ps = []
+        # ns = []
+        # ps = []
 
-        for f in fermi_levels:
-            ns.append(
-                electron_concentration(temperature, f, total_dos, cbm, volume))
-            ps.append(
-                hole_concentration(temperature, f, total_dos, vbm, volume))
+        # for f in fermi_levels:
+        #     ns.append(
+        #         electron_concentration(temperature, f, total_dos, cbm, volume))
+        #     ps.append(
+        #         hole_concentration(temperature, f, total_dos, vbm, volume))
 
-        return cls(temperature, vbm, cbm, fermi_levels, ns, ps)
+        # return cls(temperature, vbm, cbm, fermi_levels, ns, ps)
 
-        if temp:
-            self.temp = temp
+        # if temp:
+        #     self.temp = temp
 
-        self.equilibrium_ef, self.equilibrium_concentration = \
-            calc_equilibrium_concentration(
-                energies=self.energies,
-                temperature=self.temp, vbm=self.vbm, cbm=self.cbm,
-                total_dos=self.total_dos, multiplicity=self.multiplicity,
-                magnetization=self.magnetization, volume=self.volume)
+        # self.equilibrium_ef, self.equilibrium_concentration = \
+        #     calc_equilibrium_concentration(
+        #         energies=self.energies,
+        #         temperature=self.temp, vbm=self.vbm, cbm=self.cbm,
+        #         total_dos=self.total_dos, multiplicity=self.multiplicity,
+        #         magnetization=self.magnetization, volume=self.volume)
 
-    def get_plot(self, title: str = None, xlim: list = None, ylim: list = None,
-                 set_vbm_zero=True, filename: str = None):
-        """ Get a matplotlib plot.
+    # def get_plot(self, title: str = None, xlim: list = None, ylim: list = None,
+    #              set_vbm_zero=True, filename: str = None):
+    #     """ Get a matplotlib plot.
 
-        Args:
-            title (str):
-                Title of the plot
-            xlim (list):
-                Specifies the x-axis limits. None for automatic determination.
-            ylim (list):
-                Specifies the y-axis limits. None for automatic determination.
-            set_vbm_zero (bool):
-                Set VBM to zero.
-            filename (str):
-                Filename to be saved
-        """
+        # Args:
+        #     title (str):
+        #         Title of the plot
+        #     xlim (list):
+        #         Specifies the x-axis limits. None for automatic determination.
+        #     ylim (list):
+        #         Specifies the y-axis limits. None for automatic determination.
+        #     set_vbm_zero (bool):
+        #         Set VBM to zero.
+        #     filename (str):
+        #         Filename to be saved
+        # """
 
-        fig = plt.figure()
-        ax = fig.add_subplot(111)
+        # fig = plt.figure()
+        # ax = fig.add_subplot(111)
 
-        if self.concentrations is None:
-            raise ValueError("The defect and carrier concentrations need to be "
-                             "calculated before their plot.")
+        # if self.concentrations is None:
+        #     raise ValueError("The defect and carrier concentrations need to be "
+        #                      "calculated before their plot.")
 
-        plt.title("Temperature:" + str(self.temp) + " K")
+        # plt.title("Temperature:" + str(self.temp) + " K")
 
-        ax.set_xlabel("Fermi level (eV)")
-        ax.set_ylabel("Concentration (cm-3)")
-        ax.set_yscale("log", nonposy='clip')
+        # ax.set_xlabel("Fermi level (eV)")
+        # ax.set_ylabel("Concentration (cm-3)")
+        # ax.set_yscale("log", nonposy='clip')
 
-        if xlim:
-            plt.xlim(xlim[0], xlim[1])
+        # if xlim:
+        #     plt.xlim(xlim[0], xlim[1])
 
-        if ylim:
-            plt.ylim(10 ** ylim[0], 10 ** ylim[1])
-        else:
-            max_y = max([con for e_f in self.concentrations
-                         for d in self.concentrations[e_f]
-                         for c in self.concentrations[e_f][d]
-                         for con in self.concentrations[e_f][d][c].values()])
-            plt.ylim(10 ** 10, max_y)
+        # if ylim:
+        #     plt.ylim(10 ** ylim[0], 10 ** ylim[1])
+        # else:
+        #     max_y = max([con for e_f in self.concentrations
+        #                  for d in self.concentrations[e_f]
+        #                  for c in self.concentrations[e_f][d]
+        #                  for con in self.concentrations[e_f][d][c].values()])
+        #     plt.ylim(10 ** 10, max_y)
 
-        if set_vbm_zero is True:
-            vbm = 0.0
-            cbm = self.cbm - self.vbm
-            fermi_levels = [f - self.vbm for f in self.concentrations.keys()]
-        else:
-            vbm = self.vbm
-            cbm = self.cbm
-            fermi_levels = self.concentrations.keys()
+        # if set_vbm_zero is True:
+        #     vbm = 0.0
+        #     cbm = self.cbm - self.vbm
+        #     fermi_levels = [f - self.vbm for f in self.concentrations.keys()]
+        # else:
+        #     vbm = self.vbm
+        #     cbm = self.cbm
+        #     fermi_levels = self.concentrations.keys()
 
-        plt.axvline(x=vbm, linewidth=1.0, linestyle='dashed')
-        plt.axvline(x=cbm, linewidth=1.0, linestyle='dashed')
+        # plt.axvline(x=vbm, linewidth=1.0, linestyle='dashed')
+        # plt.axvline(x=cbm, linewidth=1.0, linestyle='dashed')
 
-        ax.plot(fermi_levels, self.concentrations["n"][-1][None], '-', color="red", label="n")
-        ax.plot(fermi_levels, self.concentrations["p"][1][None], '-', color="blue", label="p")
+        # ax.plot(fermi_levels, self.concentrations["n"][-1][None], '-', color="red", label="n")
+        # ax.plot(fermi_levels, self.concentrations["p"][1][None], '-', color="blue", label="p")
 
-        plt.show()
+        # plt.show()
 
-#    def calc_quenched_equilibrium_concentration(self, temp):
+# #    def calc_quenched_equilibrium_concentration(self, temp):
 
 
-class CarrierConcentration:
-    """ Container class for carrier concentration """
+# class CarrierConcentration:
+#     """ Container class for carrier concentration """
 
-    def __init__(self,
-                 temperature: float,
-                 vbm: float,
-                 cbm: float,
-                 fermi_levels: list,
-                 ns: list,
-                 ps: list):
-        """
-        Args:
-            temperature (float): list of temperature considered.
-            fermi_levels: Fermi levels considered in the absolute scale in eV.
-            ns[temperature][Fermi level]: Carrier electron concentrations.
-            ps[temperature][Fermi level]: Carrier hole concentrations.
-        """
-        self.temperature = temperature
-        self.vbm = vbm
-        self.cbm = cbm
-        self.fermi_levels = fermi_levels
-        self.ns = ns
-        self.ps = ps
+    # def __init__(self,
+    #              temperature: float,
+    #              vbm: float,
+    #              cbm: float,
+    #              fermi_levels: list,
+    #              ns: list,
+    #              ps: list):
+    #     """
+    #     Args:
+    #         temperature (float): list of temperature considered.
+    #         fermi_levels: Fermi levels considered in the absolute scale in eV.
+    #         ns[temperature][Fermi level]: Carrier electron concentrations.
+    #         ps[temperature][Fermi level]: Carrier hole concentrations.
+    #     """
+    #     self.temperature = temperature
+    #     self.vbm = vbm
+    #     self.cbm = cbm
+    #     self.fermi_levels = fermi_levels
+    #     self.ns = ns
+    #     self.ps = ps
 
-    @property
-    def electron_concentration(self):
-        return self.ns
+    # @property
+    # def electron_concentration(self):
+    #     return self.ns
 
-    @property
-    def hole_concentration(self):
-        return self.ps
+    # @property
+    # def hole_concentration(self):
+    #     return self.ps
 
-    # def __repr__(self):
-    #     outs = ["Temperature [K]: " + str(self.temperatures),
-    #             "E_f [eV],  n [cm-3],  p [cm-3]"]
-    #     for a, b, c in zip(self.fermi_levels, self.ns, self.ps):
-    #         outs.append('%8.4f'%a + "   " + '%.2e'%b + "   " + '%.2e'%c)
+#     # def __repr__(self):
+#     #     outs = ["Temperature [K]: " + str(self.temperatures),
+#     #             "E_f [eV],  n [cm-3],  p [cm-3]"]
+#     #     for a, b, c in zip(self.fermi_levels, self.ns, self.ps):
+#     #         outs.append('%8.4f'%a + "   " + '%.2e'%b + "   " + '%.2e'%c)
 
-    # return "\n".join(outs)
+#     # return "\n".join(outs)
 
-    @classmethod
-    def from_unitcell(cls, temperature, unitcell, e_range=None):
-        """ Calculates carrier concentration.
+    # @classmethod
+    # def from_unitcell(cls, temperature, unitcell, e_range=None):
+    #     """ Calculates carrier concentration.
 
-        Args:
-            temperature (float):
-            unitcell (UnitcellCalcResults):
-            e_range (list):
-        """
-        volume = unitcell.volume
-        total_dos = unitcell.total_dos  # [eV] and [1/eV]
-        vbm, cbm = unitcell.band_edge
+        # Args:
+        #     temperature (float):
+        #     unitcell (UnitcellCalcResults):
+        #     e_range (list):
+        # """
+        # volume = unitcell.volume
+        # total_dos = unitcell.total_dos  # [eV] and [1/eV]
+        # vbm, cbm = unitcell.band_edge
 
-        if e_range is None:
-            e_range = [vbm - 1, cbm + 1]
+        # if e_range is None:
+        #     e_range = [vbm - 1, cbm + 1]
 
-        num_mesh = (cbm - vbm) / 0.01
-        fermi_levels = list(np.linspace(e_range[0], e_range[1], num_mesh))
+        # num_mesh = (cbm - vbm) / 0.01
+        # fermi_levels = list(np.linspace(e_range[0], e_range[1], num_mesh))
 
-        ns = []
-        ps = []
+        # ns = []
+        # ps = []
 
-        for f in fermi_levels:
-            ns.append(
-                electron_concentration(temperature, f, total_dos, cbm, volume))
-            ps.append(
-                hole_concentration(temperature, f, total_dos, vbm, volume))
+        # for f in fermi_levels:
+        #     ns.append(
+        #         electron_concentration(temperature, f, total_dos, cbm, volume))
+        #     ps.append(
+        #         hole_concentration(temperature, f, total_dos, vbm, volume))
 
-        return cls(temperature, vbm, cbm, fermi_levels, ns, ps)
+        # return cls(temperature, vbm, cbm, fermi_levels, ns, ps)
 
 

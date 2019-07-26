@@ -35,7 +35,7 @@ class CalcCarrierConcentrationTest(PymatgenTest):
         # dos -> 0.5 at -0.2, 0, 10, and 10.2, and 1 at -0.1 and 10.1
         dos = [0.0] * 8 + [0.5] + [1.0] + [0.5] + [0.0] * 99 + [0.5] + [1.0] + \
               [0.5] + [0.0] * 8
-        self.total_dos = np.array([energies, dos])
+        self.total_dos = np.array([dos, energies])
         self.volume = 100
         self.temperature = 10000
         # [3.0036, 7.4934]
@@ -84,7 +84,7 @@ class CalcConcentrationTest(PymatgenTest):
         # dos -> 0.5 at -0.2, 0, 10, and 10.2, and 1 at -0.1 and 10.1
         dos = [0.0] * 8 + [0.5] + [1.0] + [0.5] + [0.0] * 99 + [0.5] + [1.0] + \
               [0.5] + [0.0] * 8
-        self.total_dos = np.array([energies, dos])
+        self.total_dos = np.array([dos, energies])
 
         self.multiplicity = defaultdict(dict)
 #        self.multiplicity["Va_O1"][0] = {None: 1}
@@ -156,8 +156,24 @@ class DefectConcentrationTest(PymatgenTest):
                 defect_energies=defect_energies, unitcell=unitcell)
 
     def test(self):
+        # print(self.defect_concentration.energies)
+        # print(self.defect_concentration.multiplicity)
+        # print(self.defect_concentration.magnetization)
+        # print(self.defect_concentration.volume)
+        # print(self.defect_concentration.vbm)
+        # print(self.defect_concentration.cbm)
+        # print(self.defect_concentration.total_dos)
+
+        # print(self.defect_concentration.temp)
+        # print(self.defect_concentration.concentrations)
+
         self.defect_concentration.calc_concentrations(temp=1000)
+        self.defect_concentration.calc_equilibrium_concentration()
         print(self.defect_concentration.concentrations)
+        self.defect_concentration.plot_carrier_concentrations()
+#        print(self.defect_concentration.equilibrium_concentration)
+#        print(self.defect_concentration.concentrations)
+
     # def test_from_defect_energies(self):
     #     temperature = 10000
     #     num_sites_filename = os.path.join(test_dir,

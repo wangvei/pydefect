@@ -8,7 +8,7 @@ EV = physical_constants['Boltzmann constant in eV/K'][0]
 
 def fermi_dirac_distribution(energy, fermi_level, temperature):
     """Calculate Fermi-Dirac distribution at a given energy"""
-    if (energy - fermi_level) / (EV * temperature) < 20:
+    if (energy - fermi_level) / (EV * temperature) < 50:
         return np.reciprocal(
             np.exp((energy - fermi_level) / (EV * temperature)) + 1)
     else:
