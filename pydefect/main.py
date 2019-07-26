@@ -972,6 +972,8 @@ def unitcell_calc_results(args):
         except IOError:
             raise FileNotFoundError(
                 args.static_diele_dir, "is not appropriate.")
+        except AttributeError as e:
+            logger.error(str(e))
 
     if args.ionic_diele:
         dft_results.ionic_dielectric_tensor = args.ionic_diele
