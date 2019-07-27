@@ -3,6 +3,7 @@
 from collections import defaultdict
 import numpy as np
 import os
+from scipy.constants import physical_constants
 
 from pymatgen.util.testing import PymatgenTest
 
@@ -17,8 +18,6 @@ __maintainer__ = "Yu Kumagai"
 
 test_dir = os.path.join(os.path.dirname(__file__), "..", "..", "..",
                         "test_files", "core")
-
-from scipy.constants import physical_constants
 
 EV = physical_constants['Boltzmann constant in eV/K'][0]
 
@@ -70,8 +69,8 @@ class CalcCarrierConcentrationTest(PymatgenTest):
 class CalcConcentrationTest(PymatgenTest):
     def setUp(self):
         self.defect_energies = defaultdict(dict)
-#        self.energies["Va_O1"][0] = {None: 4.0}
-#        self.energies["Va_O1"][1] = {None: 3.0}
+        self.defect_energies["Va_O1"][0] = {None: 4.0}
+        self.defect_energies["Va_O1"][1] = {None: 3.0}
         self.defect_energies["Va_O1"][2] = {None: 1.0}
 #        self.energies["Va_Mg1"][0] = {None: 4.0}
 #        self.energies["Va_Mg1"][-1] = {None: 5.0}
@@ -87,16 +86,16 @@ class CalcConcentrationTest(PymatgenTest):
         self.total_dos = np.array([dos, energies])
 
         self.multiplicity = defaultdict(dict)
-#        self.multiplicity["Va_O1"][0] = {None: 1}
-#        self.multiplicity["Va_O1"][1] = {None: 1}
+        self.multiplicity["Va_O1"][0] = {None: 1}
+        self.multiplicity["Va_O1"][1] = {None: 1}
         self.multiplicity["Va_O1"][2] = {None: 2}
 #        self.multiplicity["Va_Mg1"][0] = {None: 1}
 #        self.multiplicity["Va_Mg1"][-1] = {None: 1}
         self.multiplicity["Va_Mg1"][-2] = {None: 1}
 
         self.magnetization = defaultdict(dict)
-#        self.magnetization["Va_O1"][0] = {None: 0}
-#        self.magnetization["Va_O1"][1] = {None: 1}
+        self.magnetization["Va_O1"][0] = {None: 0}
+        self.magnetization["Va_O1"][1] = {None: 1}
         self.magnetization["Va_O1"][2] = {None: 1}
 #        self.magnetization["Va_Mg1"][0] = {None: 2}
 #        self.magnetization["Va_Mg1"][-1] = {None: 1}
@@ -126,6 +125,31 @@ class CalcConcentrationTest(PymatgenTest):
             concentration["Va_O1"][2][None] / va_o1_2_expected, 1, places=5)
         self.assertAlmostEqual(
             concentration["Va_Mg1"][-2][None] / va_mg1_m2_expected, 1, places=5)
+
+    def test_ref_concentration(self):
+        ref = defaultdict(dict)
+        #        self.energies["Va_O1"][0] = {None: 4.0}
+        #        self.energies["Va_O1"][1] = {None: 3.0}
+        ref["Va_O1"][2] = {None: 1e+20}
+        ref["Va_O1"][1] = {None: 1.5e+20}
+        ref["Va_O1"][0] = {None: 0.5e+20}
+        ref["Va_Mg1"][2] = {None: 1e+20}
+        #        self.energies["Va_Mg1"][0] = {None: 4.0}
+
+        concentration = \
+            calc_concentration(energies=self.defect_energies,
+                               temperature=self.temperature,
+                               e_f=4,
+                               vbm=self.vbm,
+                               cbm=self.cbm,
+                               total_dos=self.total_dos,
+                               multiplicity=self.multiplicity,
+                               magnetization=self.magnetization,
+                               volume=self.volume,
+                               ref_concentration=ref)
+
+        print(concentration)
+
 
     def test2(self):
         equiv_concentration = \
@@ -164,14 +188,19 @@ class DefectConcentrationTest(PymatgenTest):
         # print(self.defect_concentration.cbm)
         # print(self.defect_concentration.total_dos)
 
-        # print(self.defect_concentration.temp)
+        # print(self.defect_concentration.temperature)
         # print(self.defect_concentration.concentrations)
 
-        self.defect_concentration.calc_concentrations(temp=1000)
-        self.defect_concentration.calc_equilibrium_concentration()
-        print(self.defect_concentration.concentrations)
+        self.defect_concentration.calc_equilibrium_concentration(temperature=1000, verbose=False)
+        print(self.defect_concentration.equilibrium_concentration)
+        self.defect_concentration.calc_quenched_equilibrium_concentration(temperature=298, verbose=False)
+        print(self.defect_concentration.quenched_equilibrium_concentration)
+
+        self.defect_concentration.calc_concentrations(temperature=1000)
         self.defect_concentration.plot_carrier_concentrations()
-#        print(self.defect_concentration.equilibrium_concentration)
+#        print(self.defect_concentration.concentrations)
+#         print(self.defect_concentration.equilibrium_concentration)
+#         print("-----------------------------------------")
 #        print(self.defect_concentration.concentrations)
 
     # def test_from_defect_energies(self):

@@ -352,6 +352,7 @@ class DefectEnergies(MSONable):
             show_all_energies (bool):
                 Whether to show all energies in the plot.
             color (list)
+                User favorite color scheme.
         """
         fig, ax = plt.subplots()
         plt.title(self.title, fontsize=15)

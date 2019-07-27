@@ -1,12 +1,10 @@
 # -*- coding: utf-8 -*-
 
 from collections import defaultdict
-import math
+from typing import Union
 from matplotlib import pyplot as plt
 import numpy as np
-from typing import List
 
-from pydefect.analysis.defect import Defect
 from pydefect.analysis.defect_energies import DefectEnergies
 from pydefect.core.defect_name import DefectName
 from pydefect.core.error_classes import NoConvergenceError
@@ -76,7 +74,7 @@ def electron_concentration(temperature: float,
         cbm (float):
             Valence band maximum in the unitcell in the absolute scale.
         volume (float):
-            Volume in cm-3.
+            Volume in A^3.
         threshold (float):
             Determines up to where electrons occupy the dos from the vbm.
             Note that the total dos near the band edges is not so accurate
@@ -91,17 +89,17 @@ def electron_concentration(temperature: float,
     return electron * mesh_distance / (volume / 10 ** 24)
 
 
-def calc_concentration(energies: dict,
+def calc_concentration(energies: Union[dict, None],
+                       multiplicity: Union[dict, None],
+                       magnetization: Union[dict, None],
                        temperature: float,
                        e_f: float,
                        vbm: float,
                        cbm: float,
                        total_dos: np.array,
-                       multiplicity: dict,
-                       magnetization: dict,
                        volume: float,
-                       reference_concentration: dict = None):
-    """ Calculate carrier/defect concentration at given temp & Fermi level
+                       ref_concentration: dict = None):
+    """ Calculate carrier/defect concentration at given temperature & Fermi level
 
     When the reference_concentration is provided, each defect specie
     concentration is fixed.
@@ -109,6 +107,11 @@ def calc_concentration(energies: dict,
     Args:
         energies (dict):
             Defect formation energies. energies[name][charge][annotation]
+        multiplicity (dict):
+            Multiplicity in the supercell. It depends on the number of sites
+            in the supercell and the site symmetry.
+        magnetization (dict):
+            Magnetization in mu_B. magnetization[name][charge]
         temperature (float):
             Temperature in K.
         e_f (float):
@@ -119,14 +122,9 @@ def calc_concentration(energies: dict,
             Conduction band minimum in the unitcell in the absolute scale.
         total_dos (2xN numpy array):
                 [[dos1, dos2, ...], [energy1, energy2, ...]]
-        multiplicity (dict):
-            Multiplicity in the supercell. It depends on the number of sites
-            in the supercell and the site symmetry.
         volume (float):
             Volume in A-3.
-        magnetization (dict):
-            Magnetization in mu_B. magnetization[name][charge]
-        reference_concentration (dict):
+        ref_concentration (dict):
             Original defect concentration in cm-3 used for calculating the
             concentration by quench.
             reference_concentration[name][charge][annotation]
@@ -137,29 +135,24 @@ def calc_concentration(energies: dict,
         Note that "p" and "n" are special and mean the carrier hole and
         electron concentration in cm-3.
     """
-    concentration = defaultdict(dict)
+    concentrations = defaultdict(dict)
 
-    concentration["p"][1] = \
+    concentrations["p"][1] = \
         {None: hole_concentration(temperature, e_f, total_dos, vbm, volume)}
-    concentration["n"][-1] = \
+    concentrations["n"][-1] = \
         {None: electron_concentration(temperature, e_f, total_dos, cbm, volume)}
 
     if energies is None:
-        return dict(concentration)
+        return dict(concentrations)
 
-    for name in energies.keys():
-        for charge in energies[name].keys():
+    for name in energies:
+        concentration_by_name = defaultdict(dict)
+        for charge in energies[name]:
             for annotation, de in energies[name][charge].items():
-
                 mul = multiplicity[name][charge][annotation]
                 mag = magnetization[name][charge][annotation]
 
-                # if abs(mag - round(mag)) > 0.1:
-                #     logger.warning(
-                #         "The total_magnetization of {} in {} is {}, and not "
-                #         "integer".format(name, charge, mag))
-
-                num_mag_conf = abs(round(mag)) + 1
+                num_mag_conf = abs(mag) + 1
                 degree_of_freedom = mul * num_mag_conf
 
                 # volume unit conversion from [A^3] to [cm^3]
@@ -167,32 +160,33 @@ def calc_concentration(energies: dict,
                 c = (maxwell_boltzmann_distribution(energy, temperature)
                      * degree_of_freedom / (volume / 10 ** 24))
 
-                concentration[name].setdefault(charge, {}).update(
-                    {annotation: c})
-    #            if reference_concentration is None:
-    #            else:
-    #                dct_sum = {name: sum(v2.values()) for k, v2 in v1.items() for name, v1 in reference_concentration.items()}
-    #     total = sum(reference_concentration[name].values())
-    #     c_sum = sum(cc.values())
+                concentration_by_name[charge] = {annotation: c}
 
-    # if math.isnan(total) or math.isnan(c_sum):
-    #     raise ValueError("Carrier/defect concentration is too small.")
+        if ref_concentration:
+            reference_total_concentration = \
+                sum(sum(c.values()) for c in ref_concentration[name].values())
+            total_concentration = \
+                sum(sum(c.values()) for c in concentration_by_name.values())
+            factor = (reference_total_concentration / total_concentration)
 
-    # for charge in energies[name].keys():
-    #     concentration[name][charge] = total * charge[charge] / c_sum
+            for charge in concentration_by_name:
+                for annotation in concentration_by_name[charge]:
+                    concentration_by_name[charge][annotation] *= factor
 
-    return dict(concentration)
+        concentrations[name] = concentration_by_name
+
+    return dict(concentrations)
 
 
 def calc_equilibrium_concentration(energies: dict,
+                                   multiplicity: dict,
+                                   magnetization: dict,
                                    temperature: float,
                                    vbm: float,
                                    cbm: float,
                                    total_dos: np.array,
-                                   multiplicity: dict,
-                                   magnetization: dict,
                                    volume: float,
-                                   reference_concentration: dict = None,
+                                   ref_concentration: dict = None,
                                    verbose: bool = False,
                                    max_iteration: int = 50,
                                    interval_decay_parameter: float = 0.7,
@@ -217,7 +211,7 @@ def calc_equilibrium_concentration(energies: dict,
             Magnetization in mu_B. total_magnetization[defect][charge]
         volume (float):
             Volume in A-3.
-        reference_concentration (dict):
+        ref_concentration (dict):
             Original defect concentration in cm-3 used for calculating the
             concentration by quench. original_concentration[name][charge]
         verbose (bool):
@@ -241,10 +235,16 @@ def calc_equilibrium_concentration(energies: dict,
     for iteration in range(max_iteration):
         defect_concentration = \
             calc_concentration(
-                energies=energies, temperature=temperature,
-                e_f=e_f, vbm=vbm, cbm=cbm, total_dos=total_dos,
-                multiplicity=multiplicity, magnetization=magnetization,
-                volume=volume, reference_concentration=reference_concentration)
+                energies=energies,
+                multiplicity=multiplicity,
+                magnetization=magnetization,
+                temperature=temperature,
+                e_f=e_f,
+                vbm=vbm,
+                cbm=cbm,
+                total_dos=total_dos,
+                volume=volume,
+                ref_concentration=ref_concentration)
 
         holes = defect_concentration["p"][1][None]
         electrons = defect_concentration["n"][-1][None]
@@ -269,22 +269,14 @@ def calc_equilibrium_concentration(energies: dict,
 
         interval *= interval_decay_parameter
         e_f = e_f + np.sign(total_charge) * interval
-        # This line controls the accuracy.
         max_concentration = np.amax([electrons, holes, total_charge])
 
+        # This part controls the accuracy.
         if np.abs(total_charge / max_concentration) < threshold:
             return e_f, defect_concentration
 
     raise NoConvergenceError("Equilibrium condition has not been reached.")
 
-
-# initial_num_symmops = \
-#     num_symmetry_operation(d.defect_entry.initial_site_symmetry)
-# final_num_symmops = \
-#     num_symmetry_operation(d.dft_results.site_symmetry)
-
-# mul = int(d.defect_entry.num_equiv_sites /
-#           final_num_symmops * initial_num_symmops)
 
 class DefectConcentration:
     """ A class related to a set of carrier and defect concentration """
@@ -300,11 +292,12 @@ class DefectConcentration:
                  temperature: float = None,
                  fermi_mesh: list = None,
                  concentrations: list = None,
-                 equilibrium_ef: list = None,
-                 equilibrium_concentration: list = None,
+                 equilibrium_ef: float = None,
+                 equilibrium_concentration: dict = None,
                  quenched_temperature: float = None,
-                 quenched_ef: list = None,
-                 quenched_concentration: list = None):
+                 quenched_ef: float = None,
+                 quenched_equilibrium_concentration: dict = None,
+                 quenched_carrier_concentrations: list = None):
         """
         Args:
             energies (dict):
@@ -326,28 +319,35 @@ class DefectConcentration:
             total_dos (np.array):
                 Total density of states as a function of absolute energy.
                 [[dos1, dos2, ...], [energy1, energy2, ...]]
-
-        Attributes:
-            temp (float):
+            temperature (float):
                 Temperature in K.
+            fermi_mesh (list):
+                List of calculated Fermi levels in the absolute scale.
             concentrations (list):
-                Carrier and defect concentrations in cm-3.
-                concentrations[Fermi][name][charge]
-                * Carrier electron: concentrations[Fermi]["e"][-1]
-                * Carrier hole: concentrations[Fermi]["p"][1]
-            ef (float):
-                Equilibrium Fermi level at each temperature.
-            equilibrium_concentrations (list):
+                A set of Carrier and defect concentrations in cm-3 as a function
+                of the Fermi level
+                concentrations[Fermi index][name][charge][annotation]
+                * Carrier electron: concentrations[Fermi index]["e"][-1][None]
+                * Carrier hole: concentrations[Fermi index]["p"][1][None]
+            equilibrium_ef (float):
+                Equilibrium Fermi level at temperature.
+            equilibrium_concentration (dict):
                 Equilibrium concentration at each temperature as functions of
                 name and charge.
-                equilibrium_concentrations[name][charge] = float
-            quenched_temp (float):
+                equilibrium_concentrations[name][charge][annotation] = float
+            quenched_temperature (float):
                 Temperature in K.
-            quenched_equilibrium_ef (float):
-                Equilibrium Fermi level at quenched_temp quenched from temp.
-            quenched_equilibrium_concentrations (list):
-                Equilibrium concentration at quenched_temp quenched from temp.
-                quenched_equilibrium_concentrations[name][charge] = float
+            quenched_ef (float):
+                Equilibrium Fermi level at quenched_temperature quenched from
+                temperature.
+            quenched_equilibrium_concentration (dict):
+                Equilibrium concentration at quenched_temperature quenched from
+                temperature.
+                quenched_equilibrium_concentrations[name][charge][annotation]
+            quenched_carrier_concentrations (list):
+                Only carrier concentration at quenched_temperature
+                * Carrier electron: concentrations[Fermi index]["e"][-1][None]
+                * Carrier hole: concentrations[Fermi index]["p"][1][None]
         """
 
         self.energies = energies
@@ -358,16 +358,18 @@ class DefectConcentration:
         self.cbm = cbm
         self.total_dos = total_dos
 
-        self.temp = temperature
+        self.temperature = temperature
         self.fermi_mesh = fermi_mesh
         self.concentrations = concentrations
 
         self.equilibrium_ef = equilibrium_ef
         self.equilibrium_concentration = equilibrium_concentration
 
-        self.quenched_temp = quenched_temperature
+        self.quenched_temperature = quenched_temperature
         self.quenched_ef = quenched_ef
-        self.quenched_concentration = quenched_concentration
+        self.quenched_equilibrium_concentration = \
+            quenched_equilibrium_concentration
+        self.quenched_carrier_concentrations = quenched_carrier_concentrations
 
     @classmethod
     def from_calc_results(cls,
@@ -376,37 +378,34 @@ class DefectConcentration:
                           filtering_words: list = None,
                           exclude_unconverged_defects: bool = True,
                           exclude_shallow_defects: bool = True,
-                          fractional_magnetization_to_one: bool = True):
-        #                          verbose: bool = False):
-        #                          temperatures: list,
-        # fermi_range: list = None,
-        # fermi_mesh_num: int = 101,
-        """ Calculates defect formation energies from some files.
+                          fractional_magnetization_to_one: bool = False,
+                          fractional_criterion: float = 0.1):
+        """ Prepare object from DefectEnergies and UnitcellCalcResults objects
 
         Args:
-            temperatures (list):
-                List of temperatures in K.
             defect_energies (DefectEnergies):
                 DefectEnergies object used for calculating concentration.
             unitcell (UnitcellCalcResults):
                 UnitcellDftResults object for volume and total_dos
             filtering_words (list):
                 List of words used for filtering the defects
-            fermi_range (list):
-                Range of Fermi level, [lower_limit, upper_limit]
-            fermi_mesh_num (float):
-                Number of mesh for Fermi level including boundary.
-            verbose (bool):
-                Whether print the carrier and defect concentration during the
-                seek of the selfconsistent results.
+            exclude_unconverged_defects (bool)
+                Whether to exclude the shallow defects from the plot.
+            exclude_shallow_defects (bool)
+                Whether to exclude the shallow defects from the plot.
+            fractional_magnetization_to_one (bool)
+                Whether to set the fractional magnetization to 1.
+            fractional_criterion (float):
+                The criterion to determine if magnetization is fractional.
         """
         energies = defaultdict(dict)
         multiplicity = defaultdict(dict)
         magnetization = defaultdict(dict)
 
-        for name, energy_by_charge in defect_energies.defect_energies.items():
-            for charge, energy_by_annotation in energy_by_charge.items():
-                for annotation, defect_energy in energy_by_annotation.items():
+        for name in defect_energies.defect_energies:
+            for charge in defect_energies.defect_energies[name]:
+                for annotation, defect_energy in \
+                        defect_energies.defect_energies[name][charge].items():
 
                     n = DefectName(name, charge, annotation)
 
@@ -427,6 +426,18 @@ class DefectConcentration:
                     mag = \
                         defect_energies.magnetization[name][charge][annotation]
 
+                    if abs(mag - round(mag)) > fractional_criterion:
+                        logger.warning(
+                            "The total_magnetization of {} in {} is {}, and "
+                            "not integer".format(name, charge, mag))
+                        if fractional_magnetization_to_one:
+                            logger.warning(
+                                "The magnetization of {} in {} is set to "
+                                "one".format(name, charge))
+                            mag = 1
+
+                    mag = round(mag)
+
                     energies[name].setdefault(charge, {}).update(
                         {annotation: e})
                     multiplicity[name].setdefault(charge, {}).update(
@@ -442,11 +453,14 @@ class DefectConcentration:
         return cls(energies=dict(energies),
                    multiplicity=dict(multiplicity),
                    magnetization=dict(magnetization),
-                   volume=volume, vbm=vbm, cbm=cbm, total_dos=total_dos)
+                   volume=volume,
+                   vbm=vbm,
+                   cbm=cbm,
+                   total_dos=total_dos)
 
     # def _repr__(self):
     #     outs = ["--------",
-    #             "Temperature: {} K.".format(self.temp),
+    #             "Temperature: {} K.".format(self.temperature),
     #             "Fermi level: {} eV.".format(self.e_f),
     #             "p: {:.1e} cm-3.".format(self.p),
     #             "n: {:.1e} cm-3.".format(self.n),
@@ -460,63 +474,122 @@ class DefectConcentration:
     # return "\n".join(outs)
 
     def calc_concentrations(self,
-                            temp: float,
+                            temperature: float = None,
                             fermi_range: list = None,
                             num_mesh: int = 100):
         """ Calculates defect formation energies from some files.
 
         Args:
-            temp (list):
+            temperature (list):
                 temperature in K.
             fermi_range (list):
                 Range of Fermi level, [lower_limit, upper_limit]
             num_mesh (float):
                 Number of mesh for Fermi level including boundary.
-            verbose (book):
-                Whether print the carrier and defect concentration during the
-                seek of the selfconsistent results.
         """
-        self.temp = temp
         fermi_range = fermi_range if fermi_range else [self.vbm, self.cbm]
         self.fermi_mesh = np.linspace(fermi_range[0], fermi_range[1], num_mesh)
 
-        self.concentrations = {}
+        if temperature:
+            self.temperature = temperature
+        elif self.temperature is None:
+            raise ValueError("Temperature is not defined.")
+
+        self.concentrations = []
         for e_f in self.fermi_mesh:
-            self.concentrations[e_f] = \
+            self.concentrations.append(
                 calc_concentration(
                     energies=self.energies,
-                    temperature=self.temp,
+                    multiplicity=self.multiplicity,
+                    magnetization=self.magnetization,
+                    temperature=self.temperature,
                     e_f=e_f,
                     vbm=self.vbm,
                     cbm=self.cbm,
                     total_dos=self.total_dos,
-                    multiplicity=self.multiplicity,
-                    magnetization=self.magnetization,
-                    volume=self.volume)
+                    volume=self.volume))
+
+        if self.quenched_temperature:
+            self.quenched_carrier_concentrations = []
+            for e_f in self.fermi_mesh:
+                self.quenched_carrier_concentrations.append(
+                    calc_concentration(
+                        energies=None,
+                        multiplicity=None,
+                        magnetization=None,
+                        temperature=self.temperature,
+                        e_f=e_f,
+                        vbm=self.vbm,
+                        cbm=self.cbm,
+                        total_dos=self.total_dos,
+                        volume=self.volume))
 
     def calc_equilibrium_concentration(self,
+                                       temperature: float = None,
                                        verbose: bool = True):
         """
 
         Args:
-            temp (list):
+            temperature (list):
                 temperature in K.
             verbose (book):
                 Whether print the carrier and defect concentration during the
                 seek of the selfconsistent results.
         """
-#        if temp:
-#            self.temp = temp
+        if temperature:
+            self.temperature = temperature
+        elif self.temperature is None:
+            raise ValueError("Temperature is not defined.")
 
         self.equilibrium_ef, self.equilibrium_concentration = \
             calc_equilibrium_concentration(
                 energies=self.energies,
-                temperature=self.temp, vbm=self.vbm, cbm=self.cbm,
-                total_dos=self.total_dos, multiplicity=self.multiplicity,
-                magnetization=self.magnetization, volume=self.volume)
+                multiplicity=self.multiplicity,
+                magnetization=self.magnetization,
+                temperature=self.temperature,
+                vbm=self.vbm,
+                cbm=self.cbm,
+                total_dos=self.total_dos,
+                volume=self.volume,
+                verbose=verbose)
 
-    def plot_carrier_concentrations(self, title: str = None, xlim: list = None, ylim: list = None,
-                                    set_vbm_zero=True, filename: str = None):
+    def calc_quenched_equilibrium_concentration(self,
+                                                temperature: float = 298,
+                                                verbose: bool = True):
+        """
+
+        Args:
+            temperature (float):
+                Temperature in K.
+            verbose (book):
+                Whether print the carrier and defect concentration during the
+                seek of the selfconsistent results.
+        """
+        if self.equilibrium_concentration is None:
+            raise ValueError("To calculate the quenched equilibrium "
+                             "concentrations, the equilibrium concentrations "
+                             "are needed.")
+
+        self.quenched_temperature = temperature
+
+        self.quenched_ef, self.quenched_equilibrium_concentration = \
+            calc_equilibrium_concentration(
+                energies=self.energies,
+                multiplicity=self.multiplicity,
+                magnetization=self.magnetization,
+                temperature=self.quenched_temperature,
+                vbm=self.vbm,
+                cbm=self.cbm,
+                total_dos=self.total_dos,
+                volume=self.volume,
+                verbose=verbose,
+                ref_concentration=self.equilibrium_concentration)
+
+    def plot_carrier_concentrations(self,
+                                    title: str = None,
+                                    xlim: list = None,
+                                    ylim: list = None,
+                                    set_vbm_zero=True):
         """ Get a matplotlib plot.
 
         Args:
@@ -539,7 +612,10 @@ class DefectConcentration:
             raise ValueError("The defect and carrier concentrations need to be "
                              "calculated before their plot.")
 
-        plt.title("Temperature:" + str(self.temp) + " K")
+        if title is None:
+            title = "Temperature:" + str(self.temperature) + " K"
+
+        plt.title(title)
 
         ax.set_xlabel("Fermi level (eV)")
         ax.set_ylabel("Concentration (cm-3)")
@@ -551,247 +627,41 @@ class DefectConcentration:
         if ylim:
             plt.ylim(10 ** ylim[0], 10 ** ylim[1])
         else:
-            max_y = max([con for e_f in self.concentrations
-                         for d in self.concentrations[e_f]
-                         for c in self.concentrations[e_f][d]
-                         for con in self.concentrations[e_f][d][c].values()])
-            plt.ylim(10 ** 10, max_y)
+            max_y = max([con for concentration in self.concentrations
+                         for d in ("p", "n")
+                         for c in concentration[d]
+                         for con in concentration[d][c].values()])
+            plt.ylim(10 ** 10, max_y * 2)
 
         if set_vbm_zero is True:
             vbm = 0.0
             cbm = self.cbm - self.vbm
             fermi_mesh = [f - self.vbm for f in self.fermi_mesh]
+            equilibrium_ef = self.equilibrium_ef - self.vbm
+            quenched_ef = self.quenched_ef - self.vbm
         else:
             vbm = self.vbm
             cbm = self.cbm
             fermi_mesh = self.fermi_mesh
+            equilibrium_ef = self.equilibrium_ef
+            quenched_ef = self.quenched_ef
 
         plt.axvline(x=vbm, linewidth=1.0, linestyle='dashed')
         plt.axvline(x=cbm, linewidth=1.0, linestyle='dashed')
 
-        holes = [v["p"][1][None] for v in self.concentrations.values()]
-        electrons = [v["n"][-1][None] for v in self.concentrations.values()]
+        holes_1 = [v["p"][1][None] for v in self.concentrations]
+        electrons_1 = [v["n"][-1][None] for v in self.concentrations]
+        holes_2 = \
+            [v["p"][1][None] for v in self.quenched_carrier_concentrations]
+        electrons_2 = \
+            [v["n"][-1][None] for v in self.quenched_carrier_concentrations]
 
-        ax.plot(fermi_mesh, holes, '-', color="blue", label="p")
-        ax.plot(fermi_mesh, electrons, '-', color="red", label="n")
+        ax.plot(fermi_mesh, holes_1, '-', color="blue", label="p")
+        ax.plot(fermi_mesh, electrons_1, '-', color="red", label="n")
+        ax.plot(fermi_mesh, holes_2, '--', color="blue", label="p")
+        ax.plot(fermi_mesh, electrons_2, '--', color="red", label="n")
 
-        plt.axvline(x=self.equilibrium_ef, linewidth=1.0, linestyle='--')
+        plt.axvline(x=equilibrium_ef, linewidth=1.0, linestyle=':')
+        plt.axvline(x=quenched_ef, linewidth=1.0, linestyle=':')
 
-        plt.show()
-
-#    def calc_quenched_equilibrium_concentration(self, temp):
-
-
-# class CarrierConcentration:
-#     """ Container class for carrier concentration """
-
-    # def __init__(self,
-    #              temperature: float,
-    #              vbm: float,
-    #              cbm: float,
-    #              fermi_levels: list,
-    #              ns: list,
-    #              ps: list):
-    #     """
-    #     Args:
-    #         temperature (float): list of temperature considered.
-    #         fermi_levels: Fermi levels considered in the absolute scale in eV.
-    #         ns[temperature][Fermi level]: Carrier electron concentrations.
-    #         ps[temperature][Fermi level]: Carrier hole concentrations.
-    #     """
-    #     self.temperature = temperature
-    #     self.vbm = vbm
-    #     self.cbm = cbm
-    #     self.fermi_levels = fermi_levels
-    #     self.ns = ns
-    #     self.ps = ps
-
-    # @property
-    # def electron_concentration(self):
-    #     return self.ns
-
-    # @property
-    # def hole_concentration(self):
-    #     return self.ps
-
-#     # def __repr__(self):
-#     #     outs = ["Temperature [K]: " + str(self.temperatures),
-#     #             "E_f [eV],  n [cm-3],  p [cm-3]"]
-#     #     for a, b, c in zip(self.fermi_levels, self.ns, self.ps):
-#     #         outs.append('%8.4f'%a + "   " + '%.2e'%b + "   " + '%.2e'%c)
-
-#     # return "\n".join(outs)
-
-    # @classmethod
-    # def from_unitcell(cls, temperature, unitcell, e_range=None):
-    #     """ Calculates carrier concentration.
-
-        # Args:
-        #     temperature (float):
-        #     unitcell (UnitcellCalcResults):
-        #     e_range (list):
-        # """
-        # volume = unitcell.volume
-        # total_dos = unitcell.total_dos  # [eV] and [1/eV]
-        # vbm, cbm = unitcell.band_edge
-
-        # if e_range is None:
-        #     e_range = [vbm - 1, cbm + 1]
-
-        # num_mesh = (cbm - vbm) / 0.01
-        # fermi_levels = list(np.linspace(e_range[0], e_range[1], num_mesh))
-
-        # ns = []
-        # ps = []
-
-        # for f in fermi_levels:
-        #     ns.append(
-        #         electron_concentration(temperature, f, total_dos, cbm, volume))
-        #     ps.append(
-        #         hole_concentration(temperature, f, total_dos, vbm, volume))
-
-        # return cls(temperature, vbm, cbm, fermi_levels, ns, ps)
-
-        # if temp:
-        #     self.temp = temp
-
-        # self.equilibrium_ef, self.equilibrium_concentration = \
-        #     calc_equilibrium_concentration(
-        #         energies=self.energies,
-        #         temperature=self.temp, vbm=self.vbm, cbm=self.cbm,
-        #         total_dos=self.total_dos, multiplicity=self.multiplicity,
-        #         magnetization=self.magnetization, volume=self.volume)
-
-    # def get_plot(self, title: str = None, xlim: list = None, ylim: list = None,
-    #              set_vbm_zero=True, filename: str = None):
-    #     """ Get a matplotlib plot.
-
-        # Args:
-        #     title (str):
-        #         Title of the plot
-        #     xlim (list):
-        #         Specifies the x-axis limits. None for automatic determination.
-        #     ylim (list):
-        #         Specifies the y-axis limits. None for automatic determination.
-        #     set_vbm_zero (bool):
-        #         Set VBM to zero.
-        #     filename (str):
-        #         Filename to be saved
-        # """
-
-        # fig = plt.figure()
-        # ax = fig.add_subplot(111)
-
-        # if self.concentrations is None:
-        #     raise ValueError("The defect and carrier concentrations need to be "
-        #                      "calculated before their plot.")
-
-        # plt.title("Temperature:" + str(self.temp) + " K")
-
-        # ax.set_xlabel("Fermi level (eV)")
-        # ax.set_ylabel("Concentration (cm-3)")
-        # ax.set_yscale("log", nonposy='clip')
-
-        # if xlim:
-        #     plt.xlim(xlim[0], xlim[1])
-
-        # if ylim:
-        #     plt.ylim(10 ** ylim[0], 10 ** ylim[1])
-        # else:
-        #     max_y = max([con for e_f in self.concentrations
-        #                  for d in self.concentrations[e_f]
-        #                  for c in self.concentrations[e_f][d]
-        #                  for con in self.concentrations[e_f][d][c].values()])
-        #     plt.ylim(10 ** 10, max_y)
-
-        # if set_vbm_zero is True:
-        #     vbm = 0.0
-        #     cbm = self.cbm - self.vbm
-        #     fermi_levels = [f - self.vbm for f in self.concentrations.keys()]
-        # else:
-        #     vbm = self.vbm
-        #     cbm = self.cbm
-        #     fermi_levels = self.concentrations.keys()
-
-        # plt.axvline(x=vbm, linewidth=1.0, linestyle='dashed')
-        # plt.axvline(x=cbm, linewidth=1.0, linestyle='dashed')
-
-        # ax.plot(fermi_levels, self.concentrations["n"][-1][None], '-', color="red", label="n")
-        # ax.plot(fermi_levels, self.concentrations["p"][1][None], '-', color="blue", label="p")
-
-        # plt.show()
-
-# #    def calc_quenched_equilibrium_concentration(self, temp):
-
-
-# class CarrierConcentration:
-#     """ Container class for carrier concentration """
-
-    # def __init__(self,
-    #              temperature: float,
-    #              vbm: float,
-    #              cbm: float,
-    #              fermi_levels: list,
-    #              ns: list,
-    #              ps: list):
-    #     """
-    #     Args:
-    #         temperature (float): list of temperature considered.
-    #         fermi_levels: Fermi levels considered in the absolute scale in eV.
-    #         ns[temperature][Fermi level]: Carrier electron concentrations.
-    #         ps[temperature][Fermi level]: Carrier hole concentrations.
-    #     """
-    #     self.temperature = temperature
-    #     self.vbm = vbm
-    #     self.cbm = cbm
-    #     self.fermi_levels = fermi_levels
-    #     self.ns = ns
-    #     self.ps = ps
-
-    # @property
-    # def electron_concentration(self):
-    #     return self.ns
-
-    # @property
-    # def hole_concentration(self):
-    #     return self.ps
-
-#     # def __repr__(self):
-#     #     outs = ["Temperature [K]: " + str(self.temperatures),
-#     #             "E_f [eV],  n [cm-3],  p [cm-3]"]
-#     #     for a, b, c in zip(self.fermi_levels, self.ns, self.ps):
-#     #         outs.append('%8.4f'%a + "   " + '%.2e'%b + "   " + '%.2e'%c)
-
-#     # return "\n".join(outs)
-
-    # @classmethod
-    # def from_unitcell(cls, temperature, unitcell, e_range=None):
-    #     """ Calculates carrier concentration.
-
-        # Args:
-        #     temperature (float):
-        #     unitcell (UnitcellCalcResults):
-        #     e_range (list):
-        # """
-        # volume = unitcell.volume
-        # total_dos = unitcell.total_dos  # [eV] and [1/eV]
-        # vbm, cbm = unitcell.band_edge
-
-        # if e_range is None:
-        #     e_range = [vbm - 1, cbm + 1]
-
-        # num_mesh = (cbm - vbm) / 0.01
-        # fermi_levels = list(np.linspace(e_range[0], e_range[1], num_mesh))
-
-        # ns = []
-        # ps = []
-
-        # for f in fermi_levels:
-        #     ns.append(
-        #         electron_concentration(temperature, f, total_dos, cbm, volume))
-        #     ps.append(
-        #         hole_concentration(temperature, f, total_dos, vbm, volume))
-
-        # return cls(temperature, vbm, cbm, fermi_levels, ns, ps)
-
-
+        return plt
