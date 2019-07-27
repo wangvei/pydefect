@@ -21,6 +21,7 @@ from obadb.vasp.incar import incar_flags
 
 from pydefect.analysis.defect_energies import DefectEnergies
 from pydefect.analysis.defect import Defect
+from pydefect.analysis.defect_carrier_concentration import DefectConcentration
 from pydefect.analysis.defect_eigenvalues import DefectEigenvalue
 from pydefect.analysis.defect_structure import DefectStructure
 from pydefect.core.defect_entry import DefectEntry
@@ -592,11 +593,6 @@ def main():
     parser_plot_energy.add_argument(
         "-sa", "--show_all", dest="show_all", action="store_true",
         help="Show all the energy lines.")
-    parser_plot_energy.add_argument(
-        "-t", "--temperature", dest="temperature", nargs="+", type=float,
-        help="Temperature for calculating the Fermi level. When two "
-             "temperatures are supplied, the first temperature is quenched to "
-             "the second temperature.")
     # parser_plot_energy.add_argument(
     #     "-u", dest="u", action="store_true",
     #     help="Calculate the U values at given defect name and three charges")
@@ -684,7 +680,31 @@ def main():
              "defect_entry.json, dft_results.json, and correction.json files "
              "are required in the directory.")
 
-    parser_local_structure.set_defaults(func=local_structure)
+    # -- concentrations -------------------------------------------------------
+    parser_concentration = subparsers.add_parser(
+        name="concentrations",
+        description="Tools for estimating carrier and defect concentrations",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+        aliases=['c'])
+
+    parser_concentration.add_argument(
+        "--energies", dest="energies", type=str, default="defect_energies.json",
+        help="DefectEnergies class object json file name.")
+    parser_concentration.add_argument(
+        "--unitcell", dest="unitcell", type=str, default="unitcell.json",
+        help="UnitcellCalcResults class object json file name.")
+    parser_concentration.add_argument(
+        "--filtering", dest="filtering", type=str, help="Filtering word.")
+    parser_concentration.add_argument(
+        "-fmto", dest="fmto", action="store_true",
+        help="Set fractional magnetization to 1.")
+    parser_concentration.add_argument(
+        "-t", "--temperature", dest="temperature", type=float,
+        help="Temperature for calculating the Fermi level. When two "
+             "temperatures are supplied, the first temperature is quenched to "
+             "the second temperature.")
+
+    parser_concentration.set_defaults(func=concentration)
 
     args = parser.parse_args()
     args.func(args)
@@ -1215,7 +1235,6 @@ def plot_energy(args):
     plt = defect_energies.plot_energy(filtering_words=args.filtering,
                                       x_range=args.x_range,
                                       y_range=args.y_range,
-                                      show_fermi_level=args.concentration,
                                       show_transition_levels=args.show_tl,
                                       show_all_energies=args.show_all)
 
@@ -1274,6 +1293,24 @@ def local_structure(args):
                         correction=None)
         defect_structure = DefectStructure.from_defect(defect)
         print(defect_structure.show_displacements(all_atoms=args.show_all))
+
+
+def concentration(args):
+    defect_energies = DefectEnergies.load_json(args.energies)
+    unitcell = UnitcellCalcResults.load_json(args.unitcell)
+    defect_concentration = DefectConcentration.from_calc_results(
+        defect_energies=defect_energies,
+        unitcell=unitcell,
+        fractional_magnetization_to_one=args.fmto)
+
+    defect_concentration.calc_equilibrium_concentration(
+        temperature=args.temperature, verbose=False)
+    defect_concentration.calc_quenched_equilibrium_concentration(verbose=False)
+    print(defect_concentration)
+    defect_concentration.calc_concentrations()
+    plt = defect_concentration.plot_carrier_concentrations()
+    plt.show()
+#    filtering_words=args.filtering_words,
 
 
 if __name__ == "__main__":

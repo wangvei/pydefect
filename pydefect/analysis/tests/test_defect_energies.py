@@ -6,7 +6,7 @@ import unittest
 
 from obadb.analyzer.chempotdiag.chem_pot_diag import ChemPotDiag
 
-from pydefect.analysis.defect_energies import DefectEnergies
+from pydefect.analysis.defect_energies import convert_str_in_dict, DefectEnergies
 from pydefect.analysis.defect import Defect
 from pydefect.corrections.corrections import ExtendedFnvCorrection
 from pydefect.core.supercell_calc_results import SupercellCalcResults
@@ -18,6 +18,13 @@ __maintainer__ = "Yu Kumagai"
 
 test_dir = os.path.join(os.path.dirname(__file__), "..", "..", "..",
                         "test_files", "core")
+
+
+class ConvertStrKeysTest(unittest.TestCase):
+
+    d = {"Va_O1_0": {"0": {"null": "1.0"}, "1": {"inward": "2.0"}}}
+    print(type(d["Va_O1_0"]))
+    print(convert_str_in_dict(d, float))
 
 
 class DefectEnergiesTest(unittest.TestCase):

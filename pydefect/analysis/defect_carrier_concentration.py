@@ -2,10 +2,14 @@
 
 from collections import defaultdict
 from typing import Union
+import json
 from matplotlib import pyplot as plt
+from monty.json import MontyEncoder, MSONable
+from monty.serialization import loadfn
 import numpy as np
 
-from pydefect.analysis.defect_energies import DefectEnergies
+from pydefect.analysis.defect_energies import convert_str_in_dict, \
+    DefectEnergies
 from pydefect.core.defect_name import DefectName
 from pydefect.core.error_classes import NoConvergenceError
 from pydefect.core.unitcell_calc_results import UnitcellCalcResults
@@ -278,7 +282,7 @@ def calc_equilibrium_concentration(energies: dict,
     raise NoConvergenceError("Equilibrium condition has not been reached.")
 
 
-class DefectConcentration:
+class DefectConcentration(MSONable):
     """ A class related to a set of carrier and defect concentration """
 
     def __init__(self,
@@ -345,7 +349,8 @@ class DefectConcentration:
                 temperature.
                 quenched_equilibrium_concentrations[name][charge][annotation]
             quenched_carrier_concentrations (list):
-                Only carrier concentration at quenched_temperature
+                A set of carrier concentrations as a function of the Fermi level
+                at quenched_temperature
                 * Carrier electron: concentrations[Fermi index]["e"][-1][None]
                 * Carrier hole: concentrations[Fermi index]["p"][1][None]
         """
@@ -458,6 +463,57 @@ class DefectConcentration:
                    cbm=cbm,
                    total_dos=total_dos)
 
+    @classmethod
+    def from_dict(cls, d):
+        """ Construct a class object from a dictionary. """
+        energies = convert_str_in_dict(d["energies"], float)
+        multiplicity = convert_str_in_dict(d["multiplicity"], float)
+        magnetization = convert_str_in_dict(d["magnetization"], int)
+        equilibrium_concentration = \
+            convert_str_in_dict(d["equilibrium_concentration"], float)
+        quenched_equilibrium_concentration = \
+            convert_str_in_dict(d["quenched_equilibrium_concentration"], float)
+
+        if d["concentrations"] is not None:
+            concentrations = \
+                [convert_str_in_dict(d, float) for d in d["concentrations"]]
+        else:
+            concentrations = None
+
+        if d["quenched_carrier_concentrations"] is not None:
+            quenched_carrier_concentrations = \
+                [convert_str_in_dict(d, float)
+                 for d in d["quenched_carrier_concentrations"]]
+        else:
+            quenched_carrier_concentrations = None
+
+        return cls(energies=energies,
+                   multiplicity=multiplicity,
+                   magnetization=magnetization,
+                   volume=d["volume"],
+                   vbm=d["vbm"],
+                   cbm=d["cbm"],
+                   total_dos=d["total_dos"],
+                   temperature=d["temperature"],
+                   fermi_mesh=d["fermi_mesh"],
+                   concentrations=concentrations,
+                   equilibrium_ef=d["equilibrium_ef"],
+                   equilibrium_concentration=equilibrium_concentration,
+                   quenched_temperature=d["quenched_temperature"],
+                   quenched_ef=d["quenched_ef"],
+                   quenched_equilibrium_concentration=
+                   quenched_equilibrium_concentration,
+                   quenched_carrier_concentrations=
+                   quenched_carrier_concentrations)
+
+    def to_json_file(self, filename="defect_concentrations.json"):
+        with open(filename, 'w') as fw:
+            json.dump(self.as_dict(), fw, indent=2, cls=MontyEncoder)
+
+    @classmethod
+    def load_json(cls, filename):
+        return loadfn(filename)
+
     def __repr__(self):
 
         outs = ["volume: {}".format(round(self.volume, 2)),
@@ -472,19 +528,19 @@ class DefectConcentration:
                 if i == 0:
                     outs.append("++ Equilibrium concentration")
                     t = self.temperature
-                    ef = self.equilibrium_ef
+                    ef = self.equilibrium_ef - self.vbm
                 else:
                     outs.append("++ Quenched equilibrium concentration")
                     t = self.quenched_temperature
-                    ef = self.quenched_ef
+                    ef = self.quenched_ef - self.vbm
 
                 p = c["p"][1][None]
                 n = c["n"][-1][None]
                 out = ["Temperature: {} K.".format(t),
-                       "Fermi level: {} eV.".format(round(ef, 2)),
-                       "p: {:.1e} cm-3.".format(p),
-                       "n: {:.1e} cm-3.".format(n),
-                       "p - n: {:.1e} cm-3.".format(p - n)]
+                       "Fermi level from vbm: {} eV.".format(round(ef, 2)),
+                       "{:>13}: {:.1e} cm-3.".format("p", p),
+                       "{:>13}: {:.1e} cm-3.".format("n", n),
+                       "{:>13}: {:.1e} cm-3.".format("p - n", p - n)]
                 outs.extend(out)
 
                 for name in c:
@@ -494,7 +550,7 @@ class DefectConcentration:
                     for charge in c[name]:
                         for annotation, con in c[name][charge].items():
                             n = DefectName(name, charge, annotation)
-                            outs.append("{}: {:.1e} cm-3.".format(str(n), con))
+                            outs.append("{:>13}: {:.1e} cm-3.".format(str(n), con))
                 outs.append("")
 
         return "\n".join(outs)

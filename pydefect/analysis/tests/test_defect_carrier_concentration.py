@@ -4,6 +4,7 @@ from collections import defaultdict
 import numpy as np
 import os
 from scipy.constants import physical_constants
+import tempfile
 
 from pymatgen.util.testing import PymatgenTest
 
@@ -240,4 +241,25 @@ class DefectConcentrationTest(PymatgenTest):
 #         # print(dc2.n)
 #         # print(dc2.concentration)
 
+    def test_dict(self):
+        """ round trip test of to_json and from_json """
+        self.defect_concentration.calc_equilibrium_concentration(temperature=1000, verbose=False)
+        self.defect_concentration.calc_quenched_equilibrium_concentration(temperature=298, verbose=False)
+        self.defect_concentration.calc_concentrations(temperature=1000)
+
+        d = self.defect_concentration.as_dict()
+        defect_concentration_from_dict = DefectConcentration.from_dict(d)
+        self.assertEqual(defect_concentration_from_dict.as_dict(), d)
+
+    def test_json(self):
+        """ round trip test of to_json and from_json """
+
+        tmp_file = tempfile.NamedTemporaryFile().name
+        self.defect_concentration.to_json_file(tmp_file)
+        defect_concentration_from_json = DefectConcentration.load_json(tmp_file)
+        print("")
+        print(defect_concentration_from_json.as_dict())
+        print(self.defect_concentration.as_dict())
+        self.assertEqual(defect_concentration_from_json.as_dict(),
+                         self.defect_concentration.as_dict())
 

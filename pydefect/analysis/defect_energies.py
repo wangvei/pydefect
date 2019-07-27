@@ -8,7 +8,7 @@ from monty.json import MontyEncoder, MSONable
 from monty.serialization import loadfn
 import matplotlib.pyplot as plt
 import numpy as np
-from typing import List
+from typing import List, Union
 
 from pydefect.analysis.defect import Defect
 from pydefect.core.supercell_calc_results import SupercellCalcResults
@@ -46,6 +46,26 @@ class DefectEnergy(MSONable):
         self.energy = energy
         self.convergence = convergence
         self.is_shallow = is_shallow
+
+
+def convert_str_in_dict(d: Union[dict, None], value_type: type):
+    """
+    Args
+        d (dict):
+            d[name][charge][annotation]
+        value_type:
+            constructor to convert value
+    """
+    if d is None:
+        return None
+
+    new_d = {name: {int(charge): {None if annotation == "null"
+                                  else annotation: value_type(v)
+                                  for annotation, v in v2.items()}
+                    for charge, v2 in v1.items()}
+             for name, v1 in d.items()}
+
+    return new_d
 
 
 class DefectEnergies(MSONable):
@@ -163,8 +183,6 @@ class DefectEnergies(MSONable):
             n_sites = d.defect_entry.num_equiv_sites
             mul = n_sites * initial_nsymop / final_nsymop
 
-            print(mul, initial_nsymop, final_nsymop)
-
             if not mul.is_integer():
                 logger.warning(
                     "Multiplicity of {} in charge {} is invalid. equiv site: "
@@ -200,7 +218,7 @@ class DefectEnergies(MSONable):
 
         d = {"@module":         self.__class__.__module__,
              "@class":          self.__class__.__name__,
-             "energies": defect_energies,
+             "defect_energies": defect_energies,
              "multiplicity":    self.multiplicity,
              "magnetization":   self.magnetization,
              "vbm":             self.vbm,
@@ -215,26 +233,9 @@ class DefectEnergies(MSONable):
     def from_dict(cls, d):
         """ Construct a class object from a dictionary. """
         defect_energies = \
-            {name: {int(charge): {None if annotation == "null"
-                                  else annotation:
-                                      DefectEnergy.from_dict(e)
-                                  for annotation, e in v2.items()}
-                    for charge, v2 in v1.items()}
-             for name, v1 in d["defect_energies"].items()}
-
-        multiplicity = \
-            {name: {int(charge): {None if annotation == "null"
-                                  else annotation: float(m)
-                                  for annotation, m in v2.items()}
-                    for charge, v2 in v1.items()}
-             for name, v1 in d["multiplicity"].items()}
-
-        magnetization = \
-            {name: {int(charge): {None if annotation == "null"
-                                  else annotation: float(m)
-                                  for annotation, m in v2.items()}
-                    for charge, v2 in v1.items()}
-             for name, v1 in d["magnetization"].items()}
+            convert_str_in_dict(d["defect_energies"], DefectEnergy.from_dict)
+        multiplicity = convert_str_in_dict(d["multiplicity"], float)
+        magnetization = convert_str_in_dict(d["magnetization"], float)
 
         return cls(defect_energies=defect_energies,
                    multiplicity=multiplicity,
@@ -328,7 +329,7 @@ class DefectEnergies(MSONable):
                     y_range: list = None,
                     exclude_unconverged_defects: bool = True,
                     exclude_shallow_defects: bool = True,
-                    show_fermi_level: bool = True,
+                    fermi_levels: list = None,
                     show_transition_levels: bool = False,
                     show_all_energies: bool = False,
                     color: list = None):
@@ -345,8 +346,10 @@ class DefectEnergies(MSONable):
                 Whether to exclude the unconverged defects from the plot.
             exclude_shallow_defects (bool):
                 Whether to exclude the shallow defects from the plot.
-            show_fermi_level (bool):
-                Whether to show the Fermi level(s) in the plot.
+            fermi_levels (list):
+                Ghe Fermi level(s) (E_f) to be shown in the plot.
+                The structure must be as follows.
+                [[temperature, E_f], [quenched temperature, E_f]]
             show_transition_levels (bool):
                 Whether to show values of transition levels in the plot.
             show_all_energies (bool):
