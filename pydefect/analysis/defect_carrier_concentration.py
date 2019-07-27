@@ -458,20 +458,46 @@ class DefectConcentration:
                    cbm=cbm,
                    total_dos=total_dos)
 
-    # def _repr__(self):
-    #     outs = ["--------",
-    #             "Temperature: {} K.".format(self.temperature),
-    #             "Fermi level: {} eV.".format(self.e_f),
-    #             "p: {:.1e} cm-3.".format(self.p),
-    #             "n: {:.1e} cm-3.".format(self.n),
-    #             "p - n: {:.1e} cm-3.".format(self.p - self.n)]
+    def __repr__(self):
 
-    # for name, c_of_charge in self.concentration.items():
-    #     outs.append("---")
-    #     for charge, concent in c_of_charge.items():
-    #         outs.append("{} {}: {:.1e} cm-3.".format(name, charge, concent))
+        outs = ["volume: {}".format(round(self.volume, 2)),
+                "vbm, cbm: {}, {}".format(
+                    round(self.vbm, 2), round(self.cbm, 2)),
+                "band gap: {}".format(round(self.cbm - self.vbm, 2)),
+                ""]
 
-    # return "\n".join(outs)
+        for i, c in enumerate([self.equilibrium_concentration,
+                               self.quenched_equilibrium_concentration]):
+            if c:
+                if i == 0:
+                    outs.append("++ Equilibrium concentration")
+                    t = self.temperature
+                    ef = self.equilibrium_ef
+                else:
+                    outs.append("++ Quenched equilibrium concentration")
+                    t = self.quenched_temperature
+                    ef = self.quenched_ef
+
+                p = c["p"][1][None]
+                n = c["n"][-1][None]
+                out = ["Temperature: {} K.".format(t),
+                       "Fermi level: {} eV.".format(round(ef, 2)),
+                       "p: {:.1e} cm-3.".format(p),
+                       "n: {:.1e} cm-3.".format(n),
+                       "p - n: {:.1e} cm-3.".format(p - n)]
+                outs.extend(out)
+
+                for name in c:
+                    if name in ("p", "n"):
+                        continue
+                    outs.append("---")
+                    for charge in c[name]:
+                        for annotation, con in c[name][charge].items():
+                            n = DefectName(name, charge, annotation)
+                            outs.append("{}: {:.1e} cm-3.".format(str(n), con))
+                outs.append("")
+
+        return "\n".join(outs)
 
     def calc_concentrations(self,
                             temperature: float = None,
@@ -601,8 +627,6 @@ class DefectConcentration:
                 Specifies the y-axis limits. None for automatic determination.
             set_vbm_zero (bool):
                 Set VBM to zero.
-            filename (str):
-                Filename to be saved
         """
 
         fig = plt.figure()

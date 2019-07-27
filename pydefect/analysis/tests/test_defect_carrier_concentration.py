@@ -197,7 +197,8 @@ class DefectConcentrationTest(PymatgenTest):
         print(self.defect_concentration.quenched_equilibrium_concentration)
 
         self.defect_concentration.calc_concentrations(temperature=1000)
-        self.defect_concentration.plot_carrier_concentrations()
+        print(self.defect_concentration)
+#        self.defect_concentration.plot_carrier_concentrations()
 #        print(self.defect_concentration.concentrations)
 #         print(self.defect_concentration.equilibrium_concentration)
 #         print("-----------------------------------------")
