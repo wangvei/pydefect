@@ -63,7 +63,7 @@ def main():
 
     subparsers = parser.add_subparsers()
 
-    # -- recommend_supercell ---------------------------------------------------
+    # -- recommend_supercell --------------------------------------------------
     parser_recommend_supercell = subparsers.add_parser(
         name="recommend_supercell",
         description="Tools for recommendation of an optimal supercell for "
@@ -104,7 +104,7 @@ def main():
 
     parser_recommend_supercell.set_defaults(func=recommend_supercell)
 
-    # -- initial_setting -------------------------------------------------------
+    # -- initial_setting ------------------------------------------------------
     parser_initial = subparsers.add_parser(
         name="initial_setting",
         description="Tools for configuring initial settings for a set of "
@@ -164,7 +164,7 @@ def main():
 
     parser_initial.set_defaults(func=initial_setting)
 
-    # -- interstitial ------------------------------------------------------
+    # -- interstitial ---------------------------------------------------------
     parser_interstitial = subparsers.add_parser(
         name="interstitial",
         description="Tools for handling the interstitial sites.",
@@ -208,7 +208,7 @@ def main():
 
     parser_interstitial.set_defaults(func=interstitial)
 
-    # -- defect_vasp_set_maker -------------------------------------------------
+    # -- defect_vasp_set_maker ------------------------------------------------
     parser_defect_vasp_set = subparsers.add_parser(
         name="defect_vasp_oba_set",
         description="Tools for configuring vasp defect_set files for a set of "
@@ -259,7 +259,7 @@ def main():
 #        help="Output all the supercells satisfying the criterion.")
     parser_defect_vasp_set.set_defaults(func=defect_vasp_oba_set)
 
-    # -- defect_entry ----------------------------------------------------------
+    # -- defect_entry ---------------------------------------------------------
     parser_defect_entry = subparsers.add_parser(
         name="defect_entry",
         description="Tools for configuring defect_entry files for post process"
@@ -290,7 +290,7 @@ def main():
 
     parser_defect_entry.set_defaults(func=defect_entry)
 
-    # -- supercell_calc_results ------------------------------------------------
+    # -- supercell_calc_results -----------------------------------------------
     parser_supercell_results = subparsers.add_parser(
         name="supercell_results",
         description="Tools for analyzing vasp supercell results",
@@ -337,7 +337,7 @@ def main():
 
     parser_supercell_results.set_defaults(func=supercell_calc_results)
 
-    # -- unitcell_calc_results -------------------------------------------------
+    # -- unitcell_calc_results ------------------------------------------------
     parser_unitcell_results = subparsers.add_parser(
         name="unitcell_results",
         description="Tools for analyzing vasp unitcell results",
@@ -386,7 +386,7 @@ def main():
 
     parser_unitcell_results.set_defaults(func=unitcell_calc_results)
 
-    # -- FNV correction --------------------------------------------------------
+    # -- FNV correction -------------------------------------------------------
     parser_correction = subparsers.add_parser(
         name="extended_fnv_correction",
         description="Tools for extended FNV correction for error of defect "
@@ -439,7 +439,7 @@ def main():
 
     parser_correction.set_defaults(func=efnv_correction)
 
-    # -- vasp_oba_set ----------------------------------------------------------
+    # -- vasp_oba_set ---------------------------------------------------------
     parser_vasp_oba_set = subparsers.add_parser(
         name="vasp_oba_set",
         description="Tools for constructing vasp input set with oba_set",
@@ -505,7 +505,7 @@ def main():
 
     parser_vasp_oba_set.set_defaults(func=vasp_oba_set)
 
-    # -- diagnose --------------------------------------------------------------
+    # -- diagnose -------------------------------------------------------------
     parser_diagnose = subparsers.add_parser(
         name="diagnose",
         description="Tools for diagnosing results related to defects.",
@@ -531,7 +531,7 @@ def main():
 
     parser_diagnose.set_defaults(func=diagnose)
 
-    # -- plot_energy -----------------------------------------------------------
+    # -- plot_energy ----------------------------------------------------------
     parser_plot_energy = subparsers.add_parser(
         name="plot_energy",
         description="Tools for plotting defect formation energies as a "
@@ -599,7 +599,7 @@ def main():
 
     parser_plot_energy.set_defaults(func=plot_energy)
 
-    # -- parse_eigenvalues -----------------------------------------------------
+    # -- parse_eigenvalues ----------------------------------------------------
     parser_parse_eigenvalues = subparsers.add_parser(
         name="parse_eigenvalues",
         description="Tools for parsing defect eigenvalues",
@@ -638,7 +638,7 @@ def main():
 
     parser_parse_eigenvalues.set_defaults(func=parse_eigenvalues)
 
-    # -- vasp_parchg_set -------------------------------------------------------
+    # -- vasp_parchg_set ------------------------------------------------------
     parser_vasp_parchg_set = subparsers.add_parser(
         name="vasp_parchg_set",
         description="Tools for constructing vasp set for generating PARCHG",
@@ -660,7 +660,7 @@ def main():
 
     parser_vasp_parchg_set.set_defaults(func=vasp_parchg_set)
 
-    # -- local_structure -------------------------------------------------------
+    # -- local_structure ------------------------------------------------------
     parser_local_structure = subparsers.add_parser(
         name="local_structure",
         description="Tools for analyzing local structure",
@@ -956,7 +956,7 @@ def supercell_calc_results(args):
                             defect_entry=de,
                             symprec=args.symprec,
                             angle_tolerance=args.angle_tolerance)
-                except ParseError:
+                except:
                     logger.warning("Parsing data in {} failed.".format(d))
                     continue
 

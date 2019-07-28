@@ -235,13 +235,13 @@ class SupercellCalcResults(MSONable):
 
         # get the names of the latest files in the directory_path
         if vasprun is None:
-            vasprun = str(max(p.glob("**/*vasprun*"), key=os.path.getctime))
+            vasprun = str(max(p.glob("*vasprun*"), key=os.path.getctime))
         if contcar is None:
             contcar = \
-                str(max(list(p.glob("**/*CONTCAR*")) +
-                        list(p.glob("**/*POSCAR*")), key=os.path.getctime))
+                str(max(list(p.glob("*CONTCAR*")) +
+                        list(p.glob("*POSCAR*")), key=os.path.getctime))
         if outcar is None:
-            outcar = str(max(p.glob("**/*OUTCAR*"), key=os.path.getctime))
+            outcar = str(max(p.glob("*OUTCAR*"), key=os.path.getctime))
 
         def parse_file(classmethod_name, parsed_filename):
             try:
