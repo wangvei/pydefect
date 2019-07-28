@@ -69,7 +69,7 @@ class UnitcellCalcResults(MSONable):
                  band_edge: list = None,
                  static_dielectric_tensor: np.array = None,
                  ionic_dielectric_tensor: np.array = None,
-                 total_dos: np.array = None,
+                 total_dos: list = None,
                  volume: float = None,
                  is_direct: bool = None):
         """
@@ -77,7 +77,7 @@ class UnitcellCalcResults(MSONable):
             band_edge (list): [VBM, CBM].
             static_dielectric_tensor (3x3 numpy array):
             ionic_dielectric_tensor (3x3 numpy array):
-            total_dos (2xN numpy array):
+            total_dos (list):
                 [[energy1, energy2, ...], [dos1, dos2, ...]]
             volume (float): Volume in A-3.
         """
@@ -199,7 +199,7 @@ class UnitcellCalcResults(MSONable):
         vasprun = Vasprun(os.path.join(directory_path, vasprun_name))
         dos, energies = vasprun.tdos.densities, vasprun.tdos.energies
         # only non-magnetic
-        self._total_dos = np.vstack([dos[Spin.up], energies])
+        self._total_dos = [list(dos[Spin.up]), list(energies)]
 
     def set_volume_from_vasp(self, directory_path, contcar_name="CONTCAR"):
         contcar = Poscar.from_file(os.path.join(directory_path, contcar_name))

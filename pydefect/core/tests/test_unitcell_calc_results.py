@@ -3,6 +3,7 @@
 import os
 import tempfile
 import unittest
+import numpy as np
 
 from pymatgen.util.testing import PymatgenTest
 
@@ -96,11 +97,14 @@ class UnitcellDftResultsTest(PymatgenTest):
         self.assertAlmostEqual(self.unitcell.volume, self.mgo_unitcell.volume)
 
     def test_dict_json(self):
+        self.mgo_unitcell.set_total_dos_from_vasp(
+            directory_path=os.path.join(test_dir,
+                                        "MgO/unitcell/structure_optimization"))
         tmp_file = tempfile.NamedTemporaryFile()
         self.mgo_unitcell.to_json_file(tmp_file.name)
         unitcell_from_json = UnitcellCalcResults.load_json(tmp_file.name)
-        self.assertEqual(unitcell_from_json.as_dict(),
-                         self.mgo_unitcell.as_dict())
+        self.assertEqual(unitcell_from_json.as_dict()["total_dos"],
+                         self.mgo_unitcell.as_dict()["total_dos"])
 
     def test_print(self):
         print(self.mgo_unitcell)
