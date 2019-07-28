@@ -62,9 +62,7 @@ def convert_str_in_dict(d: Union[dict, None], value_type: type):
     new_d = {name: {int(charge): {None if annotation == "null"
                                   else annotation: value_type(v)
                                   for annotation, v in v2.items()}
-                    for charge, v2 in v1.items()}
-             for name, v1 in d.items()}
-
+                    for charge, v2 in v1.items()} for name, v1 in d.items()}
     return new_d
 
 
@@ -120,14 +118,14 @@ class DefectEnergies(MSONable):
                      chem_pot_label: str,
                      system: str = None):
         """ Calculates defect formation energies from several objects.
+        All the energies are calculated at 0 eV in the absolute scale.
 
-        Note that all the energies are calculated at 0 eV in the absolute scale.
         Args:
             unitcell (UnitcellCalcResults):
                 UnitcellCalcResults object for band edge.
             perfect (SupercellCalcResults):
-                SupercellDftResults object of perfect supercell for band edge in
-                supercell.
+                SupercellDftResults object of perfect supercell for band edge
+                in supercell.
             defects (list of namedtuple Defect):
                 List of the Defect namedtuple object.
                 Defect = namedtuple(
@@ -165,12 +163,13 @@ class DefectEnergies(MSONable):
 
             # Calculate defect formation energies at the vbm
             relative_energy = d.dft_results.relative_total_energy
+
             correction_energy = d.correction.correction_energy
             element_interchange_energy = \
                 - sum([v * (relative_chem_pot.elem_coords[k] + standard_e[k])
                        for k, v in element_diff.items()])
-            energy = \
-                relative_energy + correction_energy + element_interchange_energy
+            energy = (relative_energy + correction_energy +
+                      element_interchange_energy)
 
             e = DefectEnergy(energy=energy,
                              convergence=d.dft_results.is_converged,
@@ -195,9 +194,12 @@ class DefectEnergies(MSONable):
                     "{} in charge {} is not shallow but with fractional "
                     "magnetization: {}".format(name, charge, mag))
 
-            defect_energies[name].setdefault(charge, {}).update({annotation: e})
-            multiplicity[name].setdefault(charge, {}).update({annotation: mul})
-            magnetization[name].setdefault(charge, {}).update({annotation: mag})
+            def set_value(dictionary, v):
+                dictionary[name].setdefault(charge, {}).update({annotation: v})
+
+            set_value(defect_energies, e)
+            set_value(multiplicity, mul)
+            set_value(magnetization, mag)
 
         return cls(defect_energies=dict(defect_energies),
                    multiplicity=dict(multiplicity),
@@ -263,7 +265,7 @@ class DefectEnergies(MSONable):
                         ["name: {}:".format(n),
                          "charge: {}".format(c),
                          "Annotation: {}".format(a),
-                         "Energy @ ef = 0 (eV): {}".format(round(de.energy, 4)),
+                         "Energy @ ef=0 (eV): {}".format(round(de.energy, 4)),
                          "Convergence: {}".format(de.convergence),
                          "Is shallow: {}".format(de.is_shallow),
                          "multiplicity: {}".format(
@@ -296,7 +298,7 @@ class DefectEnergies(MSONable):
             assert ValueError("The charge states {} {} {} are not sequential."
                               .format(*charges))
         elif not charges[0] < charges[1] < charges[2]:
-            assert ValueError("The charge states {} {} {} are not incremetal."
+            assert ValueError("The charge states {} {} {} are not incremental."
                               .format(*charges))
 
         energies = []
@@ -349,6 +351,7 @@ class DefectEnergies(MSONable):
             fermi_levels (list):
                 Ghe Fermi level(s) (E_f) to be shown in the plot.
                 The structure must be as follows.
+                [[temperature, E_f]] or
                 [[temperature, E_f], [quenched temperature, E_f]]
             show_transition_levels (bool):
                 Whether to show values of transition levels in the plot.
@@ -435,7 +438,7 @@ class DefectEnergies(MSONable):
             if not lowest_energies[name]:
                 continue
             line_type = '-' if i < 5 else '--' if i < 10 else '-.'
-            # ---------- Calculate cross points including edges ----------------
+            # ---------- Calculate cross points including edges ---------------
             cross_points = []
             charge_set = set()
 
@@ -468,7 +471,7 @@ class DefectEnergies(MSONable):
             if min(charge_set) > 0:
                 ax.plot(x_max, y, marker="o", mec="black", mfc="white")
 
-            # ------------------------------------------------------------------
+            # -----------------------------------------------------------------
             # set x and y arrays to be compatible with matplotlib style.
             # e.g., x = [0.0, 0.3, 0.5, ...], y = [2.1, 3.2, 1.2, ...]
             x, y = np.array(cross_points).transpose()
@@ -477,7 +480,7 @@ class DefectEnergies(MSONable):
 
             # margin_x and _y determine the positions of the transition levels.
 #            margin_x = (x_max - x_min) * 0.015
-            margin_y = (y_max - y_min) * 0.05
+            margin_y = (y_max - y_min) * 0.1
 
             if show_transition_levels:
                 for cp in cross_points:
@@ -486,10 +489,10 @@ class DefectEnergies(MSONable):
                     s = str(round(cp[0], 2)) + ", " + str(round(cp[1], 2))
                     pos_x = cp[0]
                     pos_y = cp[1] - margin_y
-                    ax.annotate(s, (pos_x, pos_y), color=color[i], fontsize=12)
+                    ax.annotate(s, (pos_x, pos_y), color=color[i], fontsize=10)
 
             # Arrange the charge states at the middle of the transition levels.
-            charge_pos = [[(a[0] + b[0]) / 2, (a[1] + b[1]) / 2 + margin_y]
+            charge_pos = [[(a[0] + b[0]) / 2, (a[1] + b[1] + margin_y) / 2]
                           for a, b in zip(cross_points, cross_points[1:])]
 
             sorted_charge_set = sorted(charge_set, reverse=True)
@@ -534,19 +537,39 @@ class DefectEnergies(MSONable):
 
 #        if supercell_vbm < - 0.05:
         plt.axvline(x=supercell_vbm, linewidth=1.0, linestyle='-', color='r')
-        ax.annotate("supercell vbm", (supercell_vbm, y_min * 0.8 + y_max * 0.2),
+        ax.annotate("supercell vbm",
+                    (supercell_vbm, y_min * 0.8 + y_max * 0.2),
                     fontsize=10, color='r')
 
 #        if supercell_cbm > self.band_gap + 0.05:
         plt.axvline(x=supercell_cbm, linewidth=1.0, linestyle='-', color='r')
-        ax.annotate("supercell cbm", (supercell_cbm, y_min * 0.8 + y_max * 0.2),
+        ax.annotate("supercell cbm",
+                    (supercell_cbm, y_min * 0.8 + y_max * 0.2),
                     fontsize=10, color='r')
 
         plt.axhline(y=0, linewidth=1.0, linestyle='dashed')
 
+        if fermi_levels:
+            y = y_min * 0.85 + y_max * 0.15
+            for i, (t, f) in enumerate(fermi_levels):
+                print(i)
+                print(t, f)
+                plt.axvline(x=f - self.vbm, linewidth=1.0, linestyle=':',
+                            color='g')
+                ax.annotate(t, ((f - self.vbm), y), fontsize=10, color='green')
+                if i == 1:
+                    y = y_min * 0.88 + y_max * 0.12
+                    plt.arrow(x=fermi_levels[0][1] - self.vbm, y=y,
+                              dx=f - fermi_levels[0][1], dy=0,
+                              width=0.005,
+                              head_width=0.5,
+                              head_length=0.1,
+                              length_includes_head=True,
+                              color='green')
+
         # Shrink current axis by 20%
         box = ax.get_position()
-        ax.set_position([box.x0, box.y0, box.width * 0.8, box.height])
+        ax.set_position([box.x0, box.y0, box.width * 1.2, box.height * 1])
         ax.legend(bbox_to_anchor=(1, 0.5), loc='center left')
         #        fig.subplots_adjust(right=0.75)
 

@@ -144,7 +144,8 @@ def calc_concentration(energies: Union[dict, None],
     concentrations["p"][1] = \
         {None: hole_concentration(temperature, e_f, total_dos, vbm, volume)}
     concentrations["n"][-1] = \
-        {None: electron_concentration(temperature, e_f, total_dos, cbm, volume)}
+        {None: electron_concentration(temperature, e_f, total_dos, cbm,
+                                      volume)}
 
     if energies is None:
         return dict(concentrations)
@@ -231,7 +232,7 @@ def calc_equilibrium_concentration(energies: dict,
         threshold (float):
             Threshold for the convergence of the selfconsistent calculation of
             the carrier and defect concentration, which is a ratio of the
-            residual charge sum and the highest carrier or defect concentration.
+            residual charge sum and  highest carrier or defect concentration.
     """
     e_f = (cbm - vbm) / 2
     interval = e_f
@@ -262,9 +263,11 @@ def calc_equilibrium_concentration(energies: dict,
             logger.info("- {}th iteration ----".format(iteration))
             logger.info("Fermi level: {:.2f} eV.".format(e_f))
 
-            for name, c_of_charge in defect_concentration.items():
-                for charge, c_of_annotation in c_of_charge.items():
-                    for annotation, concentration in c_of_annotation.items():
+            for name in defect_concentration:
+                for charge in defect_concentration[name]:
+                    for annotation in defect_concentration[name][charge]:
+                        concentration = \
+                            defect_concentration[name][charge][annotation]
                         logger.info("{:>8}  {:2d}  {:>6}:   {:.1e} cm-3.".
                                     format(name, charge, str(annotation),
                                            concentration))
@@ -328,8 +331,8 @@ class DefectConcentration(MSONable):
             fermi_mesh (list):
                 List of calculated Fermi levels in the absolute scale.
             concentrations (list):
-                A set of Carrier and defect concentrations in cm-3 as a function
-                of the Fermi level
+                A set of Carrier and defect concentrations in cm-3 as a
+                function of the Fermi level
                 concentrations[Fermi index][name][charge][annotation]
                 * Carrier electron: concentrations[Fermi index]["e"][-1][None]
                 * Carrier hole: concentrations[Fermi index]["p"][1][None]
@@ -349,8 +352,8 @@ class DefectConcentration(MSONable):
                 temperature.
                 quenched_equilibrium_concentrations[name][charge][annotation]
             quenched_carrier_concentrations (list):
-                A set of carrier concentrations as a function of the Fermi level
-                at quenched_temperature
+                A set of carrier concentrations as a function of the Fermi
+                level at quenched_temperature
                 * Carrier electron: concentrations[Fermi index]["e"][-1][None]
                 * Carrier hole: concentrations[Fermi index]["p"][1][None]
         """
@@ -426,10 +429,8 @@ class DefectConcentration(MSONable):
                         continue
 
                     e = defect_energy.energy
-
                     mul = defect_energies.multiplicity[name][charge][annotation]
-                    mag = \
-                        defect_energies.magnetization[name][charge][annotation]
+                    mag = defect_energies.magnetization[name][charge][annotation]
 
                     if abs(mag - round(mag)) > fractional_criterion:
                         logger.warning(
@@ -443,12 +444,13 @@ class DefectConcentration(MSONable):
 
                     mag = round(mag)
 
-                    energies[name].setdefault(charge, {}).update(
-                        {annotation: e})
-                    multiplicity[name].setdefault(charge, {}).update(
-                        {annotation: mul})
-                    magnetization[name].setdefault(charge, {}).update(
-                        {annotation: mag})
+                    def set_value(dictionary, v):
+                        dictionary[name].\
+                            setdefault(charge, {}).update({annotation: v})
+
+                    set_value(energies, e)
+                    set_value(multiplicity, mul)
+                    set_value(magnetization, mag)
 
         volume = unitcell.volume  # [A^3]
         total_dos = unitcell.total_dos
@@ -689,8 +691,8 @@ class DefectConcentration(MSONable):
         ax = fig.add_subplot(111)
 
         if self.concentrations is None:
-            raise ValueError("The defect and carrier concentrations need to be "
-                             "calculated before their plot.")
+            raise ValueError("The defect and carrier concentrations need to "
+                             "be calculated before their plot.")
 
         if title is None:
             title = "Temperature:" + str(self.temperature) + " K"
