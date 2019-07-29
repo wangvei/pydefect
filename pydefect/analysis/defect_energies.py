@@ -569,7 +569,7 @@ class DefectEnergies(MSONable):
 
         # Shrink current axis by 20%
         box = ax.get_position()
-        ax.set_position([box.x0, box.y0, box.width * 1.2, box.height * 1])
+        ax.set_position([box.x0, box.y0, box.width * 0.9, box.height * 0.9])
         ax.legend(bbox_to_anchor=(1, 0.5), loc='center left')
         #        fig.subplots_adjust(right=0.75)
 

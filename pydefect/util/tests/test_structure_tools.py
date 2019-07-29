@@ -2,7 +2,6 @@
 
 import numpy as np
 import os
-import unittest
 
 from pymatgen.core.structure import Structure
 from pymatgen.util.testing import PymatgenTest
@@ -21,7 +20,7 @@ test_dir_input_structure = os.path.join(test_files, "input_maker")
 test_dir_core = os.path.join(test_files, "core", "MgO", "defects")
 
 
-class PerturbNeighborsTest(unittest.TestCase):
+class PerturbNeighborsTest(PymatgenTest):
 
     def test(self):
         structure = \
@@ -138,5 +137,4 @@ class GetPointGroupOpNumberTest(PymatgenTest):
         print(get_point_group_op_number(self.sym_dataset, coords, self.lattice))
         print(get_symmetry_multiplicity(self.sym_dataset, coords, self.lattice))
 
-if __name__ == "__main__":
-    unittest.main()
+

@@ -11,8 +11,8 @@ from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
 from monty.json import MontyEncoder, MSONable
 from monty.serialization import loadfn, dumpfn
 
-from obadb.util.structure_handler import get_symmetry_dataset, \
-    get_point_group_from_dataset, get_coordination_distances
+from obadb.util.structure_handler import get_point_group_from_dataset, \
+    get_coordination_distances
 
 from pydefect.core.error_classes import InvalidFileError
 from pydefect.core.interstitial_site import InterstitialSiteSet
@@ -20,8 +20,8 @@ from pydefect.database.atom import electronegativity_list, oxidation_state_dict
 from pydefect.util.logger import get_logger
 from pydefect.core.irreducible_site import IrreducibleSite
 from pydefect.core.config \
-    import ELECTRONEGATIVITY_DIFFERENCE, DISPLACEMENT_DISTANCE, CUTOFF_RADIUS, \
-    SYMMETRY_TOLERANCE, ANGLE_TOL
+    import ELECTRONEGATIVITY_DIFFERENCE, DISPLACEMENT_DISTANCE, \
+    CUTOFF_RADIUS, SYMMETRY_TOLERANCE, ANGLE_TOL
 
 __author__ = "Yu Kumagai"
 __maintainer__ = "Yu Kumagai"
@@ -30,7 +30,8 @@ logger = get_logger(__name__)
 
 
 def electronegativity_not_defined(a, b):
-    logger.warning("Electronegativity of {} and/or {} not defined".format(a, b))
+    logger.warning(
+        "Electronegativity of {} and/or {} not defined".format(a, b))
 
 
 def charge_set_range(i):
@@ -58,8 +59,8 @@ def get_electronegativity(element):
     try:
         return electronegativity_list[element]
     except KeyError:
-        logger.warning("Electronegativity of " + element + " is unavailable, " +
-                       "so set to 0.")
+        logger.warning("Electronegativity of " + element + " is unavailable, "
+                       + "so set to 0.")
         return 0
 
 
@@ -109,13 +110,13 @@ def parse_distances_from_string(string: list):
             if key:
                 distances[key].append(float(i))
             else:
-                raise ValueError("Invalid string {} for creating distance list".
+                raise ValueError("Invalid string {} to create distance list".
                                  format(string))
     return distances
 
 
 class DefectInitialSetting(MSONable):
-    """ Holds full information for creating a series of DefectEntry objects. """
+    """ Holds full information for creating a series of DefectEntry objects."""
 
     def __init__(self,
                  structure: Structure,
@@ -155,7 +156,7 @@ class DefectInitialSetting(MSONable):
             antisite_configs (Nx2 list):
                 Antisite configurations, e.g., [["Mg","O"], ["O", "Mg"]]
             interstitial_site_names (list):
-                Interstitial site indices written in intersitital.in file
+                Interstitial site indices written in interstitital.in file
             included (list):
                 Exceptionally added defects with charges,
                 e.g., ["Va_O1_-1", "Va_O1_-2"]
@@ -215,8 +216,8 @@ class DefectInitialSetting(MSONable):
                 for site_name in self.interstitial_site_names:
                     if site_name not in sites.keys():
                         raise ValueError(
-                            "Interstitial site name {} do not exist in {}".
-                                format(site_name, interstitials_yaml))
+                            f"Interstitial site name {site_name} "
+                            f"do not exist in {interstitials_yaml}")
                 self.interstitials = {k: v for k, v in sites.items()}
         else:
             self.interstitials = None
@@ -316,7 +317,8 @@ class DefectInitialSetting(MSONable):
                                         wyckoff,
                                         site_symmetry,
                                         coordination_distances))
-                    electronegativity[element] = float(di.readline().split()[1])
+                    electronegativity[element] = float(
+                        di.readline().split()[1])
                     oxidation_states[element] = int(di.readline().split()[2])
 
                 elif line[0] == "Interstitials:":
@@ -387,7 +389,8 @@ class DefectInitialSetting(MSONable):
                             en_diff: float = ELECTRONEGATIVITY_DIFFERENCE,
                             included: list = None,
                             excluded: list = None,
-                            displacement_distance: float = DISPLACEMENT_DISTANCE,
+                            displacement_distance: float
+                            = DISPLACEMENT_DISTANCE,
                             cutoff: float = CUTOFF_RADIUS,
                             symprec: float = SYMMETRY_TOLERANCE,
                             angle_tolerance: float = ANGLE_TOL,
@@ -472,8 +475,8 @@ class DefectInitialSetting(MSONable):
         equiv_sites = symmetrized_structure.equivalent_sites
 
         lattice = symmetrized_structure.lattice.matrix
-        sym_dataset = get_symmetry_dataset(symmetrized_structure, symprec,
-                                           angle_tolerance)
+
+        sym_dataset = space_group_analyzer.get_symmetry_dataset()
 
         # Initialize the last index for iteration.
         last_index = 0
@@ -496,7 +499,8 @@ class DefectInitialSetting(MSONable):
             wyckoff = sym_dataset["wyckoffs"][first_index]
 
             simplified_point_group = \
-                get_point_group_from_dataset(sym_dataset, representative_coords,
+                get_point_group_from_dataset(sym_dataset,
+                                             representative_coords,
                                              lattice, symprec)[0]
             coordination_distances = \
                 get_coordination_distances(symmetrized_structure, first_index)
@@ -558,24 +562,24 @@ class DefectInitialSetting(MSONable):
 
         irreducible_sites = [i.as_dict() for i in self.irreducible_sites]
 
-        d = {"@module":                 self.__class__.__module__,
-             "@class":                  self.__class__.__name__,
-             "structure":               self.structure,
-             "space_group_symbol":      self.space_group_symbol,
-             "transformation_matrix":   self.transformation_matrix,
-             "cell_multiplicity":       self.cell_multiplicity,
-             "irreducible_sites":      irreducible_sites,
-             "dopant_configs":          self.dopant_configs,
-             "antisite_configs":        self.antisite_configs,
+        d = {"@module": self.__class__.__module__,
+             "@class": self.__class__.__name__,
+             "structure": self.structure,
+             "space_group_symbol": self.space_group_symbol,
+             "transformation_matrix": self.transformation_matrix,
+             "cell_multiplicity": self.cell_multiplicity,
+             "irreducible_sites": irreducible_sites,
+             "dopant_configs": self.dopant_configs,
+             "antisite_configs": self.antisite_configs,
              "interstitial_site_names": self.interstitial_site_names,
-             "included":                self.included,
-             "excluded":                self.excluded,
-             "displacement_distance":   self.displacement_distance,
-             "cutoff":                  self.cutoff,
-             "symprec":                 self.symprec,
-             "angle_tolerance":         self.angle_tolerance,
-             "oxidation_states":        self.oxidation_states,
-             "electronegativity":       self.electronegativity}
+             "included": self.included,
+             "excluded": self.excluded,
+             "displacement_distance": self.displacement_distance,
+             "cutoff": self.cutoff,
+             "symprec": self.symprec,
+             "angle_tolerance": self.angle_tolerance,
+             "oxidation_states": self.oxidation_states,
+             "electronegativity": self.electronegativity}
 
         return d
 
@@ -592,7 +596,7 @@ class DefectInitialSetting(MSONable):
         self.structure.to(fmt="poscar", filename=poscar_file)
 
     def make_defect_name_set(self):
-        """ Return a set of defect names based on DefectInitialSetting object"""
+        """ Return defect name set based on DefectInitialSetting object. """
         name_set = list()
 
         # Vacancies
@@ -609,7 +613,8 @@ class DefectInitialSetting(MSONable):
         for element in inserted_elements:
             if self.interstitials is not None:
                 for name in self.interstitials.keys():
-                    for charge in charge_set_range(self.oxidation_states[element]):
+                    for charge in charge_set_range(
+                            self.oxidation_states[element]):
                         in_atom = element
                         out_site = name
                         name_set.append(
@@ -631,14 +636,16 @@ class DefectInitialSetting(MSONable):
             if defect_name not in name_set:
                 name_set.append(defect_name)
             else:
-                logger.warning("{} *included*, but already exists.".format(defect_name))
+                logger.warning(
+                    "{} *included*, but already exists.".format(defect_name))
 
         for e in self.excluded:
             defect_name = SimpleDefectName.from_str(e)
             if defect_name in name_set:
                 name_set.remove(defect_name)
             else:
-                logger.warning("{} *excluded*, but does not exist.".format(defect_name))
+                logger.warning(
+                    "{} *excluded*, but does not exist.".format(defect_name))
 
         return name_set
 
@@ -677,7 +684,8 @@ class DefectInitialSetting(MSONable):
             lines.append("       Oxidation state: {}\n".format(
                 self.oxidation_states[e.element]))
 
-        lines.append("Interstitials: " + " ".join(self.interstitial_site_names))
+        lines.append(
+            "Interstitials: " + " ".join(self.interstitial_site_names))
 
         if self.antisite_configs is not []:
             lines.append("Antisite defects: " +
@@ -712,5 +720,3 @@ class DefectInitialSetting(MSONable):
 
         with open(defect_in_file, 'w') as defect_in:
             defect_in.write("\n".join(lines))
-
-
