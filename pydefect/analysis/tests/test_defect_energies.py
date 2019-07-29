@@ -4,7 +4,7 @@ import os
 import tempfile
 import unittest
 
-from obadb.analyzer.chempotdiag.chem_pot_diag import ChemPotDiag
+from chempotdiag.chem_pot_diag import ChemPotDiag
 
 from pydefect.analysis.defect_energies import convert_str_in_dict, DefectEnergies
 from pydefect.analysis.defect import Defect
