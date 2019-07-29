@@ -15,7 +15,7 @@ from os.path import join
 from pymatgen.core.structure import Structure
 from pymatgen.electronic_structure.core import Spin
 
-from obadb.analyzer.chempotdiag.chem_pot_diag import ChemPotDiag
+from chempotdiag.chem_pot_diag import ChemPotDiag
 from obadb.vasp.input_set import ObaSet
 from obadb.vasp.incar import incar_flags
 
