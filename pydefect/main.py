@@ -699,6 +699,9 @@ def main():
         "-fmto", dest="fmto", action="store_true",
         help="Set fractional magnetization to 1.")
     parser_concentration.add_argument(
+        "-v", "-verbose", dest="verbose", action="store_true",
+        help="Show information on estimation of concentrations.")
+    parser_concentration.add_argument(
         "-t", "--temperature", dest="temperature", type=float,
         help="Temperature for calculating the Fermi level. When two "
              "temperatures are supplied, the first temperature is quenched to "
@@ -1304,8 +1307,8 @@ def concentration(args):
         fractional_magnetization_to_one=args.fmto)
 
     defect_concentration.calc_equilibrium_concentration(
-        temperature=args.temperature, verbose=False)
-    defect_concentration.calc_quenched_equilibrium_concentration(verbose=False)
+        temperature=args.temperature, verbose=args.verbose)
+    defect_concentration.calc_quenched_equilibrium_concentration(verbose=args.verbose)
     print(defect_concentration)
     defect_concentration.calc_concentrations()
     plt = defect_concentration.plot_carrier_concentrations()

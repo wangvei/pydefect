@@ -193,7 +193,7 @@ def calc_equilibrium_concentration(energies: dict,
                                    volume: float,
                                    ref_concentration: dict = None,
                                    verbose: bool = False,
-                                   max_iteration: int = 50,
+                                   max_iteration: int = 200,
                                    interval_decay_parameter: float = 0.7,
                                    threshold: float = 1e-5):
     """ Calculates equilibrium carrier & defect concentration at a temperature
@@ -234,9 +234,8 @@ def calc_equilibrium_concentration(energies: dict,
             the carrier and defect concentration, which is a ratio of the
             residual charge sum and  highest carrier or defect concentration.
     """
-    e_f = (cbm - vbm) / 2
+    e_f = (cbm - vbm) / 2 + vbm
     interval = e_f
-
     for iteration in range(max_iteration):
         defect_concentration = \
             calc_concentration(
@@ -276,7 +275,11 @@ def calc_equilibrium_concentration(energies: dict,
 
         interval *= interval_decay_parameter
         e_f = e_f + np.sign(total_charge) * interval
-        max_concentration = np.amax([electrons, holes, total_charge])
+
+        max_concentration = \
+            np.amax([concentration for d in defect_concentration
+                     for c in defect_concentration[d]
+                     for concentration in defect_concentration[d][c].values()])
 
         # This part controls the accuracy.
         if np.abs(total_charge / max_concentration) < threshold:
