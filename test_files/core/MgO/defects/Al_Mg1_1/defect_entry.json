@@ -2,6 +2,7 @@
   "@module": "pydefect.core.defect_entry",
   "@class": "DefectEntry",
   "name": "Al_Mg1",
+  "defect_type": "complex",
   "initial_structure": {
     "@module": "pymatgen.core.structure",
     "@class": "Structure",
@@ -728,6 +729,7 @@
   },
   "charge": 1,
   "initial_site_symmetry": "m-3m",
+  "cutoff": 3.2,
   "neighboring_sites": [
     0,
     1,
@@ -744,5 +746,5 @@
     14
   ],
   "annotation": null,
-  "num_equiv_sites": 4
+  "num_equiv_sites": 48
 }

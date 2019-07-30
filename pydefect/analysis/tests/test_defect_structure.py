@@ -56,7 +56,7 @@ class DefectStructureTest(unittest.TestCase):
         s = self.va_o_2.final_local_structure
         print(s)
         print(self.va_o_0.final_local_structure)
-        print(self.va_o_0.comparator(defect_local_structure=s))
+#        print(self.va_o_0.comparator(defect_local_structure=s))
 
 
 if __name__ == "__main__":

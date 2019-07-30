@@ -76,7 +76,7 @@ class InterstitialSite(MSONable):
 
         return d
 
-# The followings are needed for keeping the order of dict when dumping to yaml.
+# The followings are needed to keep order of dictionary during dumping to yaml
 # https://qiita.com/podhmo/items/aa954ee1dc1747252436
 def represent_odict(dumper, instance):
     return dumper.represent_mapping('tag:yaml.org,2002:map', instance.items())
@@ -93,8 +93,7 @@ yaml.add_constructor('tag:yaml.org,2002:map', construct_odict)
 
 
 class InterstitialSiteSet(MSONable):
-    """Holds a set of InterstitialSite objects.
-    """
+    """Holds a set of InterstitialSite objects. """
 
     def __init__(self,
                  structure: Structure,
@@ -184,7 +183,7 @@ class InterstitialSiteSet(MSONable):
                  angle_tolerance: float = ANGLE_TOL,
                  method: str = "manual"):
         """ """
-        # Check whether other sites exist too close to the inserted sites.
+        # Check whether other sites are too close to the inserted sites.
         # Construct saturated structure with existing interstitial sites.
         if self.coords:
             saturated_structure, _, symmetry_dataset = \

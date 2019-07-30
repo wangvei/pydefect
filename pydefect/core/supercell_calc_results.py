@@ -24,9 +24,10 @@ from pymatgen.io.vasp.inputs import Poscar
 from pymatgen.io.vasp.outputs import Outcar, Vasprun, Procar
 from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
 
-from pydefect.core.config import DEFECT_SYMMETRY_TOLERANCE, ANGLE_TOL
+from pydefect.core.config import DEFECT_SYMMETRY_TOLERANCE, ANGLE_TOL, \
+    CUTOFF_RADIUS
 from pydefect.core.defect_entry import DefectEntry
-from pydefect.core.error_classes import NoConvergenceError
+from pydefect.core.error_classes import NoConvergenceError, StructureError
 from pydefect.util.logger import get_logger
 from pydefect.util.structure_tools import get_displacements
 from pydefect.vasp_util.util import calc_participation_ratio, \
@@ -39,7 +40,7 @@ logger = get_logger(__name__)
 
 
 @unique
-class BandEdges(Enum):
+class BandEdgeState(Enum):
     donor_phs = "Donor PHS"
     acceptor_phs = "Acceptor PHS"
     localized_state = "Localized state"
@@ -56,8 +57,8 @@ class BandEdges(Enum):
         for m in cls:
             if m.value == s or m.name == s:
                 return m
-        raise AttributeError("Band edge info: " + str(s) + " is not proper.\n" +
-                             "Supported info:\n" + cls.name_list())
+        raise AttributeError(f"Band edge info {str(s)}  is not proper.\n",
+                             f"Supported info:\n {cls.name_list()}")
 
     @classmethod
     def name_list(cls):
@@ -65,7 +66,7 @@ class BandEdges(Enum):
 
     @property
     def is_shallow(self):
-        return self in [BandEdges.acceptor_phs, BandEdges.donor_phs]
+        return self in [BandEdgeState.acceptor_phs, BandEdgeState.donor_phs]
 
 
 class SupercellCalcResults(MSONable):
@@ -85,7 +86,9 @@ class SupercellCalcResults(MSONable):
                  volume: float,
                  fermi_level: float,
                  is_converged: bool,
-                 band_edges: dict = None,
+                 is_defect_center_atom: bool,
+                 neighboring_sites_after_relax: list,
+                 band_edge_states: Union[dict, None] = None,
                  band_edge_energies: dict = None,
                  relative_total_energy: float = None,
                  relative_potential: list = None,
@@ -120,7 +123,14 @@ class SupercellCalcResults(MSONable):
                Fermi level in the absolute scale.
             is_converged (bool):
                 Whether the calculation is converged or not.
-            band_edges (dict):
+            is_defect_center_atom (bool):
+                Whether the defect center is defined as a position of a single
+                atom. In that case, the defect center is defined as an
+                atomic position after structure optimization.
+            neighboring_sites_after_relax (list):
+                Atomic indices of the neighboring sites within cutoff radius
+                after structure optimization.
+            band_edge_states (dict):
                 Band edge states at each spin channel.
                 None: no in gap state.
                 "Donor PHS": Donor-type perturbed host state (PHS).
@@ -153,7 +163,9 @@ class SupercellCalcResults(MSONable):
         self.volume = volume
         self.fermi_level = fermi_level
         self.is_converged = is_converged
-        self.band_edges = band_edges
+        self.is_defect_center_atom = is_defect_center_atom
+        self.neighboring_sites_after_relax = neighboring_sites_after_relax
+        self.band_edge_states = band_edge_states
         self.band_edge_energies = band_edge_energies
         self.relative_total_energy = relative_total_energy
         self.relative_potential = relative_potential
@@ -165,9 +177,10 @@ class SupercellCalcResults(MSONable):
 
     def __repr__(self):
         outs = ["total energy (eV): " + str(self.total_energy),
-                "total total_magnetization (mu_B): " +
-                str(self.total_magnetization),
-                "electrostatic potential: " + str(self.electrostatic_potential),
+                "total total_magnetization (mu_B): "
+                + str(self.total_magnetization),
+                "electrostatic potential: "
+                + str(self.electrostatic_potential),
                 "vbm: " + str(self.vbm),
                 "cbm: " + str(self.cbm),
                 "final structure: \n" + str(self.final_structure),
@@ -182,12 +195,12 @@ class SupercellCalcResults(MSONable):
     def diagnose(self):
 
         band_edges = []
-        for s, v in self.band_edges.items():
+        for s, v in self.band_edge_states.items():
             band_edges.extend([s.name.upper(), "->", str(v).rjust(17)])
 
         band_edges = "  ".join(band_edges)
 
-        outs = ["conv. : " + str(self.is_converged)[0],
+        outs = [" conv. : " + str(self.is_converged)[0],
                 "  mag. : {}".format(str(round(self.total_magnetization, 1))),
                 "  sym. : {:>4}".format(self.site_symmetry),
                 "  band edge : " + band_edges]
@@ -197,13 +210,14 @@ class SupercellCalcResults(MSONable):
     @classmethod
     def from_vasp_files(cls,
                         directory_path: str,
+                        defect_entry: DefectEntry = None,
                         vasprun: str = None,
                         contcar: str = None,
                         outcar: str = None,
                         procar: Union[str, bool] = False,
                         referenced_dft_results=None,
-                        defect_entry: DefectEntry = None,
                         symmetrize: bool = True,
+                        cutoff: float = CUTOFF_RADIUS,
                         symprec: float = DEFECT_SYMMETRY_TOLERANCE,
                         angle_tolerance: float = ANGLE_TOL):
         """ Constructs class object from vasp output files.
@@ -211,6 +225,7 @@ class SupercellCalcResults(MSONable):
         Args:
             directory_path (str):
                 path to the directory storing calc results.
+            defect_entry (DefectEntry):
             vasprun (str):
                 Name of the vasprun.xml file.
             contcar (str):
@@ -223,9 +238,10 @@ class SupercellCalcResults(MSONable):
                 timestamp.
             referenced_dft_results (SupercellCalcResults):
                 SupercellDftResults object for referenced supercell dft results.
-            defect_entry (DefectEntry):
             symmetrize (bool):
                 Whether to obtain the symmetrized information.
+            cutoff (float):
+                Cutoff Radius determining the neighboring sites.
             symprec (float):
                 Distance precision used for symmetry analysis.
             angle_tolerance (float):
@@ -295,14 +311,40 @@ class SupercellCalcResults(MSONable):
         magnetization = 0.0 if outcar.total_mag is None else outcar.total_mag
         electrostatic_potential = outcar.electrostatic_potential
 
+        neighboring_sites_after_relax = []
+        if defect_entry:
+            if defect_entry.defect_type.is_defect_center_atom:
+                inserted_atom_index = \
+                    list(defect_entry.inserted_atoms.keys())[0]
+                is_defect_center_atom = True
+                defect_center = final_structure[inserted_atom_index].coords
+            else:
+                is_defect_center_atom = False
+                defect_center = defect_entry.defect_center
+
+            for i, site in enumerate(final_structure):
+                distance = \
+                    site.distance_and_image_from_frac_coords(defect_center)[0]
+                if 1e-5 < distance < cutoff:
+                    neighboring_sites_after_relax.append(i)
+
+            if not neighboring_sites_after_relax:
+                raise StructureError(
+                    "No neighboring site detected, so increase cutoff radius.")
+
+        else:
+            is_defect_center_atom = None
+
+        # Perfect supercell does not need the below.
+        relative_total_energy = None
+        relative_potential = None
+        displacements = None
+        band_edge_states = None
+
         if procar:
             if procar is True:
-                procar = str(max(p.glob("**/*PROCAR*"), key=os.path.getctime))
+                procar = str(max(p.glob("*PROCAR*"), key=os.path.getctime))
             procar = parse_file(Procar, procar)
-
-            neighboring_sites = \
-                defect_entry.neighboring_sites if defect_entry else None
-
             # The k-point indices at the band edges in defect calculations.
             # hob (lub) means highest (lowest) (un)occupied state
             # The tiny number needs to be added to avoid magnetization = 0.0
@@ -336,14 +378,13 @@ class SupercellCalcResults(MSONable):
 
                     for position, k in zip(["max", "min"], [max_k, min_k]):
 
-                        if neighboring_sites:
-                            participation_ratio[s][band_edge] = \
-                                calc_participation_ratio(
-                                    procar=procar,
-                                    spin=s,
-                                    band_index=band_index,
-                                    kpoint_index=k,
-                                    atom_indices=neighboring_sites)
+                        participation_ratio[s][band_edge] = \
+                            calc_participation_ratio(
+                                procar=procar,
+                                spin=s,
+                                band_index=band_index,
+                                kpoint_index=k,
+                                atom_indices=neighboring_sites_after_relax)
 
                         orbital_character[s][band_edge][position] = \
                             calc_orbital_character(
@@ -397,19 +438,12 @@ class SupercellCalcResults(MSONable):
                 perfect_orbital_character = \
                     referenced_dft_results.orbital_character
 
-                band_edges = \
+                band_edge_states = \
                     cls.diagnose_band_edges(participation_ratio,
                                             orbital_character,
                                             perfect_orbital_character,
                                             band_edge_energies,
                                             vbm, cbm)
-
-        else:
-            # Perfect supercell does not need the below.
-            relative_total_energy = None
-            relative_potential = None
-            displacements = None
-            band_edges = None
 
         return cls(final_structure=final_structure,
                    site_symmetry=site_symmetry,
@@ -424,7 +458,9 @@ class SupercellCalcResults(MSONable):
                    volume=volume,
                    fermi_level=fermi_level,
                    is_converged=vasprun.converged_ionic,
-                   band_edges=band_edges,
+                   is_defect_center_atom=is_defect_center_atom,
+                   neighboring_sites_after_relax=neighboring_sites_after_relax,
+                   band_edge_states=band_edge_states,
                    band_edge_energies=band_edge_energies,
                    relative_total_energy=relative_total_energy,
                    relative_potential=relative_potential,
@@ -503,7 +539,7 @@ class SupercellCalcResults(MSONable):
                     < near_edge_energy_criterion \
                     and band_edge_energies[spin]["hob"] - supercell_vbm \
                     < near_edge_energy_criterion:
-                band_edges[spin] = BandEdges.no_in_gap
+                band_edges[spin] = BandEdgeState.no_in_gap
 
             # To determine the dissimilarity of perturbed host state (phs),
             # the criterion is doubled from that of regular band edge.
@@ -511,28 +547,25 @@ class SupercellCalcResults(MSONable):
                     and participation_ratio[spin]["hob"] < localized_criterion \
                     and supercell_cbm - band_edge_energies[spin]["hob"] \
                     < near_edge_energy_criterion:
-                band_edges[spin] = BandEdges.donor_phs
+                band_edges[spin] = BandEdgeState.donor_phs
 
             elif acceptor_phs_dissimilarity < dissimilarity_criterion * 2 \
                     and participation_ratio[spin]["lub"] < localized_criterion \
                     and band_edge_energies[spin]["lub"] - supercell_vbm \
                     < near_edge_energy_criterion:
-                band_edges[spin] = BandEdges.acceptor_phs
+                band_edges[spin] = BandEdgeState.acceptor_phs
 
             else:
-                band_edges[spin] = BandEdges.localized_state
+                band_edges[spin] = BandEdgeState.localized_state
 
         return band_edges
 
     def set_band_edges(self, spin: Spin, state: Union[str, None]):
-        """ Set band edges manually."""
-        self.band_edges[spin] = BandEdges.from_string(state)
+        self.band_edge_states[spin] = BandEdgeState.from_string(state)
         return True
 
     @classmethod
     def from_dict(cls, d):
-        """ Construct a class object from a dictionary. """
-
         eigenvalues = {}
         # Programmatic access to enumeration members in Enum class.
         for s, v in d["eigenvalues"].items():
@@ -551,17 +584,18 @@ class SupercellCalcResults(MSONable):
 
         def str_key_to_spin(arg: dict, value_to_band_edges=False):
             if arg is not None:
-                d = {}
+                x = {}
                 for spin, value in arg.items():
                     if value_to_band_edges:
-                        d[Spin(int(spin))] = BandEdges.from_string(value)
+                        x[Spin(int(spin))] = BandEdgeState.from_string(value)
                     else:
-                        d[Spin(int(spin))] = value
-                return d
+                        x[Spin(int(spin))] = value
+                return x
             else:
                 return
 
-        band_edges = str_key_to_spin(d["band_edges"], value_to_band_edges=True)
+        band_edge_states = \
+            str_key_to_spin(d["band_edge_states"], value_to_band_edges=True)
         band_edge_energies = str_key_to_spin(d["band_edge_energies"])
         participation_ratio = str_key_to_spin(d["participation_ratio"])
         orbital_character = str_key_to_spin(d["orbital_character"])
@@ -579,7 +613,10 @@ class SupercellCalcResults(MSONable):
                    volume=d["volume"],
                    fermi_level=d["fermi_level"],
                    is_converged=d["is_converged"],
-                   band_edges=band_edges,
+                   is_defect_center_atom=d["is_defect_center_atom"],
+                   neighboring_sites_after_relax
+                   =d["neighboring_sites_after_relax"],
+                   band_edge_states=band_edge_states,
                    band_edge_energies=band_edge_energies,
                    relative_total_energy=d["relative_total_energy"],
                    relative_potential=d["relative_potential"],
@@ -607,7 +644,8 @@ class SupercellCalcResults(MSONable):
             else:
                 return
 
-        band_edges = spin_key_to_str(self.band_edges, value_to_str=True)
+        band_edge_states = \
+            spin_key_to_str(self.band_edge_states, value_to_str=True)
         band_edge_energies = spin_key_to_str(self.band_edge_energies)
         participation_ratio = spin_key_to_str(self.participation_ratio)
         orbital_character = spin_key_to_str(self.orbital_character)
@@ -627,7 +665,10 @@ class SupercellCalcResults(MSONable):
              "volume":                  self.volume,
              "fermi_level":             self.fermi_level,
              "is_converged":            self.is_converged,
-             "band_edges":              band_edges,
+             "is_defect_center_atom":   self.is_defect_center_atom,
+             "neighboring_sites_after_relax":
+                 self.neighboring_sites_after_relax,
+             "band_edge_states":        band_edge_states,
              "band_edge_energies":      band_edge_energies,
              "relative_total_energy":   self.relative_total_energy,
              "relative_potential":      self.relative_potential,

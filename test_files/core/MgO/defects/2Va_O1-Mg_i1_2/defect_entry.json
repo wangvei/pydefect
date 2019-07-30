@@ -2,6 +2,7 @@
   "@module": "pydefect.core.defect_entry",
   "@class": "DefectEntry",
   "name": "2Va_O1-Mg_i1",
+  "defect_type": "complex",
   "initial_structure": {
     "@module": "pymatgen.core.structure",
     "@class": "Structure",
@@ -693,6 +694,7 @@
   },
   "charge": 2,
   "initial_site_symmetry": "mmm",
+  "cutoff": 3.2,
   "neighboring_sites": [
     0,
     1,

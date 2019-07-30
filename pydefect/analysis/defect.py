@@ -19,4 +19,4 @@ class Defect:
 
     @property
     def is_shallow(self):
-        return any(i.is_shallow for i in self.dft_results.band_edges.values())
+        return any(i.is_shallow for i in self.dft_results.band_edge_states.values())

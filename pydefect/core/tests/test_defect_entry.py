@@ -7,7 +7,8 @@ import numpy as np
 from pymatgen.core.structure import Structure
 from pymatgen.util.testing import PymatgenTest
 
-from pydefect.core.defect_entry import DefectEntry, divide_dirname
+from pydefect.core.defect_entry import DefectType, DefectEntry, divide_dirname
+from pydefect.core.config import CUTOFF_RADIUS
 
 __author__ = "Yu Kumagai"
 __maintainer__ = "Yu Kumagai"
@@ -22,6 +23,7 @@ class DefectEntryTest(PymatgenTest):
         """ """
         # DefectEntry class object for a single vacancy
         name = "Va_O1"
+        defect_type = DefectType.from_string("vacancy")
         initial_structure = Structure.from_file(
             os.path.join(test_dir, "POSCAR-MgO8atoms-Va_O1"))
         perturbed_initial_structure = initial_structure.copy()
@@ -31,9 +33,10 @@ class DefectEntryTest(PymatgenTest):
         charge = 2
         initial_site_symmetry = "Oh"
         num_equiv_sites = 4
-        perturbed_sites = []
+        neighboring_sites = [0, 1]
         self._MgO_Va_O1_2 = \
             DefectEntry(name=name,
+                        defect_type=defect_type,
                         initial_structure=initial_structure,
                         perturbed_initial_structure=perturbed_initial_structure,
                         removed_atoms=removed_atoms,
@@ -41,11 +44,13 @@ class DefectEntryTest(PymatgenTest):
                         changes_of_num_elements=changes_of_num_elements,
                         charge=charge,
                         initial_site_symmetry=initial_site_symmetry,
-                        neighboring_sites=perturbed_sites,
+                        cutoff=CUTOFF_RADIUS,
+                        neighboring_sites=neighboring_sites,
                         num_equiv_sites=num_equiv_sites)
 
         # DefectEntry class object for a complex defect
         name = "2Va_O1+Mg_i1_2"
+        defect_type = DefectType.from_string("complex")
         initial_structure = Structure.from_file(
             os.path.join(test_dir, "POSCAR-MgO8atoms-2Va_O1-Mg_i1_2"))
         perturbed_initial_structure = initial_structure.copy()
@@ -54,11 +59,12 @@ class DefectEntryTest(PymatgenTest):
         changes_of_num_elements = {"O": -2, "Mg": 1}
         charge = 2
         initial_site_symmetry = "mmm"
-        neighboring_sites = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
+        neighboring_sites = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13]
         num_equiv_sites = 24
 
         self._MgO_complex = \
             DefectEntry(name=name,
+                        defect_type=defect_type,
                         initial_structure=initial_structure,
                         perturbed_initial_structure=perturbed_initial_structure,
                         removed_atoms=removed_atoms,
@@ -66,12 +72,14 @@ class DefectEntryTest(PymatgenTest):
                         changes_of_num_elements=changes_of_num_elements,
                         charge=charge,
                         initial_site_symmetry=initial_site_symmetry,
+                        cutoff=CUTOFF_RADIUS,
                         neighboring_sites=neighboring_sites,
                         num_equiv_sites=num_equiv_sites)
 
     def test_from_yaml(self):
         defect_entry_from_yaml = DefectEntry.from_yaml(
-            os.path.join(test_dir, "defect_entry-2Va_O1-Mg_i1_2.yaml"))
+            filename=os.path.join(test_dir, "defect_entry-2Va_O1-Mg_i1_2.yaml"),
+            defect_name="2Va_O1+Mg_i1_2")
         print(defect_entry_from_yaml)
         print(self._MgO_complex)
         self.assertTrue(defect_entry_from_yaml.as_dict() == self._MgO_complex.as_dict())
@@ -129,6 +137,7 @@ class DefectEntryTest(PymatgenTest):
         actual = self._MgO_Va_O1_2.anchor_atom_index
 
         self.assertEqual(actual, expected)
+
 
 class DivideDirnameTest(PymatgenTest):
     def setUp(self):

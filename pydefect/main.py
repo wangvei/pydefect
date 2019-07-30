@@ -675,10 +675,12 @@ def main():
     parser_local_structure.add_argument(
         "--show_all", dest="show_all", action="store_true")
     parser_local_structure.add_argument(
-        "--defect_dir", dest="defect_dir", type=str, default='.',
-        help="Directory name for the defect supercell result. "
+        "--defect_dirs", dest="defect_dirs", type=str, default=None, nargs="+",
+        help="Directory names for the defect supercell result."
              "defect_entry.json, dft_results.json, and correction.json files "
              "are required in the directory.")
+
+    parser_local_structure.set_defaults(func=local_structure)
 
     # -- concentrations -------------------------------------------------------
     parser_concentration = subparsers.add_parser(
@@ -1286,16 +1288,19 @@ def vasp_parchg_set(args):
 
 
 def local_structure(args):
-    logger.info("parsing directory {}...".format(args.defect_dir))
-    files = [args.defect_entry, args.dft_results]
-    classes = [DefectEntry, SupercellCalcResults]
-    input_objects = generate_objects(args.defect_dir, files, classes)
-    if input_objects:
-        defect = Defect(defect_entry=input_objects[0],
-                        dft_results=input_objects[1],
-                        correction=None)
-        defect_structure = DefectStructure.from_defect(defect)
-        print(defect_structure.show_displacements(all_atoms=args.show_all))
+    defects_dirs = args.defect_dirs if args.defect_dirs else glob('*[0-9]/')
+
+    for d in defects_dirs:
+        logger.info("parsing directory {}...".format(d))
+        files = [args.defect_entry, args.dft_results]
+        classes = [DefectEntry, SupercellCalcResults]
+        input_objects = generate_objects(d, files, classes)
+        if input_objects:
+            defect = Defect(defect_entry=input_objects[0],
+                            dft_results=input_objects[1],
+                            correction=None)
+            defect_structure = DefectStructure.from_defect(defect)
+            print(defect_structure.show_displacements(all_atoms=args.show_all))
 
 
 def concentration(args):
@@ -1308,7 +1313,8 @@ def concentration(args):
 
     defect_concentration.calc_equilibrium_concentration(
         temperature=args.temperature, verbose=args.verbose)
-    defect_concentration.calc_quenched_equilibrium_concentration(verbose=args.verbose)
+    defect_concentration.calc_quenched_equilibrium_concentration(
+        verbose=args.verbose)
     print(defect_concentration)
     defect_concentration.calc_concentrations()
     plt = defect_concentration.plot_carrier_concentrations()

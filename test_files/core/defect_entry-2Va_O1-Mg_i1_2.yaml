@@ -1,5 +1,3 @@
-name: 2Va_O1+Mg_i1_2
 defect_structure: POSCAR-MgO8atoms-2Va_O1-Mg_i1_2
 perfect_structure: POSCAR-MgO8atoms
-charge: 2
 tolerance: 0.2

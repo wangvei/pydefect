@@ -4,6 +4,8 @@ from typing import Union
 
 from monty.json import MSONable
 
+from pymatgen.core.periodic_table import Element
+
 __author__ = "Yu Kumagai"
 __maintainer__ = "Yu Kumagai"
 
@@ -92,6 +94,9 @@ class SimpleDefectName(DefectName):
                  annotation: str = None):
         if not re.match(r"[a-xA-Z0-9]+$", out_site):
             raise ValueError("out_site {} is not valid.")
+
+        if in_atom is not None:
+            Element(in_atom)
 
         self.in_atom = in_atom
         self.out_site = out_site

@@ -1,9 +1,11 @@
 # -*- coding: utf-8 -*-
 from copy import deepcopy
+from enum import Enum, unique
 import json
 import numpy as np
 import os
 import ruamel.yaml as yaml
+from typing import Union
 
 from monty.json import MontyEncoder, MSONable
 from monty.serialization import loadfn
@@ -11,6 +13,7 @@ from monty.serialization import loadfn
 from pymatgen.core.structure import Structure
 from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
 
+from pydefect.core.defect_name import SimpleDefectName
 from pydefect.core.error_classes import StructureError
 from pydefect.util.logger import get_logger
 from pydefect.util.structure_tools import count_equivalent_clusters
@@ -26,11 +29,71 @@ __maintainer__ = "Yu Kumagai"
 logger = get_logger(__name__)
 
 
+@unique
+class DefectType(Enum):
+    vacancy = "vacancy"
+    substituted = "substituted"
+    interstitial = "interstitial"
+    complex = "complex"
+
+    def __repr__(self):
+        return self.value
+
+    # This is a must.
+    def __str__(self):
+        return self.value
+
+    @classmethod
+    def from_string(cls, s):
+        for m in cls:
+            if m.value == s or m.name == s:
+                return m
+        raise AttributeError("Defect type " + str(s) + " is not proper.\n" +
+                             "Supported info:\n" + cls.name_list())
+
+    @classmethod
+    def from_simple_defect_name(cls, name: Union[str, SimpleDefectName]):
+        if isinstance(name, str):
+            name = SimpleDefectName.from_str(name)
+
+        if name.is_interstitial:
+            return cls.interstitial
+        elif name.is_vacancy:
+            return cls.vacancy
+        else:
+            return cls.substituted
+
+    @classmethod
+    def name_list(cls):
+        return ', '.join([e.name for e in cls])
+
+    @property
+    def is_defect_center_atom(self):
+        return self in [DefectType.substituted, DefectType.interstitial]
+
+
+def determine_defect_type(inserted_atoms: dict, removed_atoms: dict):
+    d = DefectType.complex
+
+    if len(removed_atoms) == 1:
+        if len(inserted_atoms) == 1 and \
+                list(removed_atoms.values())[0] == \
+                list(inserted_atoms.values())[0]:
+            d = DefectType.substituted
+        elif len(inserted_atoms) == 0:
+            d = DefectType.vacancy
+    elif len(removed_atoms) == 0 and len(inserted_atoms) == 1:
+        d = DefectType.interstitial
+
+    return d
+
+
 class DefectEntry(MSONable):
-    """ Holds information related to the initial setting of a single defect. """
+    """ Holds information related to initial setting of a single defect. """
 
     def __init__(self,
                  name: str,
+                 defect_type: DefectType,
                  initial_structure: Structure,
                  perturbed_initial_structure: Structure,
                  removed_atoms: dict,
@@ -38,6 +101,7 @@ class DefectEntry(MSONable):
                  changes_of_num_elements: dict,
                  charge: int,
                  initial_site_symmetry: str,
+                 cutoff: float,
                  neighboring_sites: list,
                  annotation: str = None,
                  num_equiv_sites: int = None):
@@ -45,6 +109,8 @@ class DefectEntry(MSONable):
         Args:
             name (str):
                 Name of a defect without charge.
+            defect_type (DefectType):
+                Defect type defined in DefectType enumeration.
             initial_structure (Structure):
                 Structure with a defect before the structure optimization.
             perturbed_initial_structure (Structure):
@@ -66,8 +132,10 @@ class DefectEntry(MSONable):
                 Defect charge state. Charge is also added to the structure.
             initial_site_symmetry (str):
                 Initial site symmetry such as D4h.
+            cutoff (float):
+                Cutoff Radius determining the neighboring sites.
             neighboring_sites (list):
-                Indices of the perturbed site for reducing the symmetry
+                Atomic indices of the neighboring sites within cutoff radius.
             annotation (str):
                 Annotation used for distinguishing defects with same
                 net atom exchange but different local structures.
@@ -75,6 +143,7 @@ class DefectEntry(MSONable):
                 Number of equivalent sites in the given structure.
         """
         self.name = name
+        self.defect_type = defect_type
         self.initial_structure = initial_structure
         self.perturbed_initial_structure = perturbed_initial_structure
         self.removed_atoms = deepcopy(removed_atoms)
@@ -82,8 +151,10 @@ class DefectEntry(MSONable):
         self.changes_of_num_elements = deepcopy(changes_of_num_elements)
         self.charge = charge
         self.initial_site_symmetry = initial_site_symmetry
+        self.cutoff = cutoff
         if not neighboring_sites:
-            raise StructureError("No neighboring site. Increase cutoff radius.")
+            raise StructureError(
+                "No neighboring site detected, so increase cutoff radius.")
         self.neighboring_sites = list(neighboring_sites)
         self.annotation = annotation
         self.num_equiv_sites = num_equiv_sites
@@ -92,16 +163,18 @@ class DefectEntry(MSONable):
         annotation = "" if self.annotation is None else self.annotation
 
         outs = ["name: " + str(self.name),
+                "defect type" + str(self.defect_type),
                 "charge: " + str(self.charge),
                 "annotation: " + annotation,
-                "perturbed_initial_structure: \n" +
+                "perturbed initial structure: \n" +
                 str(self.perturbed_initial_structure),
-                "initial_site_symmetry: " + str(self.initial_site_symmetry),
+                "initial site symmetry: " + str(self.initial_site_symmetry),
                 "removed_atoms: " + str(self.removed_atoms),
-                "inserted_atoms: " + str(self.inserted_atoms),
-                "changes_of_num_element: " + str(self.changes_of_num_elements),
-                "neighboring_sites: " + str(self.neighboring_sites),
-                "num_equiv_sites: " + str(self.num_equiv_sites)]
+                "inserted atoms: " + str(self.inserted_atoms),
+                "changes of num element: " + str(self.changes_of_num_elements),
+                "cut off radius: " + str(self.cutoff),
+                "neighboring sites: " + str(self.neighboring_sites),
+                "num_equiv sites: " + str(self.num_equiv_sites)]
         return "\n".join(outs)
 
     def __str__(self):
@@ -110,6 +183,8 @@ class DefectEntry(MSONable):
     @classmethod
     def from_dict(cls, d: dict):
         # The keys need to be converted to integers.
+        defect_type = DefectType.from_string(d["defect_type"])
+
         removed_atoms = {int(k): v for k, v in d["removed_atoms"].items()}
         inserted_atoms = {int(k): v for k, v in d["inserted_atoms"].items()}
 
@@ -124,6 +199,7 @@ class DefectEntry(MSONable):
 
         return cls(
             name=d["name"],
+            defect_type=defect_type,
             initial_structure=initial_structure,
             perturbed_initial_structure=perturbed_initial_structure,
             removed_atoms=removed_atoms,
@@ -131,9 +207,31 @@ class DefectEntry(MSONable):
             changes_of_num_elements=d["changes_of_num_elements"],
             charge=d["charge"],
             initial_site_symmetry=d["initial_site_symmetry"],
+            cutoff=d["cutoff"],
             neighboring_sites=d["neighboring_sites"],
             annotation=d["annotation"],
             num_equiv_sites=d["num_equiv_sites"])
+
+    def as_dict(self):
+        defect_type = str(self.defect_type)
+
+        d = {"@module": self.__class__.__module__,
+             "@class": self.__class__.__name__,
+             "name": self.name,
+             "defect_type": defect_type,
+             "initial_structure": self.initial_structure,
+             "perturbed_initial_structure": self.perturbed_initial_structure,
+             "removed_atoms": self.removed_atoms,
+             "inserted_atoms": self.inserted_atoms,
+             "changes_of_num_elements": self.changes_of_num_elements,
+             "charge": self.charge,
+             "initial_site_symmetry": self.initial_site_symmetry,
+             "cutoff": self.cutoff,
+             "neighboring_sites": self.neighboring_sites,
+             "annotation": self.annotation,
+             "num_equiv_sites": self.num_equiv_sites}
+
+        return d
 
     @classmethod
     def from_yaml(cls,
@@ -142,7 +240,8 @@ class DefectEntry(MSONable):
                   symprec: float = DEFECT_SYMMETRY_TOLERANCE,
                   angle_tolerance: float = ANGLE_TOL,
                   cutoff: float = CUTOFF_RADIUS,
-                  calc_num_equiv_site: bool = True):
+                  calc_num_equiv_site: bool = True,
+                  defect_name: str = None):
         """Construct the DefectEntry object from perfect and defective POSCARs.
 
         Note1: displacement_distance needs to be the same as the twice of max
@@ -156,18 +255,20 @@ class DefectEntry(MSONable):
             Tolerance to judge whether the atoms are the same between the given
             defective and perfect supercell structures.
         symprec (float):
-            Lenght tolerance in Angstrom used for identifying the space group.
+            Length tolerance in Angstrom used for identifying the space group.
         angle_tolerance (float):
             Angle tolerance used for identifying the space group.
         cutoff (str):
             Radius of sphere in which atoms are considered as neighbors of a
             defect.
+        defect_name (str):
+            Defect name such as "Va_O1_2_inward", "Mg_i+Va_O1*2_2_coord1".
+            Although directory name is usually used, this is needed for e.g.,
+            unittest.
 
         An example of the yaml file.
-            name (optional): 2Va_O1 + Mg_i_2
             defect_structure: POSCAR
             perfect_structure: ../../defects/perfect/POSCAR
-            charge (optional, if none, calculated from INCAR and POTCAR): 2
             displacement_distance (optional): 0.2
         """
         if filename is None:
@@ -193,8 +294,9 @@ class DefectEntry(MSONable):
         element_diff = element_diff_from_structures(
             defect_structure, perfect_structure)
 
-        _, dirname = os.path.split(os.getcwd())
-        name, charge, annotation = divide_dirname(dirname)
+        if not defect_name:
+            _, defect_name = os.path.split(os.getcwd())
+        name, charge, annotation = divide_dirname(defect_name)
 
         inserted_atom_indices = [i for i in range(defect_structure.num_sites)]
         removed_atoms = {}
@@ -246,7 +348,9 @@ class DefectEntry(MSONable):
                                                defect_structure)
         neighboring_sites = []
         for i, site in enumerate(pristine_defect_structure):
-            if 1e-5 < site.distance_and_image_from_frac_coords(defect_center)[0] < cutoff:
+            distance = \
+                site.distance_and_image_from_frac_coords(defect_center)[0]
+            if 1e-5 < distance < cutoff:
                 neighboring_sites.append(i)
 
         sga = SpacegroupAnalyzer(structure=pristine_defect_structure,
@@ -269,7 +373,10 @@ class DefectEntry(MSONable):
         pristine_defect_structure.set_charge(charge)
         defect_structure.set_charge(charge)
 
+        defect_type = determine_defect_type(inserted_atoms, removed_atoms)
+
         return cls(name=name,
+                   defect_type=defect_type,
                    initial_structure=pristine_defect_structure,
                    perturbed_initial_structure=defect_structure,
                    removed_atoms=removed_atoms,
@@ -277,6 +384,7 @@ class DefectEntry(MSONable):
                    changes_of_num_elements=element_diff,
                    charge=charge,
                    initial_site_symmetry=initial_site_symmetry,
+                   cutoff=cutoff,
                    neighboring_sites=neighboring_sites,
                    annotation=annotation,
                    num_equiv_sites=num_equiv_sites)
@@ -317,7 +425,7 @@ class DefectEntry(MSONable):
     def calc_defect_center(removed_atoms: dict,
                            inserted_atoms: dict,
                            structure: Structure):
-        """ Calculates arithmetic average to determine center in frac coords."""
+        """ Calculates arithmetic average to estimate center in frac coords."""
         defect_coords = \
             list(removed_atoms.values()) + list(inserted_atoms.values())
         return defect_center_from_coords(defect_coords, structure)
@@ -352,8 +460,8 @@ def anchor_atom_index(structure, center):
     Note that only the first occurrence is returned when using argmax.
     docs.scipy.org/doc/numpy-1.15.0/reference/generated/numpy.argmax.html
     """
-    distance_set = structure.lattice.get_all_distances(center,
-                                                       structure.frac_coords)[0]
+    distance_set = \
+        structure.lattice.get_all_distances(center, structure.frac_coords)[0]
 
     return np.argmax(distance_set)
 

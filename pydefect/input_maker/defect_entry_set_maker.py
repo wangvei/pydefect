@@ -5,7 +5,7 @@ from typing import Union, List
 
 from pymatgen.core.periodic_table import Element
 
-from pydefect.core.defect_entry import DefectEntry
+from pydefect.core.defect_entry import DefectType, DefectEntry
 from pydefect.input_maker.defect_initial_setting import DefectInitialSetting
 from pydefect.core.defect_name import SimpleDefectName
 from pydefect.util.structure_tools import perturb_neighboring_atoms, \
@@ -125,7 +125,8 @@ class DefectEntrySetMaker:
                 [SimpleDefectName.from_str(i) for i in particular_defects]
         else:
             if keywords:
-                defect_name_set = select_defect_names(defect_name_set, keywords)
+                defect_name_set = \
+                    select_defect_names(defect_name_set, keywords)
 
         self.defect_entries = \
             [self.make_defect_entry(d) for d in defect_name_set]
@@ -148,11 +149,12 @@ class DefectEntrySetMaker:
             removed_atom_index (int):
                 Removed atom index from the perfect structure.
         """
+        defect_type = DefectType.from_simple_defect_name(defect_name)
 
         defect_structure = self.perfect_structure.copy()
 
         changes_of_num_elements = defaultdict(int)
-        # -------------------- analyze out_site --------------------------------
+        # -------------------- analyze out_site -------------------------------
         removed_atoms = {}
         # interstitial
         if defect_name.is_interstitial:
@@ -186,7 +188,7 @@ class DefectEntrySetMaker:
                 print("{} in {} is improper.".format(defect_name.out_site,
                                                      defect_name))
 
-        # -------------------- analyze in_atom ---------------------------------
+        # -------------------- analyze in_atom --------------------------------
         inserted_atoms = {}
         # This block must be following analyzing out_name because
         # defect coordinates is needed when inserting an in_name atom.
@@ -203,8 +205,8 @@ class DefectEntrySetMaker:
             defect_structure.insert(inserted_index, defect_name.in_atom,
                                     defect_coords)
         else:
-            raise ValueError("{} in {} is improper.".format(defect_name.in_atom,
-                                                            defect_name))
+            raise ValueError("{} in {} is improper.".format(
+                defect_name.in_atom, defect_name))
 
         inserted_atom_coords = list([defect_structure.frac_coords[k]
                                      for k in inserted_atoms])
@@ -226,6 +228,7 @@ class DefectEntrySetMaker:
 
         return DefectEntry(
             name=defect_name.name_str,
+            defect_type=defect_type,
             initial_structure=defect_structure,
             perturbed_initial_structure=perturbed_defect_structure,
             removed_atoms=removed_atoms,

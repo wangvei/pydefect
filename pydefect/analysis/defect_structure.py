@@ -14,68 +14,6 @@ __maintainer__ = "Yu Kumagai"
 logger = get_logger(__name__)
 
 
-def get_neighbors_with_distance(structure, coords, neighbor_tolerance=1.1,
-                                initial_cutoff=2, is_frac=True):
-    """
-    Args:
-        structure (Structure):
-        coords (3x1 array):
-        neighbor_tolerance (float):
-            get sites whose displacement_distance < min_distance * neighbor_tolerance
-        initial_cutoff (float): initial cutoff displacement_distance when searching neighbors
-        is_frac (bool): Is coordinate fractional, not Cartesian
-    Returns:
-        (list of (Site, displacement_distance))
-    """
-    # conversion to Cartesian
-    if is_frac:
-        cart_coords = structure.lattice.get_cartesian_coords(coords)
-    else:
-        cart_coords = coords
-
-    self_threshold = 1e-2
-
-    def exclude_self(distance_list):
-        return [d for d in distance_list if d[1] > self_threshold]
-
-    # search neighbor
-    cutoff = initial_cutoff
-    sites_dist = []
-    while not exclude_self(sites_dist):
-        cutoff = cutoff * 1.2
-        sites_dist = structure.get_sites_in_sphere(cart_coords, cutoff)
-
-    min_distance = min(distance for _, distance in exclude_self(sites_dist))
-    max_distance = min_distance * neighbor_tolerance
-    candidates = structure.get_sites_in_sphere(cart_coords, max_distance)
-    sites_dist = [site_dist for site_dist in candidates
-                  if site_dist[1] >= min_distance]
-
-    return sites_dist
-
-
-def get_neighbors(structure, coords, neighbor_tolerance,
-                  initial_cutoff=3, is_frac=True, include_self=False):
-    """
-    Args:
-        structure (Structure):
-        coords (3x1 array):
-        neighbor_tolerance (float):
-            get sites whose displacement_distance < min_distance * neighbor_tolerance
-        initial_cutoff (float):
-            initial cutoff displacement_distance when searching neighbors
-        is_frac (bool):
-            Whether the coordinate is in fractional instead of cartesian
-        include_self (bool):
-            Whether the sites whose displacement_distance < 1e-2 are included.
-    Returns:
-        (list of Site)
-    """
-    return [site for site, _ in get_neighbors_with_distance(
-        structure, coords, neighbor_tolerance,
-        initial_cutoff=initial_cutoff, is_frac=is_frac)]
-
-
 class DefectStructure(MSONable):
     """ A class related to local structures around defect """
 
@@ -102,7 +40,9 @@ class DefectStructure(MSONable):
             final_structure (Structure):
                 pmg Structure class object. Usually relaxed structures
             displacements (list):
-                Displacements
+                Displacements composed of
+                [initial_distances, final_distances, displacement_vectors,
+                displacement_distances, angles_wrt_the_defect_site]
             initial_site_symmetry (str):
                 Initial site symmetry such as D4h.
             final_site_symmetry (str):
@@ -115,7 +55,8 @@ class DefectStructure(MSONable):
         self.volume = volume
 
         self.initial_structure = deepcopy(initial_structure)
-        self.perturbed_initial_structure = deepcopy(perturbed_initial_structure)
+        self.perturbed_initial_structure = \
+            deepcopy(perturbed_initial_structure)
         self.final_structure = deepcopy(final_structure)
 
         self.initial_site_symmetry = initial_site_symmetry
@@ -125,10 +66,8 @@ class DefectStructure(MSONable):
 
         self.neighboring_sites = neighboring_sites
 
-        removed_sites = []
-        for i in range(len(self.final_structure)):
-            if i not in self.neighboring_sites:
-                removed_sites.append(i)
+        removed_sites = [i for i in range(len(self.final_structure))
+                         if i not in self.neighboring_sites]
 
         self.initial_local_structure = deepcopy(initial_structure)
         self.initial_local_structure.remove_sites(removed_sites)
@@ -137,14 +76,6 @@ class DefectStructure(MSONable):
 
     @classmethod
     def from_defect(cls, defect: Defect):
-        """ Construct class obj from Defect object.
-
-        Args:
-            defect (Defect):
-                namedtuple("Defect",
-                           "defect_entry", "dft_results", "correction")
-        """
-
         return cls(name=defect.defect_entry.name,
                    volume=defect.dft_results.volume,
                    initial_structure=defect.defect_entry.initial_structure,
@@ -161,7 +92,7 @@ class DefectStructure(MSONable):
         outs = ["DefectStructure Summary"]
         return " ".join(outs)
 
-    def show_displacements(self, all_atoms=False):
+    def show_displacements(self, all_atoms: bool = False):
         lines = ["element initial   final   disp  angle            ",
                  " name   dist(A)  dist(A)  dist  (deg)   direction"]
         if all_atoms:
@@ -184,11 +115,12 @@ class DefectStructure(MSONable):
                 angle = "None"
                 direction = "None"
 
-            lines.append(" {:>5}    {:3.2f}     {:3.2f}   {:4.2f}  {:>4} {:>12}".format(
-                element,
-                round(self.displacements[0][s], 3),
-                round(self.displacements[1][s], 3),
-                round(self.displacements[3][s], 3), angle, direction))
+            lines.append(" {:>5}    {:3.2f}     {:3.2f}   {:4.2f}  {:>4} "
+                         "{:>12}".format(element,
+                                         round(self.displacements[0][s], 3),
+                                         round(self.displacements[1][s], 3),
+                                         round(self.displacements[3][s], 3),
+                                         angle, direction))
         return "\n".join(lines)
 
     def comparator(self,

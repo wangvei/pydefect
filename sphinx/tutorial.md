@@ -671,7 +671,7 @@ can use `--filtering` option like,
 python ~/my_bin/pydefect/pydefect/main.py pe --unitcell ../unitcell/unitcell.json --perfect perfect/dft_results.json --defect_dirs Va*_* --chem_pot_yaml ../competing_phases/vertices_*.yaml -x -1 8 -s energy_A.pdf
 ```
 
-### 12. Show local structure information
+### 13. Show local structure information
 We also regularly check local structures around defects.
 `pydefect` can show the local structure information by text using the following command.
 ```
@@ -688,5 +688,56 @@ element initial   final   disp  angle
 ```
 where the defect position is assumed to locate at the original Se atomic site. 
 
+### 14. Calculate the carrier and defect concentrations 
+We can also calculate the carrier and defect concentrations using the defect formation energies using `pydefect`.
+For the calculations, `unitcell.json` and `defect_energies.json` are needed.
+When one wants to calculate the equilibrium carrier and defect concentrations at 1000K, use the `concentrations` (=`c`) sub-command as follows:
+```
+ python ~/my_bin/pydefect/pydefect/main.py c --unitcell ../unitcell/unitcell.json -t 1000
+```
+which shows
+```
+++ Equilibrium concentration
+Temperature: 1000.0 K.
+Fermi level from vbm: 1.98 eV.
+            p: 9.3e+10 cm-3.
+            n: 2.0e+16 cm-3.
+        p - n: -2.0e+16 cm-3.
+---
+      Mg_i1_2: 1.0e+16 cm-3.
+---
+     Se_i1_-2: 1.4e+02 cm-3.
+---
+    Va_Mg1_-1: 3.7e+04 cm-3.
+    Va_Mg1_-2: 8.9e+07 cm-3.
+     Va_Mg1_0: 2.4e-03 cm-3.
+---
+     Va_Se1_0: 3.4e+16 cm-3.
+     Va_Se1_1: 2.8e+12 cm-3.
+     Va_Se1_2: 1.8e+10 cm-3.
 
+++ Quenched equilibrium concentration
+Temperature: 298 K.
+Fermi level from vbm: 2.38 eV.
+            p: 0.0e+00 cm-3.
+            n: 2.0e+16 cm-3.
+        p - n: -2.0e+16 cm-3.
+---
+      Mg_i1_2: 1.0e+16 cm-3.
+---
+     Se_i1_-2: 1.4e+02 cm-3.
+---
+    Va_Mg1_-1: 1.2e-11 cm-3.
+    Va_Mg1_-2: 8.9e+07 cm-3.
+     Va_Mg1_0: 5.9e-43 cm-3.
+---
+     Va_Se1_0: 3.4e+16 cm-3.
+     Va_Se1_1: 2.0e-05 cm-3.
+     Va_Se1_2: 6.9e-19 cm-3.
+```
 
+Since these concentrations are calculated in a selfconsistent (SC) manner, the calculations sometimes do not converge.
+In such case, we can check the selfconsistent iterations using the `verbose` (=`v`) option. 
+
+ 
+    

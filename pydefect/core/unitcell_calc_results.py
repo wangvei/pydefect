@@ -20,13 +20,6 @@ __maintainer__ = "Yu Kumagai"
 logger = get_logger(__name__)
 
 
-def check_attribute(name, attr):
-    if attr is None:
-        logger.warning("{}: is None.".format(name))
-        return
-    return attr
-
-
 def make_symmetric_matrix(d):
     """
     d (list or float):
@@ -114,19 +107,26 @@ class UnitcellCalcResults(MSONable):
     def load_json(cls, filename):
         return loadfn(filename)
 
+    @staticmethod
+    def check_attribute(name, attr):
+        if attr is None:
+            logger.warning("{}: is None.".format(name))
+            return
+        return attr
+
     @property
     def band_edge(self):
-        return check_attribute("band edge", self._band_edge)
+        return self.check_attribute("band edge", self._band_edge)
 
     @property
     def static_dielectric_tensor(self):
-        return check_attribute("static dielectric tensor",
-                               self._static_dielectric_tensor)
+        return self.check_attribute("static dielectric tensor",
+                                    self._static_dielectric_tensor)
 
     @property
     def ionic_dielectric_tensor(self):
-        return check_attribute("ionic dielectric tensor",
-                               self._ionic_dielectric_tensor)
+        return self.check_attribute("ionic dielectric tensor",
+                                    self._ionic_dielectric_tensor)
 
     @property
     def total_dielectric_tensor(self):
@@ -138,11 +138,11 @@ class UnitcellCalcResults(MSONable):
 
     @property
     def total_dos(self):
-        return check_attribute("total dos", self._total_dos)
+        return self.check_attribute("total dos", self._total_dos)
 
     @property
     def volume(self):
-        return check_attribute("volume", self._volume)
+        return self.check_attribute("volume", self._volume)
 
     @property
     def is_set_all(self):
@@ -179,7 +179,7 @@ class UnitcellCalcResults(MSONable):
         vasprun = Vasprun(os.path.join(directory_path, vasprun_name))
 
         # 2019/7/13 NEVER USE Vasprun.eigenvalue_band_properties
-        # THERE IS A BUG TO ESTIMATE VBM AND CBM
+        # THERE IS A BUG TO ESTIMATE VBM AND CBM of low band gap materials.
         _, vbm_info, cbm_info = band_gap_properties(vasprun)
         self.is_direct = vbm_info["kpoints"] == cbm_info["kpoints"]
         self._band_edge = [vbm_info["energy"], cbm_info["energy"]]

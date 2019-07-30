@@ -103,7 +103,7 @@ def calc_concentration(energies: Union[dict, None],
                        total_dos: np.array,
                        volume: float,
                        ref_concentration: dict = None):
-    """ Calculate carrier/defect concentration at given temperature & Fermi level
+    """ Calculate concentrations at given temperature & Fermi level
 
     When the reference_concentration is provided, each defect specie
     concentration is fixed.
@@ -198,6 +198,9 @@ def calc_equilibrium_concentration(energies: dict,
                                    threshold: float = 1e-5):
     """ Calculates equilibrium carrier & defect concentration at a temperature
 
+    When the ref_concentration is set, the total defect concentration with the
+    same name is kept fixed.
+
     Args:
         energies (dict):
             Defect formation energies. energies[name][charge]
@@ -234,7 +237,8 @@ def calc_equilibrium_concentration(energies: dict,
             the carrier and defect concentration, which is a ratio of the
             residual charge sum and  highest carrier or defect concentration.
     """
-    e_f = (cbm - vbm) / 2 + vbm
+    # Trial starts from the center of the band gap in the absolute scale.
+    e_f = (cbm + vbm) / 2
     interval = e_f
     for iteration in range(max_iteration):
         defect_concentration = \
@@ -249,9 +253,6 @@ def calc_equilibrium_concentration(energies: dict,
                 total_dos=total_dos,
                 volume=volume,
                 ref_concentration=ref_concentration)
-
-        holes = defect_concentration["p"][1][None]
-        electrons = defect_concentration["n"][-1][None]
 
         total_charge = \
             sum([e * c for d in defect_concentration
@@ -360,7 +361,6 @@ class DefectConcentration(MSONable):
                 * Carrier electron: concentrations[Fermi index]["e"][-1][None]
                 * Carrier hole: concentrations[Fermi index]["p"][1][None]
         """
-
         self.energies = energies
         self.multiplicity = multiplicity
         self.magnetization = magnetization
@@ -555,7 +555,8 @@ class DefectConcentration(MSONable):
                     for charge in c[name]:
                         for annotation, con in c[name][charge].items():
                             n = DefectName(name, charge, annotation)
-                            outs.append("{:>13}: {:.1e} cm-3.".format(str(n), con))
+                            outs.append("{:>13}: {:.1e} cm-3.".
+                                        format(str(n), con))
                 outs.append("")
 
         return "\n".join(outs)
@@ -615,6 +616,7 @@ class DefectConcentration(MSONable):
                                        temperature: float = None,
                                        verbose: bool = True):
         """
+        Calculate equilibrium defect concentrations at given temperature.
 
         Args:
             temperature (list):
@@ -644,6 +646,7 @@ class DefectConcentration(MSONable):
                                                 temperature: float = 298,
                                                 verbose: bool = True):
         """
+        Calculate defect concentrations quenched to low temperature.
 
         Args:
             temperature (float):
@@ -689,7 +692,6 @@ class DefectConcentration(MSONable):
             set_vbm_zero (bool):
                 Set VBM to zero.
         """
-
         fig = plt.figure()
         ax = fig.add_subplot(111)
 
@@ -710,13 +712,15 @@ class DefectConcentration(MSONable):
             plt.xlim(xlim[0], xlim[1])
 
         if ylim:
-            plt.ylim(10 ** ylim[0], 10 ** ylim[1])
+            ylim = [10 ** ylim[0], 10 ** ylim[1]]
         else:
             max_y = max([con for concentration in self.concentrations
                          for d in ("p", "n")
                          for c in concentration[d]
                          for con in concentration[d][c].values()])
-            plt.ylim(10 ** 10, max_y * 2)
+            ylim = [10 ** 10, max_y * 2]
+
+        plt.ylim(ylim[0], ylim[1])
 
         if set_vbm_zero is True:
             vbm = 0.0
@@ -746,7 +750,22 @@ class DefectConcentration(MSONable):
         ax.plot(fermi_mesh, holes_2, '--', color="blue", label="p")
         ax.plot(fermi_mesh, electrons_2, '--', color="red", label="n")
 
-        plt.axvline(x=equilibrium_ef, linewidth=1.0, linestyle=':')
-        plt.axvline(x=quenched_ef, linewidth=1.0, linestyle=':')
+        plt.axvline(x=equilibrium_ef, linewidth=1.0, linestyle=':', color='g')
+        plt.axvline(x=quenched_ef, linewidth=1.0, linestyle=':', color='g')
+
+        ax.annotate(f"{round(self.temperature, 1)} K",
+                    (equilibrium_ef, ylim[1]), fontsize=10, ha='center',
+                    color='g')
+        ax.annotate(f"{round(self.quenched_temperature, 1)} K",
+                    (quenched_ef, ylim[1]), fontsize=10, ha='center',
+                    color='g')
+
+        # plt.arrow(x=equilibrium_ef, y=ylim[1] / 2,
+        #           dx=quenched_ef - equilibrium_ef, dy=0,
+        #           width=0.005,
+        #           head_width=0.5,
+        #           head_length=0.1,
+        #           length_includes_head=True,
+        #           color='green')
 
         return plt
