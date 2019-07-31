@@ -430,9 +430,11 @@ class SupercellCalcResults(MSONable):
                         potential_defect - potential_perfect)
 
             initial_structure = defect_entry.initial_structure
+
             displacements = \
-                get_displacements(final_structure, initial_structure,
-                                  defect_entry.defect_center_coords,
+                get_displacements(final_structure,
+                                  initial_structure,
+                                  defect_center,
                                   defect_entry.anchor_atom_index)
 
             if participation_ratio and orbital_character:

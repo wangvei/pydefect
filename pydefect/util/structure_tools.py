@@ -148,7 +148,11 @@ def get_displacements(final_structure: Structure,
             x = 1
         if -1 - 1e-3 < x < -1:
             x = -1
-        displacement_direction_angles.append(degrees(acos(x)))
+        try:
+            angle = degrees(acos(x))
+        except ValueError:
+            angle = None
+        displacement_direction_angles.append(angle)
 
     # angles are nan when the displacements are zero or diverged.
     return (initial_distances, final_distances, displacement_vectors,

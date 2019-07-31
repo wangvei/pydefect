@@ -942,7 +942,7 @@ def supercell_calc_results(args):
                         contcar=args.contcar,
                         procar=True,
                         outcar=args.outcar)
-                except:
+                except IOError:
                     raise IOError("Parsing data in perfect failed")
             else:
                 try:
@@ -961,7 +961,7 @@ def supercell_calc_results(args):
                             defect_entry=de,
                             symprec=args.symprec,
                             angle_tolerance=args.angle_tolerance)
-                except:
+                except IOError:
                     logger.warning("Parsing data in {} failed.".format(d))
                     continue
 
