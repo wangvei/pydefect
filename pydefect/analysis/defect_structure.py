@@ -2,6 +2,7 @@
 
 from copy import deepcopy
 from monty.json import MSONable
+from typing import Union
 
 from pymatgen.core.structure import Structure
 
@@ -23,9 +24,11 @@ class DefectStructure(MSONable):
                  initial_structure: Structure,
                  perturbed_initial_structure: Structure,
                  final_structure: Structure,
-                 displacements: list,
                  initial_site_symmetry: str,
                  final_site_symmetry: str,
+                 displacements: list,
+                 defect_center: Union[int, list],
+                 defect_center_coords: list,
                  neighboring_sites: list):
         """
         Args:
@@ -39,16 +42,27 @@ class DefectStructure(MSONable):
                 Initial structure with perturbation of neighboring atoms.
             final_structure (Structure):
                 pmg Structure class object. Usually relaxed structures
-            displacements (list):
-                Displacements composed of
-                [initial_distances, final_distances, displacement_vectors,
-                displacement_distances, angles_wrt_the_defect_site]
             initial_site_symmetry (str):
                 Initial site symmetry such as D4h.
             final_site_symmetry (str):
                 Final site symmetry.
+            displacements (list):
+                Displacements composed of 5 quantities.
+                [initial_distances, final_distances, displacement_vectors,
+                displacement_distances, angles_wrt_the_defect_site]
+            defect_center (int/list):
+                Show the defect center. When the defect center is an
+                atomic position, atom index number is set. Contrary, when
+                the defect center is defined by the initial position, such as
+                vacancies and complex defects, the fractional coordinates are
+                set.
+            defect_center_coords (list):
             neighboring_sites (list):
-                Indices of the perturbed site for reducing the symmetry
+                Atomic indices of the neighboring sites.
+                If is_defect_center_atom is True, neighboring_sites_after_relax
+                is used. Otherwise, neighboring_sites in DefectEntry is used
+                because the defect position is not defined after the structure
+                is relaxed.
 
         """
         self.name = name
@@ -63,7 +77,8 @@ class DefectStructure(MSONable):
         self.final_site_symmetry = final_site_symmetry
 
         self.displacements = displacements
-
+        self.defect_center = defect_center
+        self.defect_center_coords = defect_center_coords
         self.neighboring_sites = neighboring_sites
 
         removed_sites = [i for i in range(len(self.final_structure))
@@ -76,6 +91,17 @@ class DefectStructure(MSONable):
 
     @classmethod
     def from_defect(cls, defect: Defect):
+
+        defect_center = defect.dft_results.defect_center
+        if isinstance(defect_center, int):
+            neighboring_sites = \
+                defect.dft_results.neighboring_sites_after_relax
+            defect_center_coords = \
+                defect.dft_results.final_structure[defect_center].frac_coords
+        else:
+            neighboring_sites = defect.defect_entry.neighboring_sites
+            defect_center_coords = defect.defect_entry.defect_center_coords
+
         return cls(name=defect.defect_entry.name,
                    volume=defect.dft_results.volume,
                    initial_structure=defect.defect_entry.initial_structure,
@@ -86,22 +112,41 @@ class DefectStructure(MSONable):
                    defect.defect_entry.initial_site_symmetry,
                    final_site_symmetry=defect.dft_results.site_symmetry,
                    displacements=defect.dft_results.displacements,
-                   neighboring_sites=defect.defect_entry.neighboring_sites)
+                   defect_center=defect_center,
+                   defect_center_coords=defect_center_coords,
+                   neighboring_sites=neighboring_sites)
 
     def __repr__(self):
         outs = ["DefectStructure Summary"]
         return " ".join(outs)
 
     def show_displacements(self, all_atoms: bool = False):
-        lines = ["element initial   final   disp  angle            ",
-                 " name   dist(A)  dist(A)  dist  (deg)   direction"]
+        is_defect_center_atom = \
+            True if isinstance(self.defect_center, int) else False
+
+        defect_center_coords = [round(i, 3) for i in self.defect_center_coords]
+
+        lines = [f"Is defect center atomic position?: {is_defect_center_atom}",
+                 f"Defect center position: {defect_center_coords}",
+                 f"Symmetry: {self.final_site_symmetry} -> {self.initial_site_symmetry}",
+                 f"element  final   initial   disp  angle            ",
+                 f" name   dist(A)  dist(A)  dist  (deg)   direction"]
         if all_atoms:
             candidate = range(len(self.final_structure))
         else:
             candidate = self.neighboring_sites
-        for s in candidate:
 
+        for s in candidate:
             element = str(self.final_structure[s].specie)
+
+            initial_distance = round(self.displacements[0][s], 3)
+            final_distance = round(self.displacements[1][s], 3)
+            displacement_distance = round(self.displacements[3][s], 3)
+            final_vector = " ".join(["{:>6}".format(str(round(i, 2)))
+                                     for i in self.displacements[6][s]])
+            initial_vector = " ".join(["{:>6}".format(str(round(i, 2)))
+                                     for i in self.displacements[5][s]])
+
             try:
                 angle = int(round(self.displacements[4][s], 0))
                 if angle < 60:
@@ -115,12 +160,10 @@ class DefectStructure(MSONable):
                 angle = "None"
                 direction = "None"
 
-            lines.append(" {:>5}    {:3.2f}     {:3.2f}   {:4.2f}  {:>4} "
-                         "{:>12}".format(element,
-                                         round(self.displacements[0][s], 3),
-                                         round(self.displacements[1][s], 3),
-                                         round(self.displacements[3][s], 3),
-                                         angle, direction))
+            lines.append(" {:>5}   {:5.2f} <- {:5.2f}   {:4.2f}  {:>4} "
+                         "{:>12}   {} <- {}".format(element, final_distance, initial_distance,
+                                         displacement_distance,
+                                         angle, direction, final_vector, initial_vector))
         return "\n".join(lines)
 
     def comparator(self,

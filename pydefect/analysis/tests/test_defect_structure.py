@@ -53,6 +53,7 @@ class DefectStructureTest(unittest.TestCase):
 #        print(self.va_o_2.show_displacements)
 
     def test2(self):
+        print(self.va_o_0.final_structure)
         s = self.va_o_2.final_local_structure
         print(s)
         print(self.va_o_0.final_local_structure)

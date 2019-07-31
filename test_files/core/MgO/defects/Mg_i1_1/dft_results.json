@@ -3819,7 +3819,25 @@
   "volume": 153.19477497796296,
   "fermi_level": 9.93950831,
   "is_converged": true,
-  "band_edges": {
+  "is_defect_center_atom": true,
+  "neighboring_sites_after_relax": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    9,
+    10,
+    11,
+    12,
+    13,
+    14,
+    15
+  ],
+  "band_edge_states": {
     "1": "Localized state",
     "-1": "Localized state"
   },
@@ -5968,12 +5986,12 @@
   ],
   "participation_ratio": {
     "1": {
-      "hob": 0.49345549738219896,
-      "lub": 0.503987240829346
+      "hob": 0.8835078534031413,
+      "lub": 0.8883572567783093
     },
     "-1": {
-      "hob": 0.4928,
-      "lub": 0.6175040518638574
+      "hob": 0.8831999999999999,
+      "lub": 0.9367909238249597
     }
   },
   "orbital_character": {

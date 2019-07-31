@@ -3638,7 +3638,23 @@
   "volume": 153.19477497796296,
   "fermi_level": 7.68173942,
   "is_converged": true,
-  "band_edges": {
+  "is_defect_center_atom": false,
+  "neighboring_sites_after_relax": [
+    0,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    9,
+    10,
+    11,
+    12,
+    13,
+    14
+  ],
+  "band_edge_states": {
     "1": "Localized state",
     "-1": "Localized state"
   },

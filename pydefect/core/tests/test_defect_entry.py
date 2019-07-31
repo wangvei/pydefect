@@ -49,7 +49,7 @@ class DefectEntryTest(PymatgenTest):
                         num_equiv_sites=num_equiv_sites)
 
         # DefectEntry class object for a complex defect
-        name = "2Va_O1+Mg_i1_2"
+        name = "2Va_O1+Mg_i1"
         defect_type = DefectType.from_string("complex")
         initial_structure = Structure.from_file(
             os.path.join(test_dir, "POSCAR-MgO8atoms-2Va_O1-Mg_i1_2"))
@@ -128,7 +128,7 @@ class DefectEntryTest(PymatgenTest):
         pos = [[0.25, 0.25, 0.25], [0.25, 0.25, -0.25], [0.25, 0.25, 0.25]]
         expected = list(np.average(np.array(pos), axis=0))
 
-        actual = self._MgO_complex.defect_center
+        actual = self._MgO_complex.defect_center_coords
 
         self.assertArrayAlmostEqual(actual, expected)
 

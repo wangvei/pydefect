@@ -89,10 +89,10 @@ def get_displacements(final_structure: Structure,
         raise StructureError("The number of atoms are different between two "
                              "input structures.")
     elif final_structure.lattice != initial_structure.lattice:
-        raise StructureError("The lattice constants are different between two "
-                             "input structures.")
-
-    center = np.array(center)
+        logger.warning("The lattice constants are different between two input "
+                       "structures. Anchoring the farthest atom is switched "
+                       "off.")
+        anchor_atom_index = None
 
     if anchor_atom_index:
         offset_coords = final_structure[anchor_atom_index].frac_coords - \
@@ -101,34 +101,59 @@ def get_displacements(final_structure: Structure,
         offset_coords = [0.0, 0.0, 0.0]
     offset_coords = np.array(offset_coords)
 
-    disp_vectors = []
-    disp_norms = []
+    if isinstance(center, int):
+        initial_center = initial_structure[center].frac_coords
+        final_center = final_structure[center].frac_coords
+    else:
+        initial_center = np.array(center)
+        final_center = np.array(center) + offset_coords
+
+    displacement_vectors = []
+    displacement_norms = []
+    initial_coordination_coords = []
+    final_coordination_coords = []
+
     for f, i in zip(final_structure, initial_structure):
-        # disp_vector is in cartesian coordinates.
-        disp_vector, d2 = pbc_shortest_vectors(initial_structure.lattice,
-                                               i.frac_coords,
-                                               f.frac_coords - offset_coords,
-                                               return_d2=True)
-        disp_vectors.append(disp_vector[0][0])
-        disp_norms.append(d2[0][0] ** 0.5)
+        # displacement_vector is in cartesian coordinates.
+        displacement_vector, d2 = \
+            pbc_shortest_vectors(lattice=initial_structure.lattice,
+                                 fcoords1=i.frac_coords,
+                                 fcoords2=f.frac_coords - offset_coords,
+                                 return_d2=True)
+        displacement_vectors.append(list(displacement_vector[0][0]))
+        displacement_norms.append(d2[0][0] ** 0.5)
 
-    initial_distances = distance_list(initial_structure, center)
-    final_distances = distance_list(final_structure, center + offset_coords)
+        initial_coordination_coords.append(
+            list(pbc_shortest_vectors(lattice=initial_structure.lattice,
+                                      fcoords1=initial_center,
+                                      fcoords2=i.frac_coords,
+                                      return_d2=True)[0][0][0]))
 
-    angles = []
-    for i, d, f in zip(initial_distances, disp_norms, final_distances):
+        final_coordination_coords.append(
+            list(pbc_shortest_vectors(lattice=final_structure.lattice,
+                                      fcoords1=final_center,
+                                      fcoords2=f.frac_coords,
+                                      return_d2=True)[0][0][0]))
+
+    initial_distances = distance_list(initial_structure, initial_center)
+    final_distances = distance_list(final_structure, final_center)
+
+    displacement_direction_angles = []
+    for i, d, f in zip(initial_distances, displacement_norms, final_distances):
         if i < 1e-5 or d < 1e-5:
-            angles.append(None)
+            displacement_direction_angles.append(None)
             continue
         x = (i * i + d * d - f * f) / (2 * i * d)
         if 1 < x < 1 + 1e-3:
             x = 1
         if -1 - 1e-3 < x < -1:
             x = -1
-        angles.append(degrees(acos(x)))
+        displacement_direction_angles.append(degrees(acos(x)))
 
     # angles are nan when the displacements are zero or diverged.
-    return initial_distances, final_distances, disp_vectors, disp_norms, angles
+    return (initial_distances, final_distances, displacement_vectors,
+            displacement_norms, displacement_direction_angles,
+            initial_coordination_coords, final_coordination_coords)
 
 
 def defect_center_from_coords(defect_coords: list,
@@ -179,7 +204,7 @@ def distances_from_defect_center(structure, defect_entry):
         defect_entry (DefectEntry):
             DefectEntry class object considered
     """
-    return distance_list(structure, defect_entry.defect_center)
+    return distance_list(structure, defect_entry.defect_center_coords)
 
 
 def fold_positions(structure):

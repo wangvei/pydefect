@@ -86,7 +86,7 @@ class SupercellCalcResults(MSONable):
                  volume: float,
                  fermi_level: float,
                  is_converged: bool,
-                 is_defect_center_atom: bool,
+                 defect_center: Union[int, list],
                  neighboring_sites_after_relax: list,
                  band_edge_states: Union[dict, None] = None,
                  band_edge_energies: dict = None,
@@ -123,10 +123,12 @@ class SupercellCalcResults(MSONable):
                Fermi level in the absolute scale.
             is_converged (bool):
                 Whether the calculation is converged or not.
-            is_defect_center_atom (bool):
-                Whether the defect center is defined as a position of a single
-                atom. In that case, the defect center is defined as an
-                atomic position after structure optimization.
+            defect_center (int/list):
+                Show the defect center. When the defect center is an
+                atomic position, atom index number is set. Contrary, when
+                the defect center is defined by the initial position, such as
+                vacancies and complex defects, the fractional coordinates are
+                set.
             neighboring_sites_after_relax (list):
                 Atomic indices of the neighboring sites within cutoff radius
                 after structure optimization.
@@ -163,7 +165,7 @@ class SupercellCalcResults(MSONable):
         self.volume = volume
         self.fermi_level = fermi_level
         self.is_converged = is_converged
-        self.is_defect_center_atom = is_defect_center_atom
+        self.defect_center = defect_center
         self.neighboring_sites_after_relax = neighboring_sites_after_relax
         self.band_edge_states = band_edge_states
         self.band_edge_energies = band_edge_energies
@@ -314,26 +316,25 @@ class SupercellCalcResults(MSONable):
         neighboring_sites_after_relax = []
         if defect_entry:
             if defect_entry.defect_type.is_defect_center_atom:
-                inserted_atom_index = \
-                    list(defect_entry.inserted_atoms.keys())[0]
-                is_defect_center_atom = True
-                defect_center = final_structure[inserted_atom_index].coords
+                defect_center = list(defect_entry.inserted_atoms.keys())[0]
+                defect_coords = final_structure[defect_center].frac_coords
             else:
-                is_defect_center_atom = False
-                defect_center = defect_entry.defect_center
-
+                defect_center = defect_coords = \
+                    defect_entry.defect_center_coords
             for i, site in enumerate(final_structure):
                 distance = \
-                    site.distance_and_image_from_frac_coords(defect_center)[0]
+                    site.distance_and_image_from_frac_coords(defect_coords)[0]
+                # Defect itself is not included to the neighboring sites as
+                # neighboring_sites property in DefectEntry.
                 if 1e-5 < distance < cutoff:
                     neighboring_sites_after_relax.append(i)
 
             if not neighboring_sites_after_relax:
-                raise StructureError(
-                    "No neighboring site detected, so increase cutoff radius.")
+                raise StructureError(f"No neighboring site detected. Increase "
+                                     f"cutoff radius from {cutoff}.")
 
         else:
-            is_defect_center_atom = None
+            defect_center = None
 
         # Perfect supercell does not need the below.
         relative_total_energy = None
@@ -431,7 +432,7 @@ class SupercellCalcResults(MSONable):
             initial_structure = defect_entry.initial_structure
             displacements = \
                 get_displacements(final_structure, initial_structure,
-                                  defect_entry.defect_center,
+                                  defect_entry.defect_center_coords,
                                   defect_entry.anchor_atom_index)
 
             if participation_ratio and orbital_character:
@@ -458,7 +459,7 @@ class SupercellCalcResults(MSONable):
                    volume=volume,
                    fermi_level=fermi_level,
                    is_converged=vasprun.converged_ionic,
-                   is_defect_center_atom=is_defect_center_atom,
+                   defect_center=defect_center,
                    neighboring_sites_after_relax=neighboring_sites_after_relax,
                    band_edge_states=band_edge_states,
                    band_edge_energies=band_edge_energies,
@@ -613,7 +614,7 @@ class SupercellCalcResults(MSONable):
                    volume=d["volume"],
                    fermi_level=d["fermi_level"],
                    is_converged=d["is_converged"],
-                   is_defect_center_atom=d["is_defect_center_atom"],
+                   defect_center=d["defect_center"],
                    neighboring_sites_after_relax
                    =d["neighboring_sites_after_relax"],
                    band_edge_states=band_edge_states,
@@ -665,7 +666,7 @@ class SupercellCalcResults(MSONable):
              "volume":                  self.volume,
              "fermi_level":             self.fermi_level,
              "is_converged":            self.is_converged,
-             "is_defect_center_atom":   self.is_defect_center_atom,
+             "defect_center":           self.defect_center,
              "neighboring_sites_after_relax":
                  self.neighboring_sites_after_relax,
              "band_edge_states":        band_edge_states,

@@ -163,7 +163,7 @@ class DefectEntry(MSONable):
         annotation = "" if self.annotation is None else self.annotation
 
         outs = ["name: " + str(self.name),
-                "defect type" + str(self.defect_type),
+                "defect type: " + str(self.defect_type),
                 "charge: " + str(self.charge),
                 "annotation: " + annotation,
                 "perturbed initial structure: \n" +
@@ -344,12 +344,14 @@ class DefectEntry(MSONable):
                 pristine_defect_structure.insert(i, inserted_atom.specie,
                                                  inserted_atom.frac_coords)
 
-        defect_center = cls.calc_defect_center(removed_atoms, inserted_atoms,
-                                               defect_structure)
+        defect_center_coords = cls.calc_defect_center(removed_atoms,
+                                                      inserted_atoms,
+                                                      defect_structure)
         neighboring_sites = []
         for i, site in enumerate(pristine_defect_structure):
             distance = \
-                site.distance_and_image_from_frac_coords(defect_center)[0]
+                site.distance_and_image_from_frac_coords(defect_center_coords)[0]
+            # Defect itself is not included to the neighboring sites
             if 1e-5 < distance < cutoff:
                 neighboring_sites.append(i)
 
@@ -431,7 +433,7 @@ class DefectEntry(MSONable):
         return defect_center_from_coords(defect_coords, structure)
 
     @property
-    def defect_center(self):
+    def defect_center_coords(self):
         """ Return fractional coordinates of the defect center. """
         return self.calc_defect_center(self.removed_atoms, self.inserted_atoms,
                                        self.initial_structure)
@@ -449,7 +451,7 @@ class DefectEntry(MSONable):
         #     self.initial_structure.lattice.get_all_distances(
         #         self.defect_center, self.initial_structure.frac_coords)[0]
 
-        return anchor_atom_index(self.initial_structure, self.defect_center)
+        return anchor_atom_index(self.initial_structure, self.defect_center_coords)
 
 
 def anchor_atom_index(structure, center):

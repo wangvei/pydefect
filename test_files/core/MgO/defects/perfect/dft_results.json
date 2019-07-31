@@ -1036,7 +1036,9 @@
   "volume": 153.19477497796296,
   "fermi_level": 3.32929791,
   "is_converged": true,
-  "band_edges": null,
+  "is_defect_center_atom": null,
+  "neighboring_sites_after_relax": [],
+  "band_edge_states": null,
   "band_edge_energies": {
     "1": {
       "hob": 3.0101,
@@ -2985,7 +2987,12 @@
       "tolerance": 0.1
     }
   ],
-  "participation_ratio": null,
+  "participation_ratio": {
+    "1": {
+      "hob": 0.0,
+      "lub": 0.0
+    }
+  },
   "orbital_character": {
     "1": {
       "hob": {
