@@ -125,15 +125,20 @@ class DefectStructure(MSONable):
             True if isinstance(self.defect_center, int) else False
 
         defect_center_coords = [round(i, 3) for i in self.defect_center_coords]
-#        defect_index = self.defect_center
+        travel_distance = round(self.displacements[7], 3)
 
         lines = [f"Is defect center atomic position?: {is_defect_center_atom}",
-                 f"Defect center position: {defect_center_coords}",
-                 f"Site symmetry: "
-                 f"{self.final_site_symmetry} <- {self.initial_site_symmetry}",
-                 f"    element  final <-initial   disp  angle            ",
-                 f"index name   dist(A)  dist(A)  dist  (deg)   direction"
-                 f"   coordination (final) <- coordination (initial)"]
+                 f"Defect center position: {defect_center_coords}"]
+
+        if travel_distance:
+            lines.append(f"Travel distance: {travel_distance}")
+
+        lines.extend(
+            [f"Site symmetry: "
+             f"{self.final_site_symmetry} <- {self.initial_site_symmetry}",
+             f"    element  final <-initial   disp  angle            ",
+             f"index name   dist(A)  dist(A)  dist  (deg)   direction"
+             f"   coordination (final) <- coordination (initial)"])
         if all_atoms:
             candidate = range(len(self.final_structure))
         else:
@@ -141,7 +146,6 @@ class DefectStructure(MSONable):
 
         for s in candidate:
             element = str(self.final_structure[s].specie)
-            print(self.final_structure[s].frac_coords)
             initial_distance = round(self.displacements[0][s], 3)
             final_distance = round(self.displacements[1][s], 3)
             displacement_distance = round(self.displacements[3][s], 3)
@@ -163,7 +167,7 @@ class DefectStructure(MSONable):
                 angle = "None"
                 direction = "None"
 
-            lines.append("{:>4} {:>5}   {:5.2f} <- {:5.2f}   {:4.2f}  {:>4} "
+            lines.append("{:>4} {:>5}   {:5.2f} <- {:5.2f}    {:4.2f}  {:>4} "
                          "{:>12}   {} <- {}".format(s, element, final_distance, initial_distance,
                                          displacement_distance,
                                          angle, direction, final_vector, initial_vector))

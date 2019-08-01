@@ -95,18 +95,26 @@ def get_displacements(final_structure: Structure,
         anchor_atom_index = None
 
     if anchor_atom_index:
-        offset_coords = final_structure[anchor_atom_index].frac_coords - \
-                        initial_structure[anchor_atom_index].frac_coords
+        offset_frac_coords = final_structure[anchor_atom_index].frac_coords - \
+                             initial_structure[anchor_atom_index].frac_coords
     else:
-        offset_coords = [0.0, 0.0, 0.0]
-    offset_coords = np.array(offset_coords)
+        offset_frac_coords = [0.0, 0.0, 0.0]
+    offset_frac_coords = np.array(offset_frac_coords)
 
+    defect_travel_distance = None
     if isinstance(center, int):
         initial_center = initial_structure[center].frac_coords
         final_center = final_structure[center].frac_coords
+        if anchor_atom_index:
+            defect_travel_frac_coords = \
+                (final_structure[center].frac_coords
+                 - initial_structure[center].frac_coords - offset_frac_coords)
+            defect_travel_distance = \
+                initial_structure.lattice.norm(defect_travel_frac_coords)[0]
+
     else:
         initial_center = np.array(center)
-        final_center = np.array(center) + offset_coords
+        final_center = np.array(center) + offset_frac_coords
 
     displacement_vectors = []
     displacement_norms = []
@@ -118,7 +126,7 @@ def get_displacements(final_structure: Structure,
         displacement_vector, d2 = \
             pbc_shortest_vectors(lattice=initial_structure.lattice,
                                  fcoords1=i.frac_coords,
-                                 fcoords2=f.frac_coords - offset_coords,
+                                 fcoords2=f.frac_coords - offset_frac_coords,
                                  return_d2=True)
         displacement_vectors.append(list(displacement_vector[0][0]))
         displacement_norms.append(d2[0][0] ** 0.5)
@@ -140,7 +148,8 @@ def get_displacements(final_structure: Structure,
 
     displacement_direction_angles = []
     for i, d, f in zip(initial_distances, displacement_norms, final_distances):
-        if i < 1e-5 or d < 1e-5:
+        # WHEN THE DEFECT MOVES IN THE LONG WAY, THE ANGLE HAS NO MEANING.
+        if defect_travel_distance > 0.2 or i < 1e-5 or d < 1e-5:
             displacement_direction_angles.append(None)
             continue
         x = (i * i + d * d - f * f) / (2 * i * d)
@@ -157,7 +166,8 @@ def get_displacements(final_structure: Structure,
     # angles are nan when the displacements are zero or diverged.
     return (initial_distances, final_distances, displacement_vectors,
             displacement_norms, displacement_direction_angles,
-            initial_coordination_coords, final_coordination_coords)
+            initial_coordination_coords, final_coordination_coords,
+            defect_travel_distance)
 
 
 def defect_center_from_coords(defect_coords: list,
