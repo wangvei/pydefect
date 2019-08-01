@@ -2,6 +2,7 @@
 from collections import defaultdict
 from itertools import permutations
 import json
+from typing import Union
 
 from pydefect.core.defect_name import SimpleDefectName
 from pymatgen.core.periodic_table import Element
@@ -34,46 +35,44 @@ def electronegativity_not_defined(a, b):
         "Electronegativity of {} and/or {} not defined".format(a, b))
 
 
-def charge_set_range(i):
-    """
-    Extended range method used for positive/negative input value.
-    The input value is included for both positive and negative numbers.
-    E.g., charge_set_range(3) = [-1, 0, 1, 2, 3]
-          charge_set_range(-3) = [-3, -2, -1, 0, 1]
-          charge_set_range(2) = [0, 1, 2]
-          charge_set_range(-4) = [-4, -3, -2, -1, 0]
+def candidate_charge_set(i: int) -> list:
+    """ Candidate charge set for defect charge states.
+
+    The input value is included for both positive and negative numbers, and
+    -1 (1) is included for positive (negative) odd number.
+    E.g., potential_charge_set(3) = [-1, 0, 1, 2, 3]
+          potential_charge_set(-3) = [-3, -2, -1, 0, 1]
+          potential_charge_set(2) = [0, 1, 2]
+          potential_charge_set(-4) = [-4, -3, -2, -1, 0]
 
     Args:
         i (int): an integer
     """
-    if isinstance(i, int):
-        if i % 2 == 0:
-            return range(i + 1) if i >= 0 else range(i, 1)
-        else:
-            return range(-1, i + 1) if i >= 0 else range(i, 2)
+    if i % 2 == 0:
+        return list(range(i + 1) if i >= 0 else range(i, 1))
     else:
-        raise AttributeError
+        return list(range(-1, i + 1) if i >= 0 else range(i, 2))
 
 
-def get_electronegativity(element):
+def get_electronegativity(element) -> Union[float, None]:
     try:
         return electronegativity_list[element]
     except KeyError:
-        logger.warning("Electronegativity of " + element + " is unavailable, "
-                       + "so set to 0.")
-        return 0
+        logger.warning(
+            f"Electronegativity of {element} is unavailable, so set to 0.")
+        return
 
 
-def get_oxidation_state(element):
+def get_oxidation_state(element) -> Union[int, None]:
     try:
         return oxidation_state_dict[element]
     except KeyError:
-        logger.warning("Oxidation state of " + element + " is unavailable," +
-                       "so set to 0.")
-        return 0
+        logger.warning(
+            f"Oxidation state of {element} is unavailable, so set to 0.")
+        return
 
 
-def dopant_info(dopant):
+def dopant_info(dopant) -> Union[str, None]:
     """ Print dopant info.
 
     This method is used to add dopant info a posteriori.
@@ -90,9 +89,10 @@ def dopant_info(dopant):
         return "\n".join(out)
     else:
         logger.warnings(dopant + " is not a proper element name.")
+        return
 
 
-def parse_distances_from_string(string: list):
+def get_distances_from_string(string: list) -> dict:
     """
     Arg:
         string (list): Split string e.g. "Mg: 2.1 2.2 O: 2.3 2.4".split()
@@ -179,7 +179,7 @@ class DefectInitialSetting(MSONable):
                 Electronegativity for relevant elements. Used to determine the
                 substitutional defects.
             interstitials_yaml (str):
-                interstititial yaml file name
+                Interstitial yaml file name
         """
 
         self.structure = structure
@@ -256,7 +256,8 @@ class DefectInitialSetting(MSONable):
 
     @classmethod
     def from_defect_in(cls, poscar="DPOSCAR", defect_in_file="defect.in"):
-        """
+        """ Constructor with defect.in file.
+
         Currently, the file format of defect.in is not flexible, so be careful
         when modifying it by hand. The first word is mostly parsed. The number
         of words for each tag and the sequence of information is assumed to be
@@ -303,7 +304,7 @@ class DefectInitialSetting(MSONable):
                     site_symmetry = di.readline().split()[2]
 
                     coordination_distances = \
-                        parse_distances_from_string(di.readline().split()[1:])
+                        get_distances_from_string(di.readline().split()[1:])
                     first_index, last_index = \
                         [int(i) for i in di.readline().split()[2].split("..")]
                     representative_coords = \
@@ -317,8 +318,8 @@ class DefectInitialSetting(MSONable):
                                         wyckoff,
                                         site_symmetry,
                                         coordination_distances))
-                    electronegativity[element] = float(
-                        di.readline().split()[1])
+                    electronegativity[element] = \
+                        float(di.readline().split()[1])
                     oxidation_states[element] = int(di.readline().split()[2])
 
                 elif line[0] == "Interstitials:":
@@ -355,7 +356,7 @@ class DefectInitialSetting(MSONable):
 
                 else:
                     raise InvalidFileError(
-                        "{} is not supported in defect.in!".format(line))
+                        f"{line} is not supported in defect.in!")
 
         return cls(structure=structure,
                    space_group_symbol=space_group_symbol,
@@ -375,7 +376,7 @@ class DefectInitialSetting(MSONable):
                    electronegativity=electronegativity)
 
     @property
-    def are_atoms_perturbed(self):
+    def are_atoms_perturbed(self) -> bool:
         return False if self.cutoff < 1e-6 else True
 
     @classmethod
@@ -591,19 +592,19 @@ class DefectInitialSetting(MSONable):
             json.dump(self.as_dict(), fw, indent=2, cls=MontyEncoder)
 
     def to(self, defect_in_file="defect.in", poscar_file="DPOSCAR"):
-        """ Prints readable defect.in file. """
+        """ Prints readable defect.in file and corresponding DPOSCAR file. """
         self._write_defect_in(defect_in_file)
         self.structure.to(fmt="poscar", filename=poscar_file)
 
-    def make_defect_name_set(self):
-        """ Return defect name set based on DefectInitialSetting object. """
+    def make_defect_name_set(self) -> list:
+        """ Return defect name list based on DefectInitialSetting object. """
         name_set = list()
 
         # Vacancies
         for i in self.irreducible_sites:
             # Vacancy charge is minus of element charge.
             charge = -self.oxidation_states[i.element]
-            for c in charge_set_range(charge):
+            for c in candidate_charge_set(charge):
                 in_atom = None
                 out_site = i.irreducible_name
                 name_set.append(SimpleDefectName(in_atom, out_site, c))
@@ -613,7 +614,7 @@ class DefectInitialSetting(MSONable):
         for element in inserted_elements:
             if self.interstitials is not None:
                 for name in self.interstitials.keys():
-                    for charge in charge_set_range(
+                    for charge in candidate_charge_set(
                             self.oxidation_states[element]):
                         in_atom = element
                         out_site = name
@@ -626,7 +627,7 @@ class DefectInitialSetting(MSONable):
                 if out_elem == i.element:
                     os_diff = self.oxidation_states[in_atom] - \
                               self.oxidation_states[out_elem]
-                    for charge in charge_set_range(os_diff):
+                    for charge in candidate_charge_set(os_diff):
                         out_site = i.irreducible_name
                         name_set.append(
                             SimpleDefectName(in_atom, out_site, charge))
@@ -636,16 +637,14 @@ class DefectInitialSetting(MSONable):
             if defect_name not in name_set:
                 name_set.append(defect_name)
             else:
-                logger.warning(
-                    "{} *included*, but already exists.".format(defect_name))
+                logger.warning(f"{defect_name} included, but already exists.")
 
         for e in self.excluded:
             defect_name = SimpleDefectName.from_str(e)
             if defect_name in name_set:
                 name_set.remove(defect_name)
             else:
-                logger.warning(
-                    "{} *excluded*, but does not exist.".format(defect_name))
+                logger.warning(f"{defect_name} excluded, but does not exist.")
 
         return name_set
 
@@ -657,66 +656,78 @@ class DefectInitialSetting(MSONable):
                 Name of defect.in type file.
         """
         lines = list()
-        lines.append("  Space group: {}\n".format(self.space_group_symbol))
+        lines.append(f"  Space group: {self.space_group_symbol}\n")
 
         lines.append("Transformation matrix: {0[0]:2d} {0[1]:2d} {0[2]:2d}".
                      format(self.transformation_matrix))
 
-        lines.append("Cell multiplicity: {}\n".format(self.cell_multiplicity))
+        lines.append(f"Cell multiplicity: {self.cell_multiplicity}\n")
 
-        for e in self.irreducible_sites:
-            lines.append("   Irreducible element: {}".format(
-                e.irreducible_name))
-            lines.append("        Wyckoff letter: {}".format(
-                e.wyckoff))
-            lines.append("         Site symmetry: {}".format(
-                e.site_symmetry))
-            c = ""
-            for k, v in e.coordination_distances.items():
-                c += k + ": " + " ".join([str(round(i, 2)) for i in v]) + " "
-            lines.append("          Coordination: {}".format(c))
-            lines.append("      Equivalent atoms: {}".format(
-                str(e.first_index) + ".." + str(e.last_index)))
-            lines.append("Fractional coordinates: %9.7f  %9.7f  %9.7f" %
-                         tuple(e.representative_coords))
-            lines.append("     Electronegativity: {}".format(
-                self.electronegativity[e.element]))
-            lines.append("       Oxidation state: {}\n".format(
-                self.oxidation_states[e.element]))
+        for site in self.irreducible_sites:
+            lines.append(f"   Irreducible element: {site.irreducible_name}")
+            lines.append(f"        Wyckoff letter: {site.wyckoff}")
+            lines.append(f"         Site symmetry: {site.site_symmetry}")
 
-        lines.append(
-            "Interstitials: " + " ".join(self.interstitial_site_names))
+            neighbor_atom_distances = []
+            for k, v in site.coordination_distances.items():
+                neighbor_atom_distances.append(
+                   k + ": " + " ".join([str(round(i, 2)) for i in v]))
+            neighbor_atom_distances = " ".join(neighbor_atom_distances)
 
-        if self.antisite_configs is not []:
-            lines.append("Antisite defects: " +
-                         ' '.join(i[0] + "_" + i[1]
-                                  for i in self.antisite_configs)
-                         + "\n")
+            lines.append(f"          Coordination: {neighbor_atom_distances}")
 
-        for d in self.dopants:
-            if d not in self.structure.symbol_set:
-                lines.append("   Dopant element: {}".format(d))
-                lines.append("Electronegativity: {}".format(
-                    self.electronegativity[d]))
-                lines.append("  Oxidation state: {}\n".format(
-                    self.oxidation_states[d]))
+            equiv_atoms = str(site.first_index) + ".." + str(site.last_index)
+            lines.append(f"      Equivalent atoms: {equiv_atoms}")
 
-        lines.append("Substituted defects: " +
-                     ' '.join(i[0] + "_" + i[1] for i in self.dopant_configs)
-                     + "\n")
+            lines.append("Fractional coordinates: "
+                         "{0[0]:9.7f}  {0[1]:9.7f}  {0[2]:9.7f}".
+                         format(site.representative_coords))
 
-        lines.append("Maximum Displacement: {}\n".
-                     format(self.displacement_distance))
+            electronegativity = self.electronegativity[site.element]
+            lines.append(f"     Electronegativity: {electronegativity}")
 
-        lines.append("Exceptionally included: " +
-                     ' '.join(i for i in self.included))
-        lines.append("Exceptionally excluded: " +
-                     ' '.join(i for i in self.excluded) + "\n")
+            oxidation_state = self.oxidation_states[site.element]
+            lines.append(f"       Oxidation state: {oxidation_state}")
 
-        lines.append(
-            "Cutoff region of neighboring atoms: {}".format(self.cutoff))
-        lines.append("Symprec: {}".format(self.symprec))
-        lines.append("Angle tolerance: {}\n".format(self.angle_tolerance))
+            # Append "" for one blank line.
+            lines.append("")
+
+        interstitial_site_names = " ".join(self.interstitial_site_names)
+        lines.append(f"Interstitials: {interstitial_site_names}")
+
+        # [["Ga", "N], ["N", "Ga"]] -> Ga_N N_Ga
+        antisite_configs = \
+            " ".join(["_".join(i) for i in self.antisite_configs])
+
+        lines.append(f"Antisite defects: {antisite_configs}")
+        lines.append("")
+
+        for dopant in self.dopants:
+            if dopant not in self.structure.symbol_set:
+                electronegativity = self.electronegativity[dopant]
+                oxidation_state = self.oxidation_states[dopant]
+
+                lines.append(f"   Dopant element: {dopant}")
+                lines.append(f"Electronegativity: {electronegativity}")
+                lines.append(f"  Oxidation state: {oxidation_state}")
+                lines.append("")
+
+        substituted = " ".join("_".join(i) for i in self.dopant_configs)
+
+        lines.append(f"Substituted defects: {substituted}")
+        lines.append("")
+
+        lines.append(f"Maximum Displacement: {self.displacement_distance}")
+        lines.append("")
+
+        lines.append(f"Exceptionally included: {' '.join(self.included)}")
+        lines.append(f"Exceptionally excluded: {' '.join(self.excluded)}")
+        lines.append("")
+
+        lines.append(f"Cutoff region of neighboring atoms: {self.cutoff}")
+        lines.append(f"Symprec: {self.symprec}")
+        lines.append(f"Angle tolerance: {self.angle_tolerance}")
+        lines.append("")
 
         with open(defect_in_file, 'w') as defect_in:
             defect_in.write("\n".join(lines))

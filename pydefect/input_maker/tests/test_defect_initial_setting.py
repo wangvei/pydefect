@@ -5,7 +5,7 @@ import unittest
 
 from pymatgen.core.structure import Structure
 
-from pydefect.input_maker.defect_initial_setting import charge_set_range, \
+from pydefect.input_maker.defect_initial_setting import candidate_charge_set, \
     get_electronegativity, get_oxidation_state, DefectInitialSetting
 from pydefect.core.irreducible_site import IrreducibleSite
 
@@ -19,19 +19,19 @@ test_dir = os.path.join(os.path.dirname(__file__), "..", "..", "..",
 class ExtendedRangeTest(unittest.TestCase):
     def test_range(self):
         expected_positive = [0, 1, 2]
-        actual_positive = [i for i in charge_set_range(2)]
+        actual_positive = [i for i in candidate_charge_set(2)]
         self.assertEqual(actual_positive, expected_positive)
 
         expected_negative = [-2, -1, 0]
-        actual_negative = [i for i in charge_set_range(-2)]
+        actual_negative = [i for i in candidate_charge_set(-2)]
         self.assertEqual(actual_negative, expected_negative)
 
         expected_positive = [-1, 0, 1, 2, 3]
-        actual_positive = [i for i in charge_set_range(3)]
+        actual_positive = [i for i in candidate_charge_set(3)]
         self.assertEqual(actual_positive, expected_positive)
 
         expected_negative = [-3, -2, -1, 0, 1]
-        actual_negative = [i for i in charge_set_range(-3)]
+        actual_negative = [i for i in candidate_charge_set(-3)]
         self.assertEqual(actual_negative, expected_negative)
 
 

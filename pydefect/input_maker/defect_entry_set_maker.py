@@ -21,8 +21,7 @@ logger = get_logger(__name__)
 
 
 def get_int_from_string(x):
-    """
-    Returns joined integer number from a string.
+    """ Returns joined integer number from a string.
 
     Args:
         x (str): a string
@@ -132,7 +131,7 @@ class DefectEntrySetMaker:
             [self.make_defect_entry(d) for d in defect_name_set]
 
     def make_defect_entry(self,
-                          defect_name: SimpleDefectName):
+                          defect_name: SimpleDefectName) -> DefectEntry:
         """ Constructs a single DefectEntry object from a given defect_name.
 
         Args:
