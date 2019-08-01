@@ -21,7 +21,6 @@ from pydefect.util.math_tools import normalized_random_3d_vector, random_vector
 from pydefect.core.error_classes import StructureError
 from pydefect.core.config import SYMMETRY_TOLERANCE, ANGLE_TOL
 
-
 __author__ = "Yu Kumagai"
 __maintainer__ = "Yu Kumagai"
 
@@ -146,28 +145,10 @@ def get_displacements(final_structure: Structure,
     initial_distances = distance_list(initial_structure, initial_center)
     final_distances = distance_list(final_structure, final_center)
 
-    displacement_direction_angles = []
-    for i, d, f in zip(initial_distances, displacement_norms, final_distances):
-        # WHEN THE DEFECT MOVES IN THE LONG WAY, THE ANGLE HAS NO MEANING.
-        if defect_travel_distance > 0.2 or i < 1e-5 or d < 1e-5:
-            displacement_direction_angles.append(None)
-            continue
-        x = (i * i + d * d - f * f) / (2 * i * d)
-        if 1 < x < 1 + 1e-3:
-            x = 1
-        if -1 - 1e-3 < x < -1:
-            x = -1
-        try:
-            angle = degrees(acos(x))
-        except ValueError:
-            angle = None
-        displacement_direction_angles.append(angle)
-
     # angles are nan when the displacements are zero or diverged.
     return (initial_distances, final_distances, displacement_vectors,
-            displacement_norms, displacement_direction_angles,
-            initial_coordination_coords, final_coordination_coords,
-            defect_travel_distance)
+            displacement_norms, initial_coordination_coords,
+            final_coordination_coords, defect_travel_distance)
 
 
 def defect_center_from_coords(defect_coords: list,
@@ -368,11 +349,11 @@ def create_saturated_interstitial_structure(structure: Structure,
 
 
 def neighboring_atom_indices(structure, coord, dist_tol):
-
     neighboring_indices = []
     for j, site in enumerate(structure):
         distance = structure.lattice.get_distance_and_image(coord,
-                                                            site.frac_coords)[0]
+                                                            site.frac_coords)[
+            0]
         if distance < dist_tol:
             neighboring_indices.append(j)
 
@@ -592,9 +573,9 @@ def get_symmetry_multiplicity(sym_dataset: dict,
                               coords: list,
                               lattice: np.array,
                               symprec: float = SYMMETRY_TOLERANCE):
-
     return int(len(sym_dataset["rotations"]) /
-               get_point_group_op_number(sym_dataset, coords, lattice, symprec))
+               get_point_group_op_number(sym_dataset, coords, lattice,
+                                         symprec))
 
 
 def first_appearance_index(structure: Structure,
@@ -650,5 +631,3 @@ class ModSpacegroupAnalyzer(SpacegroupAnalyzer):
         species = [self._unique_species[i - 1] for i in numbers]
         s = Structure(lattice, species, scaled_positions)
         return s.get_sorted_structure(), numbers
-
-

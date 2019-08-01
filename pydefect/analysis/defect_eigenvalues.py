@@ -36,7 +36,7 @@ class DefectEigenvalue(MSONable):
                  total_magnetization: float,
                  orbital_character: dict = None,
                  eigenvalue_correction: dict = None,
-                 band_edges: dict = None):
+                 band_edge_states: dict = None):
         """
         Args:
             name (str):
@@ -65,7 +65,7 @@ class DefectEigenvalue(MSONable):
                 Total total_magnetization.
             eigenvalue_correction (dict):
                 Dict with key of correction name and value of correction value.
-            band_edges (dict):
+            band_edge_states (dict):
                 Band edge states at each spin channel.
                 None: no in gap state.
                 "Donor PHS": Donor-type perturbed host state (PHS).
@@ -87,7 +87,7 @@ class DefectEigenvalue(MSONable):
         self.orbital_character = orbital_character
         self.eigenvalue_correction = \
             dict(eigenvalue_correction) if eigenvalue_correction else None
-        self.band_edges = band_edges
+        self.band_edge_states = band_edge_states
 
     @classmethod
     def from_files(cls,
@@ -129,7 +129,7 @@ class DefectEigenvalue(MSONable):
                    fermi_level=defect.dft_results.fermi_level,
                    total_magnetization=defect.dft_results.total_magnetization,
                    orbital_character=defect.dft_results.orbital_character,
-                   band_edges=defect.dft_results.band_edges)
+                   band_edge_states=defect.dft_results.band_edge_states)
 
     def plot(self, yrange=None, title=None, filename=None):
         """ Plots the defect eigenvalues.
@@ -160,9 +160,9 @@ class DefectEigenvalue(MSONable):
 
         x_labels = ["\n".join([str(i) for i in k]) for k in self.kpoint_coords]
 
-        for i, s in enumerate(self.band_edges):
+        for i, s in enumerate(self.band_edge_states):
             # show band-edge states
-            axs[i].set_title(s.name.upper() + ": " + str(self.band_edges[s]))
+            axs[i].set_title(s.name.upper() + ": " + str(self.band_edge_states[s]))
             axs[i].set_ylim(yrange[0], yrange[1])
             axs[i].set_xlim(-1, k_index + 1)
 

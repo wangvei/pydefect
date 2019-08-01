@@ -125,19 +125,20 @@ class DefectStructure(MSONable):
             True if isinstance(self.defect_center, int) else False
 
         defect_center_coords = [round(i, 3) for i in self.defect_center_coords]
-        travel_distance = round(self.displacements[7], 3)
+        travel_distance = self.displacements[6]
 
         lines = [f"Is defect center atomic position?: {is_defect_center_atom}",
                  f"Defect center position: {defect_center_coords}"]
 
         if travel_distance:
-            lines.append(f"Travel distance: {travel_distance}")
+            lines.append(
+                f"Defect traveling distance: {round(travel_distance, 3)}")
 
         lines.extend(
             [f"Site symmetry: "
              f"{self.final_site_symmetry} <- {self.initial_site_symmetry}",
-             f"    element  final <-initial   disp  angle            ",
-             f"index name   dist(A)  dist(A)  dist  (deg)   direction"
+             f"    element  final <-initial   disp",
+             f"index name   dist(A)  dist(A)  dist"
              f"   coordination (final) <- coordination (initial)"])
         if all_atoms:
             candidate = range(len(self.final_structure))
@@ -150,27 +151,15 @@ class DefectStructure(MSONable):
             final_distance = round(self.displacements[1][s], 3)
             displacement_distance = round(self.displacements[3][s], 3)
             final_vector = " ".join(["{:6.2f}".format(round(i, 2))
-                                     for i in self.displacements[6][s]])
+                                     for i in self.displacements[5][s]])
             initial_vector = " ".join(["{:6.2f}".format(round(i, 2))
-                                       for i in self.displacements[5][s]])
+                                       for i in self.displacements[4][s]])
 
-            try:
-                angle = int(round(self.displacements[4][s], 0))
-                if angle < 60:
-                    direction = "inward"
-                elif angle > 120:
-                    direction = "outward"
-                else:
-                    direction = "tangent"
-                angle = str(angle)
-            except TypeError:
-                angle = "None"
-                direction = "None"
+            lines.append("{:>4} {:>5}   {:5.2f} <- {:5.2f}    {:4.2f}   {} <- "
+                         "{}".format(s, element, final_distance,
+                                     initial_distance, displacement_distance,
+                                     final_vector, initial_vector))
 
-            lines.append("{:>4} {:>5}   {:5.2f} <- {:5.2f}    {:4.2f}  {:>4} "
-                         "{:>12}   {} <- {}".format(s, element, final_distance, initial_distance,
-                                         displacement_distance,
-                                         angle, direction, final_vector, initial_vector))
         return "\n".join(lines)
 
     def comparator(self,
