@@ -194,7 +194,7 @@ class SupercellCalcResults(MSONable):
         return "\n".join(outs)
 
     @property
-    def diagnose(self):
+    def diagnose(self) -> str:
 
         band_edges = []
         for s, v in self.band_edge_states.items():
@@ -301,7 +301,7 @@ class SupercellCalcResults(MSONable):
         if symmetrize:
             sga = SpacegroupAnalyzer(final_structure, symprec, angle_tolerance)
             site_symmetry = sga.get_point_group_symbol()
-            symmetrized_structure = sga.get_symmetrized_structure()
+            symmetrized_structure = sga.get_refined_structure()
             symmops = get_recp_symmetry_operation(symmetrized_structure)
         else:
             site_symmetry = None

@@ -18,5 +18,6 @@ class Defect:
         self.correction = correction
 
     @property
-    def is_shallow(self):
-        return any(i.is_shallow for i in self.dft_results.band_edge_states.values())
+    def is_shallow(self) -> bool:
+        return any(i.is_shallow
+                   for i in self.dft_results.band_edge_states.values())

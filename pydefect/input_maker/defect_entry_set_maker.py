@@ -236,5 +236,6 @@ class DefectEntrySetMaker:
             changes_of_num_elements=dict(changes_of_num_elements),
             charge=defect_name.charge,
             initial_site_symmetry=initial_site_symmetry,
+            cutoff=self.cutoff,
             neighboring_sites=neighboring_sites,
             num_equiv_sites=num_equiv_sites)

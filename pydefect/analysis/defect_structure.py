@@ -126,7 +126,6 @@ class DefectStructure(MSONable):
 
         defect_center_coords = [round(i, 3) for i in self.defect_center_coords]
         travel_distance = self.displacements[6]
-
         lines = [f"Is defect center atomic position?: {is_defect_center_atom}",
                  f"Defect center position: {defect_center_coords}"]
 

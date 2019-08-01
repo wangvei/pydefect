@@ -126,10 +126,9 @@ class DefectEnergies(MSONable):
             perfect (SupercellCalcResults):
                 SupercellDftResults object of perfect supercell for band edge
                 in supercell.
-            defects (list of namedtuple Defect):
-                List of the Defect namedtuple object.
-                Defect = namedtuple(
-                    "Defect", "defect_entry", "dft_results", "correction")
+            defects (list of Defect objects):
+                List of Defect objects, each of which has "defect_entry",
+                "dft_results", and "correction" attributes,
             chem_pot (tuple):
                 Return of ChemPotDiag.load_vertices_yaml method
             chem_pot_label (str):
