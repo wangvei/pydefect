@@ -47,9 +47,7 @@ class DefectStructure(MSONable):
             final_site_symmetry (str):
                 Final site symmetry.
             displacements (dict):
-                Displacements composed of 5 quantities.
-                [initial_distances, final_distances, displacement_vectors,
-                displacement_distances, angles_wrt_the_defect_site]
+                see get_displacements for keys
             defect_center (int/list):
                 Show the defect center. When the defect center is an
                 atomic position, atom index number is set. Contrary, when
@@ -57,6 +55,7 @@ class DefectStructure(MSONable):
                 vacancies and complex defects, the fractional coordinates are
                 set.
             defect_center_coords (list):
+                Fractional coordinates of defect center.
             neighboring_sites (list):
                 Atomic indices of the neighboring sites.
                 If is_defect_center_atom is True, neighboring_sites_after_relax
@@ -121,17 +120,15 @@ class DefectStructure(MSONable):
         return " ".join(outs)
 
     def show_displacements(self, all_atoms: bool = False):
-        is_defect_center_atom = \
-            True if isinstance(self.defect_center, int) else False
-
-        defect_center_coords = [round(i, 3) for i in self.defect_center_coords]
-        migration_distance = self.displacements["defect_migration_distance"]
+        is_defect_center_atom = isinstance(self.defect_center, int)
+        defect_center_str = [round(i, 3) for i in self.defect_center_coords]
         lines = [f"Is defect center atomic position?: {is_defect_center_atom}",
-                 f"Defect center position: {defect_center_coords}"]
+                 f"Defect center position: {defect_center_str}"]
 
+        migration_distance = \
+            round(self.displacements["defect_migration_distance"], 3)
         if migration_distance:
-            lines.append(
-                f"Defect traveling distance: {round(migration_distance, 3)}")
+            lines.append(f"Defect traveling distance: {migration_distance}")
 
         lines.extend(
             [f"Site symmetry: "
@@ -139,25 +136,24 @@ class DefectStructure(MSONable):
              f"    element  final <-initial   disp",
              f"index name   dist(A)  dist(A)  dist"
              f"   coordination (final) <- coordination (initial)"])
+
         if all_atoms:
             candidate = range(len(self.final_structure))
         else:
             candidate = self.neighboring_sites
 
-        for s in candidate:
-            element = str(self.final_structure[s].specie)
-            initial_distance = round(self.displacements["initial_distances"][s], 3)
-            final_distance = round(self.displacements["final_distances"][s], 3)
-            displacement_distance = round(self.displacements["displacement_norms"][s], 3)
-            final_vector = " ".join(["{:6.2f}".format(round(i, 2))
-                                     for i in self.displacements["final_coordination_vectors"][s]])
-            initial_vector = " ".join(["{:6.2f}".format(round(i, 2))
-                                       for i in self.displacements["initial_coordination_vectors"][s]])
+        for i in candidate:
+            element = str(self.final_structure[i].specie)
+            i_d = round(self.displacements["initial_distances"][i], 3)
+            f_d = round(self.displacements["final_distances"][i], 3)
+            d_n = round(self.displacements["displacement_norms"][i], 3)
+            f_v = " ".join(["{:6.2f}".format(round(i, 2))
+                            for i in self.displacements["final_vectors"][i]])
+            i_v = " ".join(["{:6.2f}".format(round(i, 2))
+                            for i in self.displacements["initial_vectors"][i]])
 
-            lines.append("{:>4} {:>5}   {:5.2f} <- {:5.2f}    {:4.2f}   {} <- "
-                         "{}".format(s, element, final_distance,
-                                     initial_distance, displacement_distance,
-                                     final_vector, initial_vector))
+            lines.append(f"{i:>4} {element:>5}   {f_d:5.2f} <- {i_d:5.2f}    "
+                         f"{d_n:4.2f}  {f_v}  <- {i_v}")
 
         return "\n".join(lines)
 

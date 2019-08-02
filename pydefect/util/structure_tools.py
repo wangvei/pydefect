@@ -96,12 +96,12 @@ def get_displacements(final_structure: Structure,
         + final_distances:
             Distances from a defect in the final structure.
         + displacement_vectors:
-            Displacement vectors of atoms except for defect itself.
+            Displacement vectors of atoms from initial to final structures.
         + displacement_norms:
-            Norms of displacement vectors
-        + initial_coordination_vectors:
+            Norms of displacement vectors.
+        + initial_vectors:
             Vectors from a defect position to atoms in the initial supercell.
-        + final_coordination_vectors:
+        + final_vectors:
             Vectors from a defect position to atoms in the final supercell.
         + defect_migration_distance:
             Distance the defect migrates defined only for interstitials,
@@ -161,16 +161,16 @@ def get_displacements(final_structure: Structure,
                                  fcoords2=(final_site.frac_coords
                                            - drift_frac_coords),
                                  return_d2=True)
-        displacement_vectors.append(displacement_vector[0][0])
+        displacement_vectors.append(list(displacement_vector[0][0]))
         displacement_norms.append(d2[0][0] ** 0.5)
 
-    initial_coordination_vectors, initial_distances = \
+    initial_vectors, initial_distances = \
         pbc_shortest_vectors(lattice=initial_structure.lattice,
                              fcoords1=initial_center,
                              fcoords2=initial_structure.frac_coords,
                              return_d2=True)
 
-    final_coordination_vectors, final_distances = \
+    final_vectors, final_distances = \
         pbc_shortest_vectors(lattice=final_structure.lattice,
                              fcoords1=final_center,
                              fcoords2=final_structure.frac_coords,
@@ -178,13 +178,13 @@ def get_displacements(final_structure: Structure,
 
     # angles are nan when the displacements are zero or diverged.
     # [0] is needed for the variables with double loops.
-    return {"initial_distances":            initial_distances[0],
-            "final_distances":              final_distances[0],
-            "displacement_vectors":         displacement_vectors,
-            "displacement_norms":           displacement_norms,
-            "initial_coordination_vectors": initial_coordination_vectors[0],
-            "final_coordination_vectors":   final_coordination_vectors[0],
-            "defect_migration_distance":    defect_migration_distance}
+    return {"initial_distances":          initial_distances[0].tolist(),
+            "final_distances":            final_distances[0].tolist(),
+            "displacement_vectors":       displacement_vectors,
+            "displacement_norms":         displacement_norms,
+            "initial_vectors":            initial_vectors[0].tolist(),
+            "final_vectors":              final_vectors[0].tolist(),
+            "defect_migration_distance":  defect_migration_distance}
 
 
 def defect_center_from_coords(defect_coords: list,
