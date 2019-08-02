@@ -28,7 +28,7 @@ __maintainer__ = "Yu Kumagai"
 
 logger = get_logger(__name__)
 
-
+# When inheriting Enum class, MSONable does not work well.
 @unique
 class DefectType(Enum):
     vacancy = "vacancy"

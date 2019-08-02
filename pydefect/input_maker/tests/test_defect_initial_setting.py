@@ -5,8 +5,10 @@ import unittest
 
 from pymatgen.core.structure import Structure
 
-from pydefect.input_maker.defect_initial_setting import candidate_charge_set, \
-    get_electronegativity, get_oxidation_state, DefectInitialSetting
+from pydefect.core.defect_name import SimpleDefectName
+from pydefect.input_maker.defect_initial_setting \
+    import candidate_charge_set, get_electronegativity, get_oxidation_state, \
+    DefectInitialSetting
 from pydefect.core.irreducible_site import IrreducibleSite
 
 __author__ = "Yu Kumagai"

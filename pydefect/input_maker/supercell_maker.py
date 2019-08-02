@@ -19,8 +19,15 @@ __maintainer__ = "Yu Kumagai"
 logger = get_logger(__name__)
 
 
-def calc_isotropy(structure: Structure, trans_mat: np.array):
+def calc_isotropy(structure: Structure,
+                  trans_mat: np.array) -> float:
     """ Return mean absolute deviation of lattice constants from their average
+
+    Args:
+        structure (Structure):
+            Original structure to be expanded.
+        trans_mat (3x3 np.array):
+           The matrix to be used for expanding the unitcell.
 
     Return
         isotropy (float):
@@ -63,8 +70,8 @@ class Supercell:
                 trans_mat = np.array(trans_mat)
                 trans_mat_str = ' '.join([str(int(i)) for i in trans_mat])
         else:
-            raise ValueError("Translation matrix: {} is not proper. 1, 3, or 9 "
-                             "numbers  are accepted.")
+            raise ValueError(f"Translation matrix: {trans_mat} is not proper. "
+                             f"1, 3, or 9 components are accepted.")
 
         self.base_structure = structure
         s = structure * trans_mat
@@ -74,9 +81,8 @@ class Supercell:
         self.isotropy = calc_isotropy(structure, trans_mat)
         self.num_atoms = self.structure.num_sites
 
-        self.comment = 'trans_mat: ' + trans_mat_str + ', multi: ' \
-                       + str(multiplicity) + ', isotropy: ' + \
-                       str(self.isotropy) + '\n'
+        self.comment = f"trans_mat: {trans_mat_str}, multi: {multiplicity}, " \
+                       f"isotropy: {self.isotropy}\n"
 
     def to_poscar(self, poscar_filename):
         poscar_str = self.structure.to(fmt="poscar").splitlines(True)
@@ -160,21 +166,21 @@ class Supercells:
                     trans_mat[j] += 1
 
     @property
-    def create_sorted_supercells_by_num_atoms(self):
+    def create_sorted_supercells_by_num_atoms(self) -> list:
         return sorted(deepcopy(self.supercells),
                       key=lambda x: (x.num_atoms, x.isotropy))
 
     @property
-    def create_sorted_supercells_by_isotropy(self):
+    def create_sorted_supercells_by_isotropy(self) -> list:
         return sorted(deepcopy(self.supercells),
                       key=lambda x: (x.isotropy, x.num_atoms))
 
     @property
-    def create_smallest_supercell(self):
+    def create_smallest_supercell(self) -> Supercell:
         return self.create_sorted_supercells_by_num_atoms[0]
 
     @property
-    def create_most_isotropic_supercell(self):
+    def create_most_isotropic_supercell(self) -> Supercell:
         return self.create_sorted_supercells_by_isotropy[0]
 
 
