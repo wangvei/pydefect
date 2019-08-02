@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 from itertools import product, combinations, chain
-from math import acos, floor, degrees
+from math import floor
 import numpy as np
 from tqdm import tqdm
 from typing import Union, List
@@ -12,14 +12,14 @@ from pymatgen.core.periodic_table import DummySpecie, Specie
 from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
 from pymatgen.util.coord import pbc_shortest_vectors
 
-from obadb.util.structure_handler import get_symmetry_dataset, get_rotations
+from obadb.util.structure_handler import get_rotations
 
 import spglib
 
+from pydefect.core.config import SYMMETRY_TOLERANCE, ANGLE_TOL
+from pydefect.core.error_classes import StructureError
 from pydefect.util.logger import get_logger
 from pydefect.util.math_tools import normalized_random_3d_vector, random_vector
-from pydefect.core.error_classes import StructureError
-from pydefect.core.config import SYMMETRY_TOLERANCE, ANGLE_TOL
 
 __author__ = "Yu Kumagai"
 __maintainer__ = "Yu Kumagai"
@@ -69,20 +69,43 @@ def perturb_neighboring_atoms(structure: Structure,
 
 def get_displacements(final_structure: Structure,
                       initial_structure: Structure,
-                      center: Union[list, int],
-                      anchor_atom_index: int = None):
-    """ Return the list of displacements.
+                      defect_center: Union[list, int],
+                      anchor_atom_index: int = None) -> dict:
+    """ Return information related to atomic displacements.
 
     Args:
         final_structure (Structure):
-            Relaxed Structure
+            Relaxed final Structure
         initial_structure (Structure):
             Initial Structure
-        center (list):
-            Fractional coordinates of a central position or an atom index
+        defect_center (list / int):
+            Fractional coordinates of a central position or an atom index.
         anchor_atom_index (int):
             Atom index that is assumed not to be moved during the structure
             optimization, which is usually the farthest atom from a defect.
+
+    Variables:
+        drift_frac_coords (np.array):
+            A vector showing how the farthest atom drifts during the structure
+            optimization.
+
+    Return (dict):
+        Keys:
+        + initial_distances:
+            Distances from a defect in the initial structure.
+        + final_distances:
+            Distances from a defect in the final structure.
+        + displacement_vectors:
+            Displacement vectors of atoms except for defect itself.
+        + displacement_norms:
+            Norms of displacement vectors
+        + initial_coordination_vectors:
+            Vectors from a defect position to atoms in the initial supercell.
+        + final_coordination_vectors:
+            Vectors from a defect position to atoms in the final supercell.
+        + defect_migration_distance:
+            Distance the defect migrates defined only for interstitials,
+            antisites, and substituted defects.
     """
     if len(final_structure) != len(initial_structure):
         raise StructureError("The number of atoms are different between two "
@@ -90,65 +113,78 @@ def get_displacements(final_structure: Structure,
     elif final_structure.lattice != initial_structure.lattice:
         logger.warning("The lattice constants are different between two input "
                        "structures. Anchoring the farthest atom is switched "
-                       "off.")
+                       "off as it bears erroneous result.")
         anchor_atom_index = None
 
     if anchor_atom_index:
-        offset_frac_coords = final_structure[anchor_atom_index].frac_coords - \
+        drift_frac_coords = final_structure[anchor_atom_index].frac_coords - \
                              initial_structure[anchor_atom_index].frac_coords
     else:
-        offset_frac_coords = [0.0, 0.0, 0.0]
-    offset_frac_coords = np.array(offset_frac_coords)
+        drift_frac_coords = np.zeros(3)
 
-    defect_travel_distance = None
-    if isinstance(center, int):
-        initial_center = initial_structure[center].frac_coords
-        final_center = final_structure[center].frac_coords
+    # When the defect is an atom itself, the defect coordinates in the final
+    # structure is well defined. Otherwise, it is assumed not to be moved
+    # wrt the anchoring atom.
+    if isinstance(defect_center, int):
+        initial_center = initial_structure[defect_center].frac_coords
+        final_center = final_structure[defect_center].frac_coords
         if anchor_atom_index:
-            defect_travel_frac_coords = \
-                (final_structure[center].frac_coords
-                 - initial_structure[center].frac_coords - offset_frac_coords)
-            defect_travel_distance = \
-                initial_structure.lattice.norm(defect_travel_frac_coords)[0]
+            defect_migration_frac_coords = \
+                (final_structure[defect_center].frac_coords
+                 - initial_structure[defect_center].frac_coords
+                 - drift_frac_coords)
+            # Note: Defect migration distance is estimated based on the initial
+            #       lattice constants. Now, it is fine as anchor_atom_index is
+            #       set only when the lattice constants are unchanged.
+            defect_migration_distance = \
+                initial_structure.lattice.norm(defect_migration_frac_coords)[0]
+        else:
+            defect_migration_distance = None
 
     else:
-        initial_center = np.array(center)
-        final_center = np.array(center) + offset_frac_coords
+        initial_center = np.array(defect_center)
+        final_center = np.array(defect_center) - drift_frac_coords
+        defect_migration_distance = None
 
     displacement_vectors = []
     displacement_norms = []
-    initial_coordination_coords = []
-    final_coordination_coords = []
+    for final_site, initial_site in zip(final_structure, initial_structure):
 
-    for f, i in zip(final_structure, initial_structure):
-        # displacement_vector is in cartesian coordinates.
+        # displacement_vectors are cartesian coordinates.
+        # Return of pbc_shortest_vectors is a tuple of these two lists
+        # * Array of displacement vectors from fcoords1 to fcoords2.
+        # * Squared distances
+        # Fo both, First index is fcoords1 index, and second is fcoords2 index
         displacement_vector, d2 = \
             pbc_shortest_vectors(lattice=initial_structure.lattice,
-                                 fcoords1=i.frac_coords,
-                                 fcoords2=f.frac_coords - offset_frac_coords,
+                                 fcoords1=initial_site.frac_coords,
+                                 fcoords2=(final_site.frac_coords
+                                           - drift_frac_coords),
                                  return_d2=True)
-        displacement_vectors.append(list(displacement_vector[0][0]))
+        displacement_vectors.append(displacement_vector[0][0])
         displacement_norms.append(d2[0][0] ** 0.5)
 
-        initial_coordination_coords.append(
-            list(pbc_shortest_vectors(lattice=initial_structure.lattice,
-                                      fcoords1=initial_center,
-                                      fcoords2=i.frac_coords,
-                                      return_d2=True)[0][0][0]))
+    initial_coordination_vectors, initial_distances = \
+        pbc_shortest_vectors(lattice=initial_structure.lattice,
+                             fcoords1=initial_center,
+                             fcoords2=initial_structure.frac_coords,
+                             return_d2=True)
 
-        final_coordination_coords.append(
-            list(pbc_shortest_vectors(lattice=final_structure.lattice,
-                                      fcoords1=final_center,
-                                      fcoords2=f.frac_coords,
-                                      return_d2=True)[0][0][0]))
-
-    initial_distances = distance_list(initial_structure, initial_center)
-    final_distances = distance_list(final_structure, final_center)
+    final_coordination_vectors, final_distances = \
+        pbc_shortest_vectors(lattice=final_structure.lattice,
+                             fcoords1=final_center,
+                             fcoords2=final_structure.frac_coords,
+                             return_d2=True)
 
     # angles are nan when the displacements are zero or diverged.
-    return (initial_distances, final_distances, displacement_vectors,
-            displacement_norms, initial_coordination_coords,
-            final_coordination_coords, defect_travel_distance)
+    # [0] is needed for the variables with double loops.
+    return {"initial_distances":            initial_distances[0],
+            "final_distances":              final_distances[0],
+            "displacement_vectors":         displacement_vectors,
+            "displacement_norms":           displacement_norms,
+            "initial_coordination_vectors": initial_coordination_vectors[0],
+            "final_coordination_vectors":   final_coordination_vectors[0],
+            "defect_migration_distance":    defect_migration_distance}
 
 
 def defect_center_from_coords(defect_coords: list,
@@ -174,7 +210,8 @@ def defect_center_from_coords(defect_coords: list,
     return [np.mean(i) for i in np.array(shortest_defect_coords).transpose()]
 
 
-def distance_list(structure, coords):
+def distance_list(structure: Structure,
+                  coords: np.array) -> list:
     """ Return a list of the shortest distances between a point and its images
 
     Args:
@@ -187,25 +224,10 @@ def distance_list(structure, coords):
             for host in structure.frac_coords]
 
 
-def distances_from_defect_center(structure, defect_entry):
-    """ Returns a list of distances at atomic sites from defect center
-
-    Note that in the case of an interstitial-type defect, zero is also set for
-    the interstitial site itself.
-
-    Args:
-        structure (Structure):
-            pmg Structure class object for perfect supercell
-        defect_entry (DefectEntry):
-            DefectEntry class object considered
-    """
-    return distance_list(structure, defect_entry.defect_center_coords)
-
-
-def fold_positions(structure):
+def fold_positions(structure: Structure) -> Structure:
     """ Fold atomic positions in fractional coords into from 0 to 1.
 
-    For example, coords of site changes from [-0.3, 1.9, 0.5] to [0.7, 0.9, 0.5]
+    For example, [-0.3, 1.9, 0.5] -> [0.7, 0.9, 0.5]
 
     Args:
         structure(Structure):
@@ -219,7 +241,7 @@ def fold_positions(structure):
     return structure
 
 
-def fold_positions_in_poscar(poscar):
+def fold_positions_in_poscar(poscar: Poscar):
     """ Same as fold_positions but for poscar
 
     Args:
@@ -235,8 +257,7 @@ def fold_positions_in_poscar(poscar):
 
 
 def atomic_distances(lattice: Lattice,
-                     points: list
-                     ) -> np.array:
+                     points: list) -> np.array:
     """ return a list of distances between the given points.
 
     Args:
@@ -252,9 +273,8 @@ def atomic_distances(lattice: Lattice,
 def are_distances_same(lattice: Lattice,
                        points: list,
                        compared_distances: np.array,
-                       symprec: float,
-                       ) -> bool:
-    """ whether the calculated inter-points distances are the same
+                       symprec: float = SYMMETRY_TOLERANCE) -> bool:
+    """ Check whether the calculated inter-point distances are the same.
 
     Args:
         lattice (Lattice):
@@ -270,16 +290,17 @@ def are_distances_same(lattice: Lattice,
         else:
             return False
 
-    return all(abs(np.sort(np.array(distances))
-                   - np.sort(compared_distances)) < symprec)
+    return all(abs(np.sort(np.array(distances)) - np.sort(compared_distances))
+               < symprec)
 
 
-def create_saturated_interstitial_structure(structure: Structure,
-                                            inserted_atom_coords: list,
-                                            species: list = None,
-                                            dist_tol: float = 0.1,
-                                            symprec: float = SYMMETRY_TOLERANCE,
-                                            angle_tolerance: float = ANGLE_TOL):
+def create_saturated_interstitial_structure(
+        structure: Structure,
+        inserted_atom_coords: list,
+        species: list = None,
+        dist_tol: float = 0.1,
+        symprec: float = SYMMETRY_TOLERANCE,
+        angle_tolerance: float = ANGLE_TOL) -> list:
     """ generates the sublattice for it based on the structure's space group.
 
     Args:
@@ -300,17 +321,23 @@ def create_saturated_interstitial_structure(structure: Structure,
         inserted_atom_indices (list):
             The representative inserted atom indices.
         symmetry_dataset (dict):
-            Spglib style symmetry dataset with the following propeties.
-                number: International space group number
-                international: International symbol
-                hall: Hall symbol
-                transformation_matrix: Transformation matrix from lattice of
-                input cell to Bravais lattice L^bravais = L^original * Tmat
-                origin shift: Origin shift in the setting of "Bravais lattice"
-                rotations, translations: Rotation matrices and translation
-                vectors. Space group operations are obtained by
-                [(r,t) for r, t in zip(rotations, translations)]
-                wyckoffs: Wyckoff letters
+            Spglib style symmetry dataset with the following properties.
+                + number:
+                    International space group number
+                + international:
+                    International symbol
+                + hall:
+                    Hall symbol
+                + transformation_matrix:
+                    Transformation matrix from lattice of input cell to Bravais
+                    lattice L^bravais = L^original * Tmat
+                + origin shift:
+                    Origin shift in the setting of "Bravais lattice" rotations,
+                    translations: Rotation matrices and translation vectors.
+                    Space group operations are obtained by
+                    [(r,t) for r, t in zip(rotations, translations)]
+                + wyckoffs:
+                    Wyckoff letters
     """
     if species and len(inserted_atom_coords) != len(species):
         raise ValueError("Numbers of inserted_atom_coords and species differ.")
@@ -325,7 +352,7 @@ def create_saturated_interstitial_structure(structure: Structure,
 
     inserted_atom_indices = []
     for i, coord in enumerate(inserted_atom_coords):
-        # Whether the inserted atoms already exist.
+        # Check whether the inserted atoms already exist.
         try:
             inserted_atom_index = \
                 neighboring_atom_indices(

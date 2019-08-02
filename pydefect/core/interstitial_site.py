@@ -12,11 +12,12 @@ from pymatgen.core.periodic_table import DummySpecie
 
 from obadb.util.structure_handler import get_coordination_distances
 
-from pydefect.core.config import INTERSTITIAL_SYMMETRY_TOLERANCE, ANGLE_TOL, \
+from pydefect.core.config \
+    import DEFECT_SYMMETRY_TOLERANCE, ANGLE_TOL, \
     MAX_NUM_INTERSTITIAL_SITES
 from pydefect.core.error_classes import StructureError
-from pydefect.util.structure_tools import get_symmetry_multiplicity, \
-    create_saturated_interstitial_structure
+from pydefect.util.structure_tools \
+    import get_symmetry_multiplicity, create_saturated_interstitial_structure
 from pydefect.util.logger import get_logger
 
 __author__ = "Yu Kumagai"
@@ -75,6 +76,7 @@ class InterstitialSite(MSONable):
              "method":                 self.method})
 
         return d
+
 
 # The followings are needed to keep order of dictionary during dumping to yaml
 # https://qiita.com/podhmo/items/aa954ee1dc1747252436
@@ -179,10 +181,14 @@ class InterstitialSiteSet(MSONable):
                  site_name: str = None,
                  check_neighbor_radius: float = 0.3,
                  force_add: bool = False,
-                 symprec: float = INTERSTITIAL_SYMMETRY_TOLERANCE,
+                 symprec: float = DEFECT_SYMMETRY_TOLERANCE,
                  angle_tolerance: float = ANGLE_TOL,
                  method: str = "manual"):
-        """ """
+        """
+
+        Note that the symprec must be the same as that used for defect analysis
+        to keep the same point group.
+        """
         # Check whether other sites are too close to the inserted sites.
         # Construct saturated structure with existing interstitial sites.
         if self.coords:

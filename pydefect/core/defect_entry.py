@@ -9,6 +9,7 @@ from typing import Union
 
 from monty.json import MontyEncoder, MSONable
 from monty.serialization import loadfn
+from pymatgen import Structure
 
 from pymatgen.core.structure import Structure
 from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
@@ -16,10 +17,10 @@ from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
 from pydefect.core.defect_name import SimpleDefectName
 from pydefect.core.error_classes import StructureError
 from pydefect.util.logger import get_logger
-from pydefect.util.structure_tools import count_equivalent_clusters
+from pydefect.util.structure_tools \
+    import count_equivalent_clusters, defect_center_from_coords, distance_list
 from pydefect.vasp_util.util import element_diff_from_structures, \
     get_defect_charge_from_vasp
-from pydefect.util.structure_tools import defect_center_from_coords
 from pydefect.core.config \
     import DEFECT_SYMMETRY_TOLERANCE, ANGLE_TOL, CUTOFF_RADIUS
 
@@ -451,10 +452,12 @@ class DefectEntry(MSONable):
         #     self.initial_structure.lattice.get_all_distances(
         #         self.defect_center, self.initial_structure.frac_coords)[0]
 
-        return anchor_atom_index(self.initial_structure, self.defect_center_coords)
+        return anchor_atom_index(structure=self.initial_structure,
+                                 center=self.defect_center_coords)
 
 
-def anchor_atom_index(structure, center):
+def anchor_atom_index(structure: Structure,
+                      center: np.array):
     """ Returns an index of atom that is the farthest from the defect.
 
     This atom is assumed not to displace in the defective supercell, and
@@ -502,3 +505,17 @@ def divide_dirname(dirname):
     return name, charge, annotation
 
 
+def distances_from_defect_center(structure: Structure,
+                                 defect_entry: DefectEntry) -> list:
+    """ Returns a list of distances at atomic sites from defect center
+
+    Note that in the case of an interstitial-type defect, zero is also set for
+    the interstitial site itself.
+
+    Args:
+        structure (Structure):
+            pmg Structure class object for perfect supercell
+        defect_entry (DefectEntry):
+            DefectEntry class object considered
+    """
+    return distance_list(structure, defect_entry.defect_center_coords)

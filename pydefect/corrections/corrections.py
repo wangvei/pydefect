@@ -485,7 +485,8 @@ class ExtendedFnvCorrection(Correction, MSONable):
         volume = lattice.volume
         defect_coords = defect_entry.defect_center_coords
 
-        distances_from_defect = deepcopy(defect_dft.displacements[1])
+        distances_from_defect = \
+            deepcopy(defect_dft.displacements["final_distances"])
         for i in sorted(defect_entry.inserted_atoms.keys(), reverse=True):
             del distances_from_defect[i]
 

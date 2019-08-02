@@ -59,18 +59,16 @@ class GetDisplacementsTest(PymatgenTest):
         center = [0.25, 0.25, 0.25]
         anchor_atom_index = 14
 
-        self.disp_vectors, self.disp_norms, self.angles = \
-            get_displacements(contcar, poscar, center, anchor_atom_index)[2:5]
+        d = get_displacements(contcar, poscar, center, anchor_atom_index)
+        self.disp_vectors = d["displacement_vectors"]
+        self.disp_norms = d["displacement_norms"]
 
     def test(self):
         # disp_vector is in cartesian coordinates.
         vector_expected = [0.02123447, -0.10617233,  0.04246893]
         norm_expected = 0.11630595530799753
-        angle_expected = 68.58328596696641
-        self.assertArrayAlmostEqual(self.disp_vectors[1].tolist(),
-                                    vector_expected)
+        self.assertArrayAlmostEqual(self.disp_vectors[1].tolist(), vector_expected)
         self.assertAlmostEqual(self.disp_norms[1], norm_expected)
-        self.assertAlmostEqual(self.angles[1], angle_expected)
 
 
 class DefectCenterFromCoordsTest(PymatgenTest):

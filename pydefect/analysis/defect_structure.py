@@ -26,7 +26,7 @@ class DefectStructure(MSONable):
                  final_structure: Structure,
                  initial_site_symmetry: str,
                  final_site_symmetry: str,
-                 displacements: list,
+                 displacements: dict,
                  defect_center: Union[int, list],
                  defect_center_coords: list,
                  neighboring_sites: list):
@@ -46,7 +46,7 @@ class DefectStructure(MSONable):
                 Initial site symmetry such as D4h.
             final_site_symmetry (str):
                 Final site symmetry.
-            displacements (list):
+            displacements (dict):
                 Displacements composed of 5 quantities.
                 [initial_distances, final_distances, displacement_vectors,
                 displacement_distances, angles_wrt_the_defect_site]
@@ -125,13 +125,13 @@ class DefectStructure(MSONable):
             True if isinstance(self.defect_center, int) else False
 
         defect_center_coords = [round(i, 3) for i in self.defect_center_coords]
-        travel_distance = self.displacements[6]
+        migration_distance = self.displacements["defect_migration_distance"]
         lines = [f"Is defect center atomic position?: {is_defect_center_atom}",
                  f"Defect center position: {defect_center_coords}"]
 
-        if travel_distance:
+        if migration_distance:
             lines.append(
-                f"Defect traveling distance: {round(travel_distance, 3)}")
+                f"Defect traveling distance: {round(migration_distance, 3)}")
 
         lines.extend(
             [f"Site symmetry: "
@@ -146,13 +146,13 @@ class DefectStructure(MSONable):
 
         for s in candidate:
             element = str(self.final_structure[s].specie)
-            initial_distance = round(self.displacements[0][s], 3)
-            final_distance = round(self.displacements[1][s], 3)
-            displacement_distance = round(self.displacements[3][s], 3)
+            initial_distance = round(self.displacements["initial_distances"][s], 3)
+            final_distance = round(self.displacements["final_distances"][s], 3)
+            displacement_distance = round(self.displacements["displacement_norms"][s], 3)
             final_vector = " ".join(["{:6.2f}".format(round(i, 2))
-                                     for i in self.displacements[5][s]])
+                                     for i in self.displacements["final_coordination_vectors"][s]])
             initial_vector = " ".join(["{:6.2f}".format(round(i, 2))
-                                       for i in self.displacements[4][s]])
+                                       for i in self.displacements["initial_coordination_vectors"][s]])
 
             lines.append("{:>4} {:>5}   {:5.2f} <- {:5.2f}    {:4.2f}   {} <- "
                          "{}".format(s, element, final_distance,
