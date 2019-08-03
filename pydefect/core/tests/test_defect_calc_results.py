@@ -1,16 +1,17 @@
 # -*- coding: utf-8 -*-
 
+from collections import defaultdict
+import numpy as np
 import os
 import tempfile
 import unittest
-from collections import defaultdict
 
-import numpy as np
+from pymatgen.electronic_structure.core import Spin
+from pymatgen.util.testing import PymatgenTest
+
 from pydefect.core.defect_entry import DefectEntry
 from pydefect.core.supercell_calc_results \
     import SupercellCalcResults, defaultdict_to_dict
-from pymatgen.electronic_structure.core import Spin
-from pymatgen.util.testing import PymatgenTest
 
 __author__ = "Yu Kumagai"
 __maintainer__ = "Yu Kumagai"
@@ -44,7 +45,7 @@ class SupercellDftResultsTest(PymatgenTest):
                 procar=True)
 #                defect_entry=self._defect_entry_perfect)
 
-        defect_entry_MgO_Va_O1_2 = \
+        self._defect_entry_MgO_Va_O1_2 = \
             DefectEntry.load_json(os.path.join(
                 test_dir, "MgO/defects/Va_O1_2", "defect_entry.json"))
 
@@ -52,7 +53,8 @@ class SupercellDftResultsTest(PymatgenTest):
             SupercellCalcResults.from_vasp_files(
                 directory_path=os.path.join(test_dir, "MgO/defects/Va_O1_2"),
                 procar=True,
-                defect_entry=defect_entry_MgO_Va_O1_2)
+                referenced_dft_results=self._MgO_perfect,
+                defect_entry=self._defect_entry_MgO_Va_O1_2)
 
     def test_nothing(self):
         pass
@@ -99,6 +101,27 @@ class SupercellDftResultsTest(PymatgenTest):
         actual = SupercellCalcResults.load_json(tmp_file.name)
         np.testing.assert_equal(actual.eigenvalues[Spin.up],
                                 self._MgO_Va_O1_2.eigenvalues[Spin.up])
+
+    def test_relative_total_energy(self):
+        actual = self._MgO_Va_O1_2.relative_total_energy
+
+        expected = -93.64519527 - -95.36395670
+
+        self.assertEqual(actual, expected)
+
+    def test_relative_potential(self):
+        actual = self._MgO_Va_O1_2.relative_potential
+
+        perfect_potential = \
+            [-35.2983, -35.2983, -35.2983, -35.2983, -35.2983, -35.2983,
+             -35.2983, -35.2983, -69.7919, -69.7919, -69.7919, -69.7919,
+             -69.7919, -69.7919, -69.7919]
+
+        expected = [x - y for x, y in
+                    zip(self._MgO_Va_O1_2.electrostatic_potential,
+                        perfect_potential)]
+
+        self.assertTrue(actual == expected)
 
 
 if __name__ == "__main__":

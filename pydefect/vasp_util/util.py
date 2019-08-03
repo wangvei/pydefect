@@ -67,7 +67,6 @@ def get_defect_charge_from_vasp(structure, potcar="POTCAR", incar="INCAR"):
 def calc_participation_ratio(procar: Procar,
                              spin: Spin,
                              band_index: int,
-                             kpoint_index: int,
                              atom_indices: list):
     """ Returns sum of participation ratios at atom_indices sites
 
@@ -79,15 +78,10 @@ def calc_participation_ratio(procar: Procar,
                                           ion index, orbital index)
         }
     """
-
-    if spin not in procar.data.keys():
-        spin = Spin.up
-
     # sum along k-point and orbital
-    projected_to_atoms = \
-        np.sum(procar.data[spin][kpoint_index], axis=2)[band_index]
+    sum_per_atom = np.sum(procar.data[spin][:, band_index, :, :], axis=(0, 2))
 
-    return np.sum(projected_to_atoms[atom_indices]) / np.sum(projected_to_atoms)
+    return np.sum(sum_per_atom[atom_indices]) / np.sum(sum_per_atom)
 
 
 def calc_orbital_character(procar: Procar,
@@ -112,24 +106,23 @@ def calc_orbital_character(procar: Procar,
     """
     d = defaultdict(dict)
 
+    def projection_sum(atom_indices: list, start: int, end: int):
+        return float(np.sum(procar.data[spin][kpoint_index, band_index,
+                            atom_indices, start:end + 1]))
+
     for name in structure.symbol_set:
         # get list of index
         indices = \
             [i for i, e in enumerate(structure.species) if e == Element(name)]
-        d[name]["s"] = \
-            np.sum(procar.data[spin][kpoint_index, band_index, indices, 0])
-        d[name]["p"] = \
-            np.sum(procar.data[spin][kpoint_index, band_index, indices, 1:4])
-        d[name]["d"] = \
-            np.sum(procar.data[spin][kpoint_index, band_index, indices, 4:9])
+        d[name]["s"] = projection_sum(indices, 0, 0)
+        d[name]["p"] = projection_sum(indices, 1, 3)
+        d[name]["d"] = projection_sum(indices, 4, 8)
         try:
-            d[name]["f"] = \
-                np.sum(procar.data[spin][kpoint_index, band_index,
-                       indices, 9:16])
+            d[name]["f"] = projection_sum(indices, 9, 16)
         except KeyError:
             pass
 
-    return d
+    return dict(d)
 
 
 def calc_orbital_similarity(orbital_1: defaultdict,
