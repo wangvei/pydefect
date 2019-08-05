@@ -3,7 +3,6 @@
 import json
 import os
 from collections import defaultdict
-from enum import Enum, unique
 from pathlib import Path
 from typing import Union
 from xml.etree.ElementTree import ParseError
@@ -17,6 +16,7 @@ from pydefect.core.config import DEFECT_SYMMETRY_TOLERANCE, ANGLE_TOL, \
 from pydefect.core.defect_entry import DefectEntry
 from pydefect.core.error_classes import NoConvergenceError, StructureError
 from pydefect.util.logger import get_logger
+from pydefect.util.object_converters import spin_key_to_str, str_key_to_spin
 from pydefect.vasp_util.util import calc_participation_ratio, \
     calc_orbital_character
 from pymatgen.core import Structure
@@ -32,29 +32,7 @@ __maintainer__ = "Yu Kumagai"
 logger = get_logger(__name__)
 
 
-def spin_key_to_str(arg: dict, value_to_str=False):
-    if arg is not None:
-        if value_to_str:
-            return {str(spin): str(v) for spin, v in arg.items()}
-        else:
-            return {str(spin): v for spin, v in arg.items()}
-    else:
-        return
-
-
 #def str_key_to_spin(arg: dict, value_to_band_edges=False):
-def str_key_to_spin(arg: dict, value_to_band_edges=False):
-    if arg is not None:
-        x = {}
-        for spin, value in arg.items():
-            x[Spin(int(spin))] = value
-            # if value_to_band_edges:
-            #     x[Spin(int(spin))] = BandEdgeState.from_string(value)
-            # else:
-            #     x[Spin(int(spin))] = value
-        return x
-    else:
-        return
 
 
 def parse_file(classmethod_name, parsed_filename):

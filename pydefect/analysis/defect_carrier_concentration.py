@@ -160,8 +160,8 @@ def calc_concentration(energies: Union[dict, None],
                 num_mag_conf = abs(mag) + 1
                 degree_of_freedom = mul * num_mag_conf
 
-                # volume unit conversion from [A^3] to [cm^3]
                 energy = de + e_f * charge
+                # volume unit conversion from [A^3] to [cm^3]
                 c = (maxwell_boltzmann_distribution(energy, temperature)
                      * degree_of_freedom / (volume / 10 ** 24))
 

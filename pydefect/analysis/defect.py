@@ -1,8 +1,10 @@
 # -*- coding: utf-8 -*-
 from enum import Enum, unique
 
+import json
 import numpy as np
-from monty.json import MontyEncoder, MSONable
+from monty.json import MSONable, MontyEncoder
+from monty.serialization import loadfn
 from pydefect.core.defect_entry import DefectEntry
 from pydefect.core.supercell_calc_results import SupercellCalcResults
 from pydefect.corrections.corrections import Correction
@@ -12,6 +14,7 @@ from pydefect.util.logger import get_logger
 from pydefect.vasp_util.util import calc_orbital_difference
 from pymatgen.core.structure import Structure
 from pymatgen.electronic_structure.core import Spin
+from pydefect.util.object_converters import spin_key_to_str, str_key_to_spin
 
 __author__ = "Yu Kumagai"
 __maintainer__ = "Yu Kumagai"
@@ -133,8 +136,7 @@ def diagnose_band_edges(participation_ratio: dict,
         # 3. Energy of bottom of hob is close to the supercell cbm.
 
         # To determine the difference of perturbed host state (phs),
-        # the criterion is doubled from that of regular band edge, since
-        # the
+        # the criterion is doubled from that of regular band edge.
         elif (donor_phs_difference < different_criterion * 2
                 and participation_ratio[spin]["hob"] < localized_criterion
                 and abs(band_edge_energies[spin]["hob"]["bottom"]
@@ -241,8 +243,6 @@ class Defect(MSONable):
         num_equiv_sites = defect_entry.num_equiv_sites
         multiplicity = num_equiv_sites * initial_nsymop / final_nsymop
 
-        magnetization = dft_results.total_magnetization
-
         band_edge_states = \
             diagnose_band_edges(dft_results.participation_ratio,
                                 dft_results.orbital_character,
@@ -277,7 +277,7 @@ class Defect(MSONable):
                    final_symmetry=dft_results.site_symmetry,
                    num_equiv_sites=num_equiv_sites,
                    multiplicity=multiplicity,
-                   magnetization=magnetization,
+                   magnetization=dft_results.total_magnetization,
                    kpoint_coords=dft_results.kpoint_coords,
                    eigenvalues=dft_results.eigenvalues,
                    supercell_vbm=perfect_dft_results.vbm,
@@ -286,8 +286,104 @@ class Defect(MSONable):
                    orbital_character=dft_results.orbital_character,
                    band_edge_states=band_edge_states)
 
-#    def as_dict(self):
+    @classmethod
+    def from_dict(cls, d):
+        eigenvalues = {}
+        # Programmatic access to enumeration members in Enum class.
+        for s, v in d["eigenvalues"].items():
+            eigenvalues[Spin(int(s))] = np.array(v)
 
+        initial_structure = d["initial_structure"]
+        perturbed_initial_structure = d["perturbed_initial_structure"]
+        final_structure = d["final_structure"]
+        if isinstance(final_structure, dict):
+            final_structure = Structure.from_dict(final_structure)
+        if isinstance(initial_structure, dict):
+            initial_structure = Structure.from_dict(initial_structure)
+        if isinstance(perturbed_initial_structure, dict):
+            perturbed_initial_structure = \
+                Structure.from_dict(perturbed_initial_structure)
+
+        orbital_character = str_key_to_spin(d["orbital_character"])
+        band_edge_states = \
+            str_key_to_spin(d["band_edge_states"], BandEdgeState.from_string)
+
+        return cls(name=d["name"],
+                   charge=d["charge"],
+                   annotation=d["annotation"],
+                   is_converged=d["is_converged"],
+                   relative_total_energy=d["relative_total_energy"],
+                   correction_energy=d["correction_energy"],
+                   initial_structure=initial_structure,
+                   perturbed_initial_structure=perturbed_initial_structure,
+                   final_structure=final_structure,
+                   final_volume=d["final_volume"],
+                   defect_center=d["defect_center"],
+                   anchor_atom_index=d["anchor_atom_index"],
+                   changes_of_num_elements=d["changes_of_num_elements"],
+                   displacements=d["displacements"],
+                   neighboring_sites=d["neighboring_sites"],
+                   defect_center_coords=d["defect_center_coords"],
+                   initial_symmetry=d["initial_symmetry"],
+                   final_symmetry=d["final_symmetry"],
+                   num_equiv_sites=d["num_equiv_sites"],
+                   multiplicity=d["multiplicity"],
+                   magnetization=d["magnetization"],
+                   kpoint_coords=d["kpoint_coords"],
+                   eigenvalues=eigenvalues,
+                   supercell_vbm=d["supercell_vbm"],
+                   supercell_cbm=d["supercell_cbm"],
+                   fermi_level=d["fermi_level"],
+                   orbital_character=orbital_character,
+                   band_edge_states=band_edge_states)
+
+    def as_dict(self):
+        eigenvalues = \
+            {str(spin): v.tolist() for spin, v in self.eigenvalues.items()}
+        orbital_character = spin_key_to_str(self.orbital_character)
+        band_edge_states = \
+            spin_key_to_str(self.band_edge_states, value_to_str=True)
+
+        d = {"@module":                     self.__class__.__module__,
+             "@class":                      self.__class__.__name__,
+             "name":                        self.name,
+             "charge":                      self.charge,
+             "annotation":                  self.annotation,
+             "is_converged":                self.is_converged,
+             "relative_total_energy":       self.relative_total_energy,
+             "correction_energy":           self.correction_energy,
+             "initial_structure":           self.initial_structure,
+             "perturbed_initial_structure": self.perturbed_initial_structure,
+             "final_structure":             self.final_structure,
+             "final_volume":                self.final_volume,
+             "defect_center":               self.defect_center,
+             "anchor_atom_index":           self.anchor_atom_index,
+             "changes_of_num_elements":     self.changes_of_num_elements,
+             "displacements":               self.displacements,
+             "neighboring_sites":           self.neighboring_sites,
+             "defect_center_coords":        self.defect_center_coords,
+             "initial_symmetry":            self.initial_symmetry,
+             "final_symmetry":              self.final_symmetry,
+             "num_equiv_sites":             self.num_equiv_sites,
+             "multiplicity":                self.multiplicity,
+             "magnetization":               self.magnetization,
+             "kpoint_coords":               self.kpoint_coords,
+             "eigenvalues":                 eigenvalues,
+             "supercell_vbm":               self.supercell_vbm,
+             "supercell_cbm":               self.supercell_cbm,
+             "fermi_level":                 self.fermi_level,
+             "orbital_character":           orbital_character,
+             "band_edge_states":            band_edge_states}
+
+        return d
+
+    def to_json_file(self, filename="defect.json"):
+        with open(filename, 'w') as fw:
+            json.dump(self.as_dict(), fw, indent=2, cls=MontyEncoder)
+
+    @classmethod
+    def load_json(cls, filename="defect.json"):
+        return loadfn(filename)
 
     @property
     def diagnose(self) -> str:
