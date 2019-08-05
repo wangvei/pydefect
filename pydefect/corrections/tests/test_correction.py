@@ -338,6 +338,7 @@ class ExtendedFnvCorrectionTest(PymatgenTest):
         vacancy_correction = \
             ExtendedFnvCorrection.compute_correction(self._vacancy_entry,
                                                      self._vacancy,
+                                                     self._perfect,
                                                      self._unitcell)
         self.assertAlmostEqual(vacancy_correction.lattice_energy,
                                expected_vacancy_lattice_energy, 4)

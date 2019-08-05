@@ -90,30 +90,18 @@ class DefectStructure(MSONable):
 
     @classmethod
     def from_defect(cls, defect: Defect):
-
-        defect_center = defect.dft_results.defect_center
-        if isinstance(defect_center, int):
-            neighboring_sites = \
-                defect.dft_results.neighboring_sites_after_relax
-            defect_center_coords = \
-                defect.dft_results.final_structure[defect_center].frac_coords
-        else:
-            neighboring_sites = defect.defect_entry.neighboring_sites
-            defect_center_coords = defect.defect_entry.defect_center_coords
-
-        return cls(name=defect.defect_entry.name,
-                   volume=defect.dft_results.volume,
-                   initial_structure=defect.defect_entry.initial_structure,
+        return cls(name=defect.name,
+                   volume=defect.volume,
+                   initial_structure=defect.initial_structure,
                    perturbed_initial_structure=
-                   defect.defect_entry.perturbed_initial_structure,
-                   final_structure=defect.dft_results.final_structure,
-                   initial_site_symmetry=
-                   defect.defect_entry.initial_site_symmetry,
-                   final_site_symmetry=defect.dft_results.site_symmetry,
-                   displacements=defect.dft_results.displacements,
-                   defect_center=defect_center,
-                   defect_center_coords=defect_center_coords,
-                   neighboring_sites=neighboring_sites)
+                   defect.perturbed_initial_structure,
+                   final_structure=defect.final_structure,
+                   initial_site_symmetry=defect.initial_symmetry,
+                   final_site_symmetry=defect.final_symmetry,
+                   displacements=defect.displacements,
+                   defect_center=defect.defect_center,
+                   defect_center_coords=defect.defect_center_coords,
+                   neighboring_sites=defect.neighboring_sites)
 
     def __repr__(self):
         outs = ["DefectStructure Summary"]

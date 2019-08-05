@@ -125,14 +125,19 @@ def calc_orbital_character(procar: Procar,
     return dict(d)
 
 
-def calc_orbital_similarity(orbital_1: defaultdict,
-                            orbital_2: defaultdict):
-    """
-    """
-    elements = set(list(orbital_1.keys()) + list(orbital_2.keys()))
+def calc_orbital_difference(orbital_1: dict, orbital_2: dict) -> float:
+    """ Calculate absolute difference of between two orbitals
 
-    diff = 0
-    for e in elements:
+    Args:
+        orbital_1 (dict):
+            {"Mg": {"s": 0.1, ...}, "O": {...},..
+        orbital_2 (dict):
+            {"Al": {"s": 0.02, ...}, "Mg": {"s": 0.1, ...}, "O": {...},..
+    """
+    element_set = set(list(orbital_1.keys()) + list(orbital_2.keys()))
+
+    difference = 0
+    for e in element_set:
         for o in "s", "p", "d", "f":
 
             try:
@@ -145,7 +150,7 @@ def calc_orbital_similarity(orbital_1: defaultdict,
             except KeyError:
                 second = 0
 
-            diff += abs(first - second)
+            difference += abs(first - second)
 
-    return diff
+    return difference
 

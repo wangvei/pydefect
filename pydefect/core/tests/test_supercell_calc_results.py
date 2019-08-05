@@ -57,9 +57,10 @@ class SupercellDftResultsTest(PymatgenTest):
     def test_nothing(self):
         pass
 #        print(self._MgO_Va_O1_2.displacements)
-#        print(self._MgO_Va_O1_2.participation_ratio)
-##        print(self._MgO_Va_O1_2.orbital_character)
-#        print(self._MgO_perfect.orbital_character)
+        print(self._MgO_Va_O1_2.participation_ratio)
+        print(self._MgO_Va_O1_2.orbital_character)
+        print(self._MgO_Va_O1_2.band_edge_energies)
+#        print(self._MgO_perfect.band_edge_energies)
 
     def test_from_vasp_files(self):
         # CAUTION: When constructing Structure object from Structure.from_file

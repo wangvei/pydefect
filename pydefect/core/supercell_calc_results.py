@@ -24,6 +24,7 @@ from pymatgen.electronic_structure.core import Spin
 from pymatgen.io.vasp.inputs import Poscar
 from pymatgen.io.vasp.outputs import Outcar, Vasprun, Procar
 from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
+from pydefect.util.structure_tools import get_displacements
 
 __author__ = "Yu Kumagai"
 __maintainer__ = "Yu Kumagai"
@@ -41,14 +42,16 @@ def spin_key_to_str(arg: dict, value_to_str=False):
         return
 
 
+#def str_key_to_spin(arg: dict, value_to_band_edges=False):
 def str_key_to_spin(arg: dict, value_to_band_edges=False):
     if arg is not None:
         x = {}
         for spin, value in arg.items():
-            if value_to_band_edges:
-                x[Spin(int(spin))] = BandEdgeState.from_string(value)
-            else:
-                x[Spin(int(spin))] = value
+            x[Spin(int(spin))] = value
+            # if value_to_band_edges:
+            #     x[Spin(int(spin))] = BandEdgeState.from_string(value)
+            # else:
+            #     x[Spin(int(spin))] = value
         return x
     else:
         return
@@ -67,6 +70,7 @@ def parse_file(classmethod_name, parsed_filename):
 
 
 def defaultdict_to_dict(d):
+    """Recursively change defaultdict to dict"""
     if isinstance(d, defaultdict):
         d = dict(d)
     if isinstance(d, dict):
@@ -95,7 +99,7 @@ def analyze_procar(hob_index: dict,
 
     Return:
         band_edge_energies (dict):
-            Averaged band energy over k-space as function of Spin and band_edge
+            Averaged band energy over k-space as function of spin and band_edge
         orbital_character (dict):
             Orbital character at an eigenstate of spin, band_edge
             (="hob" or "lub"), and energy_position = (="top" or "bottom")
@@ -107,7 +111,7 @@ def analyze_procar(hob_index: dict,
            band_edge
     """
 
-    band_edge_energies = defaultdict(dict)
+    band_edge_energies = defaultdict(lambda: defaultdict(dict))
     participation_ratio = defaultdict(dict)
     orbital_character = defaultdict(lambda: defaultdict(dict))
 
@@ -122,14 +126,13 @@ def analyze_procar(hob_index: dict,
                     calc_participation_ratio(
                         procar, spin, band_index, neighboring_sites)
 
-            band_edge_energies[spin][band_edge] = \
-                float(np.mean(eigenvalues[spin][:, band_index, 0]))
-
             top_eigenvalue = np.amax(eigenvalues[spin][:, band_index, 0])
+            band_edge_energies[spin][band_edge]["top"] = top_eigenvalue
             top_k_index = int(np.where(eigenvalues[spin][:, band_index, 0]
                                        == top_eigenvalue)[0][0])
 
-            bottom_eigenvalue = np.amax(eigenvalues[spin][:, band_index, 0])
+            bottom_eigenvalue = np.amin(eigenvalues[spin][:, band_index, 0])
+            band_edge_energies[spin][band_edge]["bottom"] = bottom_eigenvalue
             bottom_k_index = int(np.where(eigenvalues[spin][:, band_index, 0]
                                           == bottom_eigenvalue)[0][0])
 
@@ -169,6 +172,8 @@ class SupercellCalcResults(MSONable):
                  fermi_level: float,
                  is_converged: bool,
                  defect_center: Union[int, list],
+                 defect_coords: list,
+                 displacements: dict,
                  neighboring_sites_after_relax: list,
                  band_edge_energies: dict = None,
                  orbital_character: dict = None,
@@ -209,6 +214,10 @@ class SupercellCalcResults(MSONable):
                 the defect center is defined by the initial position, such as
                 vacancies and complex defects, the fractional coordinates are
                 set.
+            defect_coords (list):
+                Defect center coordinates.
+            displacements (dict):
+                See get_displacements function docstring.
             neighboring_sites_after_relax (list):
                 Atomic indices of the neighboring sites within cutoff radius
                 in the final structure.
@@ -231,6 +240,8 @@ class SupercellCalcResults(MSONable):
         self.fermi_level = fermi_level
         self.is_converged = is_converged
         self.defect_center = defect_center
+        self.defect_coords = defect_coords
+        self.displacements = displacements
         self.neighboring_sites_after_relax = neighboring_sites_after_relax
         self.band_edge_energies = band_edge_energies
         self.orbital_character = orbital_character
@@ -252,23 +263,6 @@ class SupercellCalcResults(MSONable):
 
         return "\n".join(outs)
 
-    # TODO: move to Defect.
-    # @property
-    # def diagnose(self) -> str:
-    #
-    #     band_edges = []
-    #     for s, v in self.band_edge_states.items():
-    #         band_edges.extend([s.name.upper(), "->", str(v).rjust(17)])
-    #
-    #     band_edges = "  ".join(band_edges)
-    #
-    #     outs = [" conv. : " + str(self.is_converged)[0],
-    #             "  mag. : {}".format(str(round(self.total_magnetization, 1))),
-    #             "  sym. : {:>4}".format(self.site_symmetry),
-    #             "  band edge : " + band_edges]
-    #
-    #     return " ".join(outs)
-
     @classmethod
     def from_vasp_files(cls,
                         directory_path: str,
@@ -281,6 +275,8 @@ class SupercellCalcResults(MSONable):
                         symprec: float = DEFECT_SYMMETRY_TOLERANCE,
                         angle_tolerance: float = ANGLE_TOL):
         """ Constructs class object from vasp output files.
+
+        Never analyze the data here, but in Defect.from_object classmethod.
 
         Args:
             directory_path (str):
@@ -345,7 +341,8 @@ class SupercellCalcResults(MSONable):
 
         # defect_entry is not provided for perfect supercell.
         if not defect_entry:
-            defect_center = neighboring_sites = None
+            defect_center = neighboring_sites = defect_coords = displacements \
+                = None
         else:
             if defect_entry.defect_type.is_defect_center_atom:
                 defect_center = list(defect_entry.inserted_atoms.keys())[0]
@@ -366,6 +363,11 @@ class SupercellCalcResults(MSONable):
             if not neighboring_sites:
                 raise StructureError(f"No neighboring site detected. Increase "
                                      f"cutoff radius from {cutoff}.")
+
+            displacements = get_displacements(final_structure,
+                                              defect_entry.initial_structure,
+                                              defect_center,
+                                              defect_entry.anchor_atom_index)
 
         if not procar:
             band_edge_energies = orbital_character = participation_ratio = None
@@ -399,6 +401,8 @@ class SupercellCalcResults(MSONable):
                    fermi_level=fermi_level,
                    is_converged=vasprun.converged_ionic,
                    defect_center=defect_center,
+                   defect_coords=defect_coords,
+                   displacements=displacements,
                    neighboring_sites_after_relax=neighboring_sites,
                    band_edge_energies=band_edge_energies,
                    orbital_character=orbital_character,
@@ -433,6 +437,8 @@ class SupercellCalcResults(MSONable):
                    fermi_level=d["fermi_level"],
                    is_converged=d["is_converged"],
                    defect_center=d["defect_center"],
+                   defect_coords=d["defect_coords"],
+                   displacements=d["displacements"],
                    neighboring_sites_after_relax
                    =d["neighboring_sites_after_relax"],
                    band_edge_energies=band_edge_energies,
@@ -468,6 +474,8 @@ class SupercellCalcResults(MSONable):
              "fermi_level":             self.fermi_level,
              "is_converged":            self.is_converged,
              "defect_center":           self.defect_center,
+             "defect_coords":           self.defect_coords,
+             "displacements":           self.displacements,
              "neighboring_sites_after_relax":
                  self.neighboring_sites_after_relax,
              "band_edge_energies":      band_edge_energies,

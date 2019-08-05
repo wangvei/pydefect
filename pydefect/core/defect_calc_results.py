@@ -31,7 +31,7 @@ from pydefect.core.error_classes import NoConvergenceError, StructureError
 from pydefect.util.logger import get_logger
 from pydefect.util.structure_tools import get_displacements
 from pydefect.vasp_util.util import calc_participation_ratio, \
-    calc_orbital_character, calc_orbital_similarity
+    calc_orbital_character, calc_orbital_difference
 
 __author__ = "Yu Kumagai"
 __maintainer__ = "Yu Kumagai"
@@ -458,14 +458,14 @@ class DefectCalcResults(MSONable):
                 perfect = perfect_orbital_character[Spin.up]
 
             # hob
-            vbm_dissimilarity = calc_orbital_similarity(
+            vbm_dissimilarity = calc_orbital_difference(
                 orbital_character[spin]["hob"]["max"], perfect["hob"]["max"])
-            donor_phs_dissimilarity = calc_orbital_similarity(
+            donor_phs_dissimilarity = calc_orbital_difference(
                 orbital_character[spin]["hob"]["min"], perfect["lub"]["min"])
             # lub
-            cbm_dissimilarity = calc_orbital_similarity(
+            cbm_dissimilarity = calc_orbital_difference(
                 orbital_character[spin]["lub"]["min"], perfect["lub"]["min"])
-            acceptor_phs_dissimilarity = calc_orbital_similarity(
+            acceptor_phs_dissimilarity = calc_orbital_difference(
                 orbital_character[spin]["lub"]["max"], perfect["hob"]["max"])
 
             if vbm_dissimilarity < dissimilarity_criterion \

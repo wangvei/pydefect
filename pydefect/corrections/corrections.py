@@ -23,7 +23,7 @@ from scipy.constants import elementary_charge, epsilon_0
 from scipy.stats import mstats
 
 from pydefect.core.defect_entry import DefectEntry
-from pydefect.core.supercell_calc_results import DefectSupercellCalcResults
+from pydefect.core.supercell_calc_results import SupercellCalcResults
 from pydefect.core.unitcell_calc_results import UnitcellCalcResults
 
 """
@@ -35,7 +35,7 @@ __author__ = "Akira Takahashi, Yu Kumagai"
 __maintainer__ = "Yu Kumagai"
 
 
-def calc_distance_two_planes(lattice_vectors):
+def calc_distance_two_planes(lattice_vectors: np.array) -> np.array:
     # (a_i x a_j) . a_k / |a_i . a_j|
     distance = np.zeros(3, dtype=float)
     for i in range(3):
@@ -74,6 +74,36 @@ def create_neighbor_lattices(lattice_vectors, max_length):
             neighbor_lattices.append(cart_vector.tolist())
 
     return neighbor_lattices
+
+
+def calc_relative_potential(dft_results, referenced_dft_results, defect_entry):
+    """
+    Return a list of relative site potential w.r.t. the perfect supercell.
+    None is inserted for interstitial sites.
+
+    Args:
+        dft_results (SupercellCalcResults):
+            SupercellDftResults object for defect supercell dft results.
+        referenced_dft_results (SupercellCalcResults):
+            SupercellDftResults object for referenced supercell dft results.
+            Usually it is for perfect supercell.
+        defect_entry (DefectEntry):
+            DefectEntry class object corresponding the SupercellDftResuts.
+    """
+    mapping = defect_entry.atom_mapping_to_perfect
+    relative_potential = list()
+
+    for d_atom, p_atom in enumerate(mapping):
+
+        if p_atom is None:
+            relative_potential.append(None)
+        else:
+            potential_defect = dft_results.electrostatic_potential[d_atom]
+            potential_perfect = \
+                referenced_dft_results.electrostatic_potential[p_atom]
+            relative_potential.append(potential_defect - potential_perfect)
+
+    return relative_potential
 
 
 class Ewald(MSONable):
@@ -237,6 +267,7 @@ class Ewald(MSONable):
 
 
 class Correction(ABC):
+    @property
     @abstractmethod
     def correction_energy(self):
         pass
@@ -418,6 +449,7 @@ class ExtendedFnvCorrection(Correction, MSONable):
     def compute_correction(cls,
                            defect_entry: DefectEntry,
                            defect_dft: SupercellCalcResults,
+                           perfect_dft: SupercellCalcResults,
                            unitcell_dft: UnitcellCalcResults,
                            ewald_json: Ewald = None,
                            to_filename: str = "ewald.json"):
@@ -437,13 +469,14 @@ class ExtendedFnvCorrection(Correction, MSONable):
             ewald.to_json_file(to_filename)
 
         return cls.compute_alignment_by_extended_fnv(
-            defect_entry, defect_dft, unitcell_dft, to_filename)
+            defect_entry, defect_dft, perfect_dft, unitcell_dft, to_filename)
 
     @classmethod
     def compute_alignment_by_extended_fnv(
             cls,
             defect_entry: DefectEntry,
             defect_dft: SupercellCalcResults,
+            perfect_dft: SupercellCalcResults,
             unitcell_dft: UnitcellCalcResults,
             ewald_json: str,
             use_symmetrized_structure: bool = True):
@@ -456,6 +489,8 @@ class ExtendedFnvCorrection(Correction, MSONable):
             defect_entry (DefectEntry):
             defect_dft (SupercellCalcResults):
                 Calculated defect DFT results.
+            perfect_dft (SupercellCalcResults):
+                Calculated defect DFT results for perfect supercell.
             unitcell_dft (UnitcellCalcResults):
             ewald_json (str):
             use_symmetrized_structure (bool):
@@ -465,8 +500,12 @@ class ExtendedFnvCorrection(Correction, MSONable):
         dielectric_tensor = unitcell_dft.total_dielectric_tensor
         ewald = Ewald.load_json(ewald_json)
 
-        diff_ep = \
-            [-ep for ep in defect_dft.relative_potential if ep is not None]
+        relative_potential = \
+            calc_relative_potential(dft_results=defect_dft,
+                                    referenced_dft_results=perfect_dft,
+                                    defect_entry=defect_entry)
+
+        diff_ep = [-ep for ep in relative_potential if ep is not None]
 
         defective_structure = defect_dft.final_structure
 

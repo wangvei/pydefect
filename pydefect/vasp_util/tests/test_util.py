@@ -7,7 +7,7 @@ from pymatgen.electronic_structure.core import Spin
 from pymatgen.io.vasp import Procar
 
 from pydefect.vasp_util.util import element_diff_from_structures, \
-    calc_participation_ratio, calc_orbital_character, calc_orbital_similarity
+    calc_participation_ratio, calc_orbital_character, calc_orbital_difference
 
 __author__ = "Yu Kumagai"
 __maintainer__ = "Yu Kumagai"
@@ -84,5 +84,5 @@ class CalcOrbitalSimilarityTest(unittest.TestCase):
                                            band_index=27,
                                            kpoint_index=0)
 
-        print(calc_orbital_similarity(orbital_1, orbital_2))
+        print(calc_orbital_difference(orbital_1, orbital_2))
 

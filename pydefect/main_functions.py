@@ -276,8 +276,8 @@ def supercell_calc_results(args):
                     raise IOError("Parsing data in perfect failed")
             else:
                 try:
-                    filename = join(args.perfect_results, "dft_results.json")
-                    perfect_results = SupercellCalcResults.load_json(filename)
+    #                filename = join(args.perfect_results, "dft_results.json")
+    #                perfect_results = SupercellCalcResults.load_json(filename)
                     de = DefectEntry.load_json(join(d, args.defect_entry_name))
 
                     dft_results = \
@@ -287,7 +287,6 @@ def supercell_calc_results(args):
                             contcar=args.contcar,
                             outcar=args.outcar,
                             procar=True,
-                            referenced_dft_results=perfect_results,
                             defect_entry=de,
                             symprec=args.symprec,
                             angle_tolerance=args.angle_tolerance)
@@ -420,6 +419,7 @@ def efnv_correction(args):
         c = ExtendedFnvCorrection. \
             compute_alignment_by_extended_fnv(defect_entry=entry,
                                               defect_dft=defect_dft_data,
+                                              perfect_dft=perfect_dft_data,
                                               unitcell_dft=unitcell_dft_data,
                                               ewald_json=ewald_filename)
 

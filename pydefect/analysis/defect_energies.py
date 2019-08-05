@@ -14,8 +14,6 @@ from pydefect.analysis.defect import Defect
 from pydefect.core.supercell_calc_results import SupercellCalcResults
 from pydefect.core.unitcell_calc_results import UnitcellCalcResults
 from pydefect.core.defect_name import DefectName
-from pydefect.database.num_symmetry_operation \
-    import num_symmetry_operation as nsymop
 from pydefect.util.logger import get_logger
 
 __author__ = "Yu Kumagai"
@@ -154,51 +152,33 @@ class DefectEnergies(MSONable):
         magnetization = defaultdict(dict)
 
         for d in defects:
-            name = d.defect_entry.name
-            charge = d.defect_entry.charge
-            annotation = d.defect_entry.annotation
-
-            element_diff = d.defect_entry.changes_of_num_elements
-
             # Calculate defect formation energies at the vbm
-            relative_energy = d.dft_results.relative_total_energy
-
-            correction_energy = d.correction.correction_energy
             element_interchange_energy = \
                 - sum([v * (relative_chem_pot.elem_coords[k] + standard_e[k])
-                       for k, v in element_diff.items()])
-            energy = (relative_energy + correction_energy +
+                       for k, v in d.changes_of_num_elements.items()])
+            energy = (d.relative_total_energy + d.correction_energy +
                       element_interchange_energy)
 
             e = DefectEnergy(energy=energy,
-                             convergence=d.dft_results.is_converged,
+                             convergence=d.is_converged,
                              is_shallow=d.is_shallow)
 
-            initial_sym = d.defect_entry.initial_site_symmetry
-            final_sym = d.dft_results.site_symmetry
-            initial_nsymop = nsymop(initial_sym)
-            final_nsymop = nsymop(final_sym)
-            n_sites = d.defect_entry.num_equiv_sites
-            mul = n_sites * initial_nsymop / final_nsymop
-
-            if not mul.is_integer():
+            if not d.multiplicity.is_integer():
                 logger.warning(
-                    "Multiplicity of {} in charge {} is invalid. equiv site: "
-                    "{}, initial sym: {}, final sym: {}".
-                        format(name, charge, n_sites, initial_sym, final_sym))
+                    f"Multiplicity of {d.name} charge {d.charge} is invalid."
+                    f"initial sym: {d.initial_symmetry}, final sym: {d.final_symmetry}.")
 
-            mag = round(d.dft_results.total_magnetization, 1)
-            if not mag.is_integer() and not d.is_shallow:
+            if not d.magnetization.is_integer() and not d.is_shallow:
                 logger.warning(
-                    "{} in charge {} is not shallow but with fractional "
-                    "magnetization: {}".format(name, charge, mag))
+                    f"{d.name} in charge {d.charge} is not shallow but with fractional "
+                    f"magnetization: {d.magnetization}")
 
             def set_value(dictionary, v):
-                dictionary[name].setdefault(charge, {}).update({annotation: v})
+                dictionary[d.name].setdefault(d.charge, {}).update({d.annotation: v})
 
             set_value(defect_energies, e)
-            set_value(multiplicity, mul)
-            set_value(magnetization, mag)
+            set_value(multiplicity, d.multiplicity)
+            set_value(magnetization, d.magnetization)
 
         return cls(defect_energies=dict(defect_energies),
                    multiplicity=dict(multiplicity),

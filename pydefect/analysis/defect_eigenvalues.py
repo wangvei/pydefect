@@ -26,14 +26,13 @@ class DefectEigenvalue(MSONable):
                  name: str,
                  charge: int,
                  kpoint_coords: list,
-                 kpoint_weights: list,
                  eigenvalues: np.array,
                  vbm: float,
                  cbm: float,
                  supercell_vbm: float,
                  supercell_cbm: float,
                  fermi_level: float,
-                 total_magnetization: float,
+                 magnetization: float,
                  orbital_character: dict = None,
                  eigenvalue_correction: dict = None,
                  band_edge_states: dict = None):
@@ -45,8 +44,6 @@ class DefectEigenvalue(MSONable):
                 Defect charge.
             kpoint_coords (list):
                 List of k-point coordinates
-            kpoint_weights (list):
-                List of k-point weights.
             eigenvalues (N_spin x N_kpoint x N_band np.array):
                 Numpy array for the electron eigenvalues in absolute scale.
                 e.g., eigenvalues[Spin.up][0][0] = array([-8.3171,  1.    ])
@@ -61,8 +58,8 @@ class DefectEigenvalue(MSONable):
                 Conduction band minimum in the perfect supercell.
             fermi_level (float):
                 Fermi level.
-            total_magnetization (float):
-                Total total_magnetization.
+            magnetization (float):
+                Total magnetization.
             eigenvalue_correction (dict):
                 Dict with key of correction name and value of correction value.
             band_edge_states (dict):
@@ -76,14 +73,13 @@ class DefectEigenvalue(MSONable):
         self.name = name
         self.charge = charge
         self.kpoint_coords = kpoint_coords
-        self.kpoint_weights = kpoint_weights
         self.eigenvalues = eigenvalues
         self.vbm = vbm
         self.cbm = cbm
         self.supercell_vbm = supercell_vbm
         self.supercell_cbm = supercell_cbm
         self.fermi_level = fermi_level
-        self.total_magnetization = total_magnetization
+        self.magnetization = magnetization
         self.orbital_character = orbital_character
         self.eigenvalue_correction = \
             dict(eigenvalue_correction) if eigenvalue_correction else None
@@ -92,16 +88,12 @@ class DefectEigenvalue(MSONable):
     @classmethod
     def from_files(cls,
                    unitcell: UnitcellCalcResults,
-                   perfect: SupercellCalcResults,
                    defect: Defect):
         """ Parse defect eigenvalues.
 
         Args:
             unitcell (UnitcellCalcResults):
                 UnitcellCalcResults object for band edge.
-            perfect (SupercellCalcResults):
-                SupercellDftResults object of perfect supercell for band edge in
-                supercell.
             defect (Defect):
                 Defect namedtuple object of a defect supercell DFT calculation
         """
@@ -109,27 +101,19 @@ class DefectEigenvalue(MSONable):
             raise UnitcellCalcResultsError(
                 "All the unitcell-related property is not set yet. ")
 
-        if defect.defect_entry is None:
-            name = None
-            charge = 0
-        else:
-            name = defect.defect_entry.name
-            charge = defect.defect_entry.charge
-
         # Note: vbm, cbm, perfect_vbm, perfect_cbm are in absolute energy.
-        return cls(name=name,
-                   charge=charge,
-                   kpoint_coords=defect.dft_results.kpoint_coords,
-                   kpoint_weights=defect.dft_results.kpoint_weights,
-                   eigenvalues=defect.dft_results.eigenvalues,
+        return cls(name=defect.name,
+                   charge=defect.charge,
+                   kpoint_coords=defect.kpoint_coords,
+                   eigenvalues=defect.eigenvalues,
                    vbm=unitcell.band_edge[0],
                    cbm=unitcell.band_edge[1],
-                   supercell_vbm=perfect.vbm,
-                   supercell_cbm=perfect.cbm,
-                   fermi_level=defect.dft_results.fermi_level,
-                   total_magnetization=defect.dft_results.total_magnetization,
-                   orbital_character=defect.dft_results.orbital_character,
-                   band_edge_states=defect.dft_results.band_edge_states)
+                   supercell_vbm=defect.supercell_vbm,
+                   supercell_cbm=defect.supercell_cbm,
+                   fermi_level=defect.fermi_level,
+                   magnetization=defect.magnetization,
+                   orbital_character=defect.orbital_character,
+                   band_edge_states=defect.band_edge_states)
 
     def plot(self, yrange=None, title=None, filename=None):
         """ Plots the defect eigenvalues.

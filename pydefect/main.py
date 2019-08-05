@@ -288,8 +288,6 @@ def main():
         "-s", dest="not_check_shallow", action="store_false",
         help="Not check whether the defects are shallow.")
     parser_supercell_results.add_argument(
-        "-pe", dest="perfect_results", type=str, default="perfect")
-    parser_supercell_results.add_argument(
         "-de", dest="defect_entry_name", type=str, default="defect_entry.json")
     parser_supercell_results.add_argument(
         "-be", dest="band_edge", type=str, nargs="+", default=None)
