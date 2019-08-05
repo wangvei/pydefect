@@ -19,7 +19,7 @@ import spglib
 from pydefect.core.config import SYMMETRY_TOLERANCE, ANGLE_TOL
 from pydefect.core.error_classes import StructureError
 from pydefect.util.logger import get_logger
-from pydefect.util.math_tools import normalized_random_3d_vector, random_vector
+from pydefect.util.math import normalized_random_3d_vector, random_vector
 
 __author__ = "Yu Kumagai"
 __maintainer__ = "Yu Kumagai"

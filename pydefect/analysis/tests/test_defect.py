@@ -50,6 +50,7 @@ class DefectEnergiesTest(PymatgenTest):
 
     def test_json(self):
         """ round trip test of to_json and from_json """
+#        tmp_file = os.path.join(test_dir, "Va_O1_2")
         tmp_file = tempfile.NamedTemporaryFile()
         self.defect.to_json_file(tmp_file.name)
         defect_from_json = Defect.load_json(tmp_file.name)

@@ -5,7 +5,6 @@ import os
 from collections import defaultdict
 from pathlib import Path
 from typing import Union
-from xml.etree.ElementTree import ParseError
 
 import numpy as np
 from monty.json import MontyEncoder, MSONable
@@ -16,7 +15,8 @@ from pydefect.core.config import DEFECT_SYMMETRY_TOLERANCE, ANGLE_TOL, \
 from pydefect.core.defect_entry import DefectEntry
 from pydefect.core.error_classes import NoConvergenceError, StructureError
 from pydefect.util.logger import get_logger
-from pydefect.util.object_converters import spin_key_to_str, str_key_to_spin
+from pydefect.util.tools import spin_key_to_str, str_key_to_spin, parse_file, \
+    defaultdict_to_dict
 from pydefect.vasp_util.util import calc_participation_ratio, \
     calc_orbital_character
 from pymatgen.core import Structure
@@ -30,32 +30,6 @@ __author__ = "Yu Kumagai"
 __maintainer__ = "Yu Kumagai"
 
 logger = get_logger(__name__)
-
-
-#def str_key_to_spin(arg: dict, value_to_band_edges=False):
-
-
-def parse_file(classmethod_name, parsed_filename):
-    try:
-        logger.info("Parsing {}...".format(parsed_filename))
-        return classmethod_name(parsed_filename)
-    except ParseError:
-        logger.warning("Parsing {} failed.".format(parsed_filename))
-        raise ParseError
-    except FileNotFoundError:
-        logger.warning("File {} doesn't exist.".format(parsed_filename))
-        raise FileNotFoundError
-
-
-def defaultdict_to_dict(d):
-    """Recursively change defaultdict to dict"""
-    if isinstance(d, defaultdict):
-        d = dict(d)
-    if isinstance(d, dict):
-        for key, value in d.items():
-            d[key] = defaultdict_to_dict(value)
-
-    return d
 
 
 def analyze_procar(hob_index: dict,
@@ -324,7 +298,8 @@ class SupercellCalcResults(MSONable):
         else:
             if defect_entry.defect_type.is_defect_center_atom:
                 defect_center = list(defect_entry.inserted_atoms.keys())[0]
-                defect_coords = final_structure[defect_center].frac_coords
+                defect_coords = \
+                    list(final_structure[defect_center].frac_coords)
             else:
                 defect_center = defect_coords \
                     = defect_entry.defect_center_coords
@@ -352,7 +327,7 @@ class SupercellCalcResults(MSONable):
         else:
             if procar is True:
                 procar = str(max(p.glob("*PROCAR*"), key=os.path.getctime))
-            procar = Procar(procar)
+            procar = parse_file(Procar, procar)
 
             # The k-point indices at the band edges in defect calculations.
             # hob (lub) = highest (lowest) (un)occupied state

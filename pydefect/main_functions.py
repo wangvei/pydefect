@@ -7,7 +7,6 @@ from glob import glob
 from inspect import signature
 from itertools import chain
 from os.path import join
-from shutil import copyfile
 
 from chempotdiag.chem_pot_diag import ChemPotDiag
 
@@ -20,7 +19,6 @@ from pydefect.analysis.defect_eigenvalues import DefectEigenvalue
 from pydefect.analysis.defect_energies import DefectEnergies
 from pydefect.analysis.defect_structure import DefectStructure
 from pydefect.core.defect_entry import DefectEntry
-from pydefect.core.error_classes import NoConvergenceError
 from pydefect.core.interstitial_site import InterstitialSiteSet
 from pydefect.core.prior_info import PriorInfo
 from pydefect.core.supercell_calc_results import SupercellCalcResults
@@ -32,7 +30,7 @@ from pydefect.input_maker.defect_entry_set_maker import log_is_being_removed, \
 from pydefect.input_maker.defect_initial_setting import dopant_info, \
     DefectInitialSetting
 from pydefect.input_maker.supercell_maker import Supercells
-from pydefect.util.main_tools import list2dict
+from pydefect.util.main_tools import list2dict, generate_objects
 from pydefect.util.logger import get_logger
 
 from pymatgen import Structure, Spin
@@ -42,24 +40,6 @@ __author__ = "Yu Kumagai, Akira Takahashi"
 __maintainer__ = "Yu Kumagai"
 
 logger = get_logger(__name__)
-
-
-def generate_objects(directory: str,
-                     files: list,
-                     classes: list,
-                     raise_error: bool = True):
-    objects = []
-    for f, c in zip(files, classes):
-        try:
-            objects.append(c.load_json(join(directory, f)))
-        except IOError:
-            logger.warning("Parsing {} in {} failed.".format(f, directory))
-            if raise_error:
-                raise
-            else:
-                logger.warning("Parsing {} in {} failed.".format(f, directory))
-                return False
-    return objects
 
 
 def recommend_supercell(args):
@@ -484,27 +464,45 @@ def vasp_oba_set(args):
     os.chdir(original_dir)
 
 
-def diagnose(args):
+def defects(args):
     # try:
     #     unitcell = UnitcellCalcResults.load_json(args.unitcell)
     # except FileNotFoundError:
     #     print("{} not found".format(args.unitcell))
 
-    # try:
-    #     perfect = SupercellCalcResults.load_json(args.perfect)
-    # except FileNotFoundError:
-    #     print("{} not found".format(args.perfect))
+    try:
+        perfect = SupercellCalcResults.load_json(args.perfect)
+    except FileNotFoundError:
+        print(f"{args.perfect} not found.")
+        raise
 
     defects_dirs = args.defect_dirs if args.defect_dirs else glob('*[0-9]/')
     for d in defects_dirs:
-        print(d.rjust(12), end="  ")
-        try:
-            dft_results = SupercellCalcResults.load_json(join(d, args.json))
-            print(dft_results.diagnose)
-        except FileNotFoundError:
-            print("No supercell results file.")
-        except:
-            print("An error is caught.")
+        filename = join(d, args.json)
+        if args.diagnose:
+            print(d.rjust(12), end="  ")
+            try:
+                print(Defect.load_json(filename).diagnose)
+            except FileNotFoundError:
+                logger.warning("No supercell results file.")
+            except Exception as e:
+                logger.warning(f"An error {e} is caught.")
+            continue
+
+        logger.info("parsing directory {}...".format(d))
+        files = [args.defect_entry, args.dft_results, args.correction]
+        classes = [DefectEntry, SupercellCalcResults, ExtendedFnvCorrection]
+        input_objects = generate_objects(d, files, classes, raise_error=False)
+
+        if input_objects:
+            defect = Defect.from_objects(defect_entry=input_objects[0],
+                                         dft_results=input_objects[1],
+                                         perfect_dft_results=perfect,
+                                         correction=input_objects[2])
+            defect.to_json_file(filename)
+        else:
+            logger.warning(f"Generating {filename} failed.")
+            continue
 
 
 def plot_energy(args):
@@ -515,39 +513,27 @@ def plot_energy(args):
         unitcell = UnitcellCalcResults.load_json(args.unitcell)
         perfect = SupercellCalcResults.load_json(args.perfect)
 
-        defects_dirs = \
-            args.defect_dirs if args.defect_dirs else glob('*[0-9]/')
+        defects_dirs = args.dirs if args.dirs else glob('*[0-9]/')
 
-        defects = []
+        defect_list = []
         for d in defects_dirs:
+            filename = join(d, args.defect)
             logger.info("parsing directory {}...".format(d))
-            files = [args.defect_entry, args.dft_results, args.correction]
-            classes = \
-                [DefectEntry, SupercellCalcResults, ExtendedFnvCorrection]
-
-            input_objects = generate_objects(d, files, classes,
-                                             raise_error=False)
-
-            if input_objects:
-                defects.append(Defect(defect_entry=input_objects[0],
-                                      dft_results=input_objects[1],
-                                      correction=input_objects[2]))
-            else:
-                logger.warning("Parsing {} failed.".format(d))
+            try:
+                defect_list.append(Defect.load_json(filename))
+            except FileNotFoundError:
+                logger.warning(f"Parsing {filename} failed.")
                 continue
 
         chem_pot = ChemPotDiag.load_vertices_yaml(args.chem_pot_yaml)
 
         # First construct DefectEnergies class object.
-        defect_energies = \
-            DefectEnergies.from_objects(unitcell=unitcell,
-                                        perfect=perfect,
-                                        defects=defects,
-                                        chem_pot=chem_pot,
-                                        chem_pot_label=args.chem_pot_label,
-                                        system=args.name)
+        defect_energies = DefectEnergies.from_objects(
+            unitcell=unitcell, perfect=perfect, defects=defect_list,
+            chem_pot=chem_pot, chem_pot_label=args.chem_pot_label,
+            system=args.name)
 
-        defect_energies.to_json_file(filename=args.energies)
+    defect_energies.to_json_file(filename=args.energies)
 
     # if args.concentration:
     #     defect_concentration = \
@@ -579,21 +565,13 @@ def plot_energy(args):
 
 def parse_eigenvalues(args):
     unitcell = UnitcellCalcResults.load_json(args.unitcell)
-    perfect = SupercellCalcResults.load_json(args.perfect)
 
     # TODO: Modify here to run w/o correction
     logger.info("parsing directory {}...".format(args.defect_dir))
-    files = [args.defect_entry, args.dft_results, args.correction]
-    classes = [DefectEntry, SupercellCalcResults, ExtendedFnvCorrection]
-    input_objects = generate_objects(args.defect_dir, files, classes)
-    if input_objects is False:
-        raise IOError
-    defect = Defect(defect_entry=input_objects[0],
-                    dft_results=input_objects[1],
-                    correction=input_objects[2])
+    filename = join(args.defect_dir, args.defect)
+    defect = Defect.load_json(filename)
 
     defect_eigenvalues = DefectEigenvalue.from_files(unitcell=unitcell,
-                                                     perfect=perfect,
                                                      defect=defect)
 
     defect_eigenvalues.plot(yrange=args.y_range, title=args.title,
@@ -624,15 +602,16 @@ def local_structure(args):
 
     for d in defects_dirs:
         logger.info("parsing directory {}...".format(d))
-        files = [args.defect_entry, args.dft_results]
-        classes = [DefectEntry, SupercellCalcResults]
-        input_objects = generate_objects(d, files, classes)
-        if input_objects:
-            defect = Defect(defect_entry=input_objects[0],
-                            dft_results=input_objects[1],
-                            correction=None)
-            defect_structure = DefectStructure.from_defect(defect)
-            print(defect_structure.show_displacements(all_atoms=args.show_all))
+        filename = join(d, args.defect)
+        logger.info("parsing directory {}...".format(d))
+        try:
+            defect = Defect.load_json(filename)
+        except FileNotFoundError:
+            logger.warning(f"Parsing {filename} failed.")
+            continue
+
+        defect_structure = DefectStructure.from_defect(defect)
+        print(defect_structure.show_displacements(all_atoms=args.show_all))
 
 
 def concentration(args):

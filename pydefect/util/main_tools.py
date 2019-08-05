@@ -1,8 +1,13 @@
 # -*- coding: utf-8 -*-
 from inspect import signature, _empty
+from os.path import join
+from pydefect.util.logger import get_logger
+
 
 __author__ = "Yu Kumagai"
 __maintainer__ = "Yu Kumagai"
+
+logger = get_logger(__name__)
 
 
 def overwrite_default_args(class_method, main_args):
@@ -94,3 +99,21 @@ def list2dict(arg_list, flags):
         d[arg_list[flag_indices[i]]] = value
 
     return d
+
+
+def generate_objects(directory: str,
+                     files: list,
+                     classes: list,
+                     raise_error: bool = True):
+    objects = []
+    for f, c in zip(files, classes):
+        try:
+            objects.append(c.load_json(join(directory, f)))
+        except IOError:
+            logger.warning("Parsing {} in {} failed.".format(f, directory))
+            if raise_error:
+                raise
+            else:
+                logger.warning("Parsing {} in {} failed.".format(f, directory))
+                return False
+    return objects

@@ -11,7 +11,8 @@ from pymatgen.util.testing import PymatgenTest
 
 from pydefect.core.defect_entry import DefectEntry
 from pydefect.core.supercell_calc_results \
-    import SupercellCalcResults, defaultdict_to_dict
+    import SupercellCalcResults
+from pydefect.util.tools import defaultdict_to_dict
 
 __author__ = "Yu Kumagai"
 __maintainer__ = "Yu Kumagai"

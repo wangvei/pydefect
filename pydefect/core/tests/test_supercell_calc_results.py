@@ -8,7 +8,8 @@ from collections import defaultdict
 import numpy as np
 from pydefect.core.defect_entry import DefectEntry
 from pydefect.core.supercell_calc_results \
-    import SupercellCalcResults, defaultdict_to_dict
+    import SupercellCalcResults
+from pydefect.util.tools import defaultdict_to_dict
 from pymatgen.electronic_structure.core import Spin
 from pymatgen.util.testing import PymatgenTest
 

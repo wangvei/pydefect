@@ -8,6 +8,7 @@ from monty.json import MontyEncoder, MSONable
 from monty.serialization import loadfn
 
 from obadb.analyzer.band_gap import band_gap_properties
+from pydefect.util.tools import make_symmetric_matrix
 
 from pymatgen.io.vasp.outputs import Outcar, Vasprun, Poscar
 from pymatgen.electronic_structure.core import Spin
@@ -18,41 +19,6 @@ __author__ = "Yu Kumagai"
 __maintainer__ = "Yu Kumagai"
 
 logger = get_logger(__name__)
-
-
-def make_symmetric_matrix(d):
-    """
-    d (list or float):
-        len(d) == 1: Suppose cubic system
-        len(d) == 3: Suppose tetragonal or orthorhombic system
-        len(d) == 6: Suppose the other system
-    """
-    if isinstance(d, float):
-        tensor = np.array([[d, 0, 0],
-                           [0, d, 0],
-                           [0, 0, d]])
-    elif len(d) == 1:
-        tensor = np.array([[d[0], 0,  0],
-                           [0,  d[0], 0],
-                           [0,  0,  d[0]]])
-    elif len(d) == 3:
-        tensor = np.array([[d[0], 0, 0],
-                           [0, d[1], 0],
-                           [0, 0, d[2]]])
-    elif len(d) == 6:
-        from pymatgen.util.num import make_symmetric_matrix_from_upper_tri
-        """ 
-        Given a symmetric matrix in upper triangular matrix form as flat array 
-        indexes as:
-        [A_xx, A_yy, A_zz, A_xy, A_xz, A_yz]
-        This will generate the full matrix:
-        [[A_xx, A_xy, A_xz], [A_xy, A_yy, A_yz], [A_xz, A_yz, A_zz]
-        """
-        tensor = make_symmetric_matrix_from_upper_tri(d)
-    else:
-        raise ValueError("{} is not valid to make symmetric matrix".format(d))
-
-    return tensor
 
 
 class UnitcellCalcResults(MSONable):

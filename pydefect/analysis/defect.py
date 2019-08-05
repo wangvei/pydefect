@@ -14,7 +14,7 @@ from pydefect.util.logger import get_logger
 from pydefect.vasp_util.util import calc_orbital_difference
 from pymatgen.core.structure import Structure
 from pymatgen.electronic_structure.core import Spin
-from pydefect.util.object_converters import spin_key_to_str, str_key_to_spin
+from pydefect.util.tools import spin_key_to_str, str_key_to_spin
 
 __author__ = "Yu Kumagai"
 __maintainer__ = "Yu Kumagai"
@@ -243,6 +243,8 @@ class Defect(MSONable):
         num_equiv_sites = defect_entry.num_equiv_sites
         multiplicity = num_equiv_sites * initial_nsymop / final_nsymop
 
+        magnetization = round(dft_results.total_magnetization, 2)
+
         band_edge_states = \
             diagnose_band_edges(dft_results.participation_ratio,
                                 dft_results.orbital_character,
@@ -277,7 +279,7 @@ class Defect(MSONable):
                    final_symmetry=dft_results.site_symmetry,
                    num_equiv_sites=num_equiv_sites,
                    multiplicity=multiplicity,
-                   magnetization=dft_results.total_magnetization,
+                   magnetization=magnetization,
                    kpoint_coords=dft_results.kpoint_coords,
                    eigenvalues=dft_results.eigenvalues,
                    supercell_vbm=perfect_dft_results.vbm,
@@ -296,13 +298,13 @@ class Defect(MSONable):
         initial_structure = d["initial_structure"]
         perturbed_initial_structure = d["perturbed_initial_structure"]
         final_structure = d["final_structure"]
-        if isinstance(final_structure, dict):
-            final_structure = Structure.from_dict(final_structure)
         if isinstance(initial_structure, dict):
             initial_structure = Structure.from_dict(initial_structure)
         if isinstance(perturbed_initial_structure, dict):
             perturbed_initial_structure = \
                 Structure.from_dict(perturbed_initial_structure)
+        if isinstance(final_structure, dict):
+            final_structure = Structure.from_dict(final_structure)
 
         orbital_character = str_key_to_spin(d["orbital_character"])
         band_edge_states = \
@@ -392,7 +394,7 @@ class Defect(MSONable):
             band_edges.extend([s.name.upper(), "->", str(v).rjust(17)])
 
         outs = [f" conv. : {self.is_converged}",
-                f"  mag. : {self.magnetization}",
+                f"  mag. : {self.magnetization:>7}",
                 f"  sym. : {self.final_symmetry:>4}",
                 f"  band edge : {'  '.join(band_edges)}"]
 

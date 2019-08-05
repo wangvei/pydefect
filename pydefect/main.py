@@ -476,31 +476,39 @@ def main():
 
     parser_vasp_oba_set.set_defaults(func=vasp_oba_set)
 
-    # -- diagnose -------------------------------------------------------------
-    parser_diagnose = subparsers.add_parser(
-        name="diagnose",
-        description="Tools for diagnosing results related to defects.",
+    # -- defects -------------------------------------------------------------
+    parser_defects = subparsers.add_parser(
+        name="defects",
+        description="Tools for generating and analyzing Defect objects that "
+                    "are used for analyzing results.",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
         aliases=['d'])
 
-    parser_diagnose.add_argument(
+    parser_defects.add_argument(
         "--defect_dirs", dest="defect_dirs", nargs="+", type=str,
         help="Directory names for the defect supercell results. "
              "defect_entry.json, dft_results.json, and correction.json files "
              "are required in each directory.")
-    parser_diagnose.add_argument(
-        "--unitcell", dest="unitcell", type=str, default="unitcell.json",
-        help="UnitcellCalcResults class object json file name.")
-    parser_diagnose.add_argument(
+    parser_defects.add_argument(
+        "-d", dest="diagnose", action="store_true",
+        help="Show diagnosed defect results.")
+    parser_defects.add_argument(
+        "--json", dest="json", type=str, default="defect.json",
+        help="defect.json type file name.")
+    parser_defects.add_argument(
         "--perfect", dest="perfect", type=str,
         default="perfect/dft_results.json",
         help="Json file name for the SupercellCalcResults class object of the "
              "perfect supercell result.")
-    parser_diagnose.add_argument(
-        "--json", dest="json", type=str, default="dft_results.json",
-        help="dft_results.json type file name.")
+    parser_defects.add_argument(
+        "--de", dest="defect_entry", type=str, default="defect_entry.json")
+    parser_defects.add_argument(
+        "--correction", dest="correction", type=str, default="correction.json")
+    parser_defects.add_argument(
+        "--dft_results", dest="dft_results", type=str,
+        default="dft_results.json")
 
-    parser_diagnose.set_defaults(func=diagnose)
+    parser_defects.set_defaults(func=defects)
 
     # -- plot_energy ----------------------------------------------------------
     parser_plot_energy = subparsers.add_parser(
@@ -535,14 +543,9 @@ def main():
         help="Json file name for the SupercellCalcResults class object of the "
              "perfect supercell result.")
     parser_plot_energy.add_argument(
-        "--de", dest="defect_entry", type=str, default="defect_entry.json")
+        "--d", dest="defect", type=str, default="defect.json")
     parser_plot_energy.add_argument(
-        "--dft_results", dest="dft_results", type=str,
-        default="dft_results.json")
-    parser_plot_energy.add_argument(
-        "--correction", dest="correction", type=str, default="correction.json")
-    parser_plot_energy.add_argument(
-        "--defect_dirs", dest="defect_dirs", nargs="+", type=str,
+        "--defect_dirs", dest="dirs", nargs="+", type=str,
         help="Directory names for the defect supercell results. "
              "defect_entry.json, dft_results.json, and correction.json files "
              "are required in each directory.")
@@ -590,18 +593,13 @@ def main():
     parser_parse_eigenvalues.add_argument(
         "--unitcell", dest="unitcell", type=str, default="unitcell.json",
         help="UnitcellCalcResults class object json file name.")
+    # parser_parse_eigenvalues.add_argument(
+    #     "--perfect", dest="perfect", type=str,
+    #     default="perfect/dft_results.json",
+    #     help="Json file name for the SupercellCalcResults class object of the "
+    #          "perfect supercell result.")
     parser_parse_eigenvalues.add_argument(
-        "--perfect", dest="perfect", type=str,
-        default="perfect/dft_results.json",
-        help="Json file name for the SupercellCalcResults class object of the "
-             "perfect supercell result.")
-    parser_parse_eigenvalues.add_argument(
-        "--de", dest="defect_entry", type=str, default="defect_entry.json")
-    parser_parse_eigenvalues.add_argument(
-        "--dft_results", dest="dft_results", type=str,
-        default="dft_results.json")
-    parser_parse_eigenvalues.add_argument(
-        "--correction", dest="correction", type=str, default="correction.json")
+        "--d", dest="defect", type=str, default="defect.json")
     parser_parse_eigenvalues.add_argument(
         "--defect_dir", dest="defect_dir", type=str,
         help="Directory name for the defect supercell result. "
@@ -640,10 +638,7 @@ def main():
         aliases=['ls'])
 
     parser_local_structure.add_argument(
-        "--de", dest="defect_entry", type=str, default="defect_entry.json")
-    parser_local_structure.add_argument(
-        "--dft_results", dest="dft_results", type=str,
-        default="dft_results.json")
+        "--d", dest="defect", type=str, default="defect.json")
     parser_local_structure.add_argument(
         "--show_all", dest="show_all", action="store_true")
     parser_local_structure.add_argument(

@@ -20,7 +20,7 @@ class DefectStructure(MSONable):
 
     def __init__(self,
                  name: str,
-                 volume: float,
+                 final_volume: float,
                  initial_structure: Structure,
                  perturbed_initial_structure: Structure,
                  final_structure: Structure,
@@ -34,7 +34,7 @@ class DefectStructure(MSONable):
         Args:
             name (str):
                 Name of a defect
-            volume (float):
+            final_volume (float):
                 Volume of the supercell.
             initial_structure (Structure):
                 Structure with a defect before the structure optimization.
@@ -65,7 +65,7 @@ class DefectStructure(MSONable):
 
         """
         self.name = name
-        self.volume = volume
+        self.final_volume = final_volume
 
         self.initial_structure = deepcopy(initial_structure)
         self.perturbed_initial_structure = \
@@ -91,7 +91,7 @@ class DefectStructure(MSONable):
     @classmethod
     def from_defect(cls, defect: Defect):
         return cls(name=defect.name,
-                   volume=defect.volume,
+                   final_volume=defect.final_volume,
                    initial_structure=defect.initial_structure,
                    perturbed_initial_structure=
                    defect.perturbed_initial_structure,
@@ -109,6 +109,7 @@ class DefectStructure(MSONable):
 
     def show_displacements(self, all_atoms: bool = False):
         is_defect_center_atom = isinstance(self.defect_center, int)
+        print(self.defect_center_coords)
         defect_center_str = [round(i, 3) for i in self.defect_center_coords]
         lines = [f"Is defect center atomic position?: {is_defect_center_atom}",
                  f"Defect center position: {defect_center_str}"]

@@ -8,7 +8,6 @@ from monty.json import MSONable, MontyEncoder
 import matplotlib.pyplot as plt
 
 from pydefect.analysis.defect import Defect
-from pydefect.core.supercell_calc_results import SupercellCalcResults
 from pydefect.core.unitcell_calc_results import UnitcellCalcResults
 from pydefect.core.error_classes import UnitcellCalcResultsError
 from pydefect.util.logger import get_logger
