@@ -6,6 +6,7 @@ import numpy as np
 from typing import Union
 
 from pymatgen.core.structure import Structure
+from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
 
 from obadb.util.structure_handler import find_spglib_standard_conventional, \
     find_spglib_standard_primitive
@@ -20,7 +21,7 @@ logger = get_logger(__name__)
 
 
 def calc_isotropy(structure: Structure,
-                  trans_mat: np.array) -> float:
+                  trans_mat: np.array) -> tuple:
     """ Return mean absolute deviation of lattice constants from their average
 
     Args:
@@ -31,11 +32,20 @@ def calc_isotropy(structure: Structure,
 
     Return
         isotropy (float):
+           Defined as the mean absolute deviation of the lattice constants
+           from the averaged lattice constant
+           np.sum(np.abs(abc - average_abc) / average_abc) / 3
+        alpha (float):
+            Angle alpha of lattice in degree.
     """
-    super_abc = trans_mat * structure.lattice.abc
+    new_structure = structure * trans_mat
+    alpha = round(new_structure.lattice.alpha, 2)
+    super_abc = new_structure.lattice.abc
     average_abc = np.mean(super_abc)
 
-    return round(np.sum(np.abs(super_abc - average_abc) / average_abc) / 3, 4)
+    isotropy = np.sum(np.abs(super_abc - average_abc) / average_abc) / 3
+
+    return round(isotropy, 4), alpha
 
 
 class Supercell:
@@ -53,8 +63,10 @@ class Supercell:
             multiplicity (int):
                 The size multiplicity of structure wrt the primitive cell.
         """
-        trans_mat = \
-            list(trans_mat) if isinstance(trans_mat, Iterable) else [trans_mat]
+        if isinstance(trans_mat, Iterable):
+            trans_mat = list(trans_mat)
+        else:
+            trans_mat = [trans_mat]
 
         if len(trans_mat) == 1:
             trans_mat_str = str(trans_mat)
@@ -62,7 +74,7 @@ class Supercell:
             trans_mat_str = ' '.join([str(i) for i in trans_mat])
             trans_mat = np.reshape(trans_mat, (3, 3))
         elif len(trans_mat) == 3:
-            if isinstance(trans_mat[0], list) and len(trans_mat[0]) == 3:
+            if isinstance(trans_mat[0], Iterable) and len(trans_mat[0]) == 3:
                 trans_mat = np.array(trans_mat)
                 trans_mat_str = \
                     ' '.join([str(int(i)) for i in trans_mat.flatten()])
@@ -82,7 +94,7 @@ class Supercell:
         self.num_atoms = self.structure.num_sites
 
         self.comment = f"trans_mat: {trans_mat_str}, multi: {multiplicity}, " \
-                       f"isotropy: {self.isotropy}\n"
+                       f"isotropy: {self.isotropy[0]}\n"
 
     def to_poscar(self, poscar_filename):
         poscar_str = self.structure.to(fmt="poscar").splitlines(True)
@@ -99,88 +111,106 @@ class Supercell:
 class Supercells:
     def __init__(self,
                  structure: Structure,
-                 is_conventional: bool = True,
+                 conventional_base: bool = True,
                  max_num_atoms: int = 400,
                  min_num_atoms: int = 50,
-                 isotropy_criterion: float = 0.12):
+                 criterion: float = 0.12,
+                 spread_rhombohedral: bool = True):
         """ Constructs a set of supercells satisfying a criterion.
 
         Args:
             structure (pmg structure class object):
                 Unitcell structure
-            is_conventional (bool):
+            conventional_base (bool):
                 Conventional cell is expanded when True, otherwise primitive
                 cell is expanded.
             max_num_atoms (int):
                 Maximum number of atoms in the supercell.
             min_num_atoms (int):
                 Minimum number of atoms in the supercell.
-            isotropy_criterion (float):
+            criterion (float):
                 Criterion to judge if a supercell is isotropic or not.
-                Isotropy is defined as the mean absolute deviation of the
-                lattice constants from the averaged lattice constant.
-                np.sum(np.abs(abc - average_abc) / average_abc) / 3
+            spread_rhombohedral (bool):
+                Rhombohedral primitive cells may have very small lattice angles
+                that are not suited for first-principles calculations. Is
+                spread_rhombohedral is True, only the supercells with
+                60 < alpha < 120 are returned. Then, the new supercells are
+                created by multiplying [[1, 1, -1], [-1, 1, 1], [1, -1, 1]].
         """
-        structure = structure.copy()
+        self.conventional_base = False
+        rhombohedral = False
+        primitive_cell = find_spglib_standard_primitive(structure)[0]
 
-        self.is_conventional_based = False
-        if is_conventional:
-            primitive = find_spglib_standard_primitive(structure)[0]
-            conventional = find_spglib_standard_conventional(structure)
-            if conventional.num_sites == primitive.num_sites:
-                logger.info("Primitive cell is same as is_conventional cell.")
+        if conventional_base:
+            conventional_cell = find_spglib_standard_conventional(structure)
+            if conventional_cell.num_sites == primitive_cell.num_sites:
+                logger.info("Primitive cell is same as the conventional cell.")
             else:
-                self.is_conventional_based = True
+                self.conventional_base = True
 
-            unitcell = conventional
+            unitcell = conventional_cell
         else:
-            primitive = find_spglib_standard_primitive(structure)[0]
-            unitcell = primitive
+            unitcell = primitive_cell
+            sga = SpacegroupAnalyzer(structure=primitive_cell)
+            rhombohedral = sga.get_lattice_type() == "rhombohedral"
 
         self.unitcell = unitcell.get_sorted_structure()
-        abc = np.array(self.unitcell.lattice.abc)
-        num_atoms_in_unitcell = self.unitcell.num_sites
+        unitcell_num_atoms = self.unitcell.num_sites
+        unitcell_mul = int(unitcell_num_atoms / primitive_cell.num_sites)
 
-        if max_num_atoms < num_atoms_in_unitcell:
-            raise CellSizeError("Number of atoms in the unitcell is too large.")
+        if max_num_atoms < unitcell_num_atoms:
+            raise CellSizeError("Number of atoms in unitcell is too large.")
 
-        trans_mat = np.ones(3, dtype="int8")
         self.supercells = []
 
-        for i in range(int(max_num_atoms / num_atoms_in_unitcell)):
-            num_atoms = trans_mat.prod() * num_atoms_in_unitcell
-            if num_atoms > max_num_atoms:
-                break
-            isotropy = calc_isotropy(self.unitcell, trans_mat)
-            if isotropy < isotropy_criterion and num_atoms >= min_num_atoms:
-                multiplicity = int(self.unitcell.num_sites /
-                                   primitive.num_sites * trans_mat.prod())
+        trans_mat = np.identity(3, dtype="int8")
+
+        for i in range(int(max_num_atoms / unitcell_num_atoms)):
+            print(trans_mat)
+            isotropy, angle = calc_isotropy(self.unitcell, trans_mat)
+            multiplicity = int(unitcell_mul * round(np.linalg.det(trans_mat)))
+
+            ill_shaped_rhombohedral = \
+                spread_rhombohedral and rhombohedral and not 60 < angle < 120
+
+            num_atoms = int(multiplicity * primitive_cell.num_sites)
+            if isotropy < criterion and num_atoms >= min_num_atoms and \
+                    not ill_shaped_rhombohedral:
                 self.supercells.append(
                     Supercell(self.unitcell, trans_mat, multiplicity))
 
-            super_abc = trans_mat * abc
-            # multi indices within 1.05a, where a is the shortest supercell
-            # lattice length, are incremented.
-            for j in range(3):
-                if super_abc[j] / min(super_abc) < 1.05:
-                    trans_mat[j] += 1
+            if ill_shaped_rhombohedral:
+                multiplied_matrix = np.array([[ 1,  1, -1],
+                                              [-1,  1,  1],
+                                              [ 1, -1,  1]])
+                trans_mat = np.dot(multiplied_matrix, trans_mat)
+
+            else:
+                super_abc = (self.unitcell * trans_mat).lattice.abc
+                # multi indices within 1.05a, where a is the shortest supercell
+                # lattice length, are incremented.
+                for j in range(3):
+                    if super_abc[j] / min(super_abc) < 1.05:
+                        trans_mat[j, j] += 1
+
+            if multiplicity * unitcell_num_atoms > max_num_atoms:
+                break
 
     @property
-    def create_sorted_supercells_by_num_atoms(self) -> list:
+    def sorted_supercells_by_num_atoms(self) -> list:
         return sorted(deepcopy(self.supercells),
                       key=lambda x: (x.num_atoms, x.isotropy))
 
     @property
-    def create_sorted_supercells_by_isotropy(self) -> list:
+    def sorted_supercells_by_isotropy(self) -> list:
         return sorted(deepcopy(self.supercells),
                       key=lambda x: (x.isotropy, x.num_atoms))
 
     @property
-    def create_smallest_supercell(self) -> Supercell:
-        return self.create_sorted_supercells_by_num_atoms[0]
+    def smallest_supercell(self) -> Supercell:
+        return self.sorted_supercells_by_num_atoms[0]
 
     @property
-    def create_most_isotropic_supercell(self) -> Supercell:
-        return self.create_sorted_supercells_by_isotropy[0]
-
+    def most_isotropic_supercell(self) -> Supercell:
+        return self.sorted_supercells_by_isotropy[0]
 
