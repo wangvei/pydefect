@@ -1,7 +1,5 @@
 # -*- coding: utf-8 -*-
 
-from collections import defaultdict
-import numpy as np
 import os
 from scipy.constants import physical_constants
 import tempfile
@@ -10,9 +8,6 @@ from pymatgen.util.testing import PymatgenTest
 
 from pydefect.analysis.defect_carrier_concentration import *
 from pydefect.core.unitcell_calc_results import UnitcellCalcResults
-from pydefect.core.supercell_calc_results import SupercellCalcResults
-from pydefect.core.defect_entry import DefectEntry
-from pydefect.corrections.corrections import ExtendedFnvCorrection
 
 __author__ = "Yu Kumagai"
 __maintainer__ = "Yu Kumagai"
@@ -21,6 +16,15 @@ test_dir = os.path.join(os.path.dirname(__file__), "..", "..", "..",
                         "test_files", "core")
 
 EV = physical_constants['Boltzmann constant in eV/K'][0]
+
+
+class AllCombinationTest(PymatgenTest):
+    def test(self):
+        # a = {'Va_O1': {0: {None: {'energy': 1.362400134999998, 'convergence': True, 'is_shallow': False}}, 1: {None: {'energy': -4.2058905866258645, 'convergence': True, 'is_shallow': False}}, 2: {None: {'energy': -7.983747657760918, 'convergence': True, 'is_shallow': False}, 'inward': {'energy': -6.016447897493341, 'convergence': True, 'is_shallow': False}}}}
+        # print(all_combination(a))
+        b = {0: {None: {'energy': 1.362400134999998, 'convergence': True, 'is_shallow': False}}, 1: {None: {'energy': -4.2058905866258645, 'convergence': True, 'is_shallow': False}}, 2: {None: {'energy': -7.983747657760918, 'convergence': True, 'is_shallow': False}, 'inward': {'energy': -6.016447897493341, 'convergence': True, 'is_shallow': False}}}
+        # print(all_combination(a))
+        print(all_combination(b))
 
 
 class CalcCarrierConcentrationTest(PymatgenTest):

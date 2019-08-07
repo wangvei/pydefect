@@ -17,7 +17,7 @@ from pydefect.core.error_classes import NoConvergenceError, StructureError
 from pydefect.util.logger import get_logger
 from pydefect.util.tools import spin_key_to_str, str_key_to_spin, parse_file, \
     defaultdict_to_dict
-from pydefect.vasp_util.util import calc_participation_ratio, \
+from pydefect.util.vasp_util import calc_participation_ratio, \
     calc_orbital_character
 from pymatgen.core import Structure
 from pymatgen.electronic_structure.core import Spin

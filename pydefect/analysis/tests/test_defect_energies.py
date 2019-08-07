@@ -6,7 +6,8 @@ import unittest
 
 from chempotdiag.chem_pot_diag import ChemPotDiag
 
-from pydefect.analysis.defect_energies import convert_str_in_dict, DefectEnergies
+from pydefect.analysis.defect_energies import DefectEnergies
+from pydefect.util.tools import sanitize_keys_in_dict
 from pydefect.analysis.defect import Defect
 from pydefect.corrections.corrections import ExtendedFnvCorrection
 from pydefect.core.supercell_calc_results import SupercellCalcResults
@@ -22,9 +23,9 @@ test_dir = os.path.join(os.path.dirname(__file__), "..", "..", "..",
 
 class ConvertStrKeysTest(unittest.TestCase):
 
-    d = {"Va_O1_0": {"0": {"null": "1.0"}, "1": {"inward": "2.0"}}}
+    d = {"Va_O1_0": {"0": {"null": 1.0}, "1": {"inward": 2.0}}}
     print(type(d["Va_O1_0"]))
-    print(convert_str_in_dict(d, float))
+    print(sanitize_keys_in_dict(d))
 
 
 class DefectEnergiesTest(unittest.TestCase):
@@ -42,20 +43,8 @@ class DefectEnergiesTest(unittest.TestCase):
                        "Va_O1_2"]
         defects = []
         for dd in defect_dirs:
-            d = os.path.join(test_dir, "MgO/defects", dd)
-            defect_entry = \
-                DefectEntry.load_json(os.path.join(d, "defect_entry.json"))
-            dft_results = \
-                SupercellCalcResults.load_json(
-                    os.path.join(d, "dft_results.json"))
-            correction = \
-                ExtendedFnvCorrection.load_json(os.path.join(d, "correction.json"))
-
-            defect = Defect(defect_entry=defect_entry,
-                            dft_results=dft_results,
-                            correction=correction)
-
-            defects.append(defect)
+            file = os.path.join(test_dir, "MgO", "defects", dd, "defect.json")
+            defects.append(Defect.load_json(file))
 
         # temporary insert values
         chem_pot = ChemPotDiag.load_vertices_yaml(

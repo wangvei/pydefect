@@ -44,10 +44,10 @@ logger = get_logger(__name__)
 
 def recommend_supercell(args):
     s = Supercells(structure=Structure.from_file(args.poscar),
-                   is_conventional=not args.primitive,
+                   conventional_base=not args.primitive,
                    max_num_atoms=args.max_num_atoms,
                    min_num_atoms=args.min_num_atoms,
-                   isotropy_criterion=args.isotropy_criterion)
+                   criterion=args.isotropy_criterion)
 
     if s.supercells:
         if args.set:
@@ -55,7 +55,7 @@ def recommend_supercell(args):
 
             for supercell in s.supercells:
                 # Suffix "c" means conventional cell, while "p" primitive cell.
-                cell = "c" if s.is_conventional_based else "p"
+                cell = "c" if s.conventional_base else "p"
                 multi_str = cell + "x".join([str(list(supercell.trans_mat)[i])
                                              for i in range(3)])
                 name = "_".join([args.sposcar,
@@ -68,9 +68,9 @@ def recommend_supercell(args):
 
         else:
             if args.most_isotropic:
-                supercell = s.create_most_isotropic_supercell
+                supercell = s.most_isotropic_supercell
             else:
-                supercell = s.create_smallest_supercell
+                supercell = s.smallest_supercell
 
             supercell.to_poscar(poscar_filename=args.sposcar)
             supercell.to_uposcar(uposcar_filename=args.uposcar)

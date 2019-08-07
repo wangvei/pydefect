@@ -9,7 +9,6 @@ from typing import Union
 
 from monty.json import MontyEncoder, MSONable
 from monty.serialization import loadfn
-from pymatgen import Structure
 
 from pymatgen.core.structure import Structure
 from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
@@ -19,8 +18,7 @@ from pydefect.core.error_classes import StructureError
 from pydefect.util.logger import get_logger
 from pydefect.util.structure_tools \
     import count_equivalent_clusters, defect_center_from_coords, distance_list
-from pydefect.vasp_util.util import element_diff_from_structures, \
-    get_defect_charge_from_vasp
+from pydefect.util.vasp_util import element_diff_from_structures
 from pydefect.core.config \
     import DEFECT_SYMMETRY_TOLERANCE, ANGLE_TOL, CUTOFF_RADIUS
 

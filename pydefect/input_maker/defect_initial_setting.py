@@ -49,22 +49,22 @@ def candidate_charge_set(i: int) -> list:
         return list(range(-1, i + 1) if i >= 0 else range(i, 2))
 
 
-def get_electronegativity(element) -> Union[float, None]:
+def get_electronegativity(element) -> float:
     try:
         return electronegativity_list[element]
     except KeyError:
         logger.warning(
             f"Electronegativity of {element} is unavailable, so set to 0.")
-        return
+        return 0.0
 
 
-def get_oxidation_state(element) -> Union[int, None]:
+def get_oxidation_state(element: Union[str, Element]) -> int:
     try:
-        return oxidation_state_dict[element]
+        return oxidation_state_dict[str(element)]
     except KeyError:
         logger.warning(
             f"Oxidation state of {element} is unavailable, so set to 0.")
-        return
+        return 0
 
 
 def dopant_info(dopant) -> Union[str, None]:
@@ -453,8 +453,15 @@ class DefectInitialSetting(MSONable):
 
         if oxidation_states is None:
             primitive = sga.find_primitive()
-            oxi_guess = primitive.composition.oxi_state_guesses()[0]
-            oxidation_states = {k: round(v) for k, v in oxi_guess.items()}
+            oxi_guess = primitive.composition.oxi_state_guesses()
+            if oxi_guess:
+                oxidation_states = \
+                    {k: round(v) for k, v in oxi_guess[0].items()}
+            else:
+                oxidation_states = {}
+                for e in s.composition.elements:
+                    oxidation_states[str(e)] = get_oxidation_state(e)
+                logger.warning(f"Oxidation states set to {oxidation_states}")
             for d in dopants:
                 oxidation_states[d] = get_oxidation_state(d)
         else:

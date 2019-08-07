@@ -8,60 +8,19 @@ from monty.json import MontyEncoder, MSONable
 from monty.serialization import loadfn
 import matplotlib.pyplot as plt
 import numpy as np
-from typing import List, Union
+from typing import List
 
 from pydefect.analysis.defect import Defect
 from pydefect.core.supercell_calc_results import SupercellCalcResults
 from pydefect.core.unitcell_calc_results import UnitcellCalcResults
 from pydefect.core.defect_name import DefectName
 from pydefect.util.logger import get_logger
+from pydefect.util.tools import sanitize_keys_in_dict, defaultdict_to_dict
 
 __author__ = "Yu Kumagai"
 __maintainer__ = "Yu Kumagai"
 
 logger = get_logger(__name__)
-
-
-class TransitionLevel:
-    def __init__(self,
-                 cross_points: list,
-                 charges: list):
-        self.cross_points = cross_points
-        self.charges = charges
-
-
-class DefectEnergy(MSONable):
-    def __init__(self,
-                 energy: float,
-                 convergence: bool,
-                 is_shallow: bool):
-        """
-            energy (dict):
-            convergence (dict):
-            is_shallow (dict):
-                Whether defect is shallow or not.
-        """
-        self.energy = energy
-        self.convergence = convergence
-        self.is_shallow = is_shallow
-
-
-def convert_str_in_dict(d: Union[dict, None], value_type: type):
-    """
-    Args
-        d (dict):
-            d[name][charge][annotation]
-        value_type:
-            constructor to convert value
-    """
-    if d is None:
-        return None
-
-    new_d = {name: {int(charge): {None if annotation == "null"
-                                  else annotation: value_type(v)
-                                  for annotation, v in v2.items()}
-                    for charge, v2 in v1.items()} for name, v1 in d.items()}
-    return new_d
 
 
 class DefectEnergies(MSONable):
@@ -147,9 +106,9 @@ class DefectEnergies(MSONable):
         relative_chem_pots, standard_e = chem_pot
         relative_chem_pot = relative_chem_pots[chem_pot_label]
 
-        defect_energies = defaultdict(dict)
-        multiplicity = defaultdict(dict)
-        magnetization = defaultdict(dict)
+        defect_energies = defaultdict(lambda: defaultdict(dict))
+        multiplicity = defaultdict(lambda: defaultdict(dict))
+        magnetization = defaultdict(lambda: defaultdict(dict))
 
         for d in defects:
             # Calculate defect formation energies at the vbm
@@ -159,30 +118,27 @@ class DefectEnergies(MSONable):
             energy = (d.relative_total_energy + d.correction_energy +
                       element_interchange_energy)
 
-            e = DefectEnergy(energy=energy,
-                             convergence=d.is_converged,
-                             is_shallow=d.is_shallow)
+            e = {"energy": float(energy), "convergence": d.is_converged,
+                 "is_shallow": d.is_shallow}
 
             if not d.multiplicity.is_integer():
                 logger.warning(
                     f"Multiplicity of {d.name} charge {d.charge} is invalid."
-                    f"initial sym: {d.initial_symmetry}, final sym: {d.final_symmetry}.")
+                    f"initial sym: {d.initial_symmetry}, final sym: "
+                    f"{d.final_symmetry}.")
 
             if not d.magnetization.is_integer() and not d.is_shallow:
                 logger.warning(
-                    f"{d.name} in charge {d.charge} is not shallow but with fractional "
-                    f"magnetization: {d.magnetization}")
+                    f"{d.name} in charge {d.charge} is not shallow but with "
+                    f"fractional magnetization: {d.magnetization}")
 
-            def set_value(dictionary, v):
-                dictionary[d.name].setdefault(d.charge, {}).update({d.annotation: v})
+            defect_energies[d.name][d.charge][d.annotation] = e
+            multiplicity[d.name][d.charge][d.annotation] = d.multiplicity
+            magnetization[d.name][d.charge][d.annotation] = d.magnetization
 
-            set_value(defect_energies, e)
-            set_value(multiplicity, d.multiplicity)
-            set_value(magnetization, d.magnetization)
-
-        return cls(defect_energies=dict(defect_energies),
-                   multiplicity=dict(multiplicity),
-                   magnetization=dict(magnetization),
+        return cls(defect_energies=defaultdict_to_dict(defect_energies),
+                   multiplicity=defaultdict_to_dict(multiplicity),
+                   magnetization=defaultdict_to_dict(magnetization),
                    vbm=vbm,
                    cbm=cbm,
                    supercell_vbm=supercell_vbm,
@@ -190,16 +146,9 @@ class DefectEnergies(MSONable):
                    title=title)
 
     def as_dict(self):
-        defect_energies = \
-            {name: {charge: {annotation
-                             if annotation != 'null' else None: e.as_dict()
-                             for annotation, e in v2.items()}
-                    for charge, v2 in v1.items()}
-             for name, v1 in self.defect_energies.items()}
-
         d = {"@module":         self.__class__.__module__,
              "@class":          self.__class__.__name__,
-             "defect_energies": defect_energies,
+             "defect_energies": self.defect_energies,
              "multiplicity":    self.multiplicity,
              "magnetization":   self.magnetization,
              "vbm":             self.vbm,
@@ -213,14 +162,9 @@ class DefectEnergies(MSONable):
     @classmethod
     def from_dict(cls, d):
         """ Construct a class object from a dictionary. """
-        defect_energies = \
-            convert_str_in_dict(d["defect_energies"], DefectEnergy.from_dict)
-        multiplicity = convert_str_in_dict(d["multiplicity"], float)
-        magnetization = convert_str_in_dict(d["magnetization"], float)
-
-        return cls(defect_energies=defect_energies,
-                   multiplicity=multiplicity,
-                   magnetization=magnetization,
+        return cls(defect_energies=sanitize_keys_in_dict(d["defect_energies"]),
+                   multiplicity=sanitize_keys_in_dict(d["multiplicity"]),
+                   magnetization=sanitize_keys_in_dict(d["magnetization"]),
                    vbm=d["vbm"],
                    cbm=d["cbm"],
                    supercell_vbm=d["supercell_vbm"],
@@ -244,9 +188,9 @@ class DefectEnergies(MSONable):
                         ["name: {}:".format(n),
                          "charge: {}".format(c),
                          "Annotation: {}".format(a),
-                         "Energy @ ef=0 (eV): {}".format(round(de.energy, 4)),
-                         "Convergence: {}".format(de.convergence),
-                         "Is shallow: {}".format(de.is_shallow),
+                         "Energy @ ef=0 (eV): {}".format(round(de["energy"], 4)),
+                         "Convergence: {}".format(de["convergence"]),
+                         "Is shallow: {}".format(de["is_shallow"]),
                          "multiplicity: {}".format(
                              self.multiplicity[n][c][a]),
                          "magnetization: {}".format(
@@ -292,11 +236,11 @@ class DefectEnergies(MSONable):
                 except KeyError:
                     print("Charge {} does not exist for {}.".format(c, name))
                     raise
-                energies.append(min_e.energy)
+                energies.append(min_e["energy"])
                 annotations.append(annotation)
         else:
             for c, a in zip(charges, annotations):
-                energies.append(self.defect_energies[name][c][a].energy)
+                energies.append(self.defect_energies[name][c][a]["energy"])
 
         return energies[0] + energies[2] - 2 * energies[1], annotations
 
@@ -364,8 +308,8 @@ class DefectEnergies(MSONable):
                         in copy(energy_by_annotation).items():
 
                     n = DefectName(name, charge, annotation)
-                    is_shallow = defect_energy.is_shallow
-                    convergence = defect_energy.convergence
+                    is_shallow = defect_energy["is_shallow"]
+                    convergence = defect_energy["convergence"]
 
                     if n.is_name_matched(filtering_words) is False:
                         logger.info("{} filtered out, so omitted.".format(n))
@@ -381,8 +325,8 @@ class DefectEnergies(MSONable):
                 if energy_by_annotation:
                     annotation, min_defect_energy = \
                         min(energy_by_annotation.items(),
-                            key=lambda z: z[1].energy)
-                    lowest_energies[name][charge] = min_defect_energy.energy
+                            key=lambda z: z[1]["energy"])
+                    lowest_energies[name][charge] = min_defect_energy["energy"]
                     lowest_energy_annotations[name][charge] = annotation
 
             # Store cross point coord and its relevant two charge states.
@@ -404,9 +348,8 @@ class DefectEnergies(MSONable):
 
             # need to sort the points along x-axis.
             cpwc = sorted(cross_points_with_charges, key=lambda z: z[0][0])
-            transition_levels[name] = \
-                TransitionLevel(cross_points=[i[0] for i in cpwc],
-                                charges=[i[1] for i in cpwc])
+            transition_levels[name] = {"cross_points": [i[0] for i in cpwc],
+                                       "charges": [i[1] for i in cpwc]}
 
         x_min, x_max = x_range if x_range else (0, self.band_gap)
         y_min, y_max = float("inf"), -float("inf")
@@ -433,7 +376,7 @@ class DefectEnergies(MSONable):
                 ax.plot(x_min, y, marker="o", mec="black", mfc="white")
 
             # Add points between x_min and x_max
-            for cp, charges in zip(tl.cross_points, tl.charges):
+            for cp, charges in zip(tl["cross_points"], tl["charges"]):
                 if x_min < cp[0] - self.vbm < x_max:
                     cross_points.append([cp[0] - self.vbm, cp[1]])
                     # need to sort the charge.

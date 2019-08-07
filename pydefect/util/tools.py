@@ -89,3 +89,41 @@ def make_symmetric_matrix(d):
         raise ValueError("{} is not valid to make symmetric matrix".format(d))
 
     return tensor
+
+
+def sanitize_keys_in_dict(d):
+    """ Recursively sanitize keys from str to int, float and None.
+    Args
+        d (dict):
+            d[name][charge][annotation]
+        value_type:
+            constructor to convert value
+    """
+    if not isinstance(d, dict):
+        return d
+    else:
+        new_d = dict()
+        for key, value in d.items():
+            try:
+                key = int(key)
+            except (ValueError, TypeError):
+                try:
+                    key = float(key)
+                except (ValueError, TypeError):
+                    if key == "null":
+                        key = None
+            value = None if value == "null" else sanitize_keys_in_dict(value)
+            new_d[key] = value
+        return new_d
+
+
+def all_combination(d):
+    l = list()
+    print(d)
+    for key, value in d.items():
+        print(key, value)
+        if isinstance(value, dict):
+            l.extend([[key] + v for v in all_combination(value)])
+        else:
+            l.append([key, value])
+    return l

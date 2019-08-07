@@ -8,7 +8,7 @@ from chempotdiag.chem_pot_diag import ChemPotDiag
 
 from pymatgen.util.testing import PymatgenTest
 
-from pydefect.analysis.defect_energies import convert_str_in_dict
+from pydefect.util.tools import sanitize_keys_in_dict
 from pydefect.analysis.defect import Defect
 from pydefect.corrections.corrections import ExtendedFnvCorrection
 from pydefect.core.supercell_calc_results import SupercellCalcResults

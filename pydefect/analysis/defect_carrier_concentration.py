@@ -8,14 +8,15 @@ from monty.json import MontyEncoder, MSONable
 from monty.serialization import loadfn
 import numpy as np
 
-from pydefect.analysis.defect_energies import convert_str_in_dict, \
-    DefectEnergies
+from pydefect.analysis.defect_energies import DefectEnergies
 from pydefect.core.defect_name import DefectName
 from pydefect.core.error_classes import NoConvergenceError
 from pydefect.core.unitcell_calc_results import UnitcellCalcResults
 from pydefect.util.distribution_function \
     import maxwell_boltzmann_distribution, fermi_dirac_distribution
 from pydefect.util.logger import get_logger
+from pydefect.util.tools import sanitize_keys_in_dict, defaultdict_to_dict, \
+    all_combination
 
 __author__ = "Yu Kumagai"
 __maintainer__ = "Yu Kumagai"
@@ -152,20 +153,19 @@ def calc_concentration(energies: Union[dict, None],
 
     for name in energies:
         concentration_by_name = defaultdict(dict)
-        for charge in energies[name]:
-            for annotation, de in energies[name][charge].items():
-                mul = multiplicity[name][charge][annotation]
-                mag = magnetization[name][charge][annotation]
+        for charge, annotation, de in all_combination(energies):
+            mul = multiplicity[name][charge][annotation]
+            mag = magnetization[name][charge][annotation]
 
-                num_mag_conf = abs(mag) + 1
-                degree_of_freedom = mul * num_mag_conf
+            num_mag_conf = abs(mag) + 1
+            degree_of_freedom = mul * num_mag_conf
 
-                energy = de + e_f * charge
-                # volume unit conversion from [A^3] to [cm^3]
-                c = (maxwell_boltzmann_distribution(energy, temperature)
-                     * degree_of_freedom / (volume / 10 ** 24))
+            energy = de + e_f * charge
+            # volume unit conversion from [A^3] to [cm^3]
+            c = (maxwell_boltzmann_distribution(energy, temperature)
+                 * degree_of_freedom / (volume / 10 ** 24))
 
-                concentration_by_name[charge] = {annotation: c}
+            concentration_by_name[charge] = {annotation: c}
 
         if ref_concentration:
             reference_total_concentration = \
@@ -174,9 +174,9 @@ def calc_concentration(energies: Union[dict, None],
                 sum(sum(c.values()) for c in concentration_by_name.values())
             factor = (reference_total_concentration / total_concentration)
 
-            for charge in concentration_by_name:
-                for annotation in concentration_by_name[charge]:
-                    concentration_by_name[charge][annotation] *= factor
+            for charge, annotation, _ \
+                    in all_combination(concentration_by_name):
+                concentration_by_name[charge][annotation] *= factor
 
         concentrations[name] = concentration_by_name
 
@@ -409,60 +409,52 @@ class DefectConcentration(MSONable):
             fractional_criterion (float):
                 The criterion to determine if magnetization is fractional.
         """
-        energies = defaultdict(dict)
-        multiplicity = defaultdict(dict)
-        magnetization = defaultdict(dict)
+        energies = defaultdict(lambda: defaultdict(dict))
+        multiplicity = defaultdict(lambda: defaultdict(dict))
+        magnetization = defaultdict(lambda: defaultdict(dict))
 
-        for name in defect_energies.defect_energies:
-            for charge in defect_energies.defect_energies[name]:
-                for annotation, defect_energy in \
-                        defect_energies.defect_energies[name][charge].items():
+        for name, charge, annotation, mag \
+                in all_combination(defect_energies.magnetization):
+            defect_energy = \
+                defect_energies.defect_energies[name][charge][annotation]
+            n = DefectName(name, charge, annotation)
 
-                    n = DefectName(name, charge, annotation)
+            if n.is_name_matched(filtering_words) is False:
+                logger.info("{} filtered out, so omitted.".format(n))
+                continue
+            elif exclude_shallow_defects and defect_energy["is_shallow"]:
+                logger.info("{} is shallow, so omitted.".format(n))
+                continue
+            elif exclude_unconverged_defects and \
+                    defect_energy["convergence"] is False:
+                logger.info("{} unconverged, so omitted.".format(n))
+                continue
 
-                    if n.is_name_matched(filtering_words) is False:
-                        logger.info("{} filtered out, so omitted.".format(n))
-                        continue
-                    elif exclude_shallow_defects and defect_energy.is_shallow:
-                        logger.info("{} is shallow, so omitted.".format(n))
-                        continue
-                    elif exclude_unconverged_defects and \
-                            defect_energy.convergence is False:
-                        logger.info("{} unconverged, so omitted.".format(n))
-                        continue
+            e = defect_energy["energy"]
+            mul = defect_energies.multiplicity[name][charge][annotation]
 
-                    e = defect_energy.energy
-                    mul = defect_energies.multiplicity[name][charge][annotation]
-                    mag = defect_energies.magnetization[name][charge][annotation]
+            if abs(mag - round(mag)) > fractional_criterion:
+                logger.warning(
+                    "The total_magnetization of {} in {} is {}, and "
+                    "not integer".format(name, charge, mag))
+                if fractional_magnetization_to_one:
+                    logger.warning(
+                        "The magnetization of {} in {} is set to "
+                        "one".format(name, charge))
+                    mag = 1.0
 
-                    if abs(mag - round(mag)) > fractional_criterion:
-                        logger.warning(
-                            "The total_magnetization of {} in {} is {}, and "
-                            "not integer".format(name, charge, mag))
-                        if fractional_magnetization_to_one:
-                            logger.warning(
-                                "The magnetization of {} in {} is set to "
-                                "one".format(name, charge))
-                            mag = 1
-
-                    mag = round(mag)
-
-                    def set_value(dictionary, v):
-                        dictionary[name].\
-                            setdefault(charge, {}).update({annotation: v})
-
-                    set_value(energies, e)
-                    set_value(multiplicity, mul)
-                    set_value(magnetization, mag)
+            energies[name][charge][annotation] = e
+            multiplicity[name][charge][annotation] = mul
+            magnetization[name][charge][annotation] = round(mag)
 
         volume = unitcell.volume  # [A^3]
         total_dos = unitcell.total_dos
         vbm = defect_energies.vbm
         cbm = defect_energies.cbm
 
-        return cls(energies=dict(energies),
-                   multiplicity=dict(multiplicity),
-                   magnetization=dict(magnetization),
+        return cls(energies=defaultdict_to_dict(energies),
+                   multiplicity=defaultdict_to_dict(multiplicity),
+                   magnetization=defaultdict_to_dict(magnetization),
                    volume=volume,
                    vbm=vbm,
                    cbm=cbm,
@@ -471,23 +463,23 @@ class DefectConcentration(MSONable):
     @classmethod
     def from_dict(cls, d):
         """ Construct a class object from a dictionary. """
-        energies = convert_str_in_dict(d["energies"], float)
-        multiplicity = convert_str_in_dict(d["multiplicity"], float)
-        magnetization = convert_str_in_dict(d["magnetization"], int)
+        energies = sanitize_keys_in_dict(d["energies"])
+        multiplicity = sanitize_keys_in_dict(d["multiplicity"])
+        magnetization = sanitize_keys_in_dict(d["magnetization"])
         equilibrium_concentration = \
-            convert_str_in_dict(d["equilibrium_concentration"], float)
+            sanitize_keys_in_dict(d["equilibrium_concentration"])
         quenched_equilibrium_concentration = \
-            convert_str_in_dict(d["quenched_equilibrium_concentration"], float)
+            sanitize_keys_in_dict(d["quenched_equilibrium_concentration"])
 
         if d["concentrations"] is not None:
             concentrations = \
-                [convert_str_in_dict(d, float) for d in d["concentrations"]]
+                [sanitize_keys_in_dict(d) for d in d["concentrations"]]
         else:
             concentrations = None
 
         if d["quenched_carrier_concentrations"] is not None:
             quenched_carrier_concentrations = \
-                [convert_str_in_dict(d, float)
+                [sanitize_keys_in_dict(d)
                  for d in d["quenched_carrier_concentrations"]]
         else:
             quenched_carrier_concentrations = None

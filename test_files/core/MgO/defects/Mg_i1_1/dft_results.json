@@ -3820,16 +3820,11 @@
   "fermi_level": 9.93950831,
   "is_converged": true,
   "defect_center": 0,
-  "defect_coords": {
-    "@module": "numpy",
-    "@class": "array",
-    "dtype": "float64",
-    "data": [
-      0.124102,
-      0.125517,
-      0.124296
-    ]
-  },
+  "defect_coords": [
+    0.124102,
+    0.125517,
+    0.124296
+  ],
   "displacements": {
     "initial_distances": [
       0.0,
