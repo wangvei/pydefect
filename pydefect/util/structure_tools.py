@@ -300,8 +300,11 @@ def create_saturated_interstitial_structure(
         species: list = None,
         dist_tol: float = 0.1,
         symprec: float = SYMMETRY_TOLERANCE,
-        angle_tolerance: float = ANGLE_TOL) -> list:
+        angle_tolerance: float = ANGLE_TOL) -> tuple:
     """ generates the sublattice for it based on the structure's space group.
+
+    Originally copied from
+    pymatgen.analysis.defects.core.create_saturated_interstitial_structure
 
     Args:
         structure (Structure):
@@ -341,6 +344,8 @@ def create_saturated_interstitial_structure(
     """
     if species and len(inserted_atom_coords) != len(species):
         raise ValueError("Numbers of inserted_atom_coords and species differ.")
+    # When one coord is given, it is modified to nested list.
+    # e.g. [0.125, 0.125, 0.125] -> [[0.125, 0.125, 0.125]]
     if isinstance(inserted_atom_coords[0], float):
         inserted_atom_coords = [inserted_atom_coords[:]]
 
@@ -354,16 +359,25 @@ def create_saturated_interstitial_structure(
     for i, coord in enumerate(inserted_atom_coords):
         # Check whether the inserted atoms already exist.
         try:
-            inserted_atom_index = \
-                neighboring_atom_indices(
-                    saturated_defect_structure, coord, dist_tol)[0]
+            neighboring_atom_indices = \
+                get_neighboring_atom_indices(saturated_defect_structure,
+                                             coord, dist_tol)
+            # If the inserted atom locates near other atoms within dist_tol,
+            # first neighbor atom is set as inserted_atom_index.
+            inserted_atom_index = neighboring_atom_indices[0]
         except IndexError:
+            # Get the last atom index to be inserted
             inserted_atom_index = len(saturated_defect_structure)
+            specie = species[i] if species else DummySpecie()
 
             for symmop in symmops:
-                specie = species[i] if species else DummySpecie()
                 new_interstitial_coords = symmop.operate(coord[:])
                 try:
+                    # validate_proximity (bool):
+                    # Whether to check if inserted site is too close to an
+                    # existing site. Defaults to False. If it is caught,
+                    # ValueError is raised. For criterion, DISTANCE_TOLERANCE
+                    # set to Structure is used.
                     saturated_defect_structure.append(specie,
                                                       new_interstitial_coords,
                                                       validate_proximity=True)
@@ -375,13 +389,16 @@ def create_saturated_interstitial_structure(
     return saturated_defect_structure, inserted_atom_indices, symmetry_dataset
 
 
-def neighboring_atom_indices(structure, coord, dist_tol):
+def get_neighboring_atom_indices(structure: Structure,
+                                 coord: list,
+                                 dist_tol: float) -> list:
+    """ Return the neighboring atom indices within dist_tol distance. """
     neighboring_indices = []
     for j, site in enumerate(structure):
+        # returned tuple of (distance, periodic lattice translations)
         distance = structure.lattice.get_distance_and_image(coord,
-                                                            site.frac_coords)[
-            0]
-        if distance < dist_tol:
+                                                            site.frac_coords)
+        if distance[0] < dist_tol:
             neighboring_indices.append(j)
 
     return neighboring_indices

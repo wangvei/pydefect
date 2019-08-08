@@ -112,7 +112,7 @@ class DefectEntrySetMakerTest(unittest.TestCase):
             irreducible_sites=irreducible_elements,
             dopant_configs=dopant_configs,
             antisite_configs=antisite_configs,
-            interstitial_site_names=["i1"],
+            interstitial_sites=["i1"],
             included=included,
             excluded=excluded,
             displacement_distance=distance,

@@ -53,7 +53,7 @@ def main():
         "-u", dest="uposcar", type=str, default="UPOSCAR")
     parser_recommend_supercell.add_argument(
         "-c", "--criterion", dest="isotropy_criterion", type=float,
-        default=defaults["isotropy_criterion"],
+        default=defaults["criterion"],
         help="Isotropy criterion.")
     parser_recommend_supercell.add_argument(
         "--min_num_atoms", dest="min_num_atoms", type=int,
@@ -128,7 +128,7 @@ def main():
         help="Set angle precision used for symmetry analysis.")
     parser_initial.add_argument(
         "--interstitial_sites", dest="interstitials", type=str, nargs="+",
-        default=defaults["interstitial_site_names"],
+        default=defaults["interstitial_sites"],
         help="Interstitial site names.")
     parser_initial.add_argument(
         "--print_dopant", dest="print_dopant", type=str,

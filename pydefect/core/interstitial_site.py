@@ -9,6 +9,8 @@ import yaml
 from pymatgen.core.structure import Structure
 from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
 from pymatgen.core.periodic_table import DummySpecie
+from pymatgen.io.vasp.outputs import Chgcar
+from pymatgen.analysis.defects.utils import ChargeDensityAnalyzer
 
 from obadb.util.structure_handler import get_coordination_distances
 
@@ -57,13 +59,13 @@ class InterstitialSite(MSONable):
         self.coordination_distances = coordination_distances
         self.method = method
 
-    def _repr__(self):
-        outs = ["representative_coords: " + str(self.representative_coords),
-                "wyckoff: " + self.wyckoff,
-                "site_symmetry: " + self.site_symmetry,
-                "symmetry_multiplicity: " + str(self.symmetry_multiplicity),
-                "coordination_distances: " + str(self.coordination_distances),
-                "method: " + self.method]
+    def __repr__(self):
+        outs = [f"representative_coords: {self.representative_coords}",
+                f"wyckoff: {self.wyckoff}",
+                f"site_symmetry: {self.site_symmetry}",
+                f"symmetry_multiplicity: {self.symmetry_multiplicity}",
+                f"coordination_distances: {self.coordination_distances}",
+                f"method: {self.method}"]
         return "\n".join(outs)
 
     def as_dict(self):
@@ -78,7 +80,7 @@ class InterstitialSite(MSONable):
         return d
 
 
-# The followings are needed to keep order of dictionary during dumping to yaml
+# The followings are needed to keep order of dictionary for interstitial.yaml.
 # https://qiita.com/podhmo/items/aa954ee1dc1747252436
 def represent_odict(dumper, instance):
     return dumper.represent_mapping('tag:yaml.org,2002:map', instance.items())
@@ -103,9 +105,9 @@ class InterstitialSiteSet(MSONable):
         """
         Args:
             structure (Structure):
-                pmg Structure class object. Supercell used for defect
+                Structure class object. Supercell used for defect
                 calculations.
-            interstitial_sites (Iterable):
+            interstitial_sites (OrderedDict):
                 OrderedDict with keys of site names and values of
                 InterstitialSite objects.
         """
@@ -114,14 +116,6 @@ class InterstitialSiteSet(MSONable):
             self.interstitial_sites = deepcopy(interstitial_sites)
         else:
             self.interstitial_sites = OrderedDict()
-
-        name_set = set()
-        for site_name in self.interstitial_sites.keys():
-            if site_name in name_set:
-                raise ValueError("Interstitial name {} conflicts.".
-                                 format(site_name))
-            else:
-                name_set.add(site_name)
 
     def site_set_as_dict(self):
         d = OrderedDict()
@@ -144,13 +138,9 @@ class InterstitialSiteSet(MSONable):
         return [v.representative_coords
                 for v in self.interstitial_sites.values()]
 
-    @property
-    def site_names(self):
-        """Return list of interstitial site names"""
-        return [k for k in self.interstitial_sites.keys()]
-
     @classmethod
     def from_dict(cls, d):
+        # orderedDict disables MSONable.
         structure = d["structure"]
         if isinstance(structure, dict):
             structure = Structure.from_dict(structure)
@@ -196,10 +186,10 @@ class InterstitialSiteSet(MSONable):
                 create_saturated_interstitial_structure(
                     self.structure, self.coords, dist_tol=symprec)
 
-            cart_coord = saturated_structure.lattice.get_cartesian_coords(coord)
-            neighbors = \
-                saturated_structure.get_sites_in_sphere(pt=cart_coord,
-                                                        r=check_neighbor_radius)
+            cart_coord = \
+                saturated_structure.lattice.get_cartesian_coords(coord)
+            neighbors = saturated_structure.get_sites_in_sphere(
+                pt=cart_coord, r=check_neighbor_radius)
 
             for n in neighbors:
                 # DummySpecie occupies the saturated interstitial sites.
@@ -208,8 +198,8 @@ class InterstitialSiteSet(MSONable):
                 else:
                     specie = n[0].frac_coords
                 distance = n[1]
-                message = "Inserted position is too close to {}.\n " \
-                          "The distance is {:5.3f} A.".format(specie, distance)
+                message = f"Inserted position is too close to {specie}.\n " \
+                          f"The distance is {distance:5.3f} A."
                 if force_add:
                     logger.warning(message)
                 else:
@@ -235,14 +225,14 @@ class InterstitialSiteSet(MSONable):
         if site_name is None:
             for i in range(MAX_NUM_INTERSTITIAL_SITES):
                 trial_name = "i" + str(i + 1)
-                if trial_name not in self.site_names:
+                if trial_name not in self.interstitial_sites.keys():
                     site_name = trial_name
                     break
             else:
                 raise ValueError("Site name is not assigned automatically.")
         else:
-            if site_name in self.site_names:
-                raise ValueError("Site {} already exists.".format(site_name))
+            if site_name in self.interstitial_sites.keys():
+                raise ValueError(f"Site {site_name} already exists.")
 
         interstitial_site = \
             InterstitialSite(representative_coords=coord,
@@ -253,3 +243,26 @@ class InterstitialSiteSet(MSONable):
                              method=method)
 
         self.interstitial_sites[site_name] = interstitial_site
+
+    def add_sites_from_charge_density(self,
+                                      chgcar_filename: str,
+                                      trans_mat: list = None,
+                                      threshold_frac: float = None,
+                                      threshold_abs: float = None,
+                                      min_dist: float = 0.5,
+                                      tol: float = 0.2,
+                                      radius: float = 0.4,
+                                      **kwargs):
+
+        chgcar = Chgcar.from_file(chgcar_filename)
+        cda = ChargeDensityAnalyzer(chgcar=chgcar)
+        cda.get_local_extrema(threshold_frac=threshold_frac,
+                              threshold_abs=threshold_abs)
+        cda.sort_sites_by_integrated_chg(r=radius)
+        cda.remove_collisions(min_dist)
+        cda.cluster_nodes(tol=tol)
+        print(cda.extrema_coords)
+#        print(cda.charge_distribution_df)
+
+        for c in cda.extrema_coords:
+            self.add_site(c)

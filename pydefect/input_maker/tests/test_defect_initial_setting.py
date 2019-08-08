@@ -1,81 +1,92 @@
 # -*- coding: utf-8 -*-
 import os
 import tempfile
-import unittest
 
 from pymatgen.core.structure import Structure
 
-from pydefect.core.defect_name import SimpleDefectName
-from pydefect.input_maker.defect_initial_setting \
-    import candidate_charge_set, get_electronegativity, get_oxidation_state, \
-    DefectInitialSetting
+from pydefect.input_maker.defect_initial_setting import (
+    candidate_charge_set, get_electronegativity, get_oxidation_state,
+    dopant_info, get_distances_from_string, DefectInitialSetting)
 from pydefect.core.irreducible_site import IrreducibleSite
+from pydefect.util.testing import PydefectTest
 
 __author__ = "Yu Kumagai"
 __maintainer__ = "Yu Kumagai"
 
-test_dir = os.path.join(os.path.dirname(__file__), "..", "..", "..",
-                        "test_files", "input_maker")
 
-
-class ExtendedRangeTest(unittest.TestCase):
-    def test_range(self):
-        expected_positive = [0, 1, 2]
+class CandidateChargeSetTest(PydefectTest):
+    def test_range1(self):
         actual_positive = [i for i in candidate_charge_set(2)]
+        expected_positive = [0, 1, 2]
         self.assertEqual(actual_positive, expected_positive)
 
-        expected_negative = [-2, -1, 0]
+    def test_range2(self):
         actual_negative = [i for i in candidate_charge_set(-2)]
+        expected_negative = [-2, -1, 0]
         self.assertEqual(actual_negative, expected_negative)
 
-        expected_positive = [-1, 0, 1, 2, 3]
+    def test_range3(self):
         actual_positive = [i for i in candidate_charge_set(3)]
+        expected_positive = [-1, 0, 1, 2, 3]
         self.assertEqual(actual_positive, expected_positive)
 
-        expected_negative = [-3, -2, -1, 0, 1]
+    def test_range4(self):
         actual_negative = [i for i in candidate_charge_set(-3)]
+        expected_negative = [-3, -2, -1, 0, 1]
         self.assertEqual(actual_negative, expected_negative)
 
 
-class GetElectronegativityTest(unittest.TestCase):
+class GetElectronegativityTest(PydefectTest):
     def test_success(self):
         true_element = "Mg"
-        expected = 1.31
-        self.assertEqual(get_electronegativity(true_element), expected)
+        self.assertEqual(get_electronegativity(true_element), 1.31)
 
     def test_fail(self):
         fake_element = "Yk"
-        expected = 0
-        self.assertEqual(get_electronegativity(fake_element), expected)
+        self.assertEqual(get_electronegativity(fake_element), 0)
 
 
-class GetOxidationStateTest(unittest.TestCase):
+class GetOxidationStateTest(PydefectTest):
     def test_success(self):
         true_element = "Mg"
-        expected = 2
-        self.assertEqual(get_oxidation_state(true_element), expected)
+        self.assertEqual(get_oxidation_state(true_element), 2)
 
     def test_fail(self):
         fake_element = "Yk"
-        expected = 0
-        self.assertEqual(get_oxidation_state(fake_element), expected)
+        self.assertEqual(get_oxidation_state(fake_element), 0)
 
 
-# TODO: write test_print_dopant_info
-class DopantInfoTest(unittest.TestCase):
-    pass
+class DopantInfoTest(PydefectTest):
+    def test_success(self):
+        true_element = "Mg"
+        expected = """   Dopant element: Mg
+Electronegativity: 1.31
+  Oxidation state: 2"""
+        self.assertEqual(dopant_info(true_element), expected)
+
+    def test_fail(self):
+        fake_element = "Ak"
+        self.assertEqual(dopant_info(fake_element), None)
 
 
-# class ElementSetTest(unittest.TestCase):
-#     def test(self):
-#         mgo_from_defect_in = \
-#             DefectInitialSetting.from_defect_in(
-#                 poscar=os.path.join(test_dir, "POSCAR-MgO64atoms"),
-#                 defect_in_file=os.path.join(test_dir, "defect.in.example"))
-#         print(element_set(mgo_from_defect_in))
+class GetDistancesFromStringTest(PydefectTest):
+    def test_success(self):
+        fine_string_list = "Mg: 2.1 2.2 O: 2.3 2.4".split()
+        expected = {"Mg": [2.1, 2.2], "O": [2.3, 2.4]}
+        self.assertEqual(get_distances_from_string(fine_string_list), expected)
+
+    def test_fail1(self):
+        bad_string_list = "Mg 2.1 2.2 O 2.3 2.4".split()
+        with self.assertRaises(UnboundLocalError):
+            get_distances_from_string(bad_string_list)
+
+    def test_fail2(self):
+        bad_string_list = "Mg: 2.1 a O: 2.3 2.4".split()
+        with self.assertRaises(ValueError):
+            get_distances_from_string(bad_string_list)
 
 
-class DefectInitialSettingTest(unittest.TestCase):
+class DefectInitialSettingTest(PydefectTest):
 
     def setUp(self):
         """
@@ -86,39 +97,35 @@ class DefectInitialSettingTest(unittest.TestCase):
         --displacement_distance 0.15 --symprec 0.001 --cutoff 2.0 -e 4
         -i 0.1 0.1 0.1
         """
-        structure = Structure.\
-            from_file(os.path.join(test_dir, "POSCAR-MgO64atoms"))
-
+        structure = self.get_structure_by_name("MgO64atoms")
         space_group_symbol = "Fm-3m"
+        transformation_matrix = [2, 0, 0, 0, 2, 0, 0, 0, 2]
         cell_multiplicity = 32
-        transformation_matrix = [2, 2, 2]
-        coordination_distances_Mg = {"O": [2.12, 2.12, 2.12, 2.12, 2.12, 2.12]}
-        coordination_distances_O = {"Mg": [2.12, 2.12, 2.12, 2.12, 2.12, 2.12]}
-
-        Mg1 = IrreducibleSite(irreducible_name="Mg1",
+        coordination_distances_mg = {"O": [2.12, 2.12, 2.12, 2.12, 2.12, 2.12]}
+        coordination_distances_o = {"Mg": [2.12, 2.12, 2.12, 2.12, 2.12, 2.12]}
+        mg1 = IrreducibleSite(irreducible_name="Mg1",
                               element="Mg",
                               first_index=1,
                               last_index=32,
                               representative_coords=[0.0, 0.0, 0.0],
                               wyckoff="a",
                               site_symmetry="m-3m",
-                              coordination_distances=coordination_distances_Mg)
-        O1 = IrreducibleSite(irreducible_name="O1",
+                              coordination_distances=coordination_distances_mg)
+        o1 = IrreducibleSite(irreducible_name="O1",
                              element="O",
                              first_index=33,
                              last_index=64,
                              representative_coords=[0.25, 0.25, 0.25],
                              wyckoff="b",
                              site_symmetry="m-3m",
-                             coordination_distances=coordination_distances_O)
-        irreducible_sites = [Mg1, O1]
-
+                             coordination_distances=coordination_distances_o)
+        irreducible_sites = [mg1, o1]
         dopant_configs = [["Al", "Mg"], ["Al", "O"], ["N", "Mg"], ["N", "O"]]
         antisite_configs = [["Mg", "O"], ["O", "Mg"]]
-        interstitial_names = ["i1"]
+        interstitial_sites = ["i1"]
         included = ["Va_O1_-1", "Va_O1_-2"]
         excluded = ["Va_O1_1", "Va_O1_2"]
-        distance = 0.15
+        displacement_distance = 0.15
         cutoff = 2.0
         symprec = 0.001
         angle_tolerance = 5
@@ -132,10 +139,10 @@ class DefectInitialSettingTest(unittest.TestCase):
                                         irreducible_sites,
                                         dopant_configs,
                                         antisite_configs,
-                                        interstitial_names,
+                                        interstitial_sites,
                                         included,
                                         excluded,
-                                        distance,
+                                        displacement_distance,
                                         cutoff,
                                         symprec,
                                         angle_tolerance,
@@ -206,6 +213,3 @@ class DefectInitialSettingTest(unittest.TestCase):
         actual = [str(i) for i in self.MgO.make_defect_name_set()]
         self.assertEqual(sorted(actual), sorted(expected))
 
-
-if __name__ == "__main__":
-    unittest.main()

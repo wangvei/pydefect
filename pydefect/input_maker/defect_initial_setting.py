@@ -35,23 +35,30 @@ def candidate_charge_set(i: int) -> list:
 
     The input value is included for both positive and negative numbers, and
     -1 (1) is included for positive (negative) odd number.
-    E.g., potential_charge_set(3) = [-1, 0, 1, 2, 3]
-          potential_charge_set(-3) = [-3, -2, -1, 0, 1]
-          potential_charge_set(2) = [0, 1, 2]
-          potential_charge_set(-4) = [-4, -3, -2, -1, 0]
+    E.g., candidate_charge_set(3) = [-1, 0, 1, 2, 3]
+          candidate_charge_set(-3) = [-3, -2, -1, 0, 1]
+          candidate_charge_set(2) = [0, 1, 2]
+          candidate_charge_set(-4) = [-4, -3, -2, -1, 0]
 
     Args:
         i (int): an integer
     """
-    if i % 2 == 0:
-        return list(range(i + 1) if i >= 0 else range(i, 1))
+    if i >= 0:
+        charge_set = [i for i in range(i + 1)]
+        if i % 2 == 1:
+            charge_set.insert(0, -1)
     else:
-        return list(range(-1, i + 1) if i >= 0 else range(i, 2))
+        charge_set = [i for i in range(i, 1)]
+        if i % 2 == 1:
+            charge_set.append(1)
+
+    return charge_set
 
 
-def get_electronegativity(element) -> float:
+def get_electronegativity(element: Union[str, Element]) -> float:
+    """get a Pauling electronegativit obtained from wikipedia"""
     try:
-        return electronegativity_list[element]
+        return electronegativity_list[str(element)]
     except KeyError:
         logger.warning(
             f"Electronegativity of {element} is unavailable, so set to 0.")
@@ -59,6 +66,7 @@ def get_electronegativity(element) -> float:
 
 
 def get_oxidation_state(element: Union[str, Element]) -> int:
+    """get a typical oxidation stat """
     try:
         return oxidation_state_dict[str(element)]
     except KeyError:
@@ -67,46 +75,47 @@ def get_oxidation_state(element: Union[str, Element]) -> int:
         return 0
 
 
-def dopant_info(dopant) -> Union[str, None]:
+def dopant_info(dopant: Union[str, Element]) -> Union[str, None]:
     """ Print dopant info.
 
     This method is used to add dopant info a posteriori.
     Args:
         dopant (str): Dopant element name e.g., Mg
     """
+    dopant = str(dopant)
     if Element.is_valid_symbol(dopant):
         electronegativity = get_electronegativity(dopant)
         oxidation_state = get_oxidation_state(dopant)
 
-        out = ["   Dopant element: {}".format(dopant),
-               "Electronegativity: {}".format(electronegativity),
-               "  Oxidation state: {}".format(oxidation_state)]
+        out = [f"   Dopant element: {dopant}",
+               f"Electronegativity: {electronegativity}",
+               f"  Oxidation state: {oxidation_state}"]
         return "\n".join(out)
     else:
-        logger.warnings(dopant + " is not a proper element name.")
+        logger.warning(f"{dopant} is not an element name.")
         return
 
 
 def get_distances_from_string(string: list) -> dict:
-    """
+    """ Parse a string including distances to neighboring atoms
     Arg:
-        string (list): Split string e.g. "Mg: 2.1 2.2 O: 2.3 2.4".split()
+        string (list):
+            List of string composed as "Mg: 2.1 2.2 O: 2.3 2.4".split()
 
     Return:
         dict: e.g. {"Mg": [2,1, 2.2], "O": [2.3, 2.4]
     """
     distances = {}
-    key = None
     for i in string:
         if i[-1] == ":":
             distances[i[:-1]] = []
             key = i[:-1]
         else:
-            if key:
+            try:
                 distances[key].append(float(i))
-            else:
-                raise ValueError("Invalid string {} to create distance list".
-                                 format(string))
+            except (UnboundLocalError, ValueError):
+                print(f"Invalid string {string} for distance list.")
+                raise
     return distances
 
 
@@ -121,7 +130,7 @@ class DefectInitialSetting(MSONable):
                  irreducible_sites: list,
                  dopant_configs: list,
                  antisite_configs: list,
-                 interstitial_site_names: list,
+                 interstitial_sites: list,
                  included: list,
                  excluded: list,
                  displacement_distance: float,
@@ -134,24 +143,25 @@ class DefectInitialSetting(MSONable):
         """
         Args:
             structure (Structure):
-                pmg Structure class object for perfect supercell
+                Structure for perfect supercell
             space_group_symbol (str):
-                space group symbol
+                space group symbol, e.g., "Pm-3m".
             transformation_matrix (list):
-                The matrix used for expanding the unitcell.
+                Matrix used for expanding the unitcell.
             cell_multiplicity (int):
                 How much is the supercell larger than the *primitive* cell.
                 This is used for calculating the defect concentration.
-                Note that (multiplicity of the symmetry) * cell_multiplicity
-                is the number of irreducible sites in the supercell.
+                (multiplicity of the symmetry) * cell_multiplicity corresponds
+                to the number of irreducible sites in the supercell.
             irreducible_sites (list):
-                List of IrreducibleSite class objects
+                List of IrreducibleSite objects
             dopant_configs (Nx2 list):
                 Dopant configurations, e.g., [["Al", Mg"], ["N", "O"]]
             antisite_configs (Nx2 list):
                 Antisite configurations, e.g., [["Mg","O"], ["O", "Mg"]]
-            interstitial_site_names (list):
-                Interstitial site indices written in interstitital.in file
+            interstitial_sites (list):
+                Interstitial site indices written in interstitial.in file
+                "all" means that all the interstitials are considered.
             included (list):
                 Exceptionally added defects with charges,
                 e.g., ["Va_O1_-1", "Va_O1_-2"]
@@ -159,20 +169,20 @@ class DefectInitialSetting(MSONable):
                 Exceptionally removed defects with charges. If they don't exist,
                 this flag does nothing. e.g., ["Va_O1_1", "Va_O1_2"]
             displacement_distance (float):
-                Maximum displacement in angstrom. 0 means random displacement is
-                switched off.
+                Maximum displacement in angstrom applied to neighbor atoms.
+                0 means that no random displacement is applied.
             cutoff (float):
-                Cutoff radius in which atoms are displaced.
+                Cutoff radius in which atoms are displaced in angstrom.
             symprec (float):
-                Precision used for symmetry analysis.
+                Precision used for symmetry analysis in angstrom.
             angle_tolerance (float):
                 Angle tolerance for symmetry analysis in degree
             oxidation_states (dict):
-                Oxidation states for relevant elements. Used to determine the
-                default defect charges.
+                Oxidation states for relevant elements.
+                Used to determine the default defect charges.
             electronegativity (dict):
-                Electronegativity for relevant elements. Used to determine the
-                substitutional defects.
+                Electronegativity for relevant elements.
+                Used to determine the substitutional defects.
             interstitials_yaml (str):
                 Interstitial yaml file name
         """
@@ -186,7 +196,7 @@ class DefectInitialSetting(MSONable):
         # dopant element names are derived from in_name of dopant_configs.
         self.dopants = set([d[0] for d in dopant_configs])
         self.antisite_configs = list(antisite_configs)
-        self.interstitial_site_names = list(interstitial_site_names)
+        self.interstitial_sites = list(interstitial_sites)
         self.included = list(included) if included else []
         self.excluded = list(excluded) if excluded else []
         self.displacement_distance = displacement_distance
@@ -196,24 +206,25 @@ class DefectInitialSetting(MSONable):
         self.oxidation_states = oxidation_states
         self.electronegativity = electronegativity
 
-        if self.interstitial_site_names:
+        if self.interstitial_sites:
             try:
                 t = InterstitialSiteSet.from_files(self.structure,
                                                    interstitials_yaml)
+                sites = t.interstitial_sites
             except FileNotFoundError:
                 logger.error("interstitial.yaml file is needed.")
                 raise
 
-            sites = t.interstitial_sites
-            if self.interstitial_site_names[0] == "all":
-                self.interstitials = {k: v for k, v in sites.items()}
+            if self.interstitial_sites[0] == "all":
+                self.interstitials = dict(sites)
             else:
-                for site_name in self.interstitial_site_names:
-                    if site_name not in sites.keys():
+                self.interstitials = {}
+                for i_site in self.interstitial_sites:
+                    if i_site not in sites.keys():
                         raise ValueError(
-                            f"Interstitial site name {site_name} "
+                            f"Interstitial site name {i_site} "
                             f"do not exist in {interstitials_yaml}")
-                self.interstitials = {k: v for k, v in sites.items()}
+                    self.interstitials[i_site] = sites[i_site]
         else:
             self.interstitials = None
 
@@ -227,7 +238,7 @@ class DefectInitialSetting(MSONable):
     def from_defect_in(cls,
                        poscar: str = "DPOSCAR",
                        defect_in_file: str = "defect.in"):
-        """ Constructor with defect.in file.
+        """ Class object construction with defect.in file.
 
         Currently, the file format of defect.in is not flexible, so be careful
         when modifying it by hand. The first word is mostly parsed. The number
@@ -251,7 +262,7 @@ class DefectInitialSetting(MSONable):
         space_group_symbol = None
         irreducible_sites = []
         antisite_configs = []
-        interstitial_site_names = []
+        interstitial_sites = []
         included = None
         excluded = None
         electronegativity = {}
@@ -323,7 +334,7 @@ class DefectInitialSetting(MSONable):
                     oxidation_states[element] = int(split_next_line[2])
 
                 elif line[0] == "Interstitials:":
-                    interstitial_site_names = list(line[1:])
+                    interstitial_sites = list(line[1:])
 
                 elif line[0] == "Antisite":
                     antisite_configs = [i.split("_") for i in line[2:]]
@@ -365,7 +376,7 @@ class DefectInitialSetting(MSONable):
                    irreducible_sites=irreducible_sites,
                    dopant_configs=dopant_configs,
                    antisite_configs=antisite_configs,
-                   interstitial_site_names=interstitial_site_names,
+                   interstitial_sites=interstitial_sites,
                    included=included,
                    excluded=excluded,
                    displacement_distance=displacement_distance,
@@ -395,7 +406,7 @@ class DefectInitialSetting(MSONable):
                             cutoff: float = CUTOFF_RADIUS,
                             symprec: float = SYMMETRY_TOLERANCE,
                             angle_tolerance: float = ANGLE_TOL,
-                            interstitial_site_names: list = None):
+                            interstitial_sites: list = None):
         """ Generates object with some default settings.
 
         Args:
@@ -428,12 +439,12 @@ class DefectInitialSetting(MSONable):
                 Distance precision used for symmetry analysis.
             angle_tolerance (float):
                 Angle precision used for symmetry analysis.
-            interstitial_site_names (list):
+            interstitial_sites (list):
                 Names of interstitial sites written in interstitial.in file.
         """
         dopants = [] if dopants is None else dopants
-        interstitial_site_names = [] \
-            if interstitial_site_names is None else interstitial_site_names
+        interstitial_sites = \
+            [] if interstitial_sites is None else interstitial_sites
 
         s = structure.get_sorted_structure()
 
@@ -558,7 +569,7 @@ class DefectInitialSetting(MSONable):
                    irreducible_sites=irreducible_sites,
                    dopant_configs=dopant_configs,
                    antisite_configs=antisite_configs,
-                   interstitial_site_names=interstitial_site_names,
+                   interstitial_sites=interstitial_sites,
                    included=included,
                    excluded=excluded,
                    displacement_distance=displacement_distance,
@@ -685,8 +696,8 @@ class DefectInitialSetting(MSONable):
             # Append "" for one blank line.
             lines.append("")
 
-        interstitial_site_names = " ".join(self.interstitial_site_names)
-        lines.append(f"Interstitials: {interstitial_site_names}")
+        interstitial_sites = " ".join(self.interstitial_sites)
+        lines.append(f"Interstitials: {interstitial_sites}")
 
         # [["Ga", "N], ["N", "Ga"]] -> Ga_N N_Ga
         antisite_configs = \

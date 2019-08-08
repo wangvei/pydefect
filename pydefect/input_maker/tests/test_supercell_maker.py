@@ -18,10 +18,9 @@ class CalcIsotropyTest(PydefectTest):
     def test(self):
         trans_mat = np.array([[2, 0, 0], [0, 2, 0], [0, 0, 1]])
         actual = calc_isotropy(self.struct, trans_mat)
-        print(actual)
         # (1 + 1) / 3 / 3
         expected = 0.2222
-        self.assertEqual(actual, expected)
+        self.assertEqual(expected, actual)
 
 
 class SupercellTest(PydefectTest):
@@ -47,7 +46,7 @@ class SupercellTest(PydefectTest):
              0.500000 0.000000 0.000000 Mg
              0.250000 0.500000 0.500000 O
              0.750000 0.500000 0.500000 O""", fmt="poscar")
-        self.assertEqual(actual, expected)
+        self.assertEqual(expected, actual)
 
     def test_init2(self):
         multi = [[-1, 1, 1], [1, -1, 1], [1, 1, -1]]
@@ -71,7 +70,7 @@ class SupercellTest(PydefectTest):
             1.000000 1.000000 0.500000 O
             1.000000 0.500000 1.000000 O
             0.500000 1.000000 1.000000 O""", fmt="poscar")
-        self.assertEqual(actual, expected)
+        self.assertEqual(expected, actual)
 
     def test_recommended_supercell(self):
         supercells_mgo = Supercells(self.mgo_struct,
@@ -106,13 +105,11 @@ class SupercellTest(PydefectTest):
             0.750000 0.250000 0.750000 O
             0.750000 0.750000 0.250000 O
             0.750000 0.750000 0.750000 O""", fmt="poscar")
-        print(actual)
-        self.assertEqual(actual, expected)
+        self.assertEqual(expected, actual)
         actual_comment = supercell_mgo.comment
-        print(actual_comment)
         expected_comment = "trans_mat: 2 0 0 0 2 0 0 0 2, multi: 8, " \
                            "isotropy: 0.0\n"
-        self.assertEqual(actual_comment, expected_comment)
+        self.assertEqual(expected_comment, actual_comment)
 
     def test_recommended_supercell_rhombo(self):
         supercells_kzn4p3 = Supercells(self.kzn4p3_struct,
@@ -260,9 +257,8 @@ class SupercellTest(PydefectTest):
             0.750000 0.500000 0.750000 P
             0.000000 0.250000 0.750000 P
             0.250000 -0.000000 0.750000 P""", fmt="poscar")
-        self.assertEqual(actual, expected)
+        self.assertEqual(expected, actual)
         actual_comment = supercell.comment
         expected_comment = "trans_mat: -1 3 -1 -1 -1 3 3 -1 -1, multi: 16, " \
                            "isotropy: 0.0\n"
-        self.assertEqual(actual_comment, expected_comment)
-
+        self.assertEqual(expected_comment, actual_comment)
