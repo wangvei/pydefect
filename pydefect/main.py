@@ -3,13 +3,13 @@
 
 import argparse
 
-from pydefect.main_functions import *
 from pydefect.core.defect_entry import DefectEntry
 from pydefect.core.interstitial_site import InterstitialSiteSet
 from pydefect.core.supercell_calc_results import SupercellCalcResults
 from pydefect.input_maker.defect_initial_setting \
     import DefectInitialSetting
 from pydefect.input_maker.supercell_maker import Supercells
+from pydefect.main_functions import *
 from pydefect.util.logger import get_logger
 from pydefect.util.main_tools import get_default_args
 
@@ -95,7 +95,6 @@ def main():
         help="Dopant elements, e.g., Ga In.")
     parser_initial.add_argument(
         "-a", "--antisite", dest="is_antisite", action="store_false",
-        default=defaults["is_antisite"],
         help="Set if antisite defects are not considered.")
     parser_initial.add_argument(
         "-e", dest="en_diff", type=float, default=defaults["en_diff"],
@@ -143,7 +142,7 @@ def main():
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
         aliases=['i'])
 
-    defaults = get_default_args(InterstitialSiteSet.add_site)
+    defaults = get_default_args(InterstitialSiteSet.add_sites)
     defaults.update(get_default_args(InterstitialSiteSet.from_files))
 
     parser_interstitial.add_argument(
@@ -160,7 +159,7 @@ def main():
         help="Set the interstitial site name.")
     parser_interstitial.add_argument(
         "--radius", dest="radius", type=str,
-        default=defaults["check_neighbor_radius"],
+        default=defaults["vicinage_radius"],
         help="Radius for checking too closed neighbor atoms.")
     parser_interstitial.add_argument(
         "--force_add", dest="force_add", action="store_true",
@@ -172,12 +171,14 @@ def main():
         help="Set length precision used for symmetry analysis [A].")
     parser_interstitial.add_argument(
         "--angle_tol", dest="angle_tolerance", type=float,
-        default=defaults["angle_tolerance"],
+        default=defaults["angle_tol"],
         help="Set angle precision used for symmetry analysis.")
     parser_interstitial.add_argument(
         "--method", dest="method", type=str, default=defaults["method"],
         help="Name of method.")
-
+    parser_interstitial.add_argument(
+        "--chgcar", dest="chgcar",  type=str, default=None,
+        help="CHGCAR type filename to determine the local charge minimum.")
     parser_interstitial.set_defaults(func=interstitial)
 
     # -- defect_vasp_set_maker ------------------------------------------------

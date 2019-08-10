@@ -8,31 +8,31 @@ from inspect import signature
 from itertools import chain
 from os.path import join
 
+import numpy as np
 from chempotdiag.chem_pot_diag import ChemPotDiag
-
 from obadb.vasp.incar import incar_flags
 from obadb.vasp.input_set import ObaSet
-
 from pydefect.analysis.defect import Defect
 from pydefect.analysis.defect_carrier_concentration import DefectConcentration
 from pydefect.analysis.defect_eigenvalues import DefectEigenvalue
 from pydefect.analysis.defect_energies import DefectEnergies
 from pydefect.analysis.defect_structure import DefectStructure
 from pydefect.core.defect_entry import DefectEntry
-from pydefect.core.interstitial_site import InterstitialSiteSet
+from pydefect.core.interstitial_site import (
+    InterstitialSiteSet, interstitials_from_charge_density)
 from pydefect.core.prior_info import PriorInfo
 from pydefect.core.supercell_calc_results import SupercellCalcResults
 from pydefect.core.unitcell_calc_results import UnitcellCalcResults
 from pydefect.corrections.corrections import ExtendedFnvCorrection, \
     NoCorrection, Ewald
-from pydefect.input_maker.defect_entry_set_maker import log_is_being_removed, \
-    log_already_exist, log_is_being_constructed, DefectEntrySetMaker
+from pydefect.input_maker.defect_entry_set_maker import (
+    log_is_being_removed,  log_already_exist, log_is_being_constructed,
+    DefectEntrySetMaker)
 from pydefect.input_maker.defect_initial_setting import dopant_info, \
     DefectInitialSetting
 from pydefect.input_maker.supercell_maker import Supercells
-from pydefect.util.main_tools import list2dict, generate_objects
 from pydefect.util.logger import get_logger
-
+from pydefect.util.main_tools import list2dict, generate_objects
 from pymatgen import Structure, Spin
 from pymatgen.core.periodic_table import Element
 
@@ -43,41 +43,42 @@ logger = get_logger(__name__)
 
 
 def recommend_supercell(args):
-    s = Supercells(structure=Structure.from_file(args.poscar),
-                   conventional_base=not args.primitive,
-                   max_num_atoms=args.max_num_atoms,
-                   min_num_atoms=args.min_num_atoms,
-                   criterion=args.isotropy_criterion)
+    supercells = Supercells(structure=Structure.from_file(args.poscar),
+                            conventional_base=not args.primitive,
+                            max_num_atoms=args.max_num_atoms,
+                            min_num_atoms=args.min_num_atoms,
+                            criterion=args.isotropy_criterion)
 
-    if s.supercells:
+    if supercells.supercells:
         if args.set:
-            logger.info("The number of supercells:" + str(len(s.supercells)))
+            logger.info(f"Number of supercells: {len(supercells.supercells)}")
 
-            for supercell in s.supercells:
+            for supercell in supercells.supercells:
                 # Suffix "c" means conventional cell, while "p" primitive cell.
-                cell = "c" if s.conventional_base else "p"
-                multi_str = cell + "x".join([str(list(supercell.trans_mat)[i])
-                                             for i in range(3)])
+                prefix = "c" if supercells.conventional_base else "p"
+                if np.count_nonzero(supercell.trans_mat) == 3:
+                    mat = [str(supercell.trans_mat[i][i]) for i in range(3)]
+                else:
+                    mat = [str(j) for i in supercell.trans_mat for j in i]
                 name = "_".join([args.sposcar,
-                                 multi_str,
+                                 prefix + "x".join(mat),
                                  str(supercell.num_atoms),
-                                 str(supercell.isotropy)])
+                                 str(supercell.isotropy[0])])
                 supercell.to_poscar(poscar_filename=name)
 
-            s.supercells[0].to_uposcar(uposcar_filename=args.uposcar)
+            supercells.supercells[0].to_uposcar(uposcar_filename=args.uposcar)
 
         else:
             if args.most_isotropic:
-                supercell = s.most_isotropic_supercell
+                supercell = supercells.most_isotropic_supercell
             else:
-                supercell = s.smallest_supercell
+                supercell = supercells.smallest_supercell
 
             supercell.to_poscar(poscar_filename=args.sposcar)
             supercell.to_uposcar(uposcar_filename=args.uposcar)
 
     else:
-        logger.warning("Any supercell does not satisfy the criterion. "
-                       "Increase the criterion if needed.")
+        logger.warning("No supercell satisfies the criterion.")
 
 
 def initial_setting(args):
@@ -108,28 +109,53 @@ def initial_setting(args):
                 cutoff=args.cutoff,
                 symprec=args.symprec,
                 angle_tolerance=args.angle_tolerance,
-                interstitial_site_names=args.interstitials)
+                interstitial_sites=args.interstitials)
 
         defect_setting.to()
 
 
 def interstitial(args):
-    try:
-        interstitial_set = \
-            InterstitialSiteSet.from_files(args.dposcar, args.yaml)
-    except FileNotFoundError:
-        structure = Structure.from_file(args.dposcar)
-        interstitial_set = InterstitialSiteSet(structure=structure)
 
-    coords = args.interstitial_coords
-    interstitial_set.add_site(coord=coords,
-                              site_name=args.site_name,
-                              check_neighbor_radius=args.radius,
-                              force_add=args.force_add,
-                              symprec=args.symprec,
-                              angle_tolerance=args.angle_tolerance)
+    if args.chgcar:
+        sites = interstitials_from_charge_density(
+            chgcar_filename=args.chgcar,
+            symprec=args.symprec,
+            angle_tol=args.angle_tolerance)
 
-    interstitial_set.site_set_to_yaml_file(filename=args.yaml)
+    else:
+        try:
+            interstitial_set = \
+                InterstitialSiteSet.from_files(args.dposcar, args.yaml)
+        except FileNotFoundError:
+            structure = Structure.from_file(args.dposcar)
+            interstitial_set = InterstitialSiteSet(structure=structure)
+
+        coords = args.interstitial_coords
+        if len(coords) == 3:
+            coords = [coords]
+        elif len(coords) % 3 == 0:
+            length = int(len(coords) / 3)
+            coords = [[coords[3 * i + j]
+                       for j in range(3)] for i in range(length)]
+        else:
+            raise ValueError(
+                f"Interstitial coordinates {args.interstitial_coords} invalid")
+
+        dis = DefectInitialSetting.from_defect_in(poscar=args.dposcar,
+                                                  defect_in_file="defect.in")
+        trans_mat = [[dis.transformation_matrix[3 * i + j]
+                      for j in range(3)] for i in range(3)]
+        # Change coords from unitcell to supercell
+        # multiply inverse of trans_mat to coords
+        inv_trans_mat = np.linalg.inv(trans_mat)
+        supercell_coords = [np.dot(inv_trans_mat, c).tolist() for c in coords]
+
+        interstitial_set.add_sites(coords=supercell_coords,
+                                   vicinage_radius=args.radius,
+                                   symprec=args.symprec,
+                                   angle_tol=args.angle_tolerance)
+
+        interstitial_set.site_set_to_yaml_file(filename=args.yaml)
 
 
 def defect_vasp_oba_set(args):

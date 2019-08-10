@@ -1,25 +1,22 @@
 # -*- coding: utf-8 -*-
 from itertools import product, combinations, chain
 from math import floor
-import numpy as np
-from tqdm import tqdm
 from typing import Union, List
 
-from pymatgen.io.vasp import Poscar
-from pymatgen.core.structure import Structure
-from pymatgen.core.lattice import Lattice
-from pymatgen.core.periodic_table import DummySpecie, Specie
-from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
-from pymatgen.util.coord import pbc_shortest_vectors
-
-from obadb.util.structure_handler import get_rotations
-
+import numpy as np
 import spglib
-
+from obadb.util.structure_handler import get_rotations
 from pydefect.core.config import SYMMETRY_TOLERANCE, ANGLE_TOL
 from pydefect.core.error_classes import StructureError
 from pydefect.util.logger import get_logger
 from pydefect.util.math import normalized_random_3d_vector, random_vector
+from pymatgen.core.lattice import Lattice
+from pymatgen.core.periodic_table import DummySpecie, Specie
+from pymatgen.core.structure import Structure
+from pymatgen.io.vasp import Poscar
+from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
+from pymatgen.util.coord import pbc_shortest_vectors
+from tqdm import tqdm
 
 __author__ = "Yu Kumagai"
 __maintainer__ = "Yu Kumagai"
@@ -297,20 +294,18 @@ def are_distances_same(lattice: Lattice,
 def create_saturated_interstitial_structure(
         structure: Structure,
         inserted_atom_coords: list,
-        species: list = None,
         dist_tol: float = 0.1,
         symprec: float = SYMMETRY_TOLERANCE,
         angle_tolerance: float = ANGLE_TOL) -> tuple:
     """ generates the sublattice for it based on the structure's space group.
 
-    Originally copied from
+    Original idea comes from pymatgen.
     pymatgen.analysis.defects.core.create_saturated_interstitial_structure
 
     Args:
         structure (Structure):
         inserted_atom_coords (list):
-            List of 3x1 fractional coords or 3x1 fractional coords
-        species (list): If not provided, "H" are inserted.
+            List of 3x1 fractional coords
         dist_tol (float):
             changing distance tolerance of saturated structure,
             allowing for possibly overlapping sites
@@ -321,10 +316,12 @@ def create_saturated_interstitial_structure(
     Returns:
         saturated_defect_structure (Structure):
             Saturated structure decorated with equivalent interstitial sites.
-        inserted_atom_indices (list):
+        atom_indices (list):
             The representative inserted atom indices.
+        are_inserted (list):
+            Show whether the inserted_atom_coords are inserted.
         symmetry_dataset (dict):
-            Spglib style symmetry dataset with the following properties.
+            Spglib style symmetry dataset with the various properties.
                 + number:
                     International space group number
                 + international:
@@ -342,33 +339,35 @@ def create_saturated_interstitial_structure(
                 + wyckoffs:
                     Wyckoff letters
     """
-    if species and len(inserted_atom_coords) != len(species):
-        raise ValueError("Numbers of inserted_atom_coords and species differ.")
-    # When one coord is given, it is modified to nested list.
-    # e.g. [0.125, 0.125, 0.125] -> [[0.125, 0.125, 0.125]]
-    if isinstance(inserted_atom_coords[0], float):
-        inserted_atom_coords = [inserted_atom_coords[:]]
-
     sga = SpacegroupAnalyzer(structure, symprec, angle_tolerance)
     symmops = sga.get_symmetry_operations()
-    symmetry_dataset = sga.get_symmetry_dataset()
-    saturated_defect_structure = structure.copy()
-    saturated_defect_structure.DISTANCE_TOLERANCE = dist_tol
+    saturated_structure = structure.copy()
+    saturated_structure.DISTANCE_TOLERANCE = dist_tol
 
-    inserted_atom_indices = []
+    atom_indices = []
+    are_inserted = []
     for i, coord in enumerate(inserted_atom_coords):
         # Check whether the inserted atoms already exist.
-        try:
-            neighboring_atom_indices = \
-                get_neighboring_atom_indices(saturated_defect_structure,
-                                             coord, dist_tol)
+        neighboring_atom_indices, distances = \
+            get_neighboring_atom_indices(saturated_structure,
+                                         coord, dist_tol)
+        are_inserted.append(neighboring_atom_indices == [])
+
+        if neighboring_atom_indices:
+            are_inserted.append(False)
             # If the inserted atom locates near other atoms within dist_tol,
             # first neighbor atom is set as inserted_atom_index.
             inserted_atom_index = neighboring_atom_indices[0]
-        except IndexError:
+            specie = saturated_structure[inserted_atom_index].specie
+
+            logger.warning(f"Inserted position is too close to {specie}.\n  "
+                           f"The distance is {distances[0]:5.3f} A.")
+
+        else:
+            are_inserted.append(True)
             # Get the last atom index to be inserted
-            inserted_atom_index = len(saturated_defect_structure)
-            specie = species[i] if species else DummySpecie()
+            inserted_atom_index = len(saturated_structure)
+            specie = DummySpecie()
 
             for symmop in symmops:
                 new_interstitial_coords = symmop.operate(coord[:])
@@ -377,16 +376,18 @@ def create_saturated_interstitial_structure(
                     # Whether to check if inserted site is too close to an
                     # existing site. Defaults to False. If it is caught,
                     # ValueError is raised. For criterion, DISTANCE_TOLERANCE
-                    # set to Structure is used.
-                    saturated_defect_structure.append(specie,
-                                                      new_interstitial_coords,
-                                                      validate_proximity=True)
+                    # set to Structure is used. Here, this is used such that
+                    # high-symmetric sites are reduced due to degeneracy.
+                    saturated_structure.append(specie, new_interstitial_coords,
+                                               validate_proximity=True)
                 except ValueError:
                     pass
 
-        inserted_atom_indices.append(inserted_atom_index)
+#        print(saturated_structure)
 
-    return saturated_defect_structure, inserted_atom_indices, symmetry_dataset
+        atom_indices.append(inserted_atom_index)
+
+    return saturated_structure, atom_indices, are_inserted
 
 
 def get_neighboring_atom_indices(structure: Structure,
@@ -394,14 +395,16 @@ def get_neighboring_atom_indices(structure: Structure,
                                  dist_tol: float) -> list:
     """ Return the neighboring atom indices within dist_tol distance. """
     neighboring_indices = []
+    distances = []
     for j, site in enumerate(structure):
         # returned tuple of (distance, periodic lattice translations)
         distance = structure.lattice.get_distance_and_image(coord,
                                                             site.frac_coords)
         if distance[0] < dist_tol:
             neighboring_indices.append(j)
+            distances.append(distance[0])
 
-    return neighboring_indices
+    return neighboring_indices, distances
 
 
 def count_equivalent_clusters(perfect_structure: Structure,

@@ -41,4 +41,6 @@ def num_symmetry_operation(point_group):
          "-43m":  24,
          "m-3m":  48}
 
+    point_group = "".join([s for s in point_group if s != "."])
+
     return d[point_group]

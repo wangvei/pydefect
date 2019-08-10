@@ -1,26 +1,23 @@
 # -*- coding: utf-8 -*-
 
-from copy import deepcopy
 from collections import OrderedDict
-from monty.json import MSONable
+from copy import deepcopy
 from typing import Union
+
+import numpy as np
 import yaml
-
-from pymatgen.core.structure import Structure
-from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
-from pymatgen.core.periodic_table import DummySpecie
-from pymatgen.io.vasp.outputs import Chgcar
-from pymatgen.analysis.defects.utils import ChargeDensityAnalyzer
-
+from monty.json import MSONable
 from obadb.util.structure_handler import get_coordination_distances
-
-from pydefect.core.config \
-    import DEFECT_SYMMETRY_TOLERANCE, ANGLE_TOL, \
-    MAX_NUM_INTERSTITIAL_SITES
-from pydefect.core.error_classes import StructureError
-from pydefect.util.structure_tools \
-    import get_symmetry_multiplicity, create_saturated_interstitial_structure
+from pydefect.core.config import SYMMETRY_TOLERANCE, ANGLE_TOL
+from pydefect.database.num_symmetry_operation import num_symmetry_operation
 from pydefect.util.logger import get_logger
+from pydefect.util.structure_tools \
+    import create_saturated_interstitial_structure
+from pymatgen.analysis.defects.utils import ChargeDensityAnalyzer
+from pymatgen.core.periodic_table import DummySpecie
+from pymatgen.core.structure import Structure
+from pymatgen.io.vasp.outputs import Chgcar
+from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
 
 __author__ = "Yu Kumagai"
 __maintainer__ = "Yu Kumagai"
@@ -166,103 +163,103 @@ class InterstitialSiteSet(MSONable):
 
         return cls.from_dict(d)
 
-    def add_site(self,
-                 coord: list,
-                 site_name: str = None,
-                 check_neighbor_radius: float = 0.3,
-                 force_add: bool = False,
-                 symprec: float = DEFECT_SYMMETRY_TOLERANCE,
-                 angle_tolerance: float = ANGLE_TOL,
-                 method: str = "manual"):
+    def add_sites(self,
+                  coords: list,
+                  vicinage_radius: float = 0.3,
+                  symprec: float = SYMMETRY_TOLERANCE,
+                  angle_tol: float = ANGLE_TOL,
+                  method: str = "manual"):
+        """ Add interstitial sites
+
+        Note that symprec must be the same as that used for
+        DefectInitialSetting to keep the symmetry consistency such as
+        point group, multiplicity and so on.
         """
+        # Don't distinguish old and new interstitial coordinates for simplicity
+        total_coords = self.coords + coords
+        saturated_structure, atom_indices, are_inserted = \
+            create_saturated_interstitial_structure(
+              self.structure, total_coords, vicinage_radius, symprec, angle_tol)
 
-        Note that the symprec must be the same as that used for defect analysis
-        to keep the same point group.
-        """
-        # Check whether other sites are too close to the inserted sites.
-        # Construct saturated structure with existing interstitial sites.
-        if self.coords:
-            saturated_structure, _, symmetry_dataset = \
-                create_saturated_interstitial_structure(
-                    self.structure, self.coords, dist_tol=symprec)
+        symmetry_dataset = SpacegroupAnalyzer(
+            saturated_structure, symprec, angle_tol).get_symmetry_dataset()
 
-            cart_coord = \
-                saturated_structure.lattice.get_cartesian_coords(coord)
-            neighbors = saturated_structure.get_sites_in_sphere(
-                pt=cart_coord, r=check_neighbor_radius)
+        for i, (coord, ai, inserted) \
+                in enumerate(zip(coords, atom_indices, are_inserted)):
+            if not inserted:
+                continue
+            site_symmetry = symmetry_dataset["site_symmetry_symbols"][ai]
+            wyckoff = symmetry_dataset["wyckoffs"][ai]
+            multiplicity = num_symmetry_operation(site_symmetry)
+            # Calculate the coordination_distances.
+            # Note that saturated_structure includes other interstitial sites.
+            defect_str = self.structure.copy()
+            defect_str.append(DummySpecie(), coord)
+            coordination_distances = \
+                get_coordination_distances(defect_str, len(defect_str) - 1)
 
-            for n in neighbors:
-                # DummySpecie occupies the saturated interstitial sites.
-                if isinstance(n[0].specie, DummySpecie):
-                    specie = "another interstitial site"
-                else:
-                    specie = n[0].frac_coords
-                distance = n[1]
-                message = f"Inserted position is too close to {specie}.\n " \
-                          f"The distance is {distance:5.3f} A."
-                if force_add:
-                    logger.warning(message)
-                else:
-                    raise StructureError(message)
-        else:
-            sga = SpacegroupAnalyzer(self.structure, symprec, angle_tolerance)
-            symmetry_dataset = sga.get_symmetry_dataset()
+            interstitial_site = \
+                InterstitialSite(representative_coords=coord,
+                                 wyckoff=wyckoff,
+                                 site_symmetry=site_symmetry,
+                                 symmetry_multiplicity=multiplicity,
+                                 coordination_distances=coordination_distances,
+                                 method=method)
 
-        structure = self.structure.copy()
-        structure.insert(0, DummySpecie(), coord)
+            self.interstitial_sites["i" + str(i)] = interstitial_site
 
-        # check the symmetry of the newly inserted interstitial site
-        sga = SpacegroupAnalyzer(structure, symprec, angle_tolerance)
-        sym_dataset = sga.get_symmetry_dataset()
-        wyckoff = sym_dataset["wyckoffs"][0]
-        site_symmetry = sym_dataset["pointgroup"]
-        symmetry_multiplicity = \
-            get_symmetry_multiplicity(symmetry_dataset, coord,
-                                      structure.lattice.matrix, symprec)
-        coordination_distances = get_coordination_distances(structure, 0)
 
-        # Set the default of the site_name
-        if site_name is None:
-            for i in range(MAX_NUM_INTERSTITIAL_SITES):
-                trial_name = "i" + str(i + 1)
-                if trial_name not in self.interstitial_sites.keys():
-                    site_name = trial_name
-                    break
-            else:
-                raise ValueError("Site name is not assigned automatically.")
-        else:
-            if site_name in self.interstitial_sites.keys():
-                raise ValueError(f"Site {site_name} already exists.")
+def interstitials_from_charge_density(
+        chgcar_filename: str,
+        threshold_frac: float = None,
+        threshold_abs: float = None,
+        min_dist: float = 0.5,
+        tol: float = 0.2,
+        radius: float = 0.4,
+        symprec: float = SYMMETRY_TOLERANCE,
+        angle_tol: float = ANGLE_TOL):
+    """
 
-        interstitial_site = \
-            InterstitialSite(representative_coords=coord,
-                             wyckoff=wyckoff,
-                             site_symmetry=site_symmetry,
-                             symmetry_multiplicity=symmetry_multiplicity,
-                             coordination_distances=coordination_distances,
-                             method=method)
+    Note that symprec must be the same as that used for
+    DefectInitialSetting to keep the symmetry consistency such as
+    point group, multiplicity and so on.
+    """
 
-        self.interstitial_sites[site_name] = interstitial_site
+    chgcar = Chgcar.from_file(chgcar_filename)
+    cda = ChargeDensityAnalyzer(chgcar=chgcar)
+    cda.get_local_extrema(threshold_frac=threshold_frac,
+                          threshold_abs=threshold_abs)
+    cda.sort_sites_by_integrated_chg(r=radius)
+    # Remove sites near host atoms.
+    cda.remove_collisions(min_dist)
+    # Cluster interstitials that are too close together using a tol.
+    cda.cluster_nodes(tol=tol)
 
-    def add_sites_from_charge_density(self,
-                                      chgcar_filename: str,
-                                      trans_mat: list = None,
-                                      threshold_frac: float = None,
-                                      threshold_abs: float = None,
-                                      min_dist: float = 0.5,
-                                      tol: float = 0.2,
-                                      radius: float = 0.4,
-                                      **kwargs):
+    structure = chgcar.structure.copy()
+    print(cda.extrema_df)
 
-        chgcar = Chgcar.from_file(chgcar_filename)
-        cda = ChargeDensityAnalyzer(chgcar=chgcar)
-        cda.get_local_extrema(threshold_frac=threshold_frac,
-                              threshold_abs=threshold_abs)
-        cda.sort_sites_by_integrated_chg(r=radius)
-        cda.remove_collisions(min_dist)
-        cda.cluster_nodes(tol=tol)
-        print(cda.extrema_coords)
-#        print(cda.charge_distribution_df)
+    start_index = len(structure)
+    end_index = len(structure) + len(cda.extrema_coords)
+    interstitial_indices = [i for i in range(start_index, end_index)]
+    coords = cda.extrema_coords
+    for c in coords:
+        structure.append(DummySpecie(), c)
+    sga = SpacegroupAnalyzer(structure, symprec, angle_tol)
+    equiv_atoms = sga.get_symmetry_dataset()["equivalent_atoms"]
 
-        for c in cda.extrema_coords:
-            self.add_site(c)
+    inequiv_interstitials = \
+        [i for i, ii in enumerate(interstitial_indices)
+         if ii == equiv_atoms[ii]]
+
+    print(f"Inequivalent indices {inequiv_interstitials}")
+
+    # Change coords from unitcell to supercell
+    # multiply inverse of trans_mat to coords
+    # inv_trans_mat = np.linalg.inv(trans_mat)
+    # print(inv_trans_mat)
+    # supercell_coords = \
+    #     [np.dot(inv_trans_mat, c) for c in inequiv_interstitial_coords]
+    # print(supercell_coords)
+
+    # self.add_sites(supercell_coords, symprec=symprec, angle_tol=angle_tol,
+    #                method="charge", **kwargs)

@@ -2,17 +2,16 @@
 
 from collections import Iterable
 from copy import deepcopy
-import numpy as np
 from typing import Union
 
-from pymatgen.core.structure import Structure
-from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
-
+import numpy as np
 from obadb.util.structure_handler import find_spglib_standard_conventional, \
     find_spglib_standard_primitive
-
+from pydefect.core.config import SYMMETRY_TOLERANCE, ANGLE_TOL
 from pydefect.core.error_classes import CellSizeError
 from pydefect.util.logger import get_logger
+from pymatgen.core.structure import Structure
+from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
 
 __author__ = "Yu Kumagai"
 __maintainer__ = "Yu Kumagai"
@@ -115,7 +114,9 @@ class Supercells:
                  max_num_atoms: int = 400,
                  min_num_atoms: int = 50,
                  criterion: float = 0.12,
-                 spread_rhombohedral: bool = True):
+                 rhombohedral_angle: float = 70,
+                 symprec: float = SYMMETRY_TOLERANCE,
+                 angle_tol: float = ANGLE_TOL):
         """ Constructs a set of supercells satisfying a criterion.
 
         Args:
@@ -130,29 +131,30 @@ class Supercells:
                 Minimum number of atoms in the supercell.
             criterion (float):
                 Criterion to judge if a supercell is isotropic or not.
-            spread_rhombohedral (bool):
-                Rhombohedral primitive cells may have very small lattice angles
-                that are not suited for first-principles calculations. Is
-                spread_rhombohedral is True, only the supercells with
-                60 < alpha < 120 are returned. Then, the new supercells are
-                created by multiplying [[1, 1, -1], [-1, 1, 1], [1, -1, 1]].
+            rhombohedral_angle (float):
+                Rhombohedral primitive cells may have very small or very large
+                lattice angles not suited for first-principles calculations. If
+                rhombohedral_angle is set, only the supercells with
+                rhombohedral_angle <= alpha <= 180 - rhombohedral_angle are
+                returned. Then, the new supercells are iteratively
+                created by multiplying [[1, 1, -1], [-1, 1, 1], [1, -1, 1]] or
+                [[1, 1, 0], [0, 1, 1], [1, 0, 1]].
         """
-        self.conventional_base = False
-        rhombohedral = False
-        primitive_cell = find_spglib_standard_primitive(structure)[0]
+        primitive_cell, _ = \
+            find_spglib_standard_primitive(structure, symprec, angle_tol)
+        sga = SpacegroupAnalyzer(structure, symprec, angle_tol)
+        symmetry_dataset = sga.get_symmetry_dataset()
+        logger.info(f"Space group: {symmetry_dataset['international']}")
 
         if conventional_base:
-            conventional_cell = find_spglib_standard_conventional(structure)
-            if conventional_cell.num_sites == primitive_cell.num_sites:
-                logger.info("Primitive cell is same as the conventional cell.")
-            else:
-                self.conventional_base = True
-
-            unitcell = conventional_cell
+            unitcell = \
+               find_spglib_standard_conventional(structure, symprec, angle_tol)
+            rhombohedral = False
+            self.conventional_base = True
         else:
             unitcell = primitive_cell
-            sga = SpacegroupAnalyzer(structure=primitive_cell)
             rhombohedral = sga.get_lattice_type() == "rhombohedral"
+            self.conventional_base = False
 
         self.unitcell = unitcell.get_sorted_structure()
         unitcell_num_atoms = self.unitcell.num_sites
@@ -162,36 +164,42 @@ class Supercells:
             raise CellSizeError("Number of atoms in unitcell is too large.")
 
         self.supercells = []
-
         trans_mat = np.identity(3, dtype="int8")
 
         for i in range(int(max_num_atoms / unitcell_num_atoms)):
-            print(trans_mat)
             isotropy, angle = calc_isotropy(self.unitcell, trans_mat)
             multiplicity = int(unitcell_mul * round(np.linalg.det(trans_mat)))
 
-            ill_shaped_rhombohedral = \
-                spread_rhombohedral and rhombohedral and not 60 < angle < 120
+            rhombohedral_shape = None
+            if rhombohedral_angle and rhombohedral:
+                if angle < rhombohedral_angle:
+                    rhombohedral_shape = "sharp"
+                elif angle > 180 - rhombohedral_angle:
+                    rhombohedral_shape = "blunt"
 
             num_atoms = int(multiplicity * primitive_cell.num_sites)
-            if isotropy < criterion and num_atoms >= min_num_atoms and \
-                    not ill_shaped_rhombohedral:
+            if isotropy < criterion and num_atoms >= min_num_atoms:
                 self.supercells.append(
                     Supercell(self.unitcell, trans_mat, multiplicity))
 
-            if ill_shaped_rhombohedral:
+            if rhombohedral_shape == "sharp":
                 multiplied_matrix = np.array([[ 1,  1, -1],
                                               [-1,  1,  1],
                                               [ 1, -1,  1]])
-                trans_mat = np.dot(multiplied_matrix, trans_mat)
-
+            elif rhombohedral_shape == "blunt":
+                multiplied_matrix = np.array([[1, 1, 0],
+                                              [0, 1, 1],
+                                              [1, 0, 1]])
             else:
                 super_abc = (self.unitcell * trans_mat).lattice.abc
                 # multi indices within 1.05a, where a is the shortest supercell
-                # lattice length, are incremented.
+                # lattice length, are incremented at the same time.
+                multiplied_matrix = np.identity(3, dtype="int8")
                 for j in range(3):
                     if super_abc[j] / min(super_abc) < 1.05:
-                        trans_mat[j, j] += 1
+                        multiplied_matrix[j, j] += 1
+
+            trans_mat = np.dot(multiplied_matrix, trans_mat)
 
             if multiplicity * unitcell_num_atoms > max_num_atoms:
                 break

@@ -103,12 +103,12 @@ class CreateSaturatedInterstitialStructureTest(PymatgenTest):
 
     def test(self):
         inserted_atom_coords = [[0.125, 0.125, 0.125]]
-        saturated_defect_struct, inserted_atom_indices, symmetry_dataset = \
+        saturated_defect_struct, atom_indices, are_inserted = \
             create_saturated_interstitial_structure(self.structure,
                                                     inserted_atom_coords)
         print(saturated_defect_struct)
-        print(inserted_atom_indices)
-        print(symmetry_dataset)
+        print(atom_indices)
+        print(are_inserted)
 
 
 class CountEquivalentClustersTest(PymatgenTest):

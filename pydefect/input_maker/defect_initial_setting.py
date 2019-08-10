@@ -1,19 +1,13 @@
 # -*- coding: utf-8 -*-
+import json
 from collections import defaultdict
 from itertools import permutations
-import json
 from typing import Union
-
-from pymatgen.core.periodic_table import Element
-from pymatgen.core.structure import Structure
-from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
 
 from monty.json import MontyEncoder, MSONable
 from monty.serialization import loadfn, dumpfn
-
 from obadb.util.structure_handler \
     import get_point_group_from_dataset, get_coordination_distances
-
 from pydefect.core.config \
     import ELECTRONEGATIVITY_DIFFERENCE, DISPLACEMENT_DISTANCE, \
     CUTOFF_RADIUS, SYMMETRY_TOLERANCE, ANGLE_TOL
@@ -23,6 +17,9 @@ from pydefect.core.interstitial_site import InterstitialSiteSet
 from pydefect.core.irreducible_site import IrreducibleSite
 from pydefect.database.atom import electronegativity_list, oxidation_state_dict
 from pydefect.util.logger import get_logger
+from pymatgen.core.periodic_table import Element
+from pymatgen.core.structure import Structure
+from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
 
 __author__ = "Yu Kumagai"
 __maintainer__ = "Yu Kumagai"
@@ -282,8 +279,8 @@ class DefectInitialSetting(MSONable):
                 elif line[0] == "Space":
                     space_group_symbol = line[-1]
                 elif line[0] == "Transformation":
-                    # Diagonal component of transformation matrix
-                    transformation_matrix = [int(i) for i in line[-2:]]
+                    # Transformation matrix
+                    transformation_matrix = [int(i) for i in line[-9:]]
                 elif line[0] == "Cell":
                     cell_multiplicity = int(line[-1])
                 elif line[0] == "Irreducible":
@@ -662,8 +659,8 @@ class DefectInitialSetting(MSONable):
         lines = list()
         lines.append(f"  Space group: {self.space_group_symbol}\n")
 
-        lines.append("Transformation matrix: {0[0]:2d} {0[1]:2d} {0[2]:2d}".
-                     format(self.transformation_matrix))
+        lines.append(f"Transformation matrix: "
+                     f"{' '.join(str(x) for x in self.transformation_matrix)}")
 
         lines.append(f"Cell multiplicity: {self.cell_multiplicity}\n")
 
