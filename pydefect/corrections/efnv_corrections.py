@@ -315,10 +315,10 @@ class ExtendedFnvCorrection(Correction, MSONable):
         self.distances_from_defect = list(distances_from_defect)
         self.difference_electrostatic_pot = list(difference_electrostatic_pot)
         self.model_pot = list(model_pot)
-        self._manual_correction_energy = manual_correction_energy
+        self.manual_correction_energy = manual_correction_energy
 
     def __repr__(self):
-        outs = ["Point-charge correction energy (eV): {}"
+        outs = ["Point-charge correction energy (eV): "
                 + str(self.point_charge_correction_energy),
                 "Alignment-like correction energy (eV): "
                 + str(self.alignment_correction_energy),
@@ -459,7 +459,7 @@ class ExtendedFnvCorrection(Correction, MSONable):
         for i in sorted(defect_entry.inserted_atoms.keys(), reverse=True):
             del distances_from_defect[i]
 
-        coeff, diff_pot, ewald_param, root_det_epsilon = \
+        coeff, diff_pot, mod_ewald_param, root_det_epsilon = \
             derive_constants(charge, ewald, volume)
 
         # model potential and lattice energy
@@ -471,7 +471,7 @@ class ExtendedFnvCorrection(Correction, MSONable):
             shift = lattice.get_cartesian_coords(r - defect_coords)
 
             real_part, reciprocal_part = calc_ewald_sum(
-                ewald, root_det_epsilon, volume,
+                ewald, mod_ewald_param, root_det_epsilon, volume,
                 include_self=True, shift=shift)
 
             model_pot.append((real_part + reciprocal_part + diff_pot) * coeff)
@@ -496,7 +496,7 @@ class ExtendedFnvCorrection(Correction, MSONable):
         ave_pot_diff = float(mean(pot_diff))
         alignment = -ave_pot_diff * charge
 
-        return cls(ewald, lattice.matrix, lattice_energy, ave_pot_diff,
+        return cls(ewald_json, lattice.matrix, lattice_energy, ave_pot_diff,
                    alignment, symbols_without_defect, distances_from_defect,
                    diff_potential, model_pot)
 
@@ -506,15 +506,15 @@ def point_charge_energy(charge: int, ewald: Ewald, volume: float):
     if charge == 0:
         return 0.0
 
-    coeff, diff_pot, ewald_param, root_det_epsilon = \
+    coeff, diff_pot, mod_ewald_param, root_det_epsilon = \
         derive_constants(charge, ewald, volume)
     # Real part: sum erfc(ewald * sqrt(R * epsilon_inv * R))
     #                    / sqrt(det(epsilon)) / sqrt(R * epsilon_inv * R) [1/A]
     real_part, reciprocal_part = \
-        calc_ewald_sum(ewald, root_det_epsilon, volume)
+        calc_ewald_sum(ewald, mod_ewald_param, root_det_epsilon, volume)
 
     det_epsilon = np.linalg.det(ewald.dielectric_tensor)
-    self_pot = - ewald_param / (2.0 * pi * sqrt(pi * det_epsilon))
+    self_pot = - mod_ewald_param / (2.0 * pi * sqrt(pi * det_epsilon))
     lattice_energy = ((real_part + reciprocal_part + diff_pot + self_pot)
                       * coeff * charge / 2)
 
@@ -522,17 +522,19 @@ def point_charge_energy(charge: int, ewald: Ewald, volume: float):
 
 
 def calc_ewald_sum(ewald: Ewald,
+                   mod_ewald_param: float,
                    root_det_epsilon: np.ndarray, volume: float,
                    include_self=False, shift=np.array([0, 0, 0])):
 
-    ewald_param = ewald.ewald_param
     epsilon_inv = np.linalg.inv(ewald.dielectric_tensor)
     real_sum = 0
     # Skip the potential caused by the defect itself
     for v in ewald.real_lattice_set(include_self, shift):
+        # if np.linalg.norm(v) < 1e-8:
+        #     continue
         root_r_inv_epsilon_r = np.sqrt(reduce(dot, [v.T, epsilon_inv, v]))
         real_sum += \
-            erfc(ewald_param * root_r_inv_epsilon_r) / root_r_inv_epsilon_r
+            erfc(mod_ewald_param * root_r_inv_epsilon_r) / root_r_inv_epsilon_r
     real_part = real_sum / (4 * pi * root_det_epsilon)
 
     # Ewald reciprocal part
@@ -541,7 +543,7 @@ def calc_ewald_sum(ewald: Ewald,
     for g in ewald.reciprocal_lattice_set():
         g_epsilon_g = reduce(dot, [g.T, ewald.dielectric_tensor, g])
         reciprocal_sum += \
-            (exp(- g_epsilon_g / 4.0 / ewald_param ** 2)
+            (exp(- g_epsilon_g / 4.0 / mod_ewald_param ** 2)
              / g_epsilon_g * cos(dot(g, np.zeros(3))))  # [A^2]
     reciprocal_part = reciprocal_sum / volume
 
@@ -549,10 +551,11 @@ def calc_ewald_sum(ewald: Ewald,
 
 
 def derive_constants(charge: int, ewald: Ewald, volume: float):
+
     coeff = charge * elementary_charge * 1e10 / epsilon_0  # [V]
     cube_root_vol = pow(volume, 1 / 3)
     root_det_epsilon = sqrt(np.linalg.det(ewald.dielectric_tensor))
-    ewald_param = ewald.ewald_param / cube_root_vol * root_det_epsilon
-    diff_pot = -0.25 / volume / ewald_param ** 2  # [1/A]
+    mod_ewald_param = ewald.ewald_param / cube_root_vol * root_det_epsilon
+    diff_pot = -0.25 / volume / mod_ewald_param ** 2  # [1/A]
 
-    return coeff, diff_pot, ewald_param, root_det_epsilon
+    return coeff, diff_pot, mod_ewald_param, root_det_epsilon
