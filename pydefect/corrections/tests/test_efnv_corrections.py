@@ -10,7 +10,7 @@ from pydefect.core.supercell_calc_results import SupercellCalcResults
 from pydefect.core.unitcell_calc_results import UnitcellCalcResults
 from pydefect.core.defect_entry import DefectEntry
 
-__author__ = "Akira Takahashi, Yu Kumagai"
+__author__ = "Yu Kumagai"
 __maintainer__ = "Yu Kumagai"
 
 test_dir = os.path.join(os.path.dirname(__file__), "..", "..", "..",
@@ -282,7 +282,7 @@ class ExtendedFnvCorrectionTest(PydefectTest):
         _prod_cutoff_fwhm = 0.1
         _real_neighbor_lattices = [[1, 1, 1], [2, 2, 2]]
         _reciprocal_neighbor_lattices = [[1, 1, 1], [2, 2, 2]]
-        self._ewald = Ewald(self._lattice, self._dielectric_tensor, _ewald, _prod_cutoff_fwhm, _real_neighbor_lattices, _reciprocal_neighbor_lattices)
+        self._ewald = Ewald.from_optimization(self._structure, self._dielectric_tensor)
 
         # self.ewald = \
         #     Ewald.from_optimization(self.perfect_structure, self.dielectric_tensor)
@@ -341,9 +341,9 @@ class ExtendedFnvCorrectionTest(PydefectTest):
                                                      self._vacancy,
                                                      self._perfect,
                                                      self._ewald)
-#        expected_vacancy_lattice_energy = -1.2670479
-#        self.assertAlmostEqual(vacancy_correction.lattice_energy,
-#                               expected_vacancy_lattice_energy, 4)
+        expected_vacancy_lattice_energy = -1.2670479
+        self.assertAlmostEqual(vacancy_correction.lattice_energy,
+                               expected_vacancy_lattice_energy, 4)
         # self.assertAlmostEqual(vacancy_correction.diff_ave_pot,
         #                        expected_vacancy_potential_difference, 5)
 #        self.assertAlmostEqual(vacancy_correction.alignment_correction_energy,

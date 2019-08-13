@@ -238,7 +238,6 @@ class Ewald(MSONable):
         """ """
         # remove [0, 0, 0] G vector.
         lattices = np.array(self.reciprocal_neighbor_lattices)
-        print(lattices[int((len(lattices) - 1) / 2)])
         # Note: numpy.delete returns new object.
         return np.delete(lattices, int((len(lattices) - 1) / 2), 0)
 
@@ -458,7 +457,6 @@ class ExtendedFnvCorrection(Correction, MSONable):
             model_pot.append((real_part + reciprocal_part + diff_pot) * coeff)
 
         lattice_energy = point_charge_energy(charge, ewald, volume)
-
         # calc ave_pot_diff
         distance_threshold = calc_max_sphere_radius(np.array(lattice.matrix))
         pot_diff = []
