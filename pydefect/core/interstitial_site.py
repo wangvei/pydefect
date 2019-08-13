@@ -4,7 +4,6 @@ from collections import OrderedDict
 from copy import deepcopy
 from typing import Union
 
-import numpy as np
 import yaml
 from monty.json import MSONable
 from obadb.util.structure_handler import get_coordination_distances

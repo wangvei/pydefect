@@ -92,8 +92,8 @@ class SimpleDefectName(DefectName):
                  out_site: str,
                  charge: int,
                  annotation: str = None):
-        if not re.match(r"[a-xA-Z0-9]+$", out_site):
-            raise ValueError("out_site {} is not valid.")
+        if not re.match(r"^[A-Z]+[0-9]$", out_site):
+            raise ValueError(f"out_site {out_site} is not valid.")
 
         if in_atom is not None:
             Element(in_atom)
@@ -123,7 +123,7 @@ class SimpleDefectName(DefectName):
 
     @property
     def is_interstitial(self):
-        return re.match(r"^i[a-xA-Z0-9]+$", self.out_site)
+        return re.match(r"^i[0-9]+$", self.out_site)
 
     @property
     def is_vacancy(self):
@@ -135,3 +135,4 @@ class SimpleDefectName(DefectName):
         if in_atom == "Va":
             in_atom = None
         return cls(in_atom, out_site, int(charge))
+

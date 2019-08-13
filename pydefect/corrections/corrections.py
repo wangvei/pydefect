@@ -15,7 +15,7 @@ class Correction(ABC):
     #     return
 
 
-class NoCorrection(Correction, MSONable):
+class ManualCorrection(Correction, MSONable):
 
     method = "no_correction"
 

@@ -110,7 +110,7 @@ def get_distances_from_string(string: list) -> dict:
         else:
             try:
                 distances[key].append(float(i))
-            except (UnboundLocalError, ValueError):
+            except (UnboundLocalError, ValueError, NameError):
                 print(f"Invalid string {string} for distance list.")
                 raise
     return distances
@@ -127,7 +127,7 @@ class DefectInitialSetting(MSONable):
                  irreducible_sites: list,
                  dopant_configs: list,
                  antisite_configs: list,
-                 interstitial_sites: list,
+                 interstitial_sites: Union[list, str],
                  included: list,
                  excluded: list,
                  displacement_distance: float,
@@ -203,11 +203,14 @@ class DefectInitialSetting(MSONable):
         self.oxidation_states = oxidation_states
         self.electronegativity = electronegativity
 
-        if self.interstitial_sites:
+        if not self.interstitial_sites:
+            self.interstitials = None
+        else:
             try:
-                t = InterstitialSiteSet.from_files(self.structure,
+                interstitial_site_set = \
+                    InterstitialSiteSet.from_files(self.structure,
                                                    interstitials_yaml)
-                sites = t.interstitial_sites
+                sites = interstitial_site_set.interstitial_sites
             except FileNotFoundError:
                 logger.error("interstitial.yaml file is needed.")
                 raise
@@ -222,8 +225,6 @@ class DefectInitialSetting(MSONable):
                             f"Interstitial site name {i_site} "
                             f"do not exist in {interstitials_yaml}")
                     self.interstitials[i_site] = sites[i_site]
-        else:
-            self.interstitials = None
 
     # see history at 2019/8/2 if from_dict and as_dict needs to recover
 
@@ -332,6 +333,8 @@ class DefectInitialSetting(MSONable):
 
                 elif line[0] == "Interstitials:":
                     interstitial_sites = list(line[1:])
+                    if interstitial_sites[1] == "all":
+                        interstitial_sites = "all"
 
                 elif line[0] == "Antisite":
                     antisite_configs = [i.split("_") for i in line[2:]]
@@ -441,7 +444,7 @@ class DefectInitialSetting(MSONable):
         """
         dopants = dopants if dopants else list()
         interstitial_sites = \
-            interstitial_sites if interstitial_sites else list()
+            interstitial_sites if interstitial_sites else "all"
 
         s = structure.get_sorted_structure()
 
@@ -684,8 +687,11 @@ class DefectInitialSetting(MSONable):
             # Append "" for one blank line.
             lines.append("")
 
-        interstitial_sites = " ".join(self.interstitial_sites)
-        lines.append(f"Interstitials: {interstitial_sites}")
+        if self.interstitial_sites == "all":
+            sites = "all"
+        else:
+            sites = ' '.join(self.interstitial_sites)
+        lines.append(f"Interstitials: {sites}")
 
         # [["Ga", "N], ["N", "Ga"]] -> Ga_N N_Ga
         antisite_configs = \

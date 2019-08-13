@@ -3,7 +3,7 @@ from typing import Union
 from pathlib import Path
 from pymatgen.util.testing import PymatgenTest
 from pymatgen.core.structure import Structure
-
+import tempfile
 
 class PydefectTest(PymatgenTest):
     """
@@ -27,3 +27,5 @@ class PydefectTest(PymatgenTest):
     @classmethod
     def get_filename(cls, name):
         return cls.TEST_FILES_DIR / name
+
+

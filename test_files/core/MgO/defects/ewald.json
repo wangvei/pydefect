@@ -1,5 +1,5 @@
 {
-  "@module": "pydefect.corrections.corrections",
+  "@module": "pydefect.corrections.efnv_corrections",
   "@class": "Ewald",
   "lattice": {
     "@module": "pymatgen.core.lattice",

@@ -4,8 +4,7 @@ import tempfile
 import numpy as np
 from pydefect.util.testing import PydefectTest
 
-from pydefect.corrections.corrections import NoCorrection
-from pydefect.corrections.efnv_corrections import Ewald, ExtendedFnvCorrection
+from pydefect.corrections.efnv_corrections import *
 from pydefect.core.supercell_calc_results import SupercellCalcResults
 from pydefect.core.unitcell_calc_results import UnitcellCalcResults
 from pydefect.core.defect_entry import DefectEntry
@@ -13,256 +12,95 @@ from pydefect.core.defect_entry import DefectEntry
 __author__ = "Yu Kumagai"
 __maintainer__ = "Yu Kumagai"
 
-test_dir = os.path.join(os.path.dirname(__file__), "..", "..", "..",
-                        "test_files", "core", "MgO")
-dirname_unitcell = test_dir + "/unitcell/structure_optimization"
-dirname_dielectric = test_dir + "/unitcell/dielectric_constants"
-dirname_perfect = test_dir + "/defects/perfect"
+
+class CalcMaxSphereRadiusTest(PydefectTest):
+
+    def setUp(self) -> None:
+        lattice_vectors_1 = np.array([[5, 0, 0], [0, 10, 0], [0, 0, 20]])
+        lattice_vectors_2 = np.array([[10, 0, 0], [0, 10, 0], [10, 10, 10]])
+        self.radius_1 = calc_max_sphere_radius(lattice_vectors_1)
+        self.radius_2 = calc_max_sphere_radius(lattice_vectors_2)
+
+    def test_radii(self):
+        self.assertEqual(10.0, self.radius_1)
+        self.assertEqual(5.0, self.radius_2)
 
 
-# vacancy
-dirname_vacancy = test_dir + "/defects/Va_O1_2/"
-vac_defect_entry_json = dirname_vacancy + "/defect_entry.json"
-vac_dft_results_json = dirname_vacancy + "/dft_results.json"
-expected_vacancy_potential_difference = 0.2812066
-expected_vacancy_alignment_like_term = -0.5624132
-# calculated by shell script made by Dr. Kumagai
-expected_vacancy_symbols = ["Mg"] * 8 + ["O"] * 7
-expected_vacancy_model_pot = [
-    -0.221616107852,
-    -0.0764266164062,
-    -0.0752496904232,
-    -0.0776770615374,
-    -0.0761845615171,
-    -0.0791754509674,
-    -0.0798985084573,
-    -0.221615505252,
-    -0.160981719771,
-    -0.16096545335,
-    -0.160981815887,
-    -0.160975167555,
-    -0.160983850502,
-    -0.160982833121,
-    -0.30114977165
-]
-expected_vacancy_difference_electrostatic_pot = [
-    -0.7019,
-    0.2297,
-    0.2336,
-    0.2350,
-    0.2338,
-    0.2323,
-    0.2259,
-    -0.7017,
-    0.2582,
-    0.2575,
-    0.2573,
-    0.2580,
-    0.2581,
-    0.2584,
-    0.6767
-]
-expected_vacancy_distances_list = [
-    3.67147,
-    2.25636,
-    2.25288,
-    2.26013,
-    2.25573,
-    2.26446,
-    2.26664,
-    3.67347,
-    2.99998,
-    2.99316,
-    2.99870,
-    2.99665,
-    3.00100,
-    2.99985,
-    4.24097
-]
+class CreateLatticeSetTest(PydefectTest):
 
-# interstitial
-dirname_interstitial = test_dir + "/defects/Mg_i1_2/"
-int_defect_entry_json = dirname_interstitial + "/defect_entry.json"
-# calculated by shell script made by Dr. Kumagai
-expected_interstitial_potential_difference = -0.6037262
-expected_interstitial_alignment_like_term = 1.2074524
-expected_interstitial_lattice_energy = -1.2670479
-expected_interstitial_symbols = ["Mg"] * 8 + ["O"] * 8
-expected_interstitial_model_pot = [
-    -0.0135165476999,
-    -0.0127176282237,
-    -0.012616877574,
-    -0.230601319824,
-    -0.0133623409413,
-    -0.230653149678,
-    -0.230600398297,
-    -0.230644516804,
-    0.115718541384,
-    0.115562628855,
-    0.114925014226,
-    -0.23080023577,
-    0.116021960655,
-    -0.230723147866,
-    -0.23071929237,
-    -0.230848526449,
-]
-expected_interstitial_difference_electrostatic_pot = [
-    -0.2636,
-    -0.2551,
-    -0.2548,
-    -1.2031,
-    -0.2610,
-    -1.2011,
-    -1.2027,
-    -1.1995,
-    -0.3407,
-    -0.3399,
-    -0.3400,
-    -0.4674,
-    -0.3381,
-    -0.4689,
-    -0.4676,
-    -0.4651,
-]
-expected_interstitial_distances_list = [
-    2.12061,
-    2.11854,
-    2.11828,
-    3.52030,
-    2.12021,
-    3.51964,
-    3.52139,
-    3.51776,
-    1.84582,
-    1.84609,
-    1.84722,
-    3.52009,
-    1.84529,
-    3.51602,
-    3.51972,
-    3.52014,
-]
+    def setUp(self) -> None:
+        lattice_vectors_1 = np.array([[10, 10, 0], [10, -10, 0], [0, 0, 14]])
+        max_length = 15
+        self.set = create_lattice_set(lattice_vectors_1, max_length)
 
-# substitutional
-dirname_substitutional = test_dir + "/defects/Al_Mg1_1/"
-sub_defect_entry_json = dirname_substitutional + "/defect_entry.json"
-# calculated by shell script made by Dr. Kumagai
-expected_substitutional_potential_difference = -0.493117
-expected_substitutional_alignment_like_term = 0.4931176
-expected_substitutional_lattice_energy = -0.3167620
-expected_substitutional_symbols = ["Mg"] * 7 + ["O"] * 8
-expected_substitutional_model_pot = [
-    -0.0804919304029,
-    -0.0804916055806,
-    -0.0804914783527,
-    -0.0804906118397,
-    -0.0804906768674,
-    -0.0804917174989,
-    -0.150575724122,
-    -0.11080882505,
-    0.00892143179861,
-    0.00853956104979,
-    0.00811480817918,
-    0.00754938028252,
-    0.0078962308938,
-    0.00501553618882,
-    -0.110808711372,
-]
-expected_substitutional_difference_electrostatic_pot = [
-    -0.7186,
-    -0.7260,
-    -0.7281,
-    -0.7248,
-    -0.7282,
-    -0.7314,
-    0.5708,
-    -0.7538,
-    -0.0456,
-    -0.0480,
-    -0.0518,
-    -0.0554,
-    -0.0572,
-    -0.0661,
-    -0.7531,
-]
-expected_substitutional_distances_list = [
-    3.00289,
-    3.00095,
-    3.00073,
-    2.99927,
-    2.99977,
-    3.00157,
-    4.24062,
-    3.67428,
-    2.02070,
-    2.02236,
-    2.02421,
-    2.02668,
-    2.02516,
-    2.03783,
-    3.67394,
-]
+    def test_lattice_set(self):
+        expected = [[-10, -10, 0], [-10, 10, 0], [0, 0, -14], [0, 0, 0],
+                    [0, 0, 14], [10, -10, 0], [10, 10, 0]]
+        self.assertEqual(expected, self.set)
+
+
+class CalcRelativePotentialTest(PydefectTest):
+
+    def setUp(self) -> None:
+        dirname = os.path.join("core", "MgO", "defects")
+        defect_name = os.path.join(dirname, "Va_O1_2", "dft_results.json")
+        defect = self.get_object_by_name(SupercellCalcResults.load_json,
+                                         defect_name)
+        entry_name = os.path.join(dirname, "Va_O1_2", "defect_entry.json")
+        defect_entry = self.get_object_by_name(DefectEntry.load_json,
+                                               entry_name)
+        perfect_name = os.path.join(dirname, "perfect", "dft_results.json")
+        perfect = self.get_object_by_name(SupercellCalcResults.load_json,
+                                          perfect_name)
+
+        self.relative_potential = \
+            calc_relative_potential(defect=defect, perfect=perfect,
+                                    defect_entry=defect_entry)
+
+    def test(self):
+        expected = [0.7231, -0.2318, -0.2361, -0.2374, -0.2363, -0.2343,
+                    -0.2282, 0.7229, -0.2351, -0.2341, -0.2334, -0.2355,
+                    -0.2352, -0.2353, -0.6934]
+        self.assertArrayAlmostEqual(expected, self.relative_potential, 4)
 
 
 class EwaldTest(PydefectTest):
 
     def setUp(self):
         unitcell = UnitcellCalcResults()
-        unitcell.set_static_dielectric_tensor_from_vasp(dirname_dielectric)
-        unitcell.set_ionic_dielectric_tensor_from_vasp(dirname_dielectric)
-        perfect = SupercellCalcResults.from_vasp_files(dirname_perfect)
-        self._structure = perfect.final_structure
-        self._lattice = perfect.final_structure.lattice
-        self._dielectric_tensor = unitcell.total_dielectric_tensor
-        _ewald = 0.1
-        _prod_cutoff_fwhm = 0.1
-        _real_neighbor_lattices = [[1, 1, 1], [2, 2, 2]]
-        _reciprocal_neighbor_lattices = [[1, 1, 1], [2, 2, 2]]
-        self._ewald = Ewald(self._lattice, self._dielectric_tensor, _ewald, _prod_cutoff_fwhm, _real_neighbor_lattices, _reciprocal_neighbor_lattices)
+        unitcell_dir = self.TEST_FILES_DIR / "core" / "MgO" / "unitcell" / "dielectric_constants"
+        unitcell.set_static_dielectric_tensor_from_vasp(unitcell_dir)
+        unitcell.set_ionic_dielectric_tensor_from_vasp(unitcell_dir)
+        perfect_dir = \
+            self.TEST_FILES_DIR / "core" / "MgO" / "defects" / "perfect"
+        perfect = SupercellCalcResults.from_vasp_files(perfect_dir)
+        structure = perfect.final_structure
+        dielectric_tensor = unitcell.total_dielectric_tensor
+        ewald = 0.1
+        prod_cutoff_fwhm = 0.1
+        self.ewald = Ewald.from_optimization(structure, dielectric_tensor,
+                                             prod_cutoff_fwhm=10)
 
     def test_json(self):
         """ round trip test of to_json and from_json """
         tmp_file = tempfile.NamedTemporaryFile()
-        self._ewald.to_json_file(tmp_file.name)
+        self.ewald.to_json_file(tmp_file.name)
         ewald_from_json = DefectEntry.load_json(tmp_file.name)
-        print(ewald_from_json.as_dict())
-        self.assertTrue(ewald_from_json.as_dict() ==
-                        self._ewald.as_dict())
+        self.assertEqual(self.ewald.as_dict(), ewald_from_json.as_dict())
 
     def test_optimize(self):
-        ewald = Ewald.from_optimization(self._structure,
-                                        self._dielectric_tensor,
-                                        prod_cutoff_fwhm=25.0)
-        # print(ewald.ewald_param)
-        # print(ewald.dielectric_tensor)
-        # print(ewald.real_neighbor_lattices)
-        # print(ewald.reciprocal_neighbor_lattices)
+        print(len(self.ewald.reciprocal_neighbor_lattices))
+        print(self.ewald.real_neighbor_lattices)
 
-        expected_ewald = 0.0411503184705
-        expected_num_real_vector = 11051
-#        self.assertAlmostEqual(0, 1 - expected_ewald/ewald.ewald_param, 1)
-#        self.assertAlmostEqual(
-#            0, 1 - expected_num_real_vector/len(ewald.real_neighbor_lattices), 1)
-        expected_num_reciprocal_vector = 10693
-        self.assertEqual(len(ewald.reciprocal_neighbor_lattices),
-                         expected_num_reciprocal_vector)
-        expected = np.array([16.987572, -63.703395, -29.728251])
-        self.assertArrayAlmostEqual(expected,
-                                    ewald.real_neighbor_lattices[100])
-        print(ewald.real_neighbor_lattices[100])
+        # expected_num_reciprocal_vector = 10693
+        # self.assertEqual(len(ewald.reciprocal_neighbor_lattices),
+        #                  expected_num_reciprocal_vector)
+        # expected = np.array([16.987572, -63.703395, -29.728251])
+        # self.assertArrayAlmostEqual(expected,
+        #                             ewald.real_neighbor_lattices[100])
+        # print(ewald.real_neighbor_lattices[100])
 
 #        ewald.to_json_file("ewald.json")
-
-
-class NoCorrectionTest(PydefectTest):
-    def setUp(self):
-        self._correction = NoCorrection(manual_correction_energy=1.5)
-
-    def test_dict(self):
-        d = self._correction.as_dict()
-        actual = NoCorrection.from_dict(d).as_dict()
-        expected = d
-        self.assertEqual(actual, expected)
 
 
 class ExtendedFnvCorrectionTest(PydefectTest):
@@ -282,7 +120,8 @@ class ExtendedFnvCorrectionTest(PydefectTest):
         _prod_cutoff_fwhm = 0.1
         _real_neighbor_lattices = [[1, 1, 1], [2, 2, 2]]
         _reciprocal_neighbor_lattices = [[1, 1, 1], [2, 2, 2]]
-        self._ewald = Ewald.from_optimization(self._structure, self._dielectric_tensor)
+        Ewald(self._lattice, self._dielectric_tensor, _ewald, _prod_cutoff_fwhm, _real_neighbor_lattices, _reciprocal_neighbor_lattices).to_json_file("ewald.json")
+        self._ewald = "ewald.json"
 
         # self.ewald = \
         #     Ewald.from_optimization(self.perfect_structure, self.dielectric_tensor)
@@ -301,7 +140,7 @@ class ExtendedFnvCorrectionTest(PydefectTest):
             ExtendedFnvCorrection(self._ewald,
                                   lattice_matrix=self._lattice.matrix,
                                   lattice_energy=expected_vacancy_lattice_energy,
-                                  diff_ave_pot=expected_vacancy_potential_difference,
+                                  ave_pot_diff=expected_vacancy_potential_difference,
                                   alignment_correction_energy=expected_vacancy_alignment_like_term,
                                   symbols_without_defect=expected_vacancy_symbols,
                                   distances_from_defect=expected_vacancy_distances_list,
@@ -319,7 +158,7 @@ class ExtendedFnvCorrectionTest(PydefectTest):
     #         ExtendedFnvCorrection(self._ewald,
     #                               lattice_matrix=self._lattice.matrix,
     #                               lattice_energy=expected_vacancy_lattice_energy,
-    #                               diff_ave_pot=expected_vacancy_potential_difference,
+    #                               ave_pot_diff=expected_vacancy_potential_difference,
     #                               alignment_correction_energy=expected_vacancy_alignment_like_term,
     #                               symbols_without_defect=expected_vacancy_symbols,
     #                               distances_from_defect=expected_vacancy_distances_list,
@@ -340,11 +179,12 @@ class ExtendedFnvCorrectionTest(PydefectTest):
             ExtendedFnvCorrection.compute_correction(self._vacancy_entry,
                                                      self._vacancy,
                                                      self._perfect,
+                                                     self._unitcell,
                                                      self._ewald)
         expected_vacancy_lattice_energy = -1.2670479
         self.assertAlmostEqual(vacancy_correction.lattice_energy,
                                expected_vacancy_lattice_energy, 4)
-        # self.assertAlmostEqual(vacancy_correction.diff_ave_pot,
+        # self.assertAlmostEqual(vacancy_correction.ave_pot_diff,
         #                        expected_vacancy_potential_difference, 5)
 #        self.assertAlmostEqual(vacancy_correction.alignment_correction_energy,
 #                               expected_vacancy_alignment_like_term, 5)
@@ -367,7 +207,7 @@ class ExtendedFnvCorrectionTest(PydefectTest):
         #                                              self._unitcell)
         # self.assertAlmostEqual(interstitial_correction.lattice_energy,
         #                        expected_interstitial_lattice_energy, 4)
-        # self.assertAlmostEqual(interstitial_correction.diff_ave_pot,
+        # self.assertAlmostEqual(interstitial_correction.ave_pot_diff,
         #                        expected_interstitial_potential_difference, 5)
         # self.assertAlmostEqual(interstitial_correction.alignment_energy,
         #                        expected_interstitial_alignment_like_term, 5)
@@ -390,7 +230,7 @@ class ExtendedFnvCorrectionTest(PydefectTest):
         #                                              self._unitcell)
         # self.assertAlmostEqual(substitutional_correction.lattice_energy,
         #                        expected_substitutional_lattice_energy, 4)
-        # self.assertAlmostEqual(substitutional_correction.diff_ave_pot,
+        # self.assertAlmostEqual(substitutional_correction.ave_pot_diff,
         #                        expected_substitutional_potential_difference, 5)
         # self.assertAlmostEqual(substitutional_correction.alignment_energy,
         #                        expected_substitutional_alignment_like_term, 5)
@@ -412,6 +252,7 @@ class ExtendedFnvCorrectionTest(PydefectTest):
 
     def test_plot_distance_vs_potential(self):
 
+        expected_vacancy_lattice_energy = -1.2670479
         vacancy_correction = \
             ExtendedFnvCorrection(self._ewald,
                                   self._lattice.matrix,

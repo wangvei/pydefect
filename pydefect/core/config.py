@@ -13,12 +13,13 @@ DISPLACEMENT_DISTANCE = 0.2
 # perturbed when DISPLACEMENT_DISTANCE is set.
 CUTOFF_RADIUS = 3.2
 SYMMETRY_TOLERANCE = 0.01
+# The following must be used after structure optimization anytime.
 DEFECT_SYMMETRY_TOLERANCE = 0.1
 
 ANGLE_TOL = 5
 
 KPT_DENSITY = 2
-FACTOR_STR_OPT = 1.3
+ENCUT_FACTOR_STR_OPT = 1.3
 
 COLOR = ["xkcd:blue", "xkcd:brown", "xkcd:crimson", "xkcd:darkgreen",
          "xkcd:gold", "xkcd:magenta", "xkcd:orange", "xkcd:darkblue",

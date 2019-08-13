@@ -6,6 +6,7 @@ from functools import reduce
 from itertools import product, groupby
 from math import sqrt, pow, ceil
 from operator import itemgetter
+from typing import Optional
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -16,6 +17,7 @@ from numpy.linalg import norm
 from pydefect.core.config import COLOR
 from pydefect.core.defect_entry import DefectEntry
 from pydefect.core.supercell_calc_results import SupercellCalcResults
+from pydefect.core.unitcell_calc_results import UnitcellCalcResults
 from pydefect.corrections.corrections import Correction
 from pymatgen.core import Structure
 from pymatgen.core.lattice import Lattice
@@ -44,7 +46,8 @@ def calc_max_sphere_radius(lattice_vectors: np.ndarray) -> float:
     return max(distances) / 2.0
 
 
-def create_lattice_set(lattice_vectors, max_length):
+def create_lattice_set(lattice_vectors: np.ndarray,
+                       max_length: float) -> list:
     """ Return a set of lattice vectors within the max length.
 
     Note that angles between any two axes are assumed to be between 60 and
@@ -54,7 +57,8 @@ def create_lattice_set(lattice_vectors, max_length):
         lattice_vectors (np.ndarray): 3x3 matrix.
         max_length (float): Max length to search lattice set.
 
-    Return (np.ndarray): Cartesian vector of lattice points.
+    Return :
+        List of Cartesian vector of lattice points.
     """
     max_int = [ceil(max_length / norm(lattice_vectors[i])) for i in range(3)]
     range_list = [range(-mi, mi + 1) for mi in max_int]
@@ -68,10 +72,13 @@ def create_lattice_set(lattice_vectors, max_length):
     return lattice_set
 
 
-def calc_relative_potential(defect, perfect, defect_entry):
+def calc_relative_potential(defect: SupercellCalcResults,
+                            perfect: SupercellCalcResults,
+                            defect_entry: DefectEntry) -> list:
     """ Return a list of relative site potential w.r.t. the perfect supercell.
 
-    None is inserted for interstitial sites.
+    None is inserted for foreign atoms such as interstitials and substituted
+    atoms.
 
     Args:
         defect (SupercellCalcResults):
@@ -265,10 +272,10 @@ class ExtendedFnvCorrection(Correction, MSONable):
     method = "extended_FNV"
 
     def __init__(self,
-                 ewald: Ewald,
+                 ewald_json: str,
                  lattice_matrix: np.array,
                  lattice_energy: float,
-                 diff_ave_pot: float,
+                 ave_pot_diff: float,
                  alignment_correction_energy: float,
                  symbols_without_defect: list,
                  distances_from_defect: list,
@@ -277,9 +284,10 @@ class ExtendedFnvCorrection(Correction, MSONable):
                  manual_correction_energy: float = 0.0):
         """
         Args:
-            ewald (Ewald):
+            ewald_json (str):
+                Since size of Ewald attributes is large, filename is stored.
             lattice_energy (float):
-            diff_ave_pot (float):
+            ave_pot_diff (float):
             alignment_correction_energy (float):
             symbols_without_defect (list of str):
             distances_from_defect (list of float):
@@ -298,10 +306,10 @@ class ExtendedFnvCorrection(Correction, MSONable):
                 f"Lengths of symbols({symbol_len}), distances({dist_len}),  "
                 f"electrostat_pot({pot_len}), model_pot({model_len}) differ.")
 
-        self.ewald = ewald
+        self.ewald_json = ewald_json
         self.lattice_matrix = lattice_matrix
         self.lattice_energy = lattice_energy
-        self.diff_ave_pot = diff_ave_pot
+        self.ave_pot_diff = ave_pot_diff
         self.alignment_correction_energy = alignment_correction_energy
         self.symbols_without_defect = symbols_without_defect
         self.distances_from_defect = list(distances_from_defect)
@@ -376,7 +384,7 @@ class ExtendedFnvCorrection(Correction, MSONable):
 
         # potential difference
         point_x = [self.max_sphere_radius, max(self.distances_from_defect)]
-        point_y = [self.diff_ave_pot, self.diff_ave_pot]
+        point_y = [self.ave_pot_diff, self.ave_pot_diff]
         ax.plot(point_x, point_y, c=(0, 0, 0), label="potential difference")
         ax.legend(loc="upper left")
         plt.title("Distance vs potential")
@@ -396,7 +404,9 @@ class ExtendedFnvCorrection(Correction, MSONable):
                            defect_entry: DefectEntry,
                            defect_dft: SupercellCalcResults,
                            perfect_dft: SupercellCalcResults,
-                           ewald: Ewald):
+                           unitcell_dft: UnitcellCalcResults,
+                           ewald_json: Optional[str] = None,
+                           to_filename: str = "ewald.json"):
         """
         Estimate correction energy of point defect formation energy calculated
         using finite-size supercell.
@@ -407,8 +417,18 @@ class ExtendedFnvCorrection(Correction, MSONable):
                 Calculated defect DFT results.
             perfect_dft (SupercellCalcResults):
                 Calculated defect DFT results for perfect supercell.
-            ewald (Ewald):
+            unitcell_dft (UnitcellCalcResults):
+            ewald_json (Ewald):
+            to_filename (str):
         """
+        if ewald_json is None:
+            ewald = \
+                Ewald.from_optimization(defect_dft.final_structure,
+                                        unitcell_dft.total_dielectric_tensor)
+            ewald.to_json_file(to_filename)
+        else:
+            ewald = Ewald.load_json(ewald_json)
+
         relative_potential = \
             calc_relative_potential(defect=defect_dft,
                                     perfect=perfect_dft,
@@ -451,12 +471,13 @@ class ExtendedFnvCorrection(Correction, MSONable):
             shift = lattice.get_cartesian_coords(r - defect_coords)
 
             real_part, reciprocal_part = calc_ewald_sum(
-                ewald, ewald_param, root_det_epsilon, volume,
+                ewald, root_det_epsilon, volume,
                 include_self=True, shift=shift)
 
             model_pot.append((real_part + reciprocal_part + diff_pot) * coeff)
 
         lattice_energy = point_charge_energy(charge, ewald, volume)
+
         # calc ave_pot_diff
         distance_threshold = calc_max_sphere_radius(np.array(lattice.matrix))
         pot_diff = []
@@ -482,12 +503,15 @@ class ExtendedFnvCorrection(Correction, MSONable):
 
 def point_charge_energy(charge: int, ewald: Ewald, volume: float):
 
+    if charge == 0:
+        return 0.0
+
     coeff, diff_pot, ewald_param, root_det_epsilon = \
         derive_constants(charge, ewald, volume)
     # Real part: sum erfc(ewald * sqrt(R * epsilon_inv * R))
     #                    / sqrt(det(epsilon)) / sqrt(R * epsilon_inv * R) [1/A]
     real_part, reciprocal_part = \
-        calc_ewald_sum(ewald, ewald_param, root_det_epsilon, volume)
+        calc_ewald_sum(ewald, root_det_epsilon, volume)
 
     det_epsilon = np.linalg.det(ewald.dielectric_tensor)
     self_pot = - ewald_param / (2.0 * pi * sqrt(pi * det_epsilon))
@@ -497,10 +521,11 @@ def point_charge_energy(charge: int, ewald: Ewald, volume: float):
     return lattice_energy
 
 
-def calc_ewald_sum(ewald: Ewald, ewald_param: float,
+def calc_ewald_sum(ewald: Ewald,
                    root_det_epsilon: np.ndarray, volume: float,
                    include_self=False, shift=np.array([0, 0, 0])):
 
+    ewald_param = ewald.ewald_param
     epsilon_inv = np.linalg.inv(ewald.dielectric_tensor)
     real_sum = 0
     # Skip the potential caused by the defect itself

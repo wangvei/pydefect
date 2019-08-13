@@ -23,8 +23,8 @@ from pydefect.core.interstitial_site import (
 from pydefect.core.prior_info import PriorInfo
 from pydefect.core.supercell_calc_results import SupercellCalcResults
 from pydefect.core.unitcell_calc_results import UnitcellCalcResults
-from pydefect.corrections.corrections import ExtendedFnvCorrection, \
-    NoCorrection, Ewald
+from pydefect.corrections.efnv_corrections import ExtendedFnvCorrection, Ewald
+from pydefect.corrections.corrections import ManualCorrection
 from pydefect.input_maker.defect_entry_set_maker import (
     log_is_being_removed,  log_already_exist, log_is_being_constructed,
     DefectEntrySetMaker)
@@ -370,7 +370,7 @@ def efnv_correction(args):
 
     if args.nocorr:
         for directory in dirs:
-            c = NoCorrection(manual_correction_energy=args.manual)
+            c = ManualCorrection(manual_correction_energy=args.manual)
             c.to_json_file(join(directory, "correction.json"))
 
         return
