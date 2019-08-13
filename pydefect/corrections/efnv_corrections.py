@@ -9,6 +9,7 @@ from operator import itemgetter
 
 import matplotlib.pyplot as plt
 import numpy as np
+from numpy import cos, sqrt, dot, cross, pi, exp, mean
 from monty.json import MontyEncoder, MSONable
 from monty.serialization import loadfn
 from numpy.linalg import norm
@@ -36,9 +37,9 @@ def calc_max_sphere_radius(lattice_vectors: np.ndarray) -> float:
     # (a_i x a_j) . a_k / |a_i . a_j|
     distances = np.zeros(3, dtype=float)
     for i in range(3):
-        a_i_a_j = np.cross(lattice_vectors[i - 2], lattice_vectors[i - 1])
+        a_i_a_j = cross(lattice_vectors[i - 2], lattice_vectors[i - 1])
         a_k = lattice_vectors[i]
-        distances[i] = abs(np.dot(a_i_a_j, a_k)) / norm(a_i_a_j)
+        distances[i] = abs(dot(a_i_a_j, a_k)) / norm(a_i_a_j)
     # Maximum radius of a sphere fitting inside the unit cell.
     return max(distances) / 2.0
 
@@ -60,7 +61,7 @@ def create_lattice_set(lattice_vectors, max_length):
 
     lattice_set = []
     for index in product(range_list[0], range_list[1], range_list[2]):
-        cart_vector = np.dot(lattice_vectors.transpose(), np.array(index))
+        cart_vector = dot(lattice_vectors.transpose(), np.array(index))
         if norm(cart_vector) < max_length:
             lattice_set.append(cart_vector.tolist())
 
@@ -205,7 +206,7 @@ class Ewald(MSONable):
             l_r = mstats.gmean([norm(v) for v in real_lattice_matrix])
             l_g = mstats.gmean([norm(v) for v in reciprocal_lattice_matrix])
             ewald_param \
-                = np.sqrt(l_g / l_r / 2) * cube_root_vol / root_det_dielectric
+                = sqrt(l_g / l_r / 2) * cube_root_vol / root_det_dielectric
 
         for i in range(10):
             ewald = ewald_param / cube_root_vol * root_det_dielectric
@@ -392,12 +393,11 @@ class ExtendedFnvCorrection(Correction, MSONable):
         return loadfn(filename)
 
     @classmethod
-    def compute_correction(
-            cls,
-            defect_entry: DefectEntry,
-            defect_dft: SupercellCalcResults,
-            perfect_dft: SupercellCalcResults,
-            ewald: Ewald):
+    def compute_correction(cls,
+                           defect_entry: DefectEntry,
+                           defect_dft: SupercellCalcResults,
+                           perfect_dft: SupercellCalcResults,
+                           ewald: Ewald):
         """
         Estimate correction energy of point defect formation energy calculated
         using finite-size supercell.
@@ -474,7 +474,7 @@ class ExtendedFnvCorrection(Correction, MSONable):
         for (d, a, m) in zip(distances_from_defect, diff_potential, model_pot):
             if d > distance_threshold:
                 pot_diff.append(a - m)
-        ave_pot_diff = float(np.mean(pot_diff))
+        ave_pot_diff = float(mean(pot_diff))
         alignment = -ave_pot_diff * charge
 
         return cls(ewald, lattice.matrix, lattice_energy, ave_pot_diff,
@@ -492,7 +492,7 @@ def point_charge_energy(charge: int, ewald: Ewald, volume: float):
         calc_ewald_sum(ewald, ewald_param, root_det_epsilon, volume)
 
     det_epsilon = np.linalg.det(ewald.dielectric_tensor)
-    self_pot = - ewald_param / (2.0 * np.pi * np.sqrt(np.pi * det_epsilon))
+    self_pot = - ewald_param / (2.0 * pi * sqrt(pi * det_epsilon))
     lattice_energy = ((real_part + reciprocal_part + diff_pot + self_pot)
                       * coeff * charge / 2)
 
@@ -507,19 +507,19 @@ def calc_ewald_sum(ewald: Ewald, ewald_param: float,
     real_sum = 0
     # Skip the potential caused by the defect itself
     for v in ewald.real_lattice_set(include_self, shift):
-        root_r_inv_epsilon_r = np.sqrt(reduce(np.dot, [v.T, epsilon_inv, v]))
+        root_r_inv_epsilon_r = np.sqrt(reduce(dot, [v.T, epsilon_inv, v]))
         real_sum += \
             erfc(ewald_param * root_r_inv_epsilon_r) / root_r_inv_epsilon_r
-    real_part = real_sum / (4 * np.pi * root_det_epsilon)
+    real_part = real_sum / (4 * pi * root_det_epsilon)
 
     # Ewald reciprocal part
     # sum exp(-g * epsilon * g / (4 * ewald ** 2)) / g * epsilon * g [1/A]
     reciprocal_sum = 0
     for g in ewald.reciprocal_lattice_set():
-        g_epsilon_g = reduce(np.dot, [g.T, ewald.dielectric_tensor, g])
+        g_epsilon_g = reduce(dot, [g.T, ewald.dielectric_tensor, g])
         reciprocal_sum += \
-            (np.exp(- g_epsilon_g / 4.0 / ewald_param ** 2)
-             / g_epsilon_g * np.cos(np.dot(g, np.zeros(3))))  # [A^2]
+            (exp(- g_epsilon_g / 4.0 / ewald_param ** 2)
+             / g_epsilon_g * cos(dot(g, np.zeros(3))))  # [A^2]
     reciprocal_part = reciprocal_sum / volume
 
     return real_part, reciprocal_part
@@ -528,7 +528,7 @@ def calc_ewald_sum(ewald: Ewald, ewald_param: float,
 def derive_constants(charge: int, ewald: Ewald, volume: float):
     coeff = charge * elementary_charge * 1e10 / epsilon_0  # [V]
     cube_root_vol = pow(volume, 1 / 3)
-    root_det_epsilon = np.sqrt(np.linalg.det(ewald.dielectric_tensor))
+    root_det_epsilon = sqrt(np.linalg.det(ewald.dielectric_tensor))
     ewald_param = ewald.ewald_param / cube_root_vol * root_det_epsilon
     diff_pot = -0.25 / volume / ewald_param ** 2  # [1/A]
 
