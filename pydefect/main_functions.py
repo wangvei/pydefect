@@ -422,12 +422,18 @@ def efnv_correction(args):
         defect_dft_data = SupercellCalcResults.load_json(
             join(directory, "dft_results.json"))
 
+        try:
+            ewald = Ewald.load_json(ewald_filename)
+        except FileNotFoundError:
+            ewald = Ewald.from_optimization(defect_dft_data.final_structure,
+                                            unitcell_dft_data.total_dielectric_tensor)
+            ewald.to_json_file(ewald_filename)
+
         c = ExtendedFnvCorrection. \
-            compute_alignment_by_extended_fnv(defect_entry=entry,
-                                              defect_dft=defect_dft_data,
-                                              perfect_dft=perfect_dft_data,
-                                              unitcell_dft=unitcell_dft_data,
-                                              ewald_json=ewald_filename)
+            compute_correction(defect_entry=entry,
+                               defect_dft=defect_dft_data,
+                               perfect_dft=perfect_dft_data,
+                               ewald=ewald)
 
         c.plot_distance_vs_potential(join(directory, "potential.pdf"))
         c.to_json_file(join(directory, "correction.json"))

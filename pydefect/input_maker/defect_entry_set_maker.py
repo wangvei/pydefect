@@ -20,7 +20,7 @@ __maintainer__ = "Yu Kumagai"
 logger = get_logger(__name__)
 
 
-def get_int_from_string(x):
+def get_int_from_string(x: str) -> int:
     """ Returns joined integer number from a string.
 
     Args:
@@ -29,7 +29,7 @@ def get_int_from_string(x):
     return int(''.join(i for i in x if i.isdigit()))
 
 
-def log_is_being_removed(name):
+def log_is_being_removed(name: str) -> None:
     """ Shows the message.
 
     Args:
@@ -38,7 +38,7 @@ def log_is_being_removed(name):
     logger.warning("{:>10} is being removed.".format(name))
 
 
-def log_already_exist(name):
+def log_already_exist(name: str) -> None:
     """ Shows the message.
 
     Args:
@@ -47,7 +47,7 @@ def log_already_exist(name):
     logger.warning("{:>10} already exists, so nothing is done.".format(name))
 
 
-def log_is_being_constructed(name):
+def log_is_being_constructed(name: str) -> None:
     """ Shows the message.
 
     Args:
@@ -58,7 +58,7 @@ def log_is_being_constructed(name):
 
 def select_defect_names(name_set: List[SimpleDefectName],
                         keywords: Union[str, list],
-                        return_str: bool = False):
+                        return_str: bool = False) -> List[str]:
     """ Returns names including one of keywords.
 
     Args:
@@ -164,8 +164,8 @@ class DefectEntrySetMaker:
                     num_equiv_sites = i.symmetry_multiplicity
                     break
             else:
-                raise IndexError("{} is not in defect.in."
-                                 .format(defect_name.out_site, defect_name))
+                raise IndexError(f"{defect_name.out_site} in {defect_name} "
+                                 f"is not in defect.in.")
 
         else:
             for i in self.irreducible_sites:
@@ -178,19 +178,18 @@ class DefectEntrySetMaker:
                     num_equiv_sites = i.num_atoms
                     break
             else:
-                raise IndexError("{} in {} is improper.".
-                                 format(defect_name.out_site, defect_name))
+                raise IndexError(
+                    f"{defect_name.out_site} in {defect_name} is improper.")
 
             try:
                 defect_structure.remove_sites([removed_index])
             except IndexError:
-                print("{} in {} is improper.".format(defect_name.out_site,
-                                                     defect_name))
+                print(f"{defect_name.out_site} in {defect_name} is improper.")
 
         # -------------------- analyze in_atom --------------------------------
         inserted_atoms = {}
-        # This block must be following analyzing out_name because
-        # defect coordinates is needed when inserting an in_name atom.
+        # This block must be after analyzing out_name as # defect coordinates
+        # are needed when inserting an in_name atom.
         if defect_name.is_vacancy:
             pass
         elif Element.is_valid_symbol(defect_name.in_atom):
@@ -204,8 +203,8 @@ class DefectEntrySetMaker:
             defect_structure.insert(inserted_index, defect_name.in_atom,
                                     defect_coords)
         else:
-            raise ValueError("{} in {} is improper.".format(
-                defect_name.in_atom, defect_name))
+            raise ValueError(
+                f"{defect_name.in_atom} in {defect_name} is improper.")
 
         inserted_atom_coords = list([defect_structure.frac_coords[k]
                                      for k in inserted_atoms])
@@ -219,8 +218,11 @@ class DefectEntrySetMaker:
         # If one wants to avoid it, set displacement_distance = 0
         perturbed_defect_structure, neighboring_sites = \
             perturb_neighboring_atoms(
-                defect_structure, center, self.cutoff,
-                self.displacement_distance, list(inserted_atoms.keys()))
+                structure=defect_structure,
+                center=center,
+                cutoff=self.cutoff,
+                distance=self.displacement_distance,
+                inserted_atom_indices=list(inserted_atoms.keys()))
 
         defect_structure.set_charge(defect_name.charge)
         perturbed_defect_structure.set_charge(defect_name.charge)

@@ -1,11 +1,11 @@
 import unittest
 import os
 import tempfile
+import numpy as np
+from pydefect.util.testing import PydefectTest
 
-from pymatgen.util.testing import PymatgenTest
-
-from pydefect.corrections.corrections \
-    import Ewald, NoCorrection, ExtendedFnvCorrection
+from pydefect.corrections.corrections import NoCorrection
+from pydefect.corrections.efnv_corrections import Ewald, ExtendedFnvCorrection
 from pydefect.core.supercell_calc_results import SupercellCalcResults
 from pydefect.core.unitcell_calc_results import UnitcellCalcResults
 from pydefect.core.defect_entry import DefectEntry
@@ -24,7 +24,6 @@ dirname_perfect = test_dir + "/defects/perfect"
 dirname_vacancy = test_dir + "/defects/Va_O1_2/"
 vac_defect_entry_json = dirname_vacancy + "/defect_entry.json"
 vac_dft_results_json = dirname_vacancy + "/dft_results.json"
-expected_vacancy_lattice_energy = -1.2670479
 expected_vacancy_potential_difference = 0.2812066
 expected_vacancy_alignment_like_term = -0.5624132
 # calculated by shell script made by Dr. Kumagai
@@ -205,7 +204,7 @@ expected_substitutional_distances_list = [
 ]
 
 
-class EwaldTest(PymatgenTest):
+class EwaldTest(PydefectTest):
 
     def setUp(self):
         unitcell = UnitcellCalcResults()
@@ -247,13 +246,15 @@ class EwaldTest(PymatgenTest):
         expected_num_reciprocal_vector = 10693
         self.assertEqual(len(ewald.reciprocal_neighbor_lattices),
                          expected_num_reciprocal_vector)
-#        expected = np.array([16.987572, -63.703395, -29.728251])
-#        assert_array_almost_equal(ewald.real_neighbor_lattices[100], expected)
+        expected = np.array([16.987572, -63.703395, -29.728251])
+        self.assertArrayAlmostEqual(expected,
+                                    ewald.real_neighbor_lattices[100])
+        print(ewald.real_neighbor_lattices[100])
 
 #        ewald.to_json_file("ewald.json")
 
 
-class NoCorrectionTest(PymatgenTest):
+class NoCorrectionTest(PydefectTest):
     def setUp(self):
         self._correction = NoCorrection(manual_correction_energy=1.5)
 
@@ -264,7 +265,7 @@ class NoCorrectionTest(PymatgenTest):
         self.assertEqual(actual, expected)
 
 
-class ExtendedFnvCorrectionTest(PymatgenTest):
+class ExtendedFnvCorrectionTest(PydefectTest):
 
     def setUp(self):
         self._unitcell = UnitcellCalcResults()
@@ -281,8 +282,7 @@ class ExtendedFnvCorrectionTest(PymatgenTest):
         _prod_cutoff_fwhm = 0.1
         _real_neighbor_lattices = [[1, 1, 1], [2, 2, 2]]
         _reciprocal_neighbor_lattices = [[1, 1, 1], [2, 2, 2]]
-        Ewald(self._lattice, self._dielectric_tensor, _ewald, _prod_cutoff_fwhm, _real_neighbor_lattices, _reciprocal_neighbor_lattices).to_json_file("ewald.json")
-        self._ewald = "ewald.json"
+        self._ewald = Ewald(self._lattice, self._dielectric_tensor, _ewald, _prod_cutoff_fwhm, _real_neighbor_lattices, _reciprocal_neighbor_lattices)
 
         # self.ewald = \
         #     Ewald.from_optimization(self.perfect_structure, self.dielectric_tensor)
@@ -296,6 +296,7 @@ class ExtendedFnvCorrectionTest(PymatgenTest):
 #            SupercellCalcResults.from_vasp_files(dirname_substitutional)
 
     def test_dict(self):
+        expected_vacancy_lattice_energy = -1.2670479
         vacancy_correction = \
             ExtendedFnvCorrection(self._ewald,
                                   lattice_matrix=self._lattice.matrix,
@@ -339,9 +340,10 @@ class ExtendedFnvCorrectionTest(PymatgenTest):
             ExtendedFnvCorrection.compute_correction(self._vacancy_entry,
                                                      self._vacancy,
                                                      self._perfect,
-                                                     self._unitcell)
-        self.assertAlmostEqual(vacancy_correction.lattice_energy,
-                               expected_vacancy_lattice_energy, 4)
+                                                     self._ewald)
+#        expected_vacancy_lattice_energy = -1.2670479
+#        self.assertAlmostEqual(vacancy_correction.lattice_energy,
+#                               expected_vacancy_lattice_energy, 4)
         # self.assertAlmostEqual(vacancy_correction.diff_ave_pot,
         #                        expected_vacancy_potential_difference, 5)
 #        self.assertAlmostEqual(vacancy_correction.alignment_correction_energy,
@@ -423,7 +425,7 @@ class ExtendedFnvCorrectionTest(PymatgenTest):
         expected_max_sphere_radius = 2.45194
         self.assertAlmostEqual(vacancy_correction.max_sphere_radius,
                                expected_max_sphere_radius, 5)
-        vacancy_correction.plot_distance_vs_potential()
+        vacancy_correction.plot_distance_vs_potential("pot.pdf")
 
         # interstitial_correction = \
         #     ExtendedFnvCorrection(self._ewald,

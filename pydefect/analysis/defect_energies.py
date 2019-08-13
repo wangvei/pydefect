@@ -287,11 +287,8 @@ class DefectEnergies(MSONable):
         plt.title(self.title, fontsize=15)
 
         if color is None:
-            color =  \
-                ["xkcd:blue", "xkcd:brown", "xkcd:crimson", "xkcd:darkgreen",
-                 "xkcd:gold", "xkcd:magenta", "xkcd:orange", "xkcd:darkblue",
-                 "xkcd:navy", "xkcd:red", "xkcd:olive", "xkcd:black",
-                 "xkcd:indigo"]
+            from pydefect.core.config import COLOR
+            color = COLOR
 
         ax.set_xlabel("Fermi level (eV)", fontsize=15)
         ax.set_ylabel("Formation energy (eV)", fontsize=15)

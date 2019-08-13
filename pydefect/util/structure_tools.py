@@ -392,7 +392,7 @@ def create_saturated_interstitial_structure(
 
 def get_neighboring_atom_indices(structure: Structure,
                                  coord: list,
-                                 dist_tol: float) -> list:
+                                 dist_tol: float) -> tuple:
     """ Return the neighboring atom indices within dist_tol distance. """
     neighboring_indices = []
     distances = []

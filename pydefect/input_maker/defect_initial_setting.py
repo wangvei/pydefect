@@ -2,7 +2,7 @@
 import json
 from collections import defaultdict
 from itertools import permutations
-from typing import Union
+from typing import Union, List
 
 from monty.json import MontyEncoder, MSONable
 from monty.serialization import loadfn, dumpfn
@@ -105,7 +105,7 @@ def get_distances_from_string(string: list) -> dict:
     distances = {}
     for i in string:
         if i[-1] == ":":
-            distances[i[:-1]] = []
+            distances[i[:-1]] = list()
             key = i[:-1]
         else:
             try:
@@ -194,8 +194,8 @@ class DefectInitialSetting(MSONable):
         self.dopants = set([d[0] for d in dopant_configs])
         self.antisite_configs = list(antisite_configs)
         self.interstitial_sites = list(interstitial_sites)
-        self.included = list(included) if included else []
-        self.excluded = list(excluded) if excluded else []
+        self.included = list(included) if included else list()
+        self.excluded = list(excluded) if excluded else list()
         self.displacement_distance = displacement_distance
         self.cutoff = cutoff
         self.symprec = symprec
@@ -439,9 +439,9 @@ class DefectInitialSetting(MSONable):
             interstitial_sites (list):
                 Names of interstitial sites written in interstitial.in file.
         """
-        dopants = [] if dopants is None else dopants
+        dopants = dopants if dopants else list()
         interstitial_sites = \
-            [] if interstitial_sites is None else interstitial_sites
+            interstitial_sites if interstitial_sites else list()
 
         s = structure.get_sorted_structure()
 
@@ -455,9 +455,7 @@ class DefectInitialSetting(MSONable):
         element_set = symbol_set + dopant_symbol_set
 
         # Electronegativity and oxidation states for constituents and dopants
-        electronegativity = {}
-        for element in element_set:
-            electronegativity[element] = get_electronegativity(element)
+        electronegativity = {e: get_electronegativity(e) for e in element_set}
 
         if oxidation_states is None:
             primitive = sga.find_primitive()
@@ -466,17 +464,16 @@ class DefectInitialSetting(MSONable):
                 oxidation_states = \
                     {k: round(v) for k, v in oxi_guess[0].items()}
             else:
-                oxidation_states = {}
-                for e in s.composition.elements:
-                    oxidation_states[str(e)] = get_oxidation_state(e)
+                oxidation_states = \
+                    {str(e): get_oxidation_state(e)
+                     for e in s.composition.elements}
                 logger.warning(f"Oxidation states set to {oxidation_states}")
             for d in dopants:
                 oxidation_states[d] = get_oxidation_state(d)
         else:
             for e in s.composition.elements:
                 if e not in oxidation_states.keys():
-                    raise ValueError("{} is not included in oxidation states".
-                                     format(e))
+                    raise ValueError(f"{e} not included in oxidation states.")
 
         symmetrized_structure.add_oxidation_state_by_element(oxidation_states)
 
@@ -484,13 +481,11 @@ class DefectInitialSetting(MSONable):
         num_irreducible_sites = defaultdict(int)
 
         # irreducible_sites (list): a set of IrreducibleSite class objects
-        irreducible_sites = []
+        irreducible_sites = list()
 
         # equivalent_sites: Equivalent site indices from SpacegroupAnalyzer.
         equiv_sites = symmetrized_structure.equivalent_sites
-
         lattice = symmetrized_structure.lattice.matrix
-
         sym_dataset = sga.get_symmetry_dataset()
 
         # Initialize the last index for iteration.
@@ -533,7 +528,7 @@ class DefectInitialSetting(MSONable):
             logger.warning(f"Electronegativity of {a} and/or {b} not defined")
 
         # E.g., antisite_configs = [["Mg, "O"], ...]
-        antisite_configs = []
+        antisite_configs = list()
         if is_antisite is True:
             for elem1, elem2 in permutations(symbol_set, 2):
                 if elem1 == elem2:
@@ -546,7 +541,7 @@ class DefectInitialSetting(MSONable):
                     electronegativity_not_defined(elem1, elem2)
 
         # E.g., dopant_configs = [["Al", "Mg"], ...]
-        dopant_configs = []
+        dopant_configs = list()
         for dopant in dopants:
             if dopant in symbol_set:
                 logger.warning("Dopant " + dopant + " constitutes host.")
@@ -579,62 +574,58 @@ class DefectInitialSetting(MSONable):
     def to_yaml_file(self, filename: str = "defect.yaml"):
         dumpfn(self.as_dict(), filename)
 
-    def to_json_file(self, filename):
+    def to_json_file(self, filename: str):
         with open(filename, 'w') as fw:
             json.dump(self.as_dict(), fw, indent=2, cls=MontyEncoder)
 
     def to(self,
-           defect_in_file: str = "defect.in",
-           poscar_file: str = "DPOSCAR"):
+           defect_in_file: str = "defect.in", poscar_file: str = "DPOSCAR"):
         """ Prints readable defect.in file and corresponding DPOSCAR file. """
         self._write_defect_in(defect_in_file)
         self.structure.to(fmt="poscar", filename=poscar_file)
 
-    def make_defect_name_set(self) -> list:
+    def make_defect_name_set(self) -> List[SimpleDefectName]:
         """ Return defect name list based on DefectInitialSetting object. """
         name_set = list()
 
         # Vacancies
-        for included_defect in self.irreducible_sites:
+        for irreducible_site in self.irreducible_sites:
             # Vacancy charge is minus of element charge.
-            extreme_charge = -self.oxidation_states[included_defect.element]
+            extreme_charge = -self.oxidation_states[irreducible_site.element]
             for charge in candidate_charge_set(extreme_charge):
-                out_site = included_defect.irreducible_name
-                name_set.append(
-                    SimpleDefectName(in_atom=None,
-                                     out_site=out_site,
-                                     charge=charge))
+                out_site = irreducible_site.irreducible_name
+                name_set.append(SimpleDefectName(in_atom=None,
+                                                 out_site=out_site,
+                                                 charge=charge))
 
         # Interstitials
-        if self.interstitials is not None:
-            elements = tuple(self.structure.symbol_set) + tuple(self.dopants)
-            for element in elements:
-                for interstitial_name in self.interstitials.keys():
-                    extreme_charge = self.oxidation_states[element]
-                    for charge in candidate_charge_set(extreme_charge):
-                        name_set.append(
-                            SimpleDefectName(in_atom=element,
-                                             out_site=interstitial_name,
-                                             charge=charge))
+        elements = tuple(self.structure.symbol_set) + tuple(self.dopants)
+        for element in elements:
+            for interstitial_name in self.interstitials.keys():
+                extreme_charge = self.oxidation_states[element]
+                for charge in candidate_charge_set(extreme_charge):
+                    name_set.append(
+                        SimpleDefectName(in_atom=element,
+                                         out_site=interstitial_name,
+                                         charge=charge))
 
         # Antisites + Substituted dopants
-        for in_atom, out_element in \
-                self.antisite_configs + self.dopant_configs:
-            for included_defect in self.irreducible_sites:
-                if out_element == included_defect.element:
-                    # Extreme charge is defined at oxidation state difference
+        replaced_config = self.antisite_configs + self.dopant_configs
+        for in_atom, out_element in replaced_config:
+            for irreducible_site in self.irreducible_sites:
+                if out_element == irreducible_site.element:
+                    # Charge range is defined by oxidation state difference
                     extreme_charge = self.oxidation_states[in_atom] - \
                                      self.oxidation_states[out_element]
 
                     for charge in candidate_charge_set(extreme_charge):
-                        out_site = included_defect.irreducible_name
-                        name_set.append(
-                            SimpleDefectName(in_atom=in_atom,
-                                             out_site=out_site,
-                                             charge=charge))
+                        out_site = irreducible_site.irreducible_name
+                        name_set.append(SimpleDefectName(in_atom=in_atom,
+                                                         out_site=out_site,
+                                                         charge=charge))
 
-        for included_defect in self.included:
-            defect_name = SimpleDefectName.from_str(included_defect)
+        for irreducible_site in self.included:
+            defect_name = SimpleDefectName.from_str(irreducible_site)
             if defect_name not in name_set:
                 name_set.append(defect_name)
             else:
@@ -669,7 +660,7 @@ class DefectInitialSetting(MSONable):
             lines.append(f"        Wyckoff letter: {site.wyckoff}")
             lines.append(f"         Site symmetry: {site.site_symmetry}")
 
-            neighbor_atom_distances = []
+            neighbor_atom_distances = list()
             for k, v in site.coordination_distances.items():
                 neighbor_atom_distances.append(
                    k + ": " + " ".join([str(round(i, 2)) for i in v]))
