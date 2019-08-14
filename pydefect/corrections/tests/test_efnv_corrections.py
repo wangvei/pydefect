@@ -133,29 +133,24 @@ class ExtendedFnvCorrectionTest(PydefectTest):
     def test_dict(self):
         d = self.vacancy_correction.as_dict()
         from_dict = ExtendedFnvCorrection.from_dict(d).as_dict()
-        print(d)
-        print(from_dict)
         self.assertEqual(d, from_dict)
 
-    # def test_json(self):
-    #     tmp_file = tempfile.NamedTemporaryFile()
-    #     self.vacancy_correction.to_json_file(tmp_file.name)
-    #     from_json = ExtendedFnvCorrection.load_json(tmp_file.name).as_dict()
-    #     d = self.vacancy_correction.as_dict()
-    #     print(d)
-    #     print(from_json)
-    #     self.assertEqual(d, from_json)
+    def test_json(self):
+        tmp_file = tempfile.NamedTemporaryFile()
+        self.vacancy_correction.to_json_file(tmp_file.name)
+        from_json = ExtendedFnvCorrection.load_json(tmp_file.name).as_dict()
+        d = self.vacancy_correction.as_dict()
+        self.assertEqual(d.keys(), from_json.keys())
 
     def test_compute_extended_fnv(self):
         # vacancy
         expected_vacancy_lattice_energy = -1.2670479
         self.assertAlmostEqual(self.vacancy_correction.lattice_energy,
                                expected_vacancy_lattice_energy, 3)
-        # self.assertAlmostEqual(vacancy_correction.ave_pot_diff,
+        # self.assertAlmostEqual(self.vacancy_correction.ave_pot_diff,
         #                        expected_vacancy_potential_difference, 5)
 #        self.assertAlmostEqual(vacancy_correction.alignment_correction_energy,
 #                               expected_vacancy_alignment_like_term, 5)
-        # # TODO: Check case of irreducible sites like O1, O2
         # assert_array_equal(vacancy_correction.symbols_without_defect,
         #                    expected_vacancy_symbols)
         # assert_array_almost_equal(vacancy_correction.distances_from_defect,
@@ -181,84 +176,10 @@ class ExtendedFnvCorrectionTest(PydefectTest):
         # assert_array_almost_equal(vacancy_correction.difference_electrostatic_pot,
         #                           expected_vacancy_difference_electrostatic_pot, 5)
 
-        # # interstitial
-        # interstitial_correction = \
-        #     ExtendedFnvCorrection.compute_correction(self._interstitial_entry,
-        #                                              self._interstitial,
-        #                                              self._perfect,
-        #                                              self._unitcell)
-        # self.assertAlmostEqual(interstitial_correction.lattice_energy,
-        #                        expected_interstitial_lattice_energy, 4)
-        # self.assertAlmostEqual(interstitial_correction.ave_pot_diff,
-        #                        expected_interstitial_potential_difference, 5)
-        # self.assertAlmostEqual(interstitial_correction.alignment_energy,
-        #                        expected_interstitial_alignment_like_term, 5)
-        # # TODO: Check case of irreducible sites like O1, O2
-        # assert_array_equal(interstitial_correction.symbols_without_defect,
-        #                    expected_interstitial_symbols)
-        # assert_array_almost_equal(interstitial_correction.distances_from_defect,
-        #                           expected_interstitial_distances_list, 5)
-        # assert_array_almost_equal(interstitial_correction.model_pot,
-        #                           expected_interstitial_model_pot, 5)
-        # assert_array_almost_equal(
-        #     interstitial_correction.difference_electrostatic_pot,
-        #     expected_interstitial_difference_electrostatic_pot, 5)
-
-        # # substitutional
-        # substitutional_correction = \
-        #     ExtendedFnvCorrection.compute_correction(self._substitutional_entry,
-        #                                              self._substitutional,
-        #                                              self._perfect,
-        #                                              self._unitcell)
-        # self.assertAlmostEqual(substitutional_correction.lattice_energy,
-        #                        expected_substitutional_lattice_energy, 4)
-        # self.assertAlmostEqual(substitutional_correction.ave_pot_diff,
-        #                        expected_substitutional_potential_difference, 5)
-        # self.assertAlmostEqual(substitutional_correction.alignment_energy,
-        #                        expected_substitutional_alignment_like_term, 5)
-        # # TODO: Check case of irreducible sites like O1, O2
-        # # Methods to get defect position slightly differs between that of shell
-        # # script and pydefect module. Then, distances_from_defect also differ
-        # # between shell and pydefect. However, as tested above, difference of
-        # # correction energy is not critical at all.
-        # assert_array_equal(substitutional_correction.symbols_without_defect,
-        #                    expected_substitutional_symbols)
-        # assert_array_almost_equal(
-        #     substitutional_correction.distances_from_defect,
-        #     expected_substitutional_distances_list, 1)
-        # assert_array_almost_equal(substitutional_correction.model_pot,
-        #                           expected_substitutional_model_pot, 2)
-        # assert_array_almost_equal(
-        #     substitutional_correction.difference_electrostatic_pot,
-        #     expected_substitutional_difference_electrostatic_pot, 2)
-
     def test_plot_distance_vs_potential(self):
 
-        expected_vacancy_lattice_energy = -1.2670479
         expected_max_sphere_radius = 2.45194
         self.assertAlmostEqual(self.vacancy_correction.max_sphere_radius,
                                expected_max_sphere_radius, 5)
         self.vacancy_correction.plot_distance_vs_potential("pot.pdf")
-
-        # interstitial_correction = \
-        #     ExtendedFnvCorrection(self._ewald,
-        #                           expected_interstitial_lattice_energy,
-        #                           expected_interstitial_potential_difference,
-        #                           expected_interstitial_alignment_like_term,
-        #                           expected_interstitial_symbols,
-        #                           expected_interstitial_distances_list,
-        #                           expected_interstitial_difference_electrostatic_pot,
-        #                           expected_interstitial_model_pot)
-        # interstitial_correction.plot_distance_vs_potential()
-
-        # substitutional_correction = \
-        #     ExtendedFnvCorrection(self._ewald,
-        #                           expected_substitutional_lattice_energy,
-        #                           expected_substitutional_potential_difference,
-        #                           expected_substitutional_alignment_like_term,
-        #                           expected_substitutional_symbols,
-        #                           expected_substitutional_distances_list,
-        #                           expected_substitutional_difference_electrostatic_pot,
-        #                           expected_substitutional_model_pot)
-        # substitutional_correction.plot_distance_vs_potential()
 

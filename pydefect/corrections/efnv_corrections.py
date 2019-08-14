@@ -530,8 +530,6 @@ def calc_ewald_sum(ewald: Ewald,
     real_sum = 0
     # Skip the potential caused by the defect itself
     for v in ewald.real_lattice_set(include_self, shift):
-        # if np.linalg.norm(v) < 1e-8:
-        #     continue
         root_r_inv_epsilon_r = np.sqrt(reduce(dot, [v.T, epsilon_inv, v]))
         real_sum += \
             erfc(mod_ewald_param * root_r_inv_epsilon_r) / root_r_inv_epsilon_r

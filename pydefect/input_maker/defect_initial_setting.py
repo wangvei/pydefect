@@ -53,7 +53,7 @@ def candidate_charge_set(i: int) -> list:
 
 
 def get_electronegativity(element: Union[str, Element]) -> float:
-    """get a Pauling electronegativit obtained from wikipedia"""
+    """get a Pauling electronegativity obtained from wikipedia"""
     try:
         return electronegativity_list[str(element)]
     except KeyError:
@@ -103,6 +103,7 @@ def get_distances_from_string(string: list) -> dict:
         dict: e.g. {"Mg": [2,1, 2.2], "O": [2.3, 2.4]
     """
     distances = {}
+    key = None
     for i in string:
         if i[-1] == ":":
             distances[i[:-1]] = list()
@@ -258,14 +259,14 @@ class DefectInitialSetting(MSONable):
         """
         structure = Structure.from_file(poscar)
         space_group_symbol = None
-        irreducible_sites = []
-        antisite_configs = []
-        interstitial_sites = []
+        irreducible_sites = list()
+        antisite_configs = list()
+        interstitial_sites = list()
         included = None
         excluded = None
-        electronegativity = {}
-        oxidation_states = {}
-        dopant_configs = []
+        electronegativity = dict()
+        oxidation_states = dict()
+        dopant_configs = list()
         displacement_distance = None
         cutoff = None
         symprec = None
@@ -497,8 +498,8 @@ class DefectInitialSetting(MSONable):
             # set element name of equivalent site
             element = equiv_site[0].species_string
             # need to omit sign and numbers, eg Zn2+ -> Zn
-            element = ''.join([i for i in element
-                               if not (i.isdigit() or i == "+" or i == "-")])
+            element = \
+                ''.join([i for i in element if not (i.isdigit() or i in "+-")])
 
             # increment number of inequivalent sites for element
             num_irreducible_sites[element] += 1
@@ -574,15 +575,16 @@ class DefectInitialSetting(MSONable):
                    oxidation_states=oxidation_states,
                    electronegativity=electronegativity)
 
-    def to_yaml_file(self, filename: str = "defect.yaml"):
+    def to_yaml_file(self, filename: str = "defect.yaml") -> None:
         dumpfn(self.as_dict(), filename)
 
-    def to_json_file(self, filename: str):
+    def to_json_file(self, filename: str) -> None:
         with open(filename, 'w') as fw:
             json.dump(self.as_dict(), fw, indent=2, cls=MontyEncoder)
 
     def to(self,
-           defect_in_file: str = "defect.in", poscar_file: str = "DPOSCAR"):
+           defect_in_file: str = "defect.in",
+           poscar_file: str = "DPOSCAR") -> None:
         """ Prints readable defect.in file and corresponding DPOSCAR file. """
         self._write_defect_in(defect_in_file)
         self.structure.to(fmt="poscar", filename=poscar_file)

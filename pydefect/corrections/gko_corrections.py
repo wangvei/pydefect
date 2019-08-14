@@ -22,18 +22,18 @@ class GkoCorrection(Correction, MSONable):
                  after_charge: int,
                  ewald_electronic_part: Ewald,
                  ewald_ionic_part: Ewald,
-                 before_electronic_pc_correction: float,
-                 after_electronic_pc_correction: float,
-                 before_ionic_pc_correction: float,
+                 before_ele_pc: float,
+                 after_ele_pc: float,
+                 before_ion_pc: float,
                  ave_pot_diff: float):
 
         self.before_charge = before_charge
         self.after_charge = after_charge
         self.ewald_electronic_part = ewald_electronic_part
         self.ewald_ionic_part = ewald_ionic_part
-        self.before_electronic_pc_correction = before_electronic_pc_correction
-        self.after_electronic_pc_correction = after_electronic_pc_correction
-        self.before_ionic_pc_correction = before_ionic_pc_correction
+        self.before_ele_pc = before_ele_pc
+        self.after_ele_pc = after_ele_pc
+        self.before_ion_pc = before_ion_pc
         self.ave_pot_diff = ave_pot_diff
 
     @classmethod
@@ -56,44 +56,44 @@ class GkoCorrection(Correction, MSONable):
         ewald_ele = Ewald.from_optimization(structure, dielectric_ele)
         ewald_ion = Ewald.from_optimization(structure, dielectric_ion)
 
-        before_electronic_pc_correction = \
-            point_charge_energy(before_charge, ewald_ele, volume)
-        after_electronic_pc_correction = \
-            point_charge_energy(after_charge, ewald_ele, volume)
-        before_ionic_pc_correction = \
-            point_charge_energy(before_charge, ewald_ion, volume)
+        print(dielectric_ele, dielectric_ion)
+
+        before_ele_pc = point_charge_energy(before_charge, ewald_ele, volume)
+        after_ele_pc = point_charge_energy(after_charge, ewald_ele, volume)
+        before_ion_pc = -2 * point_charge_energy(before_charge, ewald_ion, volume) / before_charge
 
         return cls(before_charge, after_charge, ewald_ele, ewald_ion,
-                   before_electronic_pc_correction,
-                   after_electronic_pc_correction,
-                   before_ionic_pc_correction, ave_pot_diff)
+                   before_ele_pc, after_ele_pc, before_ion_pc, ave_pot_diff)
+
+    def __repr__(self):
+        outs = [f"Total correction: {self.correction_energy}",
+                f"After electronic PC: {self.after_ele_pc}",
+                f"Before electronic PC: {self.before_ele_pc}",
+                f"Before ionic PC: {self.before_ion_pc}",
+                f"Finite-size contribution: {self.ave_pot_diff}"]
+        return "\n".join(outs)
 
     @property
     def correction_energy(self):
-        if self.after_charge - self.before_charge == 1:
-            return (self.after_electronic_pc_correction
-                    - self.before_electronic_pc_correction
-                    - self.before_ionic_pc_correction
-                    - self.ave_pot_diff)
-        elif self.after_charge - self.before_charge == -1:
-            return (self.after_electronic_pc_correction
-                    - self.before_electronic_pc_correction
-                    + self.before_ionic_pc_correction
-                    + self.ave_pot_diff)
+        charge_diff = self.after_charge - self.before_charge
+        if charge_diff == 1:
+            return (self.after_ele_pc - self.before_ele_pc
+                    - self.before_ion_pc - self.ave_pot_diff)
+        elif charge_diff == -1:
+            return (self.after_ele_pc - self.before_ele_pc
+                    + self.before_ion_pc + self.ave_pot_diff)
         else:
             raise ValueError(f"Charge transition {self.before_charge} -> "
                              f"{self.after_charge} is invalid.")
 
     @property
     def pc_correction_energy(self):
-        if self.after_charge - self.before_charge == 1:
-            return (self.after_electronic_pc_correction
-                    - self.before_electronic_pc_correction
-                    - self.before_ionic_pc_correction)
-        elif self.after_charge - self.before_charge == -1:
-            return (self.after_electronic_pc_correction
-                    - self.before_electronic_pc_correction
-                    + self.before_ionic_pc_correction)
+        charge_diff = self.after_charge - self.before_charge
+        if charge_diff == 1:
+            return self.after_ele_pc - self.before_ele_pc - self.before_ion_pc
+        if charge_diff == -1:
+            return self.after_ele_pc - self.before_ele_pc + self.before_ion_pc
         else:
             raise ValueError(f"Charge transition {self.before_charge} -> "
                              f"{self.after_charge} is invalid.")
+
