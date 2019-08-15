@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+# -*- coding: utf-8 -*-
 
 import json
 from copy import deepcopy
@@ -329,33 +329,34 @@ class ExtendedFnvCorrection(Correction, MSONable):
         return "\n".join(outs)
 
     @property
-    def point_charge_correction_energy(self):
+    def point_charge_correction_energy(self) -> float:
         return - self.lattice_energy
 
     @property
-    def manual_correction_energy(self):
+    def manual_correction_energy(self) -> float:
         return self._manual_correction_energy
 
     @manual_correction_energy.setter
-    def manual_correction_energy(self, correction_energy):
+    def manual_correction_energy(self, correction_energy: float) -> None:
         self._manual_correction_energy = correction_energy
 
     @property
-    def correction_energy(self):
+    def correction_energy(self) -> float:
         return self.point_charge_correction_energy \
                + self.alignment_correction_energy \
                + self.manual_correction_energy
 
     @property
-    def max_sphere_radius(self):
+    def max_sphere_radius(self) -> float:
         return calc_max_sphere_radius(self.lattice_matrix)
 
-    def plot_distance_vs_potential(self, file_name: str):
+    def plot_distance_vs_potential(self, file_name: str) -> None:
         property_without_defect = list(zip(self.symbols_without_defect,
                                            self.distances_from_defect,
                                            self.difference_electrostatic_pot))
 
-        # Ex points_dictionary = {'Mg': [(3.67147, -0.7019), (2.25636, 0.2297),
+        # E.g. points_dictionary =
+        #        {'Mg': [(3.67147, -0.7019), (2.25636, 0.2297), ..], 'O': [..]}
         points_dictionary = {}
         for element, properties in \
                 groupby(property_without_defect, key=itemgetter(0)):
@@ -407,9 +408,7 @@ class ExtendedFnvCorrection(Correction, MSONable):
                            unitcell_dft: UnitcellCalcResults,
                            ewald_json: Optional[str] = None,
                            to_filename: str = "ewald.json"):
-        """
-        Estimate correction energy of point defect formation energy calculated
-        using finite-size supercell.
+        """ Estimate correction energy for point defect formation energy.
 
         Args:
             defect_entry (DefectEntry):
@@ -501,7 +500,7 @@ class ExtendedFnvCorrection(Correction, MSONable):
                    diff_potential, model_pot)
 
 
-def point_charge_energy(charge: int, ewald: Ewald, volume: float):
+def point_charge_energy(charge: int, ewald: Ewald, volume: float) -> float:
 
     if charge == 0:
         return 0.0
@@ -523,8 +522,10 @@ def point_charge_energy(charge: int, ewald: Ewald, volume: float):
 
 def calc_ewald_sum(ewald: Ewald,
                    mod_ewald_param: float,
-                   root_det_epsilon: np.ndarray, volume: float,
-                   include_self=False, shift=np.array([0, 0, 0])):
+                   root_det_epsilon: np.ndarray,
+                   volume: float,
+                   include_self: bool = False,
+                   shift: np.ndarray = np.array([0, 0, 0])) -> tuple:
 
     epsilon_inv = np.linalg.inv(ewald.dielectric_tensor)
     real_sum = 0
@@ -548,7 +549,7 @@ def calc_ewald_sum(ewald: Ewald,
     return real_part, reciprocal_part
 
 
-def derive_constants(charge: int, ewald: Ewald, volume: float):
+def derive_constants(charge: int, ewald: Ewald, volume: float) -> tuple:
 
     coeff = charge * elementary_charge * 1e10 / epsilon_0  # [V]
     cube_root_vol = pow(volume, 1 / 3)

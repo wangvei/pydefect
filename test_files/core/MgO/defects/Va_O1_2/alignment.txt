@@ -1,2 +1,0 @@
-Potential difference: -0.0027395 [eV] 
- alignment-like term:  0.0054791 [eV]

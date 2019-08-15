@@ -1,13 +1,13 @@
 # -*- coding: utf-8 -*-
 
-from collections import defaultdict
-from typing import Union
 import json
+from collections import defaultdict
+from typing import Union, Optional
+
+import numpy as np
 from matplotlib import pyplot as plt
 from monty.json import MontyEncoder, MSONable
 from monty.serialization import loadfn
-import numpy as np
-
 from pydefect.analysis.defect_energies import DefectEnergies
 from pydefect.core.defect_name import DefectName
 from pydefect.core.error_classes import NoConvergenceError
@@ -50,14 +50,14 @@ def hole_concentration(temperature: float,
             Note that the total dos near the band edges is not so accurate
             compared to band structure, so threshold is needed.
     """
-    mesh_distance \
+    energy_interval \
         = (total_dos[1][-1] - total_dos[1][0]) / (len(total_dos[1]) - 1)
     # Note that e_f and e are opposite for holes.
     hole = sum(fermi_dirac_distribution(e_f, e, temperature) * td
                for td, e in zip(total_dos[0], total_dos[1])
                if e <= vbm + threshold)
 
-    return hole * mesh_distance / (volume / 10 ** 24)
+    return hole * energy_interval / (volume / 10 ** 24)
 
 
 def electron_concentration(temperature: float,
@@ -85,25 +85,25 @@ def electron_concentration(temperature: float,
             Note that the total dos near the band edges is not so accurate
             compared to band structure, so threshold is needed.
     """
-    mesh_distance \
-        = (total_dos[1][-1] - total_dos[1][0]) / (len(total_dos[1]) - 1)
-    electron = sum(fermi_dirac_distribution(e, e_f, temperature) * td
-                   for td, e in zip(total_dos[0], total_dos[1])
-                   if e >= cbm - threshold)
+    energy_interval = \
+        (total_dos[1][-1] - total_dos[1][0]) / (len(total_dos[1]) - 1)
+    electron = sum(fermi_dirac_distribution(energy, e_f, temperature) * dos
+                   for dos, energy in zip(total_dos[0], total_dos[1])
+                   if energy >= cbm - threshold)
 
-    return electron * mesh_distance / (volume / 10 ** 24)
+    return electron * energy_interval / (volume / 10 ** 24)
 
 
-def calc_concentration(energies: Union[dict, None],
-                       multiplicity: Union[dict, None],
-                       magnetization: Union[dict, None],
+def calc_concentration(energies: Optional[dict],
+                       multiplicity: Optional[dict],
+                       magnetization: Optional[dict],
                        temperature: float,
                        e_f: float,
                        vbm: float,
                        cbm: float,
                        total_dos: np.array,
                        volume: float,
-                       ref_concentration: dict = None):
+                       ref_concentration: Optional[dict] = None):
     """ Calculate concentrations at given temperature & Fermi level
 
     When the reference_concentration is provided, each defect specie
@@ -191,7 +191,7 @@ def calc_equilibrium_concentration(energies: dict,
                                    cbm: float,
                                    total_dos: np.array,
                                    volume: float,
-                                   ref_concentration: dict = None,
+                                   ref_concentration: Optional[dict] = None,
                                    verbose: bool = False,
                                    max_iteration: int = 200,
                                    interval_decay_parameter: float = 0.7,
@@ -237,9 +237,9 @@ def calc_equilibrium_concentration(energies: dict,
             the carrier and defect concentration, which is a ratio of the
             residual charge sum and  highest carrier or defect concentration.
     """
-    # Trial starts from the center of the band gap in the absolute scale.
+    # Trial Fermi level begins at center of the band gap in the absolute scale.
     e_f = (cbm + vbm) / 2
-    interval = e_f
+    interval = (cbm - vbm) / 2
     for iteration in range(max_iteration):
         defect_concentration = \
             calc_concentration(
@@ -420,27 +420,25 @@ class DefectConcentration(MSONable):
             n = DefectName(name, charge, annotation)
 
             if n.is_name_matched(filtering_words) is False:
-                logger.info("{} filtered out, so omitted.".format(n))
+                logger.info(f"{n} is excluded, so omitted.")
                 continue
             elif exclude_shallow_defects and defect_energy["is_shallow"]:
-                logger.info("{} is shallow, so omitted.".format(n))
+                logger.info(f"{n} is shallow, so omitted.")
                 continue
             elif exclude_unconverged_defects and \
                     defect_energy["convergence"] is False:
-                logger.info("{} unconverged, so omitted.".format(n))
+                logger.info(f"{n} is unconverged, so omitted.")
                 continue
 
             e = defect_energy["energy"]
             mul = defect_energies.multiplicity[name][charge][annotation]
 
             if abs(mag - round(mag)) > fractional_criterion:
-                logger.warning(
-                    "The total_magnetization of {} in {} is {}, and "
-                    "not integer".format(name, charge, mag))
+                logger.warning(f"The total_magnetization of {name} in {charge} "
+                               f"is {mag}, and not integer")
                 if fractional_magnetization_to_one:
-                    logger.warning(
-                        "The magnetization of {} in {} is set to "
-                        "one".format(name, charge))
+                    logger.warning(f"The magnetization of {name} in {charge} "
+                                   f"is set to one")
                     mag = 1.0
 
             energies[name][charge][annotation] = e
@@ -513,10 +511,9 @@ class DefectConcentration(MSONable):
 
     def __repr__(self):
 
-        outs = ["volume: {}".format(round(self.volume, 2)),
-                "vbm, cbm: {}, {}".format(
-                    round(self.vbm, 2), round(self.cbm, 2)),
-                "band gap: {}".format(round(self.cbm - self.vbm, 2)),
+        outs = [f"volume: {round(self.volume, 2)}",
+                f"vbm, cbm: {round(self.vbm, 2)}, {round(self.cbm, 2)}",
+                f"band gap: {round(self.cbm - self.vbm, 2)}",
                 ""]
 
         for i, c in enumerate([self.equilibrium_concentration,
@@ -533,11 +530,11 @@ class DefectConcentration(MSONable):
 
                 p = c["p"][1][None]
                 n = c["n"][-1][None]
-                out = ["Temperature: {} K.".format(t),
-                       "Fermi level from vbm: {} eV.".format(round(ef, 2)),
-                       "{:>13}: {:.1e} cm-3.".format("p", p),
-                       "{:>13}: {:.1e} cm-3.".format("n", n),
-                       "{:>13}: {:.1e} cm-3.".format("p - n", p - n)]
+                out = [f"Temperature: {t} K.",
+                       f"Fermi level from vbm: {round(ef, 2)} eV.",
+                       f"{'p':>13}: {p:.1e} cm-3.",
+                       f"{'n':>13}: {n:.1e} cm-3.",
+                       f"{'p - n':>13}: {p - n:.1e} cm-3."]
                 outs.extend(out)
 
                 for name in c:
@@ -547,8 +544,7 @@ class DefectConcentration(MSONable):
                     for charge in c[name]:
                         for annotation, con in c[name][charge].items():
                             n = DefectName(name, charge, annotation)
-                            outs.append("{:>13}: {:.1e} cm-3.".
-                                        format(str(n), con))
+                            outs.append(f"{n:>13}: {con:.1e} cm-3.")
                 outs.append("")
 
         return "\n".join(outs)
@@ -605,7 +601,7 @@ class DefectConcentration(MSONable):
                         volume=self.volume))
 
     def calc_equilibrium_concentration(self,
-                                       temperature: float = None,
+                                       temperature: Optional[float] = None,
                                        verbose: bool = True):
         """
         Calculate equilibrium defect concentrations at given temperature.

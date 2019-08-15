@@ -1,17 +1,13 @@
 # -*- coding: utf-8 -*-
-import unittest
-
 from pydefect.core.defect_name import DefectName
-
+from pydefect.util.testing import PydefectTest
 __author__ = "Yu Kumagai"
 __maintainer__ = "Yu Kumagai"
 
 
-class DefectNameTest(unittest.TestCase):
+class DefectNameTest(PydefectTest):
 
     def setUp(self):
-        """
-        """
         self.va_o_1 = DefectName("Va_O1", 1)
         self.mg_i1_m1 = DefectName.from_str("Mg_i1_1")
 
@@ -22,4 +18,5 @@ class DefectNameTest(unittest.TestCase):
 
     def test_is_name_matched(self):
         self.assertTrue(self.va_o_1.is_name_matched("Va_O[0-9]_1"))
-        self.assertFalse(self.va_o_1.is_name_matched(["Va_N[0-9]_1", "Va_Mg[0-9]"]))
+        self.assertFalse(
+            self.va_o_1.is_name_matched(["Va_N[0-9]_1", "Va_Mg[0-9]"]))

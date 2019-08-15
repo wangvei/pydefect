@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-
+from typing import Optional
 from monty.json import MSONable
 
 __author__ = "Yu Kumagai"
@@ -40,10 +40,10 @@ class IrreducibleSite(MSONable):
                  first_index: int,
                  last_index: int,
                  representative_coords: list,
-                 wyckoff: str = None,
-                 site_symmetry: str = None,
-                 coordination_distances: dict = None,
-                 magmom: float = None):
+                 wyckoff: str,
+                 site_symmetry: str,
+                 coordination_distances: Optional[dict] = None,
+                 magmom: Optional[float] = None):
         self.irreducible_name = irreducible_name
         self.element = element
         self.first_index = first_index

@@ -1,13 +1,12 @@
 # -*- coding: utf-8 -*-
 
 from copy import deepcopy
-from monty.json import MSONable
 from typing import Union
 
-from pymatgen.core.structure import Structure
-
+from monty.json import MSONable
 from pydefect.analysis.defect import Defect
 from pydefect.util.logger import get_logger
+from pymatgen.core.structure import Structure
 
 __author__ = "Yu Kumagai"
 __maintainer__ = "Yu Kumagai"
@@ -16,7 +15,16 @@ logger = get_logger(__name__)
 
 
 class DefectStructure(MSONable):
-    """ A class related to local structures around defect """
+    """ A class related to local structures around defect
+
+    Attributes:
+        initial_local_structure (Structure)
+            Initial local structure with only neighboring atoms determined after
+            structure optimization.
+        final_local_structure (Structure)
+            Final local structure with only neighboring atoms determined after
+            structure optimization.
+    """
 
     def __init__(self,
                  name: str,
@@ -90,6 +98,7 @@ class DefectStructure(MSONable):
 
     @classmethod
     def from_defect(cls, defect: Defect):
+        """ Retrieve from Defect class object"""
         return cls(name=defect.name,
                    final_volume=defect.final_volume,
                    initial_structure=defect.initial_structure,

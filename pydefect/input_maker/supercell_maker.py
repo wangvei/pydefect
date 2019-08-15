@@ -95,7 +95,7 @@ class Supercell:
         self.comment = f"trans_mat: {trans_mat_str}, multi: {multiplicity}, " \
                        f"isotropy: {self.isotropy[0]}\n"
 
-    def to_poscar(self, poscar_filename):
+    def to_poscar(self, poscar_filename: str) -> None:
         poscar_str = self.structure.to(fmt="poscar").splitlines(True)
         poscar_str[0] = self.comment
 
@@ -103,7 +103,7 @@ class Supercell:
             for line in poscar_str:
                 fw.write(line)
 
-    def to_uposcar(self, uposcar_filename):
+    def to_uposcar(self, uposcar_filename: str) -> None:
         self.base_structure.to(filename=uposcar_filename)
 
 
@@ -116,8 +116,8 @@ class Supercells:
                  criterion: float = 0.12,
                  rhombohedral_angle: float = 70,
                  symprec: float = SYMMETRY_TOLERANCE,
-                 angle_tol: float = ANGLE_TOL):
-        """ Constructs a set of supercells satisfying a criterion.
+                 angle_tolerance: float = ANGLE_TOL):
+        """ Constructs a set of supercells satisfying an isotropic criterion.
 
         Args:
             structure (pmg structure class object):
@@ -139,16 +139,21 @@ class Supercells:
                 returned. Then, the new supercells are iteratively
                 created by multiplying [[1, 1, -1], [-1, 1, 1], [1, -1, 1]] or
                 [[1, 1, 0], [0, 1, 1], [1, 0, 1]].
+            symprec (float):
+                Precision used for symmetry analysis in angstrom.
+            angle_tolerance (float):
+                Angle tolerance for symmetry analysis in degree
         """
         primitive_cell, _ = \
-            find_spglib_standard_primitive(structure, symprec, angle_tol)
-        sga = SpacegroupAnalyzer(structure, symprec, angle_tol)
+            find_spglib_standard_primitive(structure, symprec, angle_tolerance)
+        sga = SpacegroupAnalyzer(structure, symprec, angle_tolerance)
         symmetry_dataset = sga.get_symmetry_dataset()
         logger.info(f"Space group: {symmetry_dataset['international']}")
 
         if conventional_base:
-            unitcell = \
-               find_spglib_standard_conventional(structure, symprec, angle_tol)
+            unitcell = find_spglib_standard_conventional(structure,
+                                                         symprec,
+                                                         angle_tolerance)
             rhombohedral = False
             self.conventional_base = True
         else:

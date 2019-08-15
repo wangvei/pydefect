@@ -11,13 +11,10 @@ class Correction(ABC):
     def correction_energy(self):
         pass
 
-    # def manually_added_correction_energy(self):
-    #     return
-
 
 class ManualCorrection(Correction, MSONable):
 
-    method = "no_correction"
+    method = "manual_correction"
 
     def __init__(self,
                  manual_correction_energy: float = 0.0):
@@ -28,10 +25,10 @@ class ManualCorrection(Correction, MSONable):
         self._manual_correction_energy = manual_correction_energy
 
     @property
-    def correction_energy(self):
+    def correction_energy(self) -> float:
         return self._manual_correction_energy
 
-    def to_json_file(self, filename):
+    def to_json_file(self, filename: str) -> None:
         with open(filename, 'w') as fw:
             json.dump(self.as_dict(), fw, indent=2, cls=MontyEncoder)
 

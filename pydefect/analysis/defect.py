@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
+import json
 from enum import Enum, unique
 
-import json
 import numpy as np
 from monty.json import MSONable, MontyEncoder
 from monty.serialization import loadfn
@@ -11,10 +11,10 @@ from pydefect.corrections.corrections import Correction
 from pydefect.database.num_symmetry_operation \
     import num_symmetry_operation as nsymop
 from pydefect.util.logger import get_logger
+from pydefect.util.tools import spin_key_to_str, str_key_to_spin
 from pydefect.util.vasp_util import calc_orbital_difference
 from pymatgen.core.structure import Structure
 from pymatgen.electronic_structure.core import Spin
-from pydefect.util.tools import spin_key_to_str, str_key_to_spin
 
 __author__ = "Yu Kumagai"
 __maintainer__ = "Yu Kumagai"

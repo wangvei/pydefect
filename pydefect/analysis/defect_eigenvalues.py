@@ -1,15 +1,13 @@
 # -*- coding: utf-8 -*-
 
 import json
-import numpy as np
-
-from monty.json import MSONable, MontyEncoder
 
 import matplotlib.pyplot as plt
-
+import numpy as np
+from monty.json import MSONable, MontyEncoder
 from pydefect.analysis.defect import Defect
-from pydefect.core.unitcell_calc_results import UnitcellCalcResults
 from pydefect.core.error_classes import UnitcellCalcResultsError
+from pydefect.core.unitcell_calc_results import UnitcellCalcResults
 from pydefect.util.logger import get_logger
 
 __author__ = "Yu Kumagai"

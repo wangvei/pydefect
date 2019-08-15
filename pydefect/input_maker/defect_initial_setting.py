@@ -132,7 +132,7 @@ def insert_atoms(structure: Structure, atoms: dict) -> Tuple[Structure, list]:
         for i in inserted_atoms:
             if i["index"] >= index:
                 i["index"] += 1
-        inserted_atoms.append({"element": k, "index": index, "coord": v})
+        inserted_atoms.append({"element": k, "index": index, "coords": v})
 
     return inserted_structure, inserted_atoms
 
@@ -191,8 +191,8 @@ class DefectInitialSetting(MSONable):
                  dopant_configs: list,
                  antisite_configs: list,
                  interstitial_sites: Union[list, str],
-                 included: list,
-                 excluded: list,
+                 included: Optional[list],
+                 excluded: Optional[list],
                  displacement_distance: float,
                  cutoff: float,
                  symprec: float,
@@ -219,7 +219,7 @@ class DefectInitialSetting(MSONable):
                 Dopant configurations, e.g., [["Al", Mg"], ["N", "O"]]
             antisite_configs (Nx2 list):
                 Antisite configurations, e.g., [["Mg","O"], ["O", "Mg"]]
-            interstitial_sites (list):
+            interstitial_sites (list/str):
                 Interstitial site indices written in interstitial.in file
                 "all" means that all the interstitials are considered.
             included (list):
@@ -256,7 +256,10 @@ class DefectInitialSetting(MSONable):
         # dopant element names are derived from in_name of dopant_configs.
         self.dopants = set([d[0] for d in dopant_configs])
         self.antisite_configs = list(antisite_configs)
-        self.interstitial_sites = list(interstitial_sites)
+        if isinstance(interstitial_sites, list):
+            self.interstitial_sites = list(interstitial_sites)
+        else:
+            self.interstitial_sites = [interstitial_sites]
         self.included = list(included) if included else list()
         self.excluded = list(excluded) if excluded else list()
         self.displacement_distance = displacement_distance
@@ -268,16 +271,16 @@ class DefectInitialSetting(MSONable):
         self.interstitials_yaml = interstitials_yaml
 
         if not self.interstitial_sites:
-            self.interstitials = None
+            self.interstitials = {}
         else:
             try:
-                interstitial_site_set = \
-                    InterstitialSiteSet.from_files(self.structure,
-                                                   interstitials_yaml)
-                sites = interstitial_site_set.interstitial_sites
+                sites = InterstitialSiteSet.from_files(
+                    self.structure, interstitials_yaml).interstitial_sites
             except FileNotFoundError:
-                logger.error("interstitial.yaml file is needed.")
-                raise
+                if not self.interstitial_sites[0] == "all":
+                    logger.error("interstitial.yaml file is needed.")
+                    raise
+                sites = []
 
             if self.interstitial_sites[0] == "all":
                 self.interstitials = dict(sites)
@@ -293,9 +296,8 @@ class DefectInitialSetting(MSONable):
         self.defect_entries = None
 
     # see history at 2019/8/2 if from_dict and as_dict needs to recover
-
     @classmethod
-    def load_json(cls, filename):
+    def load_json(cls, filename: str):
         return loadfn(filename)
 
     @classmethod
@@ -465,8 +467,8 @@ class DefectInitialSetting(MSONable):
                             dopants: list = None,
                             is_antisite: bool = True,
                             en_diff: float = ELECTRONEGATIVITY_DIFFERENCE,
-                            included: list = None,
-                            excluded: list = None,
+                            included: Optional[list] = None,
+                            excluded: Optional[list] = None,
                             displacement_distance: float
                             = DISPLACEMENT_DISTANCE,
                             cutoff: float = CUTOFF_RADIUS,
@@ -666,6 +668,7 @@ class DefectInitialSetting(MSONable):
                          inserted_element: Optional[str]) -> list:
         defect_set = []
         changes_of_num_elements = defaultdict(int)
+
         for rs in removed_sites:
             in_name = inserted_element if inserted_element else "Va"
             name = "_".join([in_name, rs.irreducible_name])
@@ -675,7 +678,7 @@ class DefectInitialSetting(MSONable):
             structure.remove_sites([rs.first_index])
             removed_atoms = [{"element": rs.element,
                               "index": rs.first_index,
-                              "coods": rs.representative_coords}]
+                              "coords": rs.representative_coords}]
             changes_of_num_elements[rs.element] += -1
             num_equiv_sites = rs.num_atoms
 
@@ -708,9 +711,6 @@ class DefectInitialSetting(MSONable):
         return defect_set
 
     def _inserted_set(self, inserted_elements: List[str]) -> list:
-        if not self.interstitials:
-            return []
-
         defect_set = []
         for name, i in self.interstitials.items():
             center = i.representative_coords
