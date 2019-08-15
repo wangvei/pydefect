@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
 
-import numpy as np
 import os
-from pymatgen.util.testing import PymatgenTest
 
+import numpy as np
 from pydefect.util.distribution_function import fermi_dirac_distribution, \
     bose_einstein_distribution, maxwell_boltzmann_distribution
+from pymatgen.util.testing import PymatgenTest
 
 __author__ = "Yu Kumagai"
 __maintainer__ = "Yu Kumagai"

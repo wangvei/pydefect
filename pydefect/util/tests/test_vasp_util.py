@@ -2,12 +2,11 @@
 import os
 import unittest
 
+from pydefect.util.vasp_util import element_diff_from_structures, \
+    calc_participation_ratio, calc_orbital_character, calc_orbital_difference
 from pymatgen.core.structure import Structure
 from pymatgen.electronic_structure.core import Spin
 from pymatgen.io.vasp import Procar
-
-from pydefect.util.vasp_util import element_diff_from_structures, \
-    calc_participation_ratio, calc_orbital_character, calc_orbital_difference
 
 __author__ = "Yu Kumagai"
 __maintainer__ = "Yu Kumagai"

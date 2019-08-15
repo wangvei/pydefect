@@ -5,7 +5,7 @@ from copy import deepcopy
 from typing import Union
 
 import numpy as np
-from obadb.util.structure_handler import (
+from vise.util.structure_handler import (
     find_spglib_standard_conventional, find_spglib_standard_primitive)
 from pydefect.core.config import SYMMETRY_TOLERANCE, ANGLE_TOL
 from pydefect.core.error_classes import CellSizeError

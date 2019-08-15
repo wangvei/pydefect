@@ -10,8 +10,8 @@ from os.path import join
 
 import numpy as np
 from chempotdiag.chem_pot_diag import ChemPotDiag
-from obadb.vasp.incar import incar_flags
-from obadb.vasp.input_set import ObaSet
+from vise.input_set.incar import incar_flags
+from vise.input_set.input_set import ObaSet
 from pydefect.analysis.defect import Defect
 from pydefect.analysis.defect_carrier_concentration import DefectConcentration
 from pydefect.analysis.defect_eigenvalues import DefectEigenvalue

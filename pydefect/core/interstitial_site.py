@@ -6,7 +6,7 @@ from typing import Union
 
 import yaml
 from monty.json import MSONable
-from obadb.util.structure_handler import get_coordination_distances
+from vise.util.structure_handler import get_coordination_distances
 from pydefect.core.config import SYMMETRY_TOLERANCE, ANGLE_TOL
 from pydefect.database.num_symmetry_operation import num_symmetry_operation
 from pydefect.util.logger import get_logger

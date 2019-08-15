@@ -1,8 +1,5 @@
 # -*- coding: utf-8 -*-
 
-from collections import namedtuple
-import unittest
-
 __author__ = "Yu Kumagai"
 __maintainer__ = "Yu Kumagai"
 

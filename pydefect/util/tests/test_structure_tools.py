@@ -1,15 +1,15 @@
 # -*- coding: utf-8 -*-
 
-import numpy as np
 import os
 
-from pymatgen.core.structure import Structure
-from pymatgen.util.testing import PymatgenTest
-
+import numpy as np
 from pydefect.util.structure_tools import perturb_neighboring_atoms, \
     get_displacements, defect_center_from_coords, atomic_distances, \
     create_saturated_interstitial_structure, count_equivalent_clusters, \
     get_point_group_op_number, get_symmetry_multiplicity
+from pymatgen.core.structure import Structure
+from pymatgen.util.testing import PymatgenTest
+from vise.util.structure_handler import get_symmetry_dataset
 
 __author__ = "Yu Kumagai"
 __maintainer__ = "Yu Kumagai"
@@ -126,7 +126,6 @@ class CountEquivalentClustersTest(PymatgenTest):
 class GetPointGroupOpNumberTest(PymatgenTest):
     def setUp(self):
         structure = Structure.from_file("POSCAR-MgO64atoms")
-        from obadb.util.structure_handler import get_symmetry_dataset
         self.sym_dataset = get_symmetry_dataset(structure)
         self.lattice = structure.lattice.matrix
 

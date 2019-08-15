@@ -6,7 +6,7 @@ from typing import Union, List, Optional, Tuple
 
 from monty.json import MontyEncoder, MSONable
 from monty.serialization import loadfn, dumpfn
-from obadb.util.structure_handler import (
+from vise.util.structure_handler import (
     get_point_group_from_dataset, get_coordination_distances)
 from pydefect.core.config import (
     ELECTRONEGATIVITY_DIFFERENCE, DISPLACEMENT_DISTANCE, CUTOFF_RADIUS,

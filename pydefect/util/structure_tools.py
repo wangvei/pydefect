@@ -5,7 +5,7 @@ from typing import Union, List
 
 import numpy as np
 import spglib
-from obadb.util.structure_handler import get_rotations
+from vise.util.structure_handler import get_rotations
 from pydefect.core.config import SYMMETRY_TOLERANCE, ANGLE_TOL
 from pydefect.core.error_classes import StructureError
 from pydefect.util.logger import get_logger

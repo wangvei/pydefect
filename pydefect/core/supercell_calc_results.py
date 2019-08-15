@@ -9,7 +9,7 @@ from typing import Union
 import numpy as np
 from monty.json import MontyEncoder, MSONable
 from monty.serialization import loadfn
-from obadb.analyzer.band_gap import band_gap_properties
+from vise.analyzer.band_gap import band_gap_properties
 from pydefect.core.config import DEFECT_SYMMETRY_TOLERANCE, ANGLE_TOL, \
     CUTOFF_RADIUS
 from pydefect.core.defect_entry import DefectEntry

@@ -7,7 +7,7 @@ import os
 from monty.json import MontyEncoder, MSONable
 from monty.serialization import loadfn
 
-from obadb.analyzer.band_gap import band_gap_properties
+from vise.analyzer.band_gap import band_gap_properties
 from pydefect.util.tools import make_symmetric_matrix
 
 from pymatgen.io.vasp.outputs import Outcar, Vasprun, Poscar

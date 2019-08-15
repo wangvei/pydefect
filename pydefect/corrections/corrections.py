@@ -18,7 +18,9 @@ class ManualCorrection(Correction, MSONable):
 
     def __init__(self,
                  manual_correction_energy: float = 0.0):
-        """
+        """ Set manual correction energy.
+
+        Used when users want to their own correction values.
         Args:
             manual_correction_energy (float):
         """
