@@ -6,25 +6,23 @@ from typing import Union, List, Optional, Tuple
 
 from monty.json import MontyEncoder, MSONable
 from monty.serialization import loadfn, dumpfn
-from obadb.util.structure_handler \
-    import get_point_group_from_dataset, get_coordination_distances
-from pydefect.core.config \
-    import ELECTRONEGATIVITY_DIFFERENCE, DISPLACEMENT_DISTANCE, \
-    CUTOFF_RADIUS, SYMMETRY_TOLERANCE, ANGLE_TOL
+from obadb.util.structure_handler import (
+    get_point_group_from_dataset, get_coordination_distances)
+from pydefect.core.config import (
+    ELECTRONEGATIVITY_DIFFERENCE, DISPLACEMENT_DISTANCE, CUTOFF_RADIUS,
+    SYMMETRY_TOLERANCE, ANGLE_TOL)
+from pydefect.core.defect_entry import DefectType, DefectEntry
 from pydefect.core.defect_name import DefectName
 from pydefect.core.error_classes import InvalidFileError
 from pydefect.core.interstitial_site import InterstitialSiteSet
 from pydefect.core.irreducible_site import IrreducibleSite
 from pydefect.database.atom import electronegativity_list, oxidation_state_dict
 from pydefect.util.logger import get_logger
+from pydefect.util.structure_tools import first_appearance_index
+from pydefect.util.structure_tools import perturb_neighboring_atoms
 from pymatgen.core.periodic_table import Element
 from pymatgen.core.structure import Structure
 from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
-#from pydefect.input_maker.defect_entry_set_maker import select_defect_names
-from pydefect.util.structure_tools import perturb_neighboring_atoms, \
-    defect_center_from_coords
-from pydefect.util.structure_tools import first_appearance_index
-from pydefect.core.defect_entry import DefectType, DefectEntry
 
 __author__ = "Yu Kumagai"
 __maintainer__ = "Yu Kumagai"

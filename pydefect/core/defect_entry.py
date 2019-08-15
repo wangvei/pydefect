@@ -5,7 +5,7 @@ import json
 import numpy as np
 import os
 import ruamel.yaml as yaml
-from typing import Union
+from typing import Optional
 
 from monty.json import MontyEncoder, MSONable
 from monty.serialization import loadfn
@@ -13,7 +13,6 @@ from monty.serialization import loadfn
 from pymatgen.core.structure import Structure
 from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
 
-from pydefect.core.defect_name import SimpleDefectName
 from pydefect.core.error_classes import StructureError
 from pydefect.util.logger import get_logger
 from pydefect.util.structure_tools \
@@ -43,7 +42,7 @@ class DefectType(Enum):
         return self.value
 
     @classmethod
-    def from_string(cls, s):
+    def from_string(cls, s: str):
         for m in cls:
             if m.value == s or m.name == s:
                 return m
@@ -89,8 +88,8 @@ class DefectEntry(MSONable):
                  initial_site_symmetry: str,
                  cutoff: float,
                  neighboring_sites: list,
-                 annotation: str = None,
-                 num_equiv_sites: int = None):
+                 annotation: Optional[str] = None,
+                 num_equiv_sites: Optional[int] = None):
         """
         Args:
             name (str):

@@ -4,8 +4,6 @@ from typing import Union
 
 from monty.json import MSONable
 
-from pymatgen.core.periodic_table import Element
-
 __author__ = "Yu Kumagai"
 __maintainer__ = "Yu Kumagai"
 
