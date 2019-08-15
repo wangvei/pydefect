@@ -84,55 +84,17 @@ class DefectName(MSONable):
     def __hash__(self):
         return hash(self.name_str)
 
-
-class SimpleDefectName(DefectName):
-    """ Container for a name of vacancy, interstitial, & antisite defect."""
-    def __init__(self,
-                 in_atom: Union[str, None],
-                 out_site: str,
-                 charge: int,
-                 annotation: str = None):
-        if not re.match(r"^[A-Z]+[0-9]$", out_site):
-            raise ValueError(f"out_site {out_site} is not valid.")
-
-        if in_atom is not None:
-            Element(in_atom)
-
-        self.in_atom = in_atom
-        self.out_site = out_site
-        super().__init__(self.name_str, charge, annotation)
-
-    def __repr__(self):
-        removed_atom = "None" if self.out_site[0] == "i" else self.out_site
-        annotation = "None" if self.annotation is None else self.annotation
-
-        outs = ["SimpleDefectName Summary",
-                "Name: " + self.name_str,
-                "Inserted atom: " + str(self.in_atom),
-                "Removed atom: " + removed_atom,
-                "Charge: " + str(self.charge),
-                "Annotation" + annotation]
-        return "\n".join(outs)
-
-    @property
-    def name_str(self):
-        if self.in_atom:
-            return "_".join([self.in_atom, self.out_site])
-        else:
-            return "_".join(["Va", self.out_site])
-
-    @property
-    def is_interstitial(self):
-        return re.match(r"^i[0-9]+$", self.out_site)
-
-    @property
-    def is_vacancy(self):
-        return True if self.in_atom is None else False
-
     @classmethod
     def from_str(cls, string):
-        in_atom, out_site, charge = string.split("_")
-        if in_atom == "Va":
-            in_atom = None
-        return cls(in_atom, out_site, int(charge))
+        s = string.split("_")
+        try:
+            charge = int(s[-1])
+            name = "_".join(s[:-1])
+            return cls(name=name, charge=charge, annotation=None)
+        except ValueError:
+            charge = int(s[-2])
+            name = "_".join(s[:-2])
+            annotation = s[-1]
+            return cls(name=name, charge=charge, annotation=annotation)
+
 

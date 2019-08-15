@@ -627,7 +627,7 @@ def get_symmetry_multiplicity(sym_dataset: dict,
 
 def first_appearance_index(structure: Structure,
                            specie: Union[str, Specie]) -> int:
-    """Return first index where the specie appears. Return 0 if it doesn't exist
+    """Return first index where the specie appears. Return 0 if not exist
 
     Used for inserting an element to a Structure, so if the element does not
     exist, 0 is returned such that the new specie is inserted to

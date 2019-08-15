@@ -5,7 +5,7 @@ import unittest
 import numpy as np
 
 from pymatgen.core.structure import Structure
-from pymatgen.util.testing import PymatgenTest
+from pydefect.util.testing import PydefectTest
 
 from pydefect.core.defect_entry import DefectType, DefectEntry, divide_dirname
 from pydefect.core.config import CUTOFF_RADIUS
@@ -13,22 +13,21 @@ from pydefect.core.config import CUTOFF_RADIUS
 __author__ = "Yu Kumagai"
 __maintainer__ = "Yu Kumagai"
 
-test_dir = os.path.join(os.path.dirname(__file__), "..", "..", "..",
-                        "test_files", "core")
 
-
-class DefectEntryTest(PymatgenTest):
+class DefectEntryTest(PydefectTest):
 
     def setUp(self):
         """ """
         # DefectEntry class object for a single vacancy
+        self.test_dir = self.TEST_FILES_DIR / "core"
+
         name = "Va_O1"
         defect_type = DefectType.from_string("vacancy")
-        initial_structure = Structure.from_file(
-            os.path.join(test_dir, "POSCAR-MgO8atoms-Va_O1"))
+        initial_structure = self.get_structure_by_name(name="MgO7atoms")
         perturbed_initial_structure = initial_structure.copy()
-        removed_atoms = {8: [0.25, 0.25, 0.25]}
-        inserted_atoms = {}
+        removed_atoms = [{"element": "O", "index": 8,
+                          "coords": [0.25, 0.25, 0.25]}]
+        inserted_atoms = []
         changes_of_num_elements = {"O": -1}
         charge = 2
         initial_site_symmetry = "Oh"
@@ -52,10 +51,14 @@ class DefectEntryTest(PymatgenTest):
         name = "2Va_O1+Mg_i1"
         defect_type = DefectType.from_string("complex")
         initial_structure = Structure.from_file(
-            os.path.join(test_dir, "POSCAR-MgO8atoms-2Va_O1-Mg_i1_2"))
+            os.path.join(self.test_dir, "POSCAR-MgO8atoms-2Va_O1-Mg_i1_2"))
         perturbed_initial_structure = initial_structure.copy()
-        removed_atoms = {8: [0.25, 0.25, 0.25], 9: [0.25, 0.25, 0.75]}
-        inserted_atoms = {8: [0.25, 0.25, 0.25]}
+        removed_atoms = [{"element": "O", "index": 8,
+                          "coords": [0.25, 0.25, 0.25]},
+                         {"element": "O", "index": 9,
+                          "coords": [0.25, 0.25, 0.75]}]
+        inserted_atoms = [{"element": "Mg", "index": 8,
+                          "coords": [0.25, 0.25, 0.25]}]
         changes_of_num_elements = {"O": -2, "Mg": 1}
         charge = 2
         initial_site_symmetry = "mmm"
@@ -78,11 +81,11 @@ class DefectEntryTest(PymatgenTest):
 
     def test_from_yaml(self):
         defect_entry_from_yaml = DefectEntry.from_yaml(
-            filename=os.path.join(test_dir, "defect_entry-2Va_O1-Mg_i1_2.yaml"),
+            filename=self.test_dir / "defect_entry-2Va_O1-Mg_i1_2.yaml",
             defect_name="2Va_O1+Mg_i1_2")
-        print(defect_entry_from_yaml)
-        print(self._MgO_complex)
-        self.assertTrue(defect_entry_from_yaml.as_dict() == self._MgO_complex.as_dict())
+        print(defect_entry_from_yaml.initial_structure)
+        print(self._MgO_complex.initial_structure)
+        self.assertEqual(defect_entry_from_yaml.as_dict(), self._MgO_complex.as_dict())
 
     # def test_from_simpler_yaml(self):
     #     simpler_dir = os.path.join(test_dir, "MgO/defects/2Va_O1-Mg_i1_2")
@@ -139,7 +142,7 @@ class DefectEntryTest(PymatgenTest):
         self.assertEqual(actual, expected)
 
 
-class DivideDirnameTest(PymatgenTest):
+class DivideDirnameTest(PydefectTest):
     def setUp(self):
         """ """
         # DefectEntry class object for a single vacancy

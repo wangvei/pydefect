@@ -6,9 +6,11 @@ from pymatgen.core.structure import Structure
 
 from pydefect.input_maker.defect_initial_setting import (
     candidate_charge_set, get_electronegativity, get_oxidation_state,
-    dopant_info, get_distances_from_string, DefectInitialSetting)
+    dopant_info, get_distances_from_string, insert_atoms, select_defects,
+    DefectInitialSetting)
 from pydefect.core.irreducible_site import IrreducibleSite
 from pydefect.util.testing import PydefectTest
+from pydefect.core.defect_entry import DefectType
 
 __author__ = "Yu Kumagai"
 __maintainer__ = "Yu Kumagai"
@@ -86,6 +88,66 @@ class GetDistancesFromStringTest(PydefectTest):
             get_distances_from_string(bad_string_list)
 
 
+class InsertAtoms(PydefectTest):
+    def setUp(self) -> None:
+        structure = self.get_structure_by_name("MgO64atoms")
+        atoms = {"Al": [0, 0, 0.01], "Na": [0, 0, 0.02],
+                 "Mg": [0, 0, 0.03], "O": [0, 0, 0.04]}
+        self.inserted_structure, self.inserted_atoms \
+            = insert_atoms(structure, atoms)
+
+    def test(self):
+        expected = [{'element': 'Al', 'index': 1, 'coord': [0, 0, 0.01]},
+                    {'element': 'Na', 'index': 0, 'coord': [0, 0, 0.02]},
+                    {'element': 'Mg', 'index': 2, 'coord': [0, 0, 0.03]},
+                    {'element': 'O', 'index': 35, 'coord': [0, 0, 0.04]}]
+        self.assertEqual(expected, self.inserted_atoms)
+        self.assertEqual("Al", str(self.inserted_structure[1].specie))
+        self.assertArrayAlmostEqual(
+            [0, 0, 0.04], list(self.inserted_structure[35].frac_coords), 5)
+
+class SelectDefectsTest(PydefectTest):
+
+    def test(self):
+        name_set = [{"name": 'Va_Mg1', "charge": -1},
+                    {"name": 'Va_Mg1', "charge": 0},
+                    {"name": 'O_i1', "charge": 0},
+                    {"name": 'O_i1', "charge": 1}]
+
+        actual_va = select_defects(name_set, keywords=["Va"])
+        print(actual_va)
+        actual_specified = select_defects(name_set, specified_defects=["Va_Mg1_1"])
+        print(actual_specified)
+#        expected_va = [{"name": 'Va_Mg1_-1'}, {"name": 'Va_Mg1_0'}]
+#        print(expected_va)
+#        self.assertEqual(sorted(actual_va), sorted(expected_va))
+
+
+
+        # actual__i = select_defect_names(name_set, ["_i"], return_str=True)
+        # expected__i = ['Mg_i1_0', 'Mg_i1_1', 'Mg_i1_2', 'O_i1_-2', 'O_i1_-1',
+        #                'O_i1_0']
+
+        # actual_va_and__i = \
+        #     select_defect_names(name_set, ["Va", "_i"], return_str=True)
+        # expected_va_and__i = expected_va + expected__i
+
+        # actual_va_o = select_defect_names(name_set, ["Va_O"], return_str=True)
+        # expected_va_o = ['Va_O1_0', 'Va_O1_-1', 'Va_O1_-2', 'Va_O2_0']
+
+        # actual_va_o_0 = \
+        #     select_defect_names(name_set, ["Va_O[0-9]_0"], return_str=True)
+        # expected_va_o_0 = ['Va_O1_0', 'Va_O2_0']
+
+        # actual_va_o1 = select_defect_names(name_set, ["Va_O1"], return_str=True)
+        # expected_va_o1 = ['Va_O1_0', 'Va_O1_-1', 'Va_O1_-2']
+
+        # self.assertEqual(sorted(actual__i), sorted(expected__i))
+        # self.assertEqual(sorted(actual_va_and__i), sorted(expected_va_and__i))
+        # self.assertEqual(sorted(actual_va_o), sorted(expected_va_o))
+        # self.assertEqual(sorted(actual_va_o_0), sorted(expected_va_o_0))
+        # self.assertEqual(sorted(actual_va_o1), sorted(expected_va_o1))
+
 class DefectInitialSettingTest(PydefectTest):
 
     def setUp(self):
@@ -97,7 +159,7 @@ class DefectInitialSettingTest(PydefectTest):
         --displacement_distance 0.15 --symprec 0.001 --cutoff 2.0 -e 4
         -i 0.1 0.1 0.1
         """
-        structure = self.get_structure_by_name("MgO64atoms")
+        self.structure = self.get_structure_by_name("MgO64atoms")
         space_group_symbol = "Fm-3m"
         transformation_matrix = [2, 0, 0, 0, 2, 0, 0, 0, 2]
         cell_multiplicity = 32
@@ -132,22 +194,36 @@ class DefectInitialSettingTest(PydefectTest):
         oxidation_states = {"Mg": 2, "O": -2, "Al": 3, "N": -3}
         electronegativity = {"Mg": 1.31, "O": 3.44, "Al": 1.61, "N": 3.04}
 
-        self.MgO = DefectInitialSetting(structure,
-                                        space_group_symbol,
-                                        transformation_matrix,
-                                        cell_multiplicity,
-                                        irreducible_sites,
-                                        dopant_configs,
-                                        antisite_configs,
-                                        interstitial_sites,
-                                        included,
-                                        excluded,
-                                        displacement_distance,
-                                        cutoff,
-                                        symprec,
-                                        angle_tolerance,
-                                        oxidation_states,
-                                        electronegativity)
+        self.MgO = DefectInitialSetting(
+            structure=self.structure,
+            space_group_symbol=space_group_symbol,
+            transformation_matrix=transformation_matrix,
+            cell_multiplicity=cell_multiplicity,
+            irreducible_sites=irreducible_sites,
+            dopant_configs=dopant_configs,
+            antisite_configs=antisite_configs,
+            interstitial_sites=interstitial_sites,
+            included=included,
+            excluded=excluded,
+            displacement_distance=displacement_distance,
+            cutoff=cutoff,
+            symprec=symprec,
+            angle_tolerance=angle_tolerance,
+            oxidation_states=oxidation_states,
+            electronegativity=electronegativity)
+
+        d1 = {"name": "Va_O1",
+              "defect_type": DefectType.vacancy,
+              "initial_structure": self.structure,
+              "removed_atoms": [{"element": "O", "index": 8, "coords": [0.25, 0.25, 0.25]}],
+              "inserted_atoms": list(),
+              "changes_of_num_elements": {"O": -1},
+              "initial_site_symmetry": "m-3m",
+              "charges": 2,
+              "num_equiv_sites": 64,
+              "center": [0, 0, 0]}
+        self.defect_set = [d1]
+
 
     def test_dict(self):
         # roundtrip: object -> dict -> object
@@ -179,13 +255,12 @@ class DefectInitialSettingTest(PydefectTest):
     def test_from_basic_settings(self):
         mgo_from_basic_settings = \
             DefectInitialSetting.from_basic_settings(
-                structure=Structure.from_file(
-                    os.path.join(test_dir, "POSCAR-MgO64atoms")),
+                structure=self.structure,
                 transformation_matrix=[2, 2, 2],
                 cell_multiplicity=32,
                 dopants=["Al", "N"],
                 is_antisite=True,
-                interstitial_site_names=["i1"],
+                interstitial_sites=["i1"],
                 en_diff=4.0,
                 included=["Va_O1_-1", "Va_O1_-2"],
                 excluded=["Va_O1_1", "Va_O1_2"],
@@ -196,20 +271,22 @@ class DefectInitialSettingTest(PydefectTest):
         print(mgo_from_basic_settings.interstitials["i1"])
 #        self.assertTrue(mgo_from_basic_settings == self.MgO)
 
-    def test_make_defect_name_set(self):
+    def test_make_defect_set(self):
         # Sequence of expected is changed for easy view. Thus, sort is needed
-        # for comparison.
-        expected = \
-            ['Va_Mg1_-2', 'Va_Mg1_-1', 'Va_Mg1_0', 'Va_O1_2', 'Mg_i1_0',
-             'Mg_i1_1', 'Mg_i1_2', 'O_i1_-2', 'O_i1_-1', 'O_i1_0', 'N_i1_-3',
-             'N_i1_-2', 'N_i1_-1', 'N_i1_0', 'N_i1_1', 'Al_i1_-1', 'Al_i1_0',
-             'Al_i1_1', 'Al_i1_2', 'Al_i1_3', 'Mg_O1_0', 'Mg_O1_1', 'Mg_O1_2',
-             'Mg_O1_3', 'Mg_O1_4', 'O_Mg1_-4', 'O_Mg1_-3', 'O_Mg1_-2',
-             'O_Mg1_-1', 'O_Mg1_0', 'Al_Mg1_-1', 'Al_Mg1_0', 'Al_Mg1_1',
-             'Al_O1_-1', 'Al_O1_0', 'Al_O1_1', 'Al_O1_2', 'Al_O1_3', 'Al_O1_4',
-             'Al_O1_5', 'N_Mg1_-5', 'N_Mg1_-4', 'N_Mg1_-3', 'N_Mg1_-2',
-             'N_Mg1_-1', 'N_Mg1_0', 'N_Mg1_1', 'N_O1_-1', 'N_O1_0', 'N_O1_1']
-
-        actual = [str(i) for i in self.MgO.make_defect_name_set()]
-        self.assertEqual(sorted(actual), sorted(expected))
+        # # for comparison.
+        self.MgO.make_defect_set()
+        print(self.MgO.defect_entries)
+        # expected = \
+        #     ['Va_Mg1_-2', 'Va_Mg1_-1', 'Va_Mg1_0', 'Va_O1_2', 'Mg_i1_0',
+        #      'Mg_i1_1', 'Mg_i1_2', 'O_i1_-2', 'O_i1_-1', 'O_i1_0', 'N_i1_-3',
+        #      'N_i1_-2', 'N_i1_-1', 'N_i1_0', 'N_i1_1', 'Al_i1_-1', 'Al_i1_0',
+        #      'Al_i1_1', 'Al_i1_2', 'Al_i1_3', 'Mg_O1_0', 'Mg_O1_1', 'Mg_O1_2',
+        #      'Mg_O1_3', 'Mg_O1_4', 'O_Mg1_-4', 'O_Mg1_-3', 'O_Mg1_-2',
+        #      'O_Mg1_-1', 'O_Mg1_0', 'Al_Mg1_-1', 'Al_Mg1_0', 'Al_Mg1_1',
+        #      'Al_O1_-1', 'Al_O1_0', 'Al_O1_1', 'Al_O1_2', 'Al_O1_3', 'Al_O1_4',
+        #      'Al_O1_5', 'N_Mg1_-5', 'N_Mg1_-4', 'N_Mg1_-3', 'N_Mg1_-2',
+        #      'N_Mg1_-1', 'N_Mg1_0', 'N_Mg1_1', 'N_O1_-1', 'N_O1_0', 'N_O1_1']
+        #
+#        actual = [str(i) for i in self.MgO.make_defect_set()]
+        # self.assertEqual(sorted(actual), sorted(expected))
 

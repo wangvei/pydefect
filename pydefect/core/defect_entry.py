@@ -51,18 +51,6 @@ class DefectType(Enum):
                              "Supported info:\n" + cls.name_list())
 
     @classmethod
-    def from_simple_defect_name(cls, name: Union[str, SimpleDefectName]):
-        if isinstance(name, str):
-            name = SimpleDefectName.from_str(name)
-
-        if name.is_interstitial:
-            return cls.interstitial
-        elif name.is_vacancy:
-            return cls.vacancy
-        else:
-            return cls.substituted
-
-    @classmethod
     def name_list(cls):
         return ', '.join([e.name for e in cls])
 
@@ -71,13 +59,12 @@ class DefectType(Enum):
         return self in [DefectType.substituted, DefectType.interstitial]
 
 
-def determine_defect_type(inserted_atoms: dict, removed_atoms: dict):
+def determine_defect_type(inserted_atoms: list, removed_atoms: list):
     d = DefectType.complex
 
     if len(removed_atoms) == 1:
         if len(inserted_atoms) == 1 and \
-                list(removed_atoms.values())[0] == \
-                list(inserted_atoms.values())[0]:
+                removed_atoms[0]["coords"] == inserted_atoms[0]["coords"]:
             d = DefectType.substituted
         elif len(inserted_atoms) == 0:
             d = DefectType.vacancy
@@ -95,8 +82,8 @@ class DefectEntry(MSONable):
                  defect_type: DefectType,
                  initial_structure: Structure,
                  perturbed_initial_structure: Structure,
-                 removed_atoms: dict,
-                 inserted_atoms: dict,
+                 removed_atoms: list,
+                 inserted_atoms: list,
                  changes_of_num_elements: dict,
                  charge: int,
                  initial_site_symmetry: str,
@@ -114,16 +101,16 @@ class DefectEntry(MSONable):
                 Structure with a defect before the structure optimization.
             perturbed_initial_structure (Structure):
                 Initial structure with perturbation of neighboring atoms.
-            removed_atoms (dict):
-                Keys: Atom indices removed from the perfect supercell.
-                      The index begins from 0.
-                      For interstitials, set {}.
-                Values: Fractional coordinates in the perfect positions.
+            removed_atoms (list):
+                List of dict with the following values.
+                + "element" (str):
+                + "index" (int):
+                + "coords" (list):
             inserted_atoms (dict):
-                Keys: Atom indices inserted to the supercell.
-                      Indices are in  the defective supercell and begins from 0.
-                      For vacancies, set [].
-                Values: Fractional coordinates at the ideal positions.
+                List of dict with the following values.
+                + "element" (str):
+                + "index" (int):
+                + "coords" (list):
             changes_of_num_elements (dict):
                 Keys: Element names
                 Values: Change of the numbers of elements wrt perfect supercell.
@@ -184,8 +171,8 @@ class DefectEntry(MSONable):
         # The keys need to be converted to integers.
         defect_type = DefectType.from_string(d["defect_type"])
 
-        removed_atoms = {int(k): v for k, v in d["removed_atoms"].items()}
-        inserted_atoms = {int(k): v for k, v in d["inserted_atoms"].items()}
+#        removed_atoms = {int(k): v for k, v in d["removed_atoms"].items()}
+#        inserted_atoms = {int(k): v for k, v in d["inserted_atoms"].items()}
 
         initial_structure = d["initial_structure"]
         if isinstance(initial_structure, dict):
@@ -201,8 +188,8 @@ class DefectEntry(MSONable):
             defect_type=defect_type,
             initial_structure=initial_structure,
             perturbed_initial_structure=perturbed_initial_structure,
-            removed_atoms=removed_atoms,
-            inserted_atoms=inserted_atoms,
+            removed_atoms=d["removed_atoms"],
+            inserted_atoms=d["inserted_atoms"],
             changes_of_num_elements=d["changes_of_num_elements"],
             charge=d["charge"],
             initial_site_symmetry=d["initial_site_symmetry"],
@@ -298,7 +285,7 @@ class DefectEntry(MSONable):
         name, charge, annotation = divide_dirname(defect_name)
 
         inserted_atom_indices = [i for i in range(defect_structure.num_sites)]
-        removed_atoms = {}
+        removed_atoms = []
 
         for i, p_site in enumerate(perfect_structure):
             for j in inserted_atom_indices:
@@ -310,7 +297,9 @@ class DefectEntry(MSONable):
                     inserted_atom_indices.remove(j)
                     break
             else:
-                removed_atoms[i] = list(p_site.frac_coords)
+                removed_atoms.append({"element": p_site.specie,
+                                      "index": i,
+                                      "coords": list(p_site.frac_coords)})
 
         # check the consistency of the removed and inserted atoms
         if len(perfect_structure) + len(inserted_atom_indices) \
@@ -321,17 +310,21 @@ class DefectEntry(MSONable):
         # pristine_defect_structure is defect structure without displacement.
         pristine_defect_structure = deepcopy(perfect_structure)
         lattice = defect_structure.lattice
-        for r in sorted(removed_atoms, reverse=True):
+        removed_atom_indices = [i["index"] for i in removed_atoms]
+        for r in sorted(removed_atom_indices, reverse=True):
             pristine_defect_structure.pop(r)
 
         # If the inserted atom locates near an original atom within the
         # displacement_distance, it is assumed to be substituted.
-        inserted_atoms = {}
+        removed_atom_coords = [i["coords"] for i in removed_atoms]
+        inserted_atoms = []
         for i in sorted(inserted_atom_indices):
             inserted_atom = defect_structure[i]
-            inserted_atoms[i] = list(inserted_atom.frac_coords)
+            inserted_atoms.append({"element": inserted_atom.specie,
+                                   "index": i,
+                                   "coords": list(inserted_atom.frac_coords)})
             # substituted
-            for removed_frac_coords in removed_atoms.values():
+            for removed_frac_coords in removed_atom_coords:
                 if lattice.get_distance_and_image(
                         inserted_atom.frac_coords, removed_frac_coords)[0] \
                         < displacement_distance:
@@ -343,8 +336,10 @@ class DefectEntry(MSONable):
                 pristine_defect_structure.insert(i, inserted_atom.specie,
                                                  inserted_atom.frac_coords)
 
-        defect_center_coords = cls.calc_defect_center(removed_atoms,
-                                                      inserted_atoms,
+        inserted_atom_coords = [i["coords"] for i in inserted_atoms]
+
+        defect_center_coords = cls.calc_defect_center(removed_atom_coords,
+                                                      inserted_atom_coords,
                                                       defect_structure)
         neighboring_sites = []
         for i, site in enumerate(pristine_defect_structure):
@@ -360,13 +355,13 @@ class DefectEntry(MSONable):
 
         initial_site_symmetry = sga.get_point_group_symbol()
 
-        inserted_atom_coords = list(inserted_atoms.values())
+        inserted_atom_coords = [i["coords"] for i in inserted_atoms]
 
         if calc_num_equiv_site:
             num_equiv_sites = \
                 count_equivalent_clusters(perfect_structure,
                                           inserted_atom_coords,
-                                          list(removed_atoms.keys()),
+                                          removed_atom_indices,
                                           displacement_distance)
         else:
             num_equiv_sites = None
@@ -403,17 +398,18 @@ class DefectEntry(MSONable):
                 return [0, 1, 2, .., 31, 33, 34, .., 62] (=mapping)
                 len(mapping) = 63
         """
-        total_nions_in_perfect = \
-            len(self.initial_structure) - len(self.inserted_atoms) \
-            + len(self.removed_atoms)
-
+        total_nions_in_perfect = (len(self.initial_structure)
+                                  - len(self.inserted_atoms)
+                                  + len(self.removed_atoms))
         # initial atom mapping.
         mapping = list(range(total_nions_in_perfect))
 
-        for o in sorted(self.removed_atoms.keys(), reverse=True):
+        removed_atom_indices = [i["index"] for i in self.removed_atoms]
+        for o in sorted(removed_atom_indices, reverse=True):
             mapping.pop(o)
 
-        for i in sorted(self.inserted_atoms.keys(), reverse=True):
+        inserted_indices = [i["index"] for i in self.inserted_atoms]
+        for i in sorted(inserted_indices, reverse=True):
             mapping.insert(i, None)
 
         return mapping
@@ -423,19 +419,21 @@ class DefectEntry(MSONable):
             json.dump(self.as_dict(), fw, indent=2, cls=MontyEncoder)
 
     @staticmethod
-    def calc_defect_center(removed_atoms: dict,
-                           inserted_atoms: dict,
+    def calc_defect_center(removed_atom_coords: list,
+                           inserted_atom_coords: list,
                            structure: Structure):
         """ Calculates arithmetic average to estimate center in frac coords."""
-        defect_coords = \
-            list(removed_atoms.values()) + list(inserted_atoms.values())
+        defect_coords = removed_atom_coords + inserted_atom_coords
         return defect_center_from_coords(defect_coords, structure)
 
     @property
     def defect_center_coords(self):
         """ Return fractional coordinates of the defect center. """
-        return self.calc_defect_center(self.removed_atoms, self.inserted_atoms,
-                                       self.initial_structure)
+        removed_atom_coords = [i["coords"] for i in self.removed_atoms]
+        inserted_atom_coords = [i["coords"] for i in self.inserted_atoms]
+
+        return self.calc_defect_center(
+            removed_atom_coords, inserted_atom_coords, self.initial_structure)
 
     @property
     def anchor_atom_index(self):

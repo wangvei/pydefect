@@ -1,12 +1,12 @@
   Space group: Fm-3m
 
-Transformation matrix:  2  2  2
+Transformation matrix: 2 0 0 0 2 0 0 0 2
 Cell multiplicity: 32
 
    Irreducible element: Mg1
         Wyckoff letter: a
          Site symmetry: m-3m
-          Coordination: O: 2.12 2.12 2.12 2.12 2.12 2.12 
+          Coordination: O: 2.12 2.12 2.12 2.12 2.12 2.12
       Equivalent atoms: 1..32
 Fractional coordinates: 0.0000000  0.0000000  0.0000000
      Electronegativity: 1.31
@@ -15,7 +15,7 @@ Fractional coordinates: 0.0000000  0.0000000  0.0000000
    Irreducible element: O1
         Wyckoff letter: b
          Site symmetry: m-3m
-          Coordination: Mg: 2.12 2.12 2.12 2.12 2.12 2.12 
+          Coordination: Mg: 2.12 2.12 2.12 2.12 2.12 2.12
       Equivalent atoms: 33..64
 Fractional coordinates: 0.2500000  0.2500000  0.2500000
      Electronegativity: 3.44
@@ -39,6 +39,6 @@ Maximum Displacement: 0.15
 Exceptionally included: Va_O1_-1 Va_O1_-2
 Exceptionally excluded: Va_O1_1 Va_O1_2
 
-Cutoff region of atoms perturbed: 2.0
+Cutoff region of neighboring atoms: 2.0
 Symprec: 0.001
 Angle tolerance: 5

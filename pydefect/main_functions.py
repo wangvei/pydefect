@@ -25,11 +25,8 @@ from pydefect.core.supercell_calc_results import SupercellCalcResults
 from pydefect.core.unitcell_calc_results import UnitcellCalcResults
 from pydefect.corrections.efnv_corrections import ExtendedFnvCorrection, Ewald
 from pydefect.corrections.corrections import ManualCorrection
-from pydefect.input_maker.defect_entry_set_maker import (
-    log_is_being_removed,  log_already_exist, log_is_being_constructed,
-    DefectEntrySetMaker)
-from pydefect.input_maker.defect_initial_setting import dopant_info, \
-    DefectInitialSetting
+from pydefect.input_maker.defect_initial_setting import (
+    dopant_info, DefectInitialSetting)
 from pydefect.input_maker.supercell_maker import Supercells
 from pydefect.util.logger import get_logger
 from pydefect.util.main_tools import list2dict, generate_objects
@@ -166,24 +163,24 @@ def defect_vasp_oba_set(args):
     def make_dir(name, obrs):
         """Helper function"""
         if args.force_overwrite and os.path.exists(name):
-            log_is_being_removed(name)
+            logger.warning(f"{name:>10} is being removed.")
             shutil.rmtree(name)
 
         if os.path.exists(name):
-            log_already_exist(name)
+            logger.warning(f"{name:>10} already exists, so nothing is done.")
         else:
-            log_is_being_constructed(name)
+            logger.warning(f"{name:>10} is being constructed.")
             os.makedirs(name)
             obrs.write_input(name)
 
     dis = DefectInitialSetting.from_defect_in(
         poscar=args.dposcar, defect_in_file=args.defect_in)
-    defect_entry_set_maker = \
-        DefectEntrySetMaker(dis, args.keywords, args.particular_defects)
+    dis.make_defect_set(keywords=args.keywords,
+                        specified_defects=args.particular_defects)
 
     if not args.particular_defects:
         oba_set = ObaSet.make_input(
-            structure=defect_entry_set_maker.perfect_structure,
+            structure=dis.structure,
             standardize_structure=False,
             task="defect",
             xc=args.xc,
@@ -198,7 +195,7 @@ def defect_vasp_oba_set(args):
 
         make_dir("perfect", oba_set)
 
-    for de in defect_entry_set_maker.defect_entries:
+    for de in dis.defect_entries:
         defect_name = "_".join([de.name, str(de.charge)])
         json_file_name = os.path.join(defect_name, "defect_entry.json")
 
@@ -687,3 +684,5 @@ def concentration(args):
         #     poscar.write_file("POSCAR")
         # else:
         #     raise ValueError("No symmetrized structure in DFT results.")
+
+

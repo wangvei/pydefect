@@ -1,19 +1,19 @@
 # -*- coding: utf-8 -*-
 import unittest
 
-from pydefect.core.defect_name import SimpleDefectName
+from pydefect.core.defect_name import DefectName
 
 __author__ = "Yu Kumagai"
 __maintainer__ = "Yu Kumagai"
 
 
-class SimpleDefectNameTest(unittest.TestCase):
+class DefectNameTest(unittest.TestCase):
 
     def setUp(self):
         """
         """
-        self.va_o_1 = SimpleDefectName(None, "O1", 1)
-        self.mg_i1_m1 = SimpleDefectName.from_str("Mg_i1_1")
+        self.va_o_1 = DefectName("Va_O1", 1)
+        self.mg_i1_m1 = DefectName.from_str("Mg_i1_1")
 
     def test_to_str(self):
         actual = str(self.va_o_1)

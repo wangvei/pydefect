@@ -2,7 +2,7 @@
 import json
 from collections import defaultdict
 from itertools import permutations
-from typing import Union, List
+from typing import Union, List, Optional, Tuple
 
 from monty.json import MontyEncoder, MSONable
 from monty.serialization import loadfn, dumpfn
@@ -11,7 +11,7 @@ from obadb.util.structure_handler \
 from pydefect.core.config \
     import ELECTRONEGATIVITY_DIFFERENCE, DISPLACEMENT_DISTANCE, \
     CUTOFF_RADIUS, SYMMETRY_TOLERANCE, ANGLE_TOL
-from pydefect.core.defect_name import SimpleDefectName
+from pydefect.core.defect_name import DefectName
 from pydefect.core.error_classes import InvalidFileError
 from pydefect.core.interstitial_site import InterstitialSiteSet
 from pydefect.core.irreducible_site import IrreducibleSite
@@ -20,6 +20,11 @@ from pydefect.util.logger import get_logger
 from pymatgen.core.periodic_table import Element
 from pymatgen.core.structure import Structure
 from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
+#from pydefect.input_maker.defect_entry_set_maker import select_defect_names
+from pydefect.util.structure_tools import perturb_neighboring_atoms, \
+    defect_center_from_coords
+from pydefect.util.structure_tools import first_appearance_index
+from pydefect.core.defect_entry import DefectType, DefectEntry
 
 __author__ = "Yu Kumagai"
 __maintainer__ = "Yu Kumagai"
@@ -117,6 +122,65 @@ def get_distances_from_string(string: list) -> dict:
     return distances
 
 
+def insert_atoms(structure: Structure, atoms: dict) -> Tuple[Structure, list]:
+    """  Return structure with atoms and the indices atoms are inserted.
+    """
+    inserted_structure = structure.copy()
+    inserted_atoms = []
+    for k, v in atoms.items():
+        index = first_appearance_index(inserted_structure, k)
+        inserted_structure.insert(index, k, v)
+        # The atom indices locating after k need to be incremented.
+        for i in inserted_atoms:
+            if i["index"] >= index:
+                i["index"] += 1
+        inserted_atoms.append({"element": k, "index": index, "coord": v})
+
+    return inserted_structure, inserted_atoms
+
+
+def select_defects(defect_set: List[dict],
+                   keywords: Union[str, list, None] = None,
+                   specified_defects: Optional[List[str]] = None) -> List[dict]:
+    """ Returns names including one of keywords.
+
+    Args:
+        defect_set (list):
+            A set of defect dict with "name" keys.
+        keywords (str/list):
+            Keywords determining if name is selected or not.
+        specified_defects (list):
+                Specifies particular defect to be considered.
+
+    Return:
+         list of defects.
+    """
+
+    if specified_defects:
+        new_list = []
+        for sd in specified_defects:
+            name = DefectName.from_str(sd)
+            for d in defect_set:
+                print(name)
+                if name.is_name_matched(d["name"]):
+                    dd = d.copy()
+                    dd["charge"] = name.charge
+                    new_list.append(dd)
+                    break
+            else:
+                raise ValueError(f"Specified defect {sd} is invalid.")
+    elif keywords:
+        new_list = []
+        for defect in defect_set:
+            name = DefectName(name=defect["name"], charge=defect["charge"])
+            if name.is_name_matched(keywords):
+                new_list.append(defect)
+    else:
+        return defect_set
+
+    return new_list
+
+
 class DefectInitialSetting(MSONable):
     """ Holds full information for creating a series of DefectEntry objects."""
 
@@ -203,6 +267,7 @@ class DefectInitialSetting(MSONable):
         self.angle_tolerance = angle_tolerance
         self.oxidation_states = oxidation_states
         self.electronegativity = electronegativity
+        self.interstitials_yaml = interstitials_yaml
 
         if not self.interstitial_sites:
             self.interstitials = None
@@ -226,6 +291,8 @@ class DefectInitialSetting(MSONable):
                             f"Interstitial site name {i_site} "
                             f"do not exist in {interstitials_yaml}")
                     self.interstitials[i_site] = sites[i_site]
+
+        self.defect_entries = None
 
     # see history at 2019/8/2 if from_dict and as_dict needs to recover
 
@@ -334,7 +401,7 @@ class DefectInitialSetting(MSONable):
 
                 elif line[0] == "Interstitials:":
                     interstitial_sites = list(line[1:])
-                    if interstitial_sites[1] == "all":
+                    if "all" in interstitial_sites:
                         interstitial_sites = "all"
 
                 elif line[0] == "Antisite":
@@ -589,61 +656,140 @@ class DefectInitialSetting(MSONable):
         self._write_defect_in(defect_in_file)
         self.structure.to(fmt="poscar", filename=poscar_file)
 
-    def make_defect_name_set(self) -> List[SimpleDefectName]:
+    # def complex_set(self,
+    #                 name,
+    #                 removed_sites,
+    #                 inserted_elements: dict,
+    #                 extreme_charge) -> dict:
+    #     return None
+
+    def _substituted_set(self,
+                         removed_sites: List[IrreducibleSite],
+                         inserted_element: Optional[str]) -> list:
+        defect_set = []
+        changes_of_num_elements = defaultdict(int)
+        for rs in removed_sites:
+            in_name = inserted_element if inserted_element else "Va"
+            name = "_".join([in_name, rs.irreducible_name])
+            center = rs.representative_coords
+            symmetry = rs.site_symmetry
+            structure = self.structure.copy()
+            structure.remove_sites([rs.first_index])
+            removed_atoms = [{"element": rs.element,
+                              "index": rs.first_index,
+                              "coods": rs.representative_coords}]
+            changes_of_num_elements[rs.element] += -1
+            num_equiv_sites = rs.num_atoms
+
+            if inserted_element:
+                defect_type = DefectType.substituted
+                atom = {inserted_element: rs.representative_coords}
+                structure, inserted_atoms = insert_atoms(structure, atom)
+                changes_of_num_elements[inserted_element] += 1
+                inserted_oxi_state = self.oxidation_states[inserted_element]
+            else:
+                defect_type = DefectType.vacancy
+                inserted_atoms = {}
+                inserted_oxi_state = 0
+
+            charges = candidate_charge_set(
+                inserted_oxi_state - self.oxidation_states[rs.element])
+
+            defect_set.append(
+                {"name": name,
+                 "defect_type": defect_type,
+                 "initial_structure": structure,
+                 "removed_atoms": removed_atoms,
+                 "inserted_atoms": inserted_atoms,
+                 "changes_of_num_elements": dict(changes_of_num_elements),
+                 "initial_site_symmetry": symmetry,
+                 "charges": charges,
+                 "num_equiv_sites": num_equiv_sites,
+                 "center": center})
+
+        return defect_set
+
+    def _inserted_set(self, inserted_elements: List[str]) -> list:
+        if not self.interstitials:
+            return []
+
+        defect_set = []
+        for name, i in self.interstitials.items():
+            center = i.representative_coords
+            symmetry = i.site_symmetry
+            num_equiv_sites = i.symmetry_multiplicity
+
+            for e in inserted_elements:
+                changes_of_num_elements = defaultdict(int)
+                name = "_".join([e, name])
+                extreme_charge = self.oxidation_states[e]
+                charges = candidate_charge_set(extreme_charge)
+                changes_of_num_elements[e] += -1
+                atom = {e: i.representative_coords}
+                structure, inserted_atoms = \
+                    insert_atoms(structure=self.structure, atoms=atom)
+
+                defect_set.append(
+                    {"name": name,
+                     "defect_type": DefectType.interstitial,
+                     "initial_structure": structure,
+                     "removed_atoms": list(),
+                     "inserted_atoms": inserted_atoms,
+                     "changes_of_num_elements": dict(changes_of_num_elements),
+                     "initial_site_symmetry": symmetry,
+                     "charges": charges,
+                     "num_equiv_sites": num_equiv_sites,
+                     "center": center})
+
+        return defect_set
+
+    def make_defect_set(self,
+                        keywords: Optional[list] = None,
+                        specified_defects: Optional[list] = None):
         """ Return defect name list based on DefectInitialSetting object. """
-        name_set = list()
+        vacancies = self._substituted_set(removed_sites=self.irreducible_sites,
+                                          inserted_element=None)
 
-        # Vacancies
-        for irreducible_site in self.irreducible_sites:
-            # Vacancy charge is minus of element charge.
-            extreme_charge = -self.oxidation_states[irreducible_site.element]
-            for charge in candidate_charge_set(extreme_charge):
-                out_site = irreducible_site.irreducible_name
-                name_set.append(SimpleDefectName(in_atom=None,
-                                                 out_site=out_site,
-                                                 charge=charge))
+        substituted = []
+        configs = self.antisite_configs + self.dopant_configs
+        for in_elem, out_elem in configs:
+            removed_sites = \
+                [i for i in self.irreducible_sites if out_elem == i.element]
+            substituted += self._substituted_set(removed_sites=removed_sites,
+                                                 inserted_element=in_elem)
+        inserted_elements = self.structure.symbol_set + tuple(self.dopants)
+        interstitials = self._inserted_set(inserted_elements=inserted_elements)
 
-        # Interstitials
-        elements = tuple(self.structure.symbol_set) + tuple(self.dopants)
-        for element in elements:
-            for interstitial_name in self.interstitials.keys():
-                extreme_charge = self.oxidation_states[element]
-                for charge in candidate_charge_set(extreme_charge):
-                    name_set.append(
-                        SimpleDefectName(in_atom=element,
-                                         out_site=interstitial_name,
-                                         charge=charge))
+        complexes = list()
+        defect_set = vacancies + substituted + interstitials + complexes
+        defect_set = select_defects(defect_set, keywords, specified_defects)
 
-        # Antisites + Substituted dopants
-        replaced_config = self.antisite_configs + self.dopant_configs
-        for in_atom, out_element in replaced_config:
-            for irreducible_site in self.irreducible_sites:
-                if out_element == irreducible_site.element:
-                    # Charge range is defined by oxidation state difference
-                    extreme_charge = self.oxidation_states[in_atom] - \
-                                     self.oxidation_states[out_element]
+        self.defect_entries = []
+        for defect in defect_set:
+            center = defect.pop("center")
+            for charge in defect.pop("charges"):
+                inserted_indices = \
+                    [i["index"] for i in defect["inserted_atoms"]]
+                # By default, neighboring atoms are perturbed.
+                # If one wants to avoid it, set displacement_distance = 0
+                perturbed_structure, neighboring_sites = \
+                    perturb_neighboring_atoms(
+                        structure=defect["initial_structure"],
+                        center=center,
+                        cutoff=self.cutoff,
+                        distance=self.displacement_distance,
+                        inserted_atom_indices=inserted_indices)
 
-                    for charge in candidate_charge_set(extreme_charge):
-                        out_site = irreducible_site.irreducible_name
-                        name_set.append(SimpleDefectName(in_atom=in_atom,
-                                                         out_site=out_site,
-                                                         charge=charge))
+                defect["initial_structure"].set_charge(charge)
+                perturbed_structure.set_charge(charge)
 
-        for irreducible_site in self.included:
-            defect_name = SimpleDefectName.from_str(irreducible_site)
-            if defect_name not in name_set:
-                name_set.append(defect_name)
-            else:
-                logger.warning(f"{defect_name} included, but already exists.")
-
-        for excluded_defect in self.excluded:
-            defect_name = SimpleDefectName.from_str(excluded_defect)
-            if defect_name in name_set:
-                name_set.remove(defect_name)
-            else:
-                logger.warning(f"{defect_name} excluded, but does not exist.")
-
-        return name_set
+                self.defect_entries.append(
+                    DefectEntry(
+                        perturbed_initial_structure=perturbed_structure,
+                        cutoff=self.cutoff,
+                        charge=charge,
+                        neighboring_sites=neighboring_sites,
+                        **defect))
 
     def _write_defect_in(self, defect_in_file: str = "defect.in"):
         """ Helper method to write down defect.in file.
@@ -731,5 +877,3 @@ class DefectInitialSetting(MSONable):
 
         with open(defect_in_file, 'w') as defect_in:
             defect_in.write("\n".join(lines))
-
-
