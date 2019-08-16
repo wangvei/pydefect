@@ -40,7 +40,7 @@ class UnitcellCalcResults(MSONable):
                 [[energy1, energy2, ...], [dos1, dos2, ...]]
             volume (float): Volume in A-3.
         """
-        self._band_edge = None if band_edge is None else list(band_edge)
+        self._band_edge = band_edge[:] if band_edge else None
         self._static_dielectric_tensor = static_dielectric_tensor
         self._ionic_dielectric_tensor = ionic_dielectric_tensor
         self._total_dos = total_dos

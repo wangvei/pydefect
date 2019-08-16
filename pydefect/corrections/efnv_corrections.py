@@ -132,8 +132,8 @@ class Ewald(MSONable):
         self.prod_cutoff_fwhm = prod_cutoff_fwhm
 
         # including self lattice site
-        self.real_neighbor_lattices = list(real_neighbor_lattices)
-        self.reciprocal_neighbor_lattices = list(reciprocal_neighbor_lattices)
+        self.real_neighbor_lattices = real_neighbor_lattices[:]
+        self.reciprocal_neighbor_lattices = reciprocal_neighbor_lattices[:]
 
     @classmethod
     def load_json(cls, filename):
@@ -312,9 +312,9 @@ class ExtendedFnvCorrection(Correction, MSONable):
         self.ave_pot_diff = ave_pot_diff
         self.alignment_correction_energy = alignment_correction_energy
         self.symbols_without_defect = symbols_without_defect
-        self.distances_from_defect = list(distances_from_defect)
-        self.difference_electrostatic_pot = list(difference_electrostatic_pot)
-        self.model_pot = list(model_pot)
+        self.distances_from_defect = distances_from_defect[:]
+        self.difference_electrostatic_pot = difference_electrostatic_pot[:]
+        self.model_pot = model_pot[:]
         self.manual_correction_energy = manual_correction_energy
 
     def __repr__(self):
@@ -437,15 +437,15 @@ class ExtendedFnvCorrection(Correction, MSONable):
         diff_potential = [-ep for ep in relative_potential if ep is not None]
 
         defective_structure = defect_dft.final_structure
-        atomic_position_without_defect = \
-            [defective_structure.frac_coords[i]
-             for i, j in enumerate(defect_entry.atom_mapping_to_perfect)
-             if j is not None]
 
-        symbols_without_defect = \
-            [defective_structure.sites[i].specie.symbol
-             for i, j in enumerate(defect_entry.atom_mapping_to_perfect)
-             if j is not None]
+        atomic_position_without_defect = []
+        symbols_without_defect = []
+        for i, j in enumerate(defect_entry.atom_mapping_to_perfect):
+            if j is not None:
+                atomic_position_without_defect.append(
+                    defective_structure.frac_coords[i])
+                symbols_without_defect.append(
+                    defective_structure.sites[i].specie.symbol)
 
         charge = defect_entry.charge
         lattice = defect_dft.final_structure.lattice

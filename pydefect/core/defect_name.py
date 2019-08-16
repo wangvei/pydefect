@@ -47,10 +47,8 @@ class DefectName(MSONable):
         try:
             if isinstance(keywords, str):
                 keywords = [keywords]
-            else:
-                keywords = list(keywords)
         except TypeError:
-            print("The type of keywords {} is invalid.".format(keywords))
+            print(f"The type of keywords {keywords} is invalid.")
 
         return any([re.search(p, str(self)) for p in keywords])
 

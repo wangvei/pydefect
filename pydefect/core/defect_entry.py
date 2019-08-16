@@ -140,7 +140,7 @@ class DefectEntry(MSONable):
         if not neighboring_sites:
             raise StructureError(
                 "No neighboring site detected, so increase cutoff radius.")
-        self.neighboring_sites = list(neighboring_sites)
+        self.neighboring_sites = neighboring_sites[:]
         self.annotation = annotation
         self.num_equiv_sites = num_equiv_sites
 

@@ -25,7 +25,7 @@ logger = get_logger(__name__)
 
 
 class InterstitialSite(MSONable):
-    """Holds properties related to the interstitial site.
+    """ Holds properties related to the interstitial site.
 
     Args:
         representative_coords (list):
@@ -217,7 +217,7 @@ def interstitials_from_charge_density(
         radius: float = 0.4,
         symprec: float = SYMMETRY_TOLERANCE,
         angle_tol: float = ANGLE_TOL):
-    """
+    """ Print interstitial sites determined from charge density local minimum
 
     Note that symprec must be the same as that used for
     DefectInitialSetting to keep the symmetry consistency such as
@@ -244,13 +244,14 @@ def interstitials_from_charge_density(
     for c in coords:
         structure.append(DummySpecie(), c)
     sga = SpacegroupAnalyzer(structure, symprec, angle_tol)
-    equiv_atoms = sga.get_symmetry_dataset()["equivalent_atoms"]
+    sym_db = sga.get_symmetry_dataset()
+    equiv_atoms = sym_db["equivalent_atoms"]
 
-    inequiv_interstitials = \
-        [i for i, ii in enumerate(interstitial_indices)
-         if ii == equiv_atoms[ii]]
-
-    print(f"Inequivalent indices {inequiv_interstitials}")
+    print("")
+    print(f"Inequivalent indices:")
+    for i, ii in enumerate(interstitial_indices):
+        if ii == equiv_atoms[ii]:
+            print(i, sym_db["site_symmetry_symbols"][ii])
 
     # Change coords from unitcell to supercell
     # multiply inverse of trans_mat to coords
