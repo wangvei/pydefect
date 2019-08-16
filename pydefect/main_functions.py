@@ -234,7 +234,7 @@ def defect_entry(args):
         print(DefectEntry.load_json(args.json))
     elif args.make_defect_entry:
         defect_entry_from_yaml = \
-            DefectEntry.from_yaml(filename=args.yaml,
+            DefectEntry.from_yaml(yaml_filename=args.yaml,
                                   cutoff=args.cutoff,
                                   calc_num_equiv_site=args.calc_sites)
         defect_entry_from_yaml.to_json_file(args.json)

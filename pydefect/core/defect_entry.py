@@ -6,6 +6,7 @@ import numpy as np
 import os
 import ruamel.yaml as yaml
 from typing import Optional, Tuple
+from pathlib import Path
 import shutil
 
 from monty.json import MontyEncoder, MSONable
@@ -199,7 +200,7 @@ class DefectEntry(MSONable):
             annotation=d["annotation"],
             num_equiv_sites=d["num_equiv_sites"])
 
-    def as_dict(self):
+    def as_dict(self) -> dict:
         defect_type = str(self.defect_type)
 
         d = {"@module": self.__class__.__module__,
@@ -222,8 +223,8 @@ class DefectEntry(MSONable):
 
     @classmethod
     def from_yaml(cls,
-                  filename: Optional[str] = None,
-                  displacement_distance: float = 0.2,
+                  yaml_filename: Optional[str] = None,
+                  disp_dist: float = 0.2,
                   symprec: float = DEFECT_SYMMETRY_TOLERANCE,
                   angle_tolerance: float = ANGLE_TOL,
                   cutoff: float = CUTOFF_RADIUS,
@@ -232,9 +233,10 @@ class DefectEntry(MSONable):
         """Construct the DefectEntry object from perfect and defective POSCARs.
 
         Note1: displacement_distance needs to be the same as the twice of max
-               displacement distance for reducing the symmetry.
+               displacement distance used for reducing the symmetry.
         Note2: Only unrelaxed but perturbed defective POSCAR structure is
-               accepted.
+               accepted as the inserted atoms are assumed not to be moved from
+               their original positions.
 
         filename (str):
             yaml filename.
@@ -258,25 +260,24 @@ class DefectEntry(MSONable):
             perfect_structure: ../../defects/perfect/POSCAR
             displacement_distance (optional): 0.2
         """
-        if filename is None:
-            org_file = os.path.join(os.path.dirname(__file__),
-                                    "default_defect_entry.yaml")
-            shutil.copyfile(org_file, "defect_entry.yaml")
-            filename = "defect_entry.yaml"
+        if yaml_filename is None:
+            org_yaml = \
+                Path(os.path.dirname(__file__)) / "default_defect_entry.yaml"
+            yaml_filename = "defect_entry.yaml"
+            shutil.copyfile(org_yaml, yaml_filename)
 
-        abs_dir = os.path.split(os.path.abspath(filename))[0]
+        abs_dir = Path(yaml_filename).parent
 
-        with open(filename, "r") as yaml_file:
-            yaml_data = yaml.safe_load(yaml_file)
+        with open(yaml_filename, "r") as f:
+            yaml_data = yaml.safe_load(f)
 
-        displacement_distance = \
-            yaml_data.get("displacement_distance", displacement_distance)
-
+        print(abs_dir)
+        disp_dist = yaml_data.get("displacement_distance", disp_dist)
         # Perfect and perturbed defect structures.
-        perfect_structure = Structure.from_file(
-            os.path.join(abs_dir, yaml_data["perfect_structure"]))
-        defect_structure = Structure.from_file(
-            os.path.join(abs_dir, yaml_data["defect_structure"]))
+        perfect_structure = \
+            Structure.from_file(abs_dir / yaml_data["perfect_structure"])
+        defect_structure = \
+            Structure.from_file(abs_dir / yaml_data["defect_structure"])
         element_diff = element_diff_from_structures(
             defect_structure, perfect_structure)
 
@@ -284,22 +285,20 @@ class DefectEntry(MSONable):
             defect_name = yaml_data.get("name", None)
             if not defect_name:
                 _, defect_name = os.path.split(os.getcwd())
-            name, charge, annotation = divide_dirname(defect_name)
+        name, charge, annotation = divide_dirname(defect_name)
 
         inserted_atom_indices = [i for i in range(defect_structure.num_sites)]
         removed_atoms = []
-
         for i, p_site in enumerate(perfect_structure):
             for j in inserted_atom_indices:
                 d_site = defect_structure[j]
                 distance = p_site.distance(d_site)
                 # check displacement_distance and species for comparison
-                if distance < displacement_distance \
-                        and p_site.specie == d_site.specie:
+                if distance < disp_dist and p_site.specie == d_site.specie:
                     inserted_atom_indices.remove(j)
                     break
             else:
-                removed_atoms.append({"element": p_site.specie,
+                removed_atoms.append({"element": str(p_site.specie),
                                       "index": i,
                                       "coords": list(p_site.frac_coords)})
 
@@ -309,68 +308,46 @@ class DefectEntry(MSONable):
             raise StructureError(
                 "Atoms are not properly mapped within the displacement.")
 
-        # pristine_defect_structure is defect structure without displacement.
+        # pristine_defect_structure is a defect structure without displacement.
         pristine_defect_structure = deepcopy(perfect_structure)
-        lattice = defect_structure.lattice
         removed_atom_indices = [i["index"] for i in removed_atoms]
+        removed_atom_coords = [i["coords"] for i in removed_atoms]
         for r in sorted(removed_atom_indices, reverse=True):
             pristine_defect_structure.pop(r)
 
-        # If the inserted atom locates near an original atom within the
-        # displacement_distance, it is assumed to be substituted.
-        removed_atom_coords = [i["coords"] for i in removed_atoms]
         inserted_atoms = []
         for i in sorted(inserted_atom_indices):
             inserted_atom = defect_structure[i]
-            inserted_atoms.append({"element": inserted_atom.specie,
+            inserted_atoms.append({"element": str(inserted_atom.specie),
                                    "index": i,
                                    "coords": list(inserted_atom.frac_coords)})
-            # substituted
-            for removed_frac_coords in removed_atom_coords:
-                if lattice.get_distance_and_image(
-                        inserted_atom.frac_coords, removed_frac_coords)[0] \
-                        < displacement_distance:
-                    pristine_defect_structure.insert(i, inserted_atom.specie,
-                                                     removed_frac_coords)
-                    break
-            # interstitial
-            else:
-                pristine_defect_structure.insert(i, inserted_atom.specie,
-                                                 inserted_atom.frac_coords)
+            pristine_defect_structure.insert(i, inserted_atom.specie,
+                                             inserted_atom.frac_coords)
 
         inserted_atom_coords = [i["coords"] for i in inserted_atoms]
-
         defect_center_coords = cls.calc_defect_center(removed_atom_coords,
                                                       inserted_atom_coords,
                                                       defect_structure)
         neighboring_sites = []
         for i, site in enumerate(pristine_defect_structure):
-            distance = \
-                site.distance_and_image_from_frac_coords(defect_center_coords)[0]
+            distance, _ = \
+                site.distance_and_image_from_frac_coords(defect_center_coords)
             # Defect itself is not included to the neighboring sites
-            if 1e-5 < distance < cutoff:
+            if 1e-3 < distance < cutoff:
                 neighboring_sites.append(i)
 
-        sga = SpacegroupAnalyzer(structure=pristine_defect_structure,
-                                 symprec=symprec,
-                                 angle_tolerance=angle_tolerance)
-
+        sga = SpacegroupAnalyzer(
+            pristine_defect_structure, symprec, angle_tolerance)
         initial_site_symmetry = sga.get_point_group_symbol()
 
-        inserted_atom_coords = [i["coords"] for i in inserted_atoms]
-
+        num_equiv_sites = None
         if calc_num_equiv_site:
-            num_equiv_sites = \
-                count_equivalent_clusters(perfect_structure,
-                                          inserted_atom_coords,
-                                          removed_atom_indices,
-                                          displacement_distance)
-        else:
-            num_equiv_sites = None
-
+            num_equiv_sites, _ = count_equivalent_clusters(perfect_structure,
+                                                           inserted_atom_coords,
+                                                           removed_atom_indices,
+                                                           disp_dist)
         pristine_defect_structure.set_charge(charge)
         defect_structure.set_charge(charge)
-
         defect_type = determine_defect_type(inserted_atoms, removed_atoms)
 
         return cls(name=name,

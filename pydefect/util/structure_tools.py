@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from itertools import product, combinations, chain
 from math import floor
-from typing import Union, List
+from typing import Union, List, Tuple
 
 import numpy as np
 import spglib
@@ -407,11 +407,12 @@ def get_neighboring_atom_indices(structure: Structure,
 
 
 def count_equivalent_clusters(perfect_structure: Structure,
-                               inserted_atom_coords: list,
-                               removed_atom_indices: list,
-                               symprec: float = SYMMETRY_TOLERANCE,
-                               angle_tolerance: float = ANGLE_TOL):
-    """Return a dict of atomic distances
+                              inserted_atom_coords: list,
+                              removed_atom_indices: list,
+                              symprec: float = SYMMETRY_TOLERANCE,
+                              angle_tolerance: float = ANGLE_TOL) \
+        -> Tuple[int, str]:
+    """Calculate the equivalent clusters in the
 
     Args:
         perfect_structure (Structure):
@@ -439,7 +440,7 @@ def count_equivalent_clusters(perfect_structure: Structure,
     sym_dataset = sga_w_cluster.get_symmetry_dataset()
     point_group = sym_dataset["pointgroup"]
 
-    return int(num_symmop / num_symmetry_operation(point_group))
+    return int(num_symmop / num_symmetry_operation(point_group)), point_group
 
 
 def get_point_group_op_number(sym_dataset: dict,

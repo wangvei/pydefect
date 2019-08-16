@@ -19,13 +19,14 @@ class DefectEntryTest(PydefectTest):
     def setUp(self):
         """ """
         # DefectEntry class object for a single vacancy
-        self.test_dir = self.TEST_FILES_DIR / "core"
+        self.file_dir = self.TEST_FILES_DIR / "files"
 
         name = "Va_O1"
         defect_type = DefectType.from_string("vacancy")
         initial_structure = self.get_structure_by_name(name="MgO7atoms")
         perturbed_initial_structure = initial_structure.copy()
-        removed_atoms = [{"element": "O", "index": 8,
+        removed_atoms = [{"element": "O",
+                          "index": 8,
                           "coords": [0.25, 0.25, 0.25]}]
         inserted_atoms = []
         changes_of_num_elements = {"O": -1}
@@ -50,20 +51,22 @@ class DefectEntryTest(PydefectTest):
         # DefectEntry class object for a complex defect
         name = "2Va_O1+Mg_i1"
         defect_type = DefectType.from_string("complex")
-        initial_structure = Structure.from_file(
-            os.path.join(self.test_dir, "POSCAR-MgO8atoms-2Va_O1-Mg_i1_2"))
+        initial_structure = \
+            self.get_structure_by_name(name="MgO8atoms-2Va_O1+Mg_i1")
         perturbed_initial_structure = initial_structure.copy()
+        initial_structure.set_charge(2)
+        perturbed_initial_structure.set_charge(2)
         removed_atoms = [{"element": "O", "index": 8,
                           "coords": [0.25, 0.25, 0.25]},
                          {"element": "O", "index": 9,
                           "coords": [0.25, 0.25, 0.75]}]
-        inserted_atoms = [{"element": "Mg", "index": 8,
+        inserted_atoms = [{"element": "Mg", "index": 0,
                           "coords": [0.25, 0.25, 0.25]}]
         changes_of_num_elements = {"O": -2, "Mg": 1}
         charge = 2
         initial_site_symmetry = "mmm"
         neighboring_sites = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13]
-        num_equiv_sites = 24
+        num_equiv_sites = 48
 
         self._MgO_complex = \
             DefectEntry(name=name,
@@ -81,7 +84,7 @@ class DefectEntryTest(PydefectTest):
 
     def test_from_yaml(self):
         defect_entry_from_yaml = DefectEntry.from_yaml(
-            filename=self.test_dir / "defect_entry-2Va_O1-Mg_i1_2.yaml",
+            yaml_filename=self.file_dir / "defect_entry-2Va_O1+Mg_i1_2.yaml",
             defect_name="2Va_O1+Mg_i1_2")
         print(defect_entry_from_yaml.initial_structure)
         print(self._MgO_complex.initial_structure)

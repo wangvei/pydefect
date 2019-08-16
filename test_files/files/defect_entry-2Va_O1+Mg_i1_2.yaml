@@ -1,0 +1,3 @@
+defect_structure: ../poscars/POSCAR-MgO8atoms-2Va_O1+Mg_i1
+perfect_structure: ../poscars/POSCAR-MgO8atoms
+tolerance: 0.2
