@@ -5,7 +5,8 @@ import json
 import numpy as np
 import os
 import ruamel.yaml as yaml
-from typing import Optional
+from typing import Optional, Tuple
+import shutil
 
 from monty.json import MontyEncoder, MSONable
 from monty.serialization import loadfn
@@ -15,11 +16,11 @@ from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
 
 from pydefect.core.error_classes import StructureError
 from pydefect.util.logger import get_logger
-from pydefect.util.structure_tools \
-    import count_equivalent_clusters, defect_center_from_coords, distance_list
+from pydefect.util.structure_tools import (
+    count_equivalent_clusters, defect_center_from_coords, distance_list)
 from pydefect.util.vasp_util import element_diff_from_structures
-from pydefect.core.config \
-    import DEFECT_SYMMETRY_TOLERANCE, ANGLE_TOL, CUTOFF_RADIUS
+from pydefect.core.config import (
+    DEFECT_SYMMETRY_TOLERANCE, ANGLE_TOL, CUTOFF_RADIUS)
 
 __author__ = "Yu Kumagai"
 __maintainer__ = "Yu Kumagai"
@@ -58,7 +59,8 @@ class DefectType(Enum):
         return self in [DefectType.substituted, DefectType.interstitial]
 
 
-def determine_defect_type(inserted_atoms: list, removed_atoms: list):
+def determine_defect_type(inserted_atoms: list,
+                          removed_atoms: list) -> DefectType:
     d = DefectType.complex
 
     if len(removed_atoms) == 1:
@@ -220,7 +222,7 @@ class DefectEntry(MSONable):
 
     @classmethod
     def from_yaml(cls,
-                  filename: str = None,
+                  filename: Optional[str] = None,
                   displacement_distance: float = 0.2,
                   symprec: float = DEFECT_SYMMETRY_TOLERANCE,
                   angle_tolerance: float = ANGLE_TOL,
@@ -257,7 +259,6 @@ class DefectEntry(MSONable):
             displacement_distance (optional): 0.2
         """
         if filename is None:
-            import shutil
             org_file = os.path.join(os.path.dirname(__file__),
                                     "default_defect_entry.yaml")
             shutil.copyfile(org_file, "defect_entry.yaml")
@@ -280,8 +281,10 @@ class DefectEntry(MSONable):
             defect_structure, perfect_structure)
 
         if not defect_name:
-            _, defect_name = os.path.split(os.getcwd())
-        name, charge, annotation = divide_dirname(defect_name)
+            defect_name = yaml_data.get("name", None)
+            if not defect_name:
+                _, defect_name = os.path.split(os.getcwd())
+            name, charge, annotation = divide_dirname(defect_name)
 
         inserted_atom_indices = [i for i in range(defect_structure.num_sites)]
         removed_atoms = []
@@ -438,10 +441,6 @@ class DefectEntry(MSONable):
     def anchor_atom_index(self):
         """ Returns an index of atom that is the farthest from the defect.
 
-        This atom is assumed not to displace in the defective supercell, and
-        so used for analyzing local structure around a defect.
-        Note that only the first occurrence is returned when using argmax.
-        docs.scipy.org/doc/numpy-1.15.0/reference/generated/numpy.argmax.html
         """
         # distance_set = \
         #     self.initial_structure.lattice.get_all_distances(
@@ -451,8 +450,7 @@ class DefectEntry(MSONable):
                                  center=self.defect_center_coords)
 
 
-def anchor_atom_index(structure: Structure,
-                      center: np.array):
+def anchor_atom_index(structure: Structure, center: np.array):
     """ Returns an index of atom that is the farthest from the defect.
 
     This atom is assumed not to displace in the defective supercell, and
@@ -466,36 +464,28 @@ def anchor_atom_index(structure: Structure,
     return np.argmax(distance_set)
 
 
-def divide_dirname(dirname):
-    """
+def divide_dirname(dirname: str) -> Tuple[str, int, Optional[str]]:
+    """Return the divided dirname to name, charge, and annotation
 
-    After the dirname is split by "_", there must be only one digit in the list,
-    which is considered as a charge state, and Front (back) part corresponds to
-    name (annotation).
+    There must be only one digit in the split dirname, which is a charge state,
+    and front and back part correspond to name and annotation, respectively.
 
     "Va_Mg1_2" -> name = "Va_Mg1", charge = 2, annotation = None
     "Va_O1_2_inward" -> name = "Va_O1", charge = 2, annotation = "inward"
     "Mg_i+Va_O1*2_2_coord1"
             -> name = "Mg_i+Va_O1*2", charge = 2, annotation = "coord1"
     """
-    def is_digit(n):
-        try:
-            int(n)
-            return True
-        except ValueError:
-            return False
-
     split_dirname = dirname.split("_")
-    digit_positions = [x for x, y in enumerate(split_dirname) if is_digit(y)]
+    digit_positions = [x for x, y in enumerate(split_dirname) if y.isdigit()]
 
     if len(digit_positions) != 1:
-        raise ValueError("The dirname {} is not valid".format(dirname))
+        raise ValueError(f"The dirname {dirname} is not valid")
     else:
         digit_pos = digit_positions[0]
         name = "_".join(split_dirname[:digit_pos])
         charge = int(split_dirname[digit_pos])
         annotation = "_".join(split_dirname[digit_pos + 1:])
-        annotation = None if not annotation else annotation
+        annotation = annotation if annotation else None
 
     return name, charge, annotation
 

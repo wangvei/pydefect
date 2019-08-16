@@ -3,10 +3,10 @@
 import os
 
 import numpy as np
-from pydefect.util.structure_tools import perturb_neighboring_atoms, \
-    get_displacements, defect_center_from_coords, atomic_distances, \
-    create_saturated_interstitial_structure, count_equivalent_clusters, \
-    get_point_group_op_number, get_symmetry_multiplicity
+from pydefect.util.structure_tools import (
+    perturb_neighboring_atoms, get_displacements, defect_center_from_coords,
+    atomic_distances, create_saturated_interstitial_structure,
+    count_equivalent_clusters, count_equivalent_clusters2, get_point_group_op_number, get_symmetry_multiplicity)
 from pymatgen.core.structure import Structure
 from pymatgen.util.testing import PymatgenTest
 from vise.util.structure_handler import get_symmetry_dataset
@@ -119,8 +119,7 @@ class CountEquivalentClustersTest(PymatgenTest):
         self.removed_atom_coords = [0, 32]
 
     def test(self):
-        print(count_equivalent_clusters(self.structure, self.inserted_atom_coords, self.removed_atom_coords, displacement_distance=0.1))
-#        print(count_equivalent_clusters2(self.structure, self.inserted_atom_coords, self.removed_atom_coords, displacement_distance=0.1))
+        print(count_equivalent_clusters2(self.structure, self.inserted_atom_coords, self.removed_atom_coords))
 
 
 class GetPointGroupOpNumberTest(PymatgenTest):

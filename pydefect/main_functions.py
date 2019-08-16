@@ -114,7 +114,7 @@ def initial_setting(args):
 def interstitial(args):
 
     if args.chgcar:
-        sites = interstitials_from_charge_density(
+        interstitials_from_charge_density(
             chgcar_filename=args.chgcar,
             symprec=args.symprec,
             angle_tol=args.angle_tolerance)
