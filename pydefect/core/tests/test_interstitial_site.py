@@ -1,14 +1,11 @@
 # -*- coding: utf-8 -*-
-import os
 from collections import OrderedDict
 import tempfile
 import filecmp
 
-from pymatgen.core.structure import Structure
-
 from pydefect.util.testing import PydefectTest
-from pydefect.core.interstitial_site import InterstitialSiteSet, \
-    InterstitialSite
+from pydefect.core.interstitial_site import (
+    InterstitialSiteSet, InterstitialSite)
 
 __author__ = "Yu Kumagai"
 __maintainer__ = "Yu Kumagai"
@@ -101,7 +98,8 @@ method: manual"""
 
     def test_from_files(self):
         actual = InterstitialSiteSet.from_files(
-            structure=self.structure, filename="expected_interstitials.yaml").as_dict()
+            structure=self.structure,
+            filename="expected_interstitials.yaml").as_dict()
         expected = self.interstitial_site_set.as_dict()
         self.assertEqual(expected, actual)
 
@@ -110,9 +108,9 @@ method: manual"""
         self.interstitial_site_set.add_sites(coords=coords)
         print(self.interstitial_site_set.interstitial_sites)
 
-    def test_add_from_charge_density(self):
-        chgcar_name = self.get_filename("core/CHGCAR-MgO8atoms")
-        trans_mat = [[2, 0, 0], [0, 2, 0], [0, 0, 2]]
-        self.interstitial_site_set.add_sites_from_charge_density(
-            chgcar_name, trans_mat)
-        print(self.interstitial_site_set.interstitial_sites)
+    # def test_add_from_charge_density(self):
+    #     chgcar_name = self.get_filename("core/CHGCAR-MgO8atoms")
+    #     trans_mat = [[2, 0, 0], [0, 2, 0], [0, 0, 2]]
+    #     self.interstitial_site_set.add_sites_from_charge_density(
+    #         chgcar_name, trans_mat)
+    #     print(self.interstitial_site_set.interstitial_sites)

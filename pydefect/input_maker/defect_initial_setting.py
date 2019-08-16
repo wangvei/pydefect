@@ -234,6 +234,7 @@ class DefectInitialSetting(MSONable):
                  dopant_configs: list,
                  antisite_configs: list,
                  interstitial_sites: Union[list, str],
+                 complex_defects: Union[list, str],
                  included: Optional[list],
                  excluded: Optional[list],
                  displacement_distance: float,
@@ -242,7 +243,8 @@ class DefectInitialSetting(MSONable):
                  angle_tolerance: float,
                  oxidation_states: dict,
                  electronegativity: dict,
-                 interstitials_yaml: str = "interstitials.yaml"):
+                 interstitials_yaml: str = "interstitials.yaml",
+                 complex_defect_yaml: str = "complex_defects.yaml"):
         """
         Args:
             structure (Structure):
@@ -263,8 +265,10 @@ class DefectInitialSetting(MSONable):
             antisite_configs (Nx2 list):
                 Antisite configurations, e.g., [["Mg","O"], ["O", "Mg"]]
             interstitial_sites (list/str):
-                Interstitial site indices written in interstitial.in file
+                Interstitial site indices written in interstitial.yaml file
                 "all" means that all the interstitials are considered.
+            complex_defects (list/str):
+                Complex defect names in complex_defects.yaml file.
             included (list):
                 Exceptionally added defects with charges,
                 e.g., ["Va_O1_-1", "Va_O1_-2"]
@@ -288,6 +292,8 @@ class DefectInitialSetting(MSONable):
                 Used to determine the substitutional defects.
             interstitials_yaml (str):
                 Interstitial yaml file name
+            complex_defect_yaml (str):
+                Complex defect yaml file name
         """
 
         self.structure = structure
@@ -303,6 +309,10 @@ class DefectInitialSetting(MSONable):
             self.interstitial_sites = interstitial_sites[:]
         else:
             self.interstitial_sites = [interstitial_sites]
+        if isinstance(complex_defects, list):
+            self.complex_defects = complex_defects[:]
+        else:
+            self.complex_defects = [complex_defects]
         self.included = included[:] if included else list()
         self.excluded = excluded[:] if excluded else list()
         self.displacement_distance = displacement_distance
@@ -337,6 +347,7 @@ class DefectInitialSetting(MSONable):
                     self.interstitials[i_site] = sites[i_site]
 
         self.defect_entries = None
+
 
     # see history at 2019/8/2 if from_dict and as_dict needs to recover
     @classmethod

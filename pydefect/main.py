@@ -6,10 +6,14 @@ import argparse
 from pydefect.core.defect_entry import DefectEntry
 from pydefect.core.interstitial_site import InterstitialSiteSet
 from pydefect.core.supercell_calc_results import SupercellCalcResults
-from pydefect.input_maker.defect_initial_setting \
-    import DefectInitialSetting
+from pydefect.core.complex_defects import ComplexDefects
+from pydefect.input_maker.defect_initial_setting import DefectInitialSetting
 from pydefect.input_maker.supercell_maker import Supercells
-from pydefect.main_functions import *
+from pydefect.main_functions import (
+    recommend_supercell, initial_setting, interstitial, complex_defects,
+    defect_vasp_oba_set, defect_entry, supercell_calc_results,
+    unitcell_calc_results, efnv_correction, vasp_oba_set, defects, plot_energy,
+    parse_eigenvalues, vasp_parchg_set, local_structure, concentration)
 from pydefect.util.logger import get_logger
 from pydefect.util.main_tools import get_default_args
 
@@ -171,7 +175,7 @@ def main():
         help="Set length precision used for symmetry analysis [A].")
     parser_interstitial.add_argument(
         "--angle_tol", dest="angle_tolerance", type=float,
-        default=defaults["angle_tol"],
+        default=defaults["angle_tolerance"],
         help="Set angle precision used for symmetry analysis.")
     parser_interstitial.add_argument(
         "--method", dest="method", type=str, default=defaults["method"],
@@ -180,6 +184,50 @@ def main():
         "--chgcar", dest="chgcar",  type=str, default=None,
         help="CHGCAR type filename to determine the local charge minimum.")
     parser_interstitial.set_defaults(func=interstitial)
+
+    # -- complex_defects -------------------------------------------------------
+    parser_complex_defects = subparsers.add_parser(
+        name="complex_defects",
+        description="Tools for handling the complex defects.",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+        aliases=['cd'])
+
+    defaults = get_default_args(ComplexDefects.add_defect)
+    defaults.update(get_default_args(ComplexDefects.from_files))
+
+    parser_complex_defects.add_argument(
+        "--yaml", dest="yaml", type=str, default=defaults["filename"],
+        help="Yaml-type file name to be read/written.")
+    parser_complex_defects.add_argument(
+        "--dposcar", dest="dposcar", type=str, default=defaults["structure"],
+        help="DPOSCAR-type file name.")
+    parser_complex_defects.add_argument(
+        "-r", dest="removed_atom_indices", nargs="+", type=int,
+        help="")
+    parser_complex_defects.add_argument(
+        "-i", dest="inserted_elements", nargs="+", type=str,
+        help="")
+    parser_complex_defects.add_argument(
+        "-c", dest="inserted_coords", nargs="+", type=float,
+        help="")
+    parser_complex_defects.add_argument(
+        "--name", dest="name", type=str,
+        help="Set the complex defect name.")
+    parser_complex_defects.add_argument(
+        "--oxidation_state", dest="oxidation_state", type=str, default=None,
+        help=".")
+    parser_complex_defects.add_argument(
+        "--annotation", dest="annotation", type=str, default=None,
+        help=".")
+    parser_complex_defects.add_argument(
+        "--symprec", dest="symprec", type=float,
+        default=defaults["symprec"],
+        help="Set length precision used for symmetry analysis [A].")
+    parser_complex_defects.add_argument(
+        "--angle_tol", dest="angle_tolerance", type=float,
+        default=defaults["angle_tolerance"],
+        help="Set angle precision used for symmetry analysis.")
+    parser_complex_defects.set_defaults(func=complex_defects)
 
     # -- defect_vasp_set_maker ------------------------------------------------
     parser_defect_vasp_set = subparsers.add_parser(

@@ -20,6 +20,7 @@ from pydefect.analysis.defect_structure import DefectStructure
 from pydefect.core.defect_entry import DefectEntry
 from pydefect.core.interstitial_site import (
     InterstitialSiteSet, interstitials_from_charge_density)
+from pydefect.core.complex_defects import ComplexDefects
 from pydefect.core.prior_info import PriorInfo
 from pydefect.core.supercell_calc_results import SupercellCalcResults
 from pydefect.core.unitcell_calc_results import UnitcellCalcResults
@@ -117,7 +118,7 @@ def interstitial(args):
         interstitials_from_charge_density(
             chgcar_filename=args.chgcar,
             symprec=args.symprec,
-            angle_tol=args.angle_tolerance)
+            angle_tolerance=args.angle_tolerance)
 
     else:
         try:
@@ -141,18 +142,47 @@ def interstitial(args):
         dis = DefectInitialSetting.from_defect_in(poscar=args.dposcar,
                                                   defect_in_file="defect.in")
         trans_mat = [[dis.transformation_matrix[3 * i + j]
-                      for j in range(3)] for i in range(3)]
-        # Change coords from unitcell to supercell
-        # multiply inverse of trans_mat to coords
+                      for j in range(3)]
+                     for i in range(3)]
+        # To change coords from unitcell to supercell multiply inverse of
+        # trans_mat to coords.
         inv_trans_mat = np.linalg.inv(trans_mat)
         supercell_coords = [np.dot(inv_trans_mat, c).tolist() for c in coords]
 
         interstitial_set.add_sites(coords=supercell_coords,
                                    vicinage_radius=args.radius,
                                    symprec=args.symprec,
-                                   angle_tol=args.angle_tolerance)
+                                   angle_tolerance=args.angle_tolerance)
 
         interstitial_set.site_set_to_yaml_file(filename=args.yaml)
+
+
+def complex_defects(args):
+    try:
+        cds = ComplexDefects.from_files(args.dposcar, args.yaml)
+    except FileNotFoundError:
+        structure = Structure.from_file(args.dposcar)
+        cds = ComplexDefects(structure=structure)
+
+    if len(args.inserted_elements) * 3 != len(args.inserted_coords):
+        raise ValueError(f"The numbers of inserted elements "
+                         f"{args.inserted_elements} and coords "
+                         f"{args.inserted_coords} are invalid")
+
+    inserted_atoms = []
+    for i, e in enumerate(args.inserted_elements):
+        coords = [args.inserted_coords[3 * i + j] for j in range(3)]
+        inserted_atoms.append({"element": e, "coords": coords})
+
+    cds.add_defect(removed_atom_indices=args.removed_atom_indices,
+                   inserted_atoms=inserted_atoms,
+                   name=args.name,
+                   oxidation_state=args.oxidation_state,
+                   annotation=args.annotation,
+                   symprec=args.symprec,
+                   angle_tolerance=args.angle_tolerance)
+
+    cds.site_set_to_yaml_file(filename=args.yaml)
 
 
 def defect_vasp_oba_set(args):

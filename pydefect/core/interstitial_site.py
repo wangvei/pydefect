@@ -25,7 +25,7 @@ logger = get_logger(__name__)
 
 
 class InterstitialSite(MSONable):
-    """ Holds properties related to the interstitial site.
+    """Holds properties related to the interstitial site.
 
     Args:
         representative_coords (list):
@@ -131,8 +131,8 @@ class InterstitialSiteSet(MSONable):
     @property
     def coords(self):
         """Return list of fractional coordinates of interstitial sites"""
-        return [v.representative_coords
-                for v in self.interstitial_sites.values()]
+        return \
+            [v.representative_coords for v in self.interstitial_sites.values()]
 
     @classmethod
     def from_dict(cls, d):
@@ -166,7 +166,7 @@ class InterstitialSiteSet(MSONable):
                   coords: list,
                   vicinage_radius: float = 0.3,
                   symprec: float = SYMMETRY_TOLERANCE,
-                  angle_tol: float = ANGLE_TOL,
+                  angle_tolerance: float = ANGLE_TOL,
                   method: str = "manual"):
         """ Add interstitial sites
 
@@ -178,10 +178,14 @@ class InterstitialSiteSet(MSONable):
         total_coords = self.coords + coords
         saturated_structure, atom_indices, are_inserted = \
             create_saturated_interstitial_structure(
-              self.structure, total_coords, vicinage_radius, symprec, angle_tol)
+                structure=self.structure,
+                inserted_atom_coords=total_coords,
+                dist_tol=vicinage_radius,
+                symprec=symprec,
+                angle_tolerance=angle_tolerance)
 
-        symmetry_dataset = SpacegroupAnalyzer(
-            saturated_structure, symprec, angle_tol).get_symmetry_dataset()
+        sga = SpacegroupAnalyzer(saturated_structure, symprec, angle_tolerance)
+        symmetry_dataset = sga.get_symmetry_dataset()
 
         for i, (coord, ai, inserted) \
                 in enumerate(zip(coords, atom_indices, are_inserted)):
@@ -216,7 +220,7 @@ def interstitials_from_charge_density(
         tol: float = 0.2,
         radius: float = 0.4,
         symprec: float = SYMMETRY_TOLERANCE,
-        angle_tol: float = ANGLE_TOL):
+        angle_tolerance: float = ANGLE_TOL):
     """ Print interstitial sites determined from charge density local minimum
 
     Note that symprec must be the same as that used for
@@ -243,7 +247,7 @@ def interstitials_from_charge_density(
     coords = cda.extrema_coords
     for c in coords:
         structure.append(DummySpecie(), c)
-    sga = SpacegroupAnalyzer(structure, symprec, angle_tol)
+    sga = SpacegroupAnalyzer(structure, symprec, angle_tolerance)
     sym_db = sga.get_symmetry_dataset()
     equiv_atoms = sym_db["equivalent_atoms"]
 
