@@ -106,12 +106,12 @@ class DefectEntry(MSONable):
             removed_atoms (list):
                 List of dict with the following values.
                 + "element" (str):
-                + "index" (int):
+                + "index" (int): Removed index in the original supercell.
                 + "coords" (list):
             inserted_atoms (dict):
                 List of dict with the following values.
                 + "element" (str):
-                + "index" (int):
+                + "index" (int): Removed index in the defect supercell.
                 + "coords" (list):
             changes_of_num_elements (dict):
                 Keys: Element names

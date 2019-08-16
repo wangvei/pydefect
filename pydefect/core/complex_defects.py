@@ -27,24 +27,7 @@ yaml.add_constructor('tag:yaml.org,2002:map', construct_odict)
 
 
 class ComplexDefect(MSONable):
-    """Holds properties related to a complex defect.
-
-    Args:
-        name (str):
-            Name of a complex defect.
-        removed_atom_indices (list):
-            List of removed atom indices in supercell perfect structure.
-        inserted_atoms (List):
-            List of dict with "element" and "coords" keys.
-        point_group (str):
-            point group
-        multiplicity (int):
-            Multiplicity of the complex defect in supercell perfect structure.
-        annotation (str):
-            Annotation used when analyzing results.
-        oxidation_state (int):
-            Total oxidation state of the complex defect.
-    """
+    """Holds properties related to a complex defect. """
 
     def __init__(self,
                  removed_atom_indices: list,
@@ -53,7 +36,23 @@ class ComplexDefect(MSONable):
                  multiplicity: int,
                  oxidation_state: int,
                  annotation: Optional[str] = None):
+        """
+        Args:
+            removed_atom_indices (list):
+                List of removed atom indices in supercell perfect structure.
+            inserted_atoms (List):
+                List of dict with "element" and "coords" keys.
+                Not that "index" is absent as it is not determined, yet.
+            point_group (str):
+                point group
+            multiplicity (int):
+                Multiplicity of the complex defect in supercell perfect structure.
+            annotation (str):
+                Annotation used when analyzing results.
+            oxidation_state (int):
+                Total oxidation state of the complex defect.
 
+        """
         self.removed_atom_indices = removed_atom_indices[:]
         self.inserted_atoms = inserted_atoms[:]
         self.point_group = point_group

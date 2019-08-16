@@ -148,6 +148,7 @@ class SelectDefectsTest(PydefectTest):
         # self.assertEqual(sorted(actual_va_o_0), sorted(expected_va_o_0))
         # self.assertEqual(sorted(actual_va_o1), sorted(expected_va_o1))
 
+
 class DefectInitialSettingTest(PydefectTest):
 
     def setUp(self):
@@ -185,6 +186,7 @@ class DefectInitialSettingTest(PydefectTest):
         dopant_configs = [["Al", "Mg"], ["Al", "O"], ["N", "Mg"], ["N", "O"]]
         antisite_configs = [["Mg", "O"], ["O", "Mg"]]
         interstitial_sites = ["i1"]
+        complex_defect_names = []
         included = ["Va_O1_-1", "Va_O1_-2"]
         excluded = ["Va_O1_1", "Va_O1_2"]
         displacement_distance = 0.15
@@ -202,7 +204,8 @@ class DefectInitialSettingTest(PydefectTest):
             irreducible_sites=irreducible_sites,
             dopant_configs=dopant_configs,
             antisite_configs=antisite_configs,
-            interstitial_sites=interstitial_sites,
+            interstitial_site_names=interstitial_sites,
+            complex_defect_names=complex_defect_names,
             included=included,
             excluded=excluded,
             displacement_distance=displacement_distance,
@@ -223,7 +226,6 @@ class DefectInitialSettingTest(PydefectTest):
               "num_equiv_sites": 64,
               "center": [0, 0, 0]}
         self.defect_set = [d1]
-
 
     def test_dict(self):
         # roundtrip: object -> dict -> object
@@ -261,6 +263,7 @@ class DefectInitialSettingTest(PydefectTest):
                 dopants=["Al", "N"],
                 is_antisite=True,
                 interstitial_sites=["i1"],
+                complex_defect_names=None,
                 en_diff=4.0,
                 included=["Va_O1_-1", "Va_O1_-2"],
                 excluded=["Va_O1_1", "Va_O1_2"],
