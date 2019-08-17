@@ -297,7 +297,7 @@ class SupercellCalcResults(MSONable):
                 = None
         else:
             if defect_entry.defect_type.is_defect_center_atom:
-                defect_center = list(defect_entry.inserted_atoms.keys())[0]
+                defect_center = defect_entry.inserted_atoms[0]["index"]
                 defect_coords = \
                     list(final_structure[defect_center].frac_coords)
             else:

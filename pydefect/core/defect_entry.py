@@ -108,7 +108,7 @@ class DefectEntry(MSONable):
                 + "element" (str):
                 + "index" (int): Removed index in the original supercell.
                 + "coords" (list):
-            inserted_atoms (dict):
+            inserted_atoms (list):
                 List of dict with the following values.
                 + "element" (str):
                 + "index" (int): Removed index in the defect supercell.
@@ -400,13 +400,13 @@ class DefectEntry(MSONable):
     @staticmethod
     def calc_defect_center(removed_atom_coords: list,
                            inserted_atom_coords: list,
-                           structure: Structure):
+                           structure: Structure) -> list:
         """ Calculates arithmetic average to estimate center in frac coords."""
         defect_coords = removed_atom_coords + inserted_atom_coords
         return defect_center_from_coords(defect_coords, structure)
 
     @property
-    def defect_center_coords(self):
+    def defect_center_coords(self) -> list:
         """ Return fractional coordinates of the defect center. """
         removed_atom_coords = [i["coords"] for i in self.removed_atoms]
         inserted_atom_coords = [i["coords"] for i in self.inserted_atoms]
@@ -415,7 +415,7 @@ class DefectEntry(MSONable):
             removed_atom_coords, inserted_atom_coords, self.initial_structure)
 
     @property
-    def anchor_atom_index(self):
+    def anchor_atom_index(self) -> int:
         """ Returns an index of atom that is the farthest from the defect.
 
         """
@@ -427,7 +427,7 @@ class DefectEntry(MSONable):
                                  center=self.defect_center_coords)
 
 
-def anchor_atom_index(structure: Structure, center: np.array):
+def anchor_atom_index(structure: Structure, center: np.array) -> int:
     """ Returns an index of atom that is the farthest from the defect.
 
     This atom is assumed not to displace in the defective supercell, and
@@ -438,7 +438,7 @@ def anchor_atom_index(structure: Structure, center: np.array):
     distance_set = \
         structure.lattice.get_all_distances(center, structure.frac_coords)[0]
 
-    return np.argmax(distance_set)
+    return int(np.argmax(distance_set))
 
 
 def divide_dirname(dirname: str) -> Tuple[str, int, Optional[str]]:

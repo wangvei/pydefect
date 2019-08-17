@@ -455,7 +455,9 @@ class ExtendedFnvCorrection(Correction, MSONable):
         distances_from_defect = \
             deepcopy(defect_dft.displacements["final_distances"])
 
-        for i in sorted(defect_entry.inserted_atoms.keys(), reverse=True):
+        inserted_atom_indices = \
+            [i["index"] for i in defect_entry.inserted_atoms]
+        for i in sorted(inserted_atom_indices, reverse=True):
             del distances_from_defect[i]
 
         coeff, diff_pot, mod_ewald_param, root_det_epsilon = \

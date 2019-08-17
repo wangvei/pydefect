@@ -864,6 +864,7 @@ class DefectInitialSetting(MSONable):
         interstitials = self._inserted_set(inserted_elements=inserted_elements)
 
         complexes = self._complex_set()
+
         defect_set = vacancies + substituted + interstitials + complexes
         defect_set = select_defects(defect_set, keywords, specified_defects)
 
