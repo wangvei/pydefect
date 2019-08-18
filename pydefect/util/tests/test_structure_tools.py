@@ -67,7 +67,7 @@ class GetDisplacementsTest(PymatgenTest):
         # disp_vector is in cartesian coordinates.
         vector_expected = [0.02123447, -0.10617233,  0.04246893]
         norm_expected = 0.11630595530799753
-        self.assertArrayAlmostEqual(self.disp_vectors[1].tolist(), vector_expected)
+        self.assertArrayAlmostEqual(self.disp_vectors[1], vector_expected)
         self.assertAlmostEqual(self.disp_norms[1], norm_expected)
 
 

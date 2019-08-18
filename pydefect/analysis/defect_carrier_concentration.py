@@ -2,7 +2,7 @@
 
 import json
 from collections import defaultdict
-from typing import Union, Optional
+from typing import Optional, Tuple
 
 import numpy as np
 from matplotlib import pyplot as plt
@@ -29,7 +29,7 @@ def hole_concentration(temperature: float,
                        total_dos: np.array,
                        vbm: float,
                        volume: float,
-                       threshold: float = 0.05):
+                       threshold: float = 0.05) -> float:
     """ hole carrier concentration at the given absolute fermi_level.
 
     Args:
@@ -65,7 +65,7 @@ def electron_concentration(temperature: float,
                            total_dos: np.array,
                            cbm: float,
                            volume: float,
-                           threshold: float = 0.05):
+                           threshold: float = 0.05) -> float:
     """ electron carrier concentration at the given absolute fermi_level.
 
     Args:
@@ -103,7 +103,7 @@ def calc_concentration(energies: Optional[dict],
                        cbm: float,
                        total_dos: np.array,
                        volume: float,
-                       ref_concentration: Optional[dict] = None):
+                       ref_concentration: Optional[dict] = None) -> dict:
     """ Calculate concentrations at given temperature & Fermi level
 
     When the reference_concentration is provided, each defect specie
@@ -153,7 +153,7 @@ def calc_concentration(energies: Optional[dict],
 
     for name in energies:
         concentration_by_name = defaultdict(dict)
-        for charge, annotation, de in all_combination(energies):
+        for charge, annotation, de in all_combination(energies[name]):
             mul = multiplicity[name][charge][annotation]
             mag = magnetization[name][charge][annotation]
 
@@ -195,7 +195,8 @@ def calc_equilibrium_concentration(energies: dict,
                                    verbose: bool = False,
                                    max_iteration: int = 200,
                                    interval_decay_parameter: float = 0.7,
-                                   threshold: float = 1e-5):
+                                   threshold: float = 1e-5
+                                   ) -> Tuple[float, dict]:
     """ Calculates equilibrium carrier & defect concentration at a temperature
 
     When the ref_concentration is set, the total defect concentration with the
@@ -544,7 +545,7 @@ class DefectConcentration(MSONable):
                     for charge in c[name]:
                         for annotation, con in c[name][charge].items():
                             n = DefectName(name, charge, annotation)
-                            outs.append(f"{n:>13}: {con:.1e} cm-3.")
+                            outs.append(f"{str(n):>13}: {con:.1e} cm-3.")
                 outs.append("")
 
         return "\n".join(outs)
@@ -552,7 +553,7 @@ class DefectConcentration(MSONable):
     def calc_concentrations(self,
                             temperature: float = None,
                             fermi_range: list = None,
-                            num_mesh: int = 100):
+                            num_mesh: int = 100) -> None:
         """ Calculates defect formation energies from some files.
 
         Args:
@@ -602,7 +603,7 @@ class DefectConcentration(MSONable):
 
     def calc_equilibrium_concentration(self,
                                        temperature: Optional[float] = None,
-                                       verbose: bool = True):
+                                       verbose: bool = True) -> None:
         """
         Calculate equilibrium defect concentrations at given temperature.
 
@@ -632,7 +633,7 @@ class DefectConcentration(MSONable):
 
     def calc_quenched_equilibrium_concentration(self,
                                                 temperature: float = 298,
-                                                verbose: bool = True):
+                                                verbose: bool = True) -> None:
         """Calculate defect concentrations quenched to low temperature.
 
         Args:

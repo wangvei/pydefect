@@ -9,7 +9,7 @@ from chempotdiag.chem_pot_diag import ChemPotDiag
 from pydefect.analysis.defect_energies import DefectEnergies
 from pydefect.util.tools import sanitize_keys_in_dict
 from pydefect.analysis.defect import Defect
-from pydefect.corrections.corrections import ExtendedFnvCorrection
+from pydefect.corrections.efnv_corrections import  ExtendedFnvCorrection
 from pydefect.core.supercell_calc_results import SupercellCalcResults
 from pydefect.core.unitcell_calc_results import UnitcellCalcResults
 from pydefect.core.defect_entry import DefectEntry

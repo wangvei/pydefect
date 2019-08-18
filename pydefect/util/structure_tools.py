@@ -162,22 +162,26 @@ def get_displacements(final_structure: Structure,
         displacement_vectors.append(list(displacement_vector[0][0]))
         displacement_norms.append(d2[0][0] ** 0.5)
 
-    initial_vectors, initial_distances = \
+    initial_vectors, initial_distances_2 = \
         pbc_shortest_vectors(lattice=initial_structure.lattice,
                              fcoords1=initial_center,
                              fcoords2=initial_structure.frac_coords,
                              return_d2=True)
 
-    final_vectors, final_distances = \
+    initial_distances = [d2 ** 0.5 for d2 in initial_distances_2[0]]
+
+    final_vectors, final_distances_2 = \
         pbc_shortest_vectors(lattice=final_structure.lattice,
                              fcoords1=final_center,
                              fcoords2=final_structure.frac_coords,
                              return_d2=True)
 
+    final_distances = [d2 ** 0.5 for d2 in final_distances_2[0]]
+
     # angles are nan when the displacements are zero or diverged.
     # [0] is needed for the variables with double loops.
-    return {"initial_distances":          initial_distances[0].tolist(),
-            "final_distances":            final_distances[0].tolist(),
+    return {"initial_distances":          initial_distances,
+            "final_distances":            final_distances,
             "displacement_vectors":       displacement_vectors,
             "displacement_norms":         displacement_norms,
             "initial_vectors":            initial_vectors[0].tolist(),

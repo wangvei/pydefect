@@ -20,3 +20,6 @@ class DefectNameTest(PydefectTest):
         self.assertTrue(self.va_o_1.is_name_matched("Va_O[0-9]_1"))
         self.assertFalse(
             self.va_o_1.is_name_matched(["Va_N[0-9]_1", "Va_Mg[0-9]"]))
+
+    def test_msonable(self):
+        self.assertMSONable(self.va_o_1)

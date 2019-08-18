@@ -43,6 +43,9 @@ method: manual"""
         rounded_d = InterstitialSite.from_dict(d).as_dict()
         self.assertEqual(d, rounded_d)
 
+    def test_msonable(self):
+        self.assertMSONable(self.mgo_interstitial)
+
 
 class InterstitialSiteSetTest(PydefectTest):
 
@@ -114,3 +117,6 @@ method: manual"""
     #     self.interstitial_site_set.add_sites_from_charge_density(
     #         chgcar_name, trans_mat)
     #     print(self.interstitial_site_set.interstitial_sites)
+
+    def test_msonable(self):
+        self.assertMSONable(self.interstitial_site_set)

@@ -1,15 +1,20 @@
 from collections import defaultdict
+from typing import Optional, Callable, Union
 from xml.etree.ElementTree import ParseError
 
 import numpy as np
 from pydefect.util.logger import get_logger
 from pymatgen import Spin
 
-
 logger = get_logger(__name__)
 
 
-def spin_key_to_str(arg: dict, value_to_str=False):
+def spin_key_to_str(arg: Optional[dict],
+                    value_to_str=False) -> Optional[dict]:
+    """ Change Spin object in key to int.
+
+    Optionally, value is also changed to str.
+    """
     if arg is not None:
         if value_to_str:
             return {str(spin): str(v) for spin, v in arg.items()}
@@ -19,7 +24,9 @@ def spin_key_to_str(arg: dict, value_to_str=False):
         return
 
 
-def str_key_to_spin(arg: dict, method_from_str_for_value=None):
+def str_key_to_spin(arg: Optional[dict],
+                    method_from_str_for_value=None) -> Optional[dict]:
+    """ Change int key to Spin object. """
     if arg is not None:
         x = {}
         for spin, value in arg.items():
@@ -33,7 +40,8 @@ def str_key_to_spin(arg: dict, method_from_str_for_value=None):
         return
 
 
-def parse_file(classmethod_name, parsed_filename):
+def parse_file(classmethod_name: Callable, parsed_filename: str):
+    """Check filename and parse and return cls via __init__ or classmethod """
     try:
         logger.info("Parsing {}...".format(parsed_filename))
         return classmethod_name(parsed_filename)
@@ -45,7 +53,7 @@ def parse_file(classmethod_name, parsed_filename):
         raise FileNotFoundError
 
 
-def defaultdict_to_dict(d):
+def defaultdict_to_dict(d: dict) -> dict:
     """Recursively change defaultdict to dict"""
     if isinstance(d, defaultdict):
         d = dict(d)
@@ -56,7 +64,7 @@ def defaultdict_to_dict(d):
     return d
 
 
-def make_symmetric_matrix(d):
+def make_symmetric_matrix(d: Union[list, float]) -> np.ndarray:
     """
     d (list or float):
         len(d) == 1: Suppose cubic system
@@ -91,13 +99,11 @@ def make_symmetric_matrix(d):
     return tensor
 
 
-def sanitize_keys_in_dict(d):
-    """ Recursively sanitize keys from str to int, float and None.
+def sanitize_keys_in_dict(d: dict) -> dict:
+    """ Recursively sanitize keys in dict from str to int, float and None.
     Args
         d (dict):
             d[name][charge][annotation]
-        value_type:
-            constructor to convert value
     """
     if not isinstance(d, dict):
         return d
@@ -117,13 +123,16 @@ def sanitize_keys_in_dict(d):
         return new_d
 
 
-def all_combination(d):
-    l = list()
-    print(d)
+def all_combination(d: dict) -> list:
+    """ Flatten keys and values in dic
+
+    d[a][b][c] = x -> [a, b, c, x]
+    """
+    flattened_list = list()
     for key, value in d.items():
-        print(key, value)
         if isinstance(value, dict):
-            l.extend([[key] + v for v in all_combination(value)])
+            flattened_list.extend([[key] + v for v in all_combination(value)])
         else:
-            l.append([key, value])
-    return l
+            flattened_list.append([key, value])
+
+    return flattened_list

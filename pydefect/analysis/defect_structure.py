@@ -56,6 +56,22 @@ class DefectStructure(MSONable):
                 Final site symmetry.
             displacements (dict):
                 see get_displacements for keys
+                Keys:
+                + initial_distances:
+                    Distances from a defect in the initial structure.
+                + final_distances:
+                    Distances from a defect in the final structure.
+                + displacement_vectors:
+                    Displacement vectors of atoms from initial to final structures.
+                + displacement_norms:
+                    Norms of displacement vectors.
+                + initial_vectors:
+                    Vectors from a defect position to atoms in the initial supercell.
+                + final_vectors:
+                    Vectors from a defect position to atoms in the final supercell.
+                + defect_migration_distance:
+                    Distance the defect migrates defined only for interstitials,
+                    antisites, and substituted defects.
             defect_center (int/list):
                 Show the defect center. When the defect center is an
                 atomic position, atom index number is set. Contrary, when
@@ -68,8 +84,8 @@ class DefectStructure(MSONable):
                 Atomic indices of the neighboring sites.
                 If is_defect_center_atom is True, neighboring_sites_after_relax
                 is used. Otherwise, neighboring_sites in DefectEntry is used
-                because the defect position is not defined after the structure
-                is relaxed.
+                because the defect position is not well defined after the
+                structure is relaxed.
 
         """
         self.name = name
@@ -88,13 +104,13 @@ class DefectStructure(MSONable):
         self.defect_center_coords = defect_center_coords
         self.neighboring_sites = neighboring_sites
 
-        removed_sites = [i for i in range(len(self.final_structure))
+        distant_sites = [i for i in range(len(self.final_structure))
                          if i not in self.neighboring_sites]
 
         self.initial_local_structure = deepcopy(initial_structure)
-        self.initial_local_structure.remove_sites(removed_sites)
+        self.initial_local_structure.remove_sites(distant_sites)
         self.final_local_structure = deepcopy(final_structure)
-        self.final_local_structure.remove_sites(removed_sites)
+        self.final_local_structure.remove_sites(distant_sites)
 
     @classmethod
     def from_defect(cls, defect: Defect):
@@ -118,13 +134,16 @@ class DefectStructure(MSONable):
 
     def show_displacements(self, all_atoms: bool = False) -> str:
         is_defect_center_atom = isinstance(self.defect_center, int)
-        print(self.defect_center_coords)
         defect_center_str = [round(i, 3) for i in self.defect_center_coords]
         lines = [f"Is defect center atomic position?: {is_defect_center_atom}",
                  f"Defect center position: {defect_center_str}"]
 
-        migration_distance = \
-            round(self.displacements["defect_migration_distance"], 3)
+        if isinstance(self.displacements["defect_migration_distance"], float):
+            migration_distance = \
+                round(self.displacements["defect_migration_distance"], 3)
+        else:
+            migration_distance = None
+
         if migration_distance:
             lines.append(f"Defect traveling distance: {migration_distance}")
 

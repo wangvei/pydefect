@@ -238,6 +238,9 @@ class DefectInitialSettingTest(PydefectTest):
             mgo_from_json = DefectInitialSetting.load_json(tmp_json)
             self.assertTrue(mgo_from_json.as_dict() == self.MgO.as_dict())
 
+    def test_msonalbe(self):
+        self.assertMSONable(self.MgO)
+
     # def test_from_defect_in(self):
     #     mgo_from_defect_in = \
     #         DefectInitialSetting.from_defect_in(
