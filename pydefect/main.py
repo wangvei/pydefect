@@ -261,7 +261,7 @@ def main():
         "--force_overwrite", dest="force_overwrite", action="store_true",
         help="Set if the existing folders are overwritten.")
     parser_defect_vasp_set.add_argument(
-        "-x", "--xc", dest="xc", default="pbe", type=str,
+        "-x", "--xc", dest="xc", default="pbesol", type=str,
         help="XC interaction treatment.")
     parser_defect_vasp_set.add_argument(
         "-k", "--kpt_density", dest="kpt_density", default=2.3, type=float,

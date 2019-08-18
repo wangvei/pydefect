@@ -416,9 +416,7 @@ class DefectEntry(MSONable):
 
     @property
     def anchor_atom_index(self) -> int:
-        """ Returns an index of atom that is the farthest from the defect.
-
-        """
+        """ Returns an index of atom that is the farthest from the defect. """
         # distance_set = \
         #     self.initial_structure.lattice.get_all_distances(
         #         self.defect_center, self.initial_structure.frac_coords)[0]

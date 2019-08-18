@@ -116,7 +116,7 @@ class DefectStructure(MSONable):
         outs = ["DefectStructure Summary"]
         return " ".join(outs)
 
-    def show_displacements(self, all_atoms: bool = False):
+    def show_displacements(self, all_atoms: bool = False) -> str:
         is_defect_center_atom = isinstance(self.defect_center, int)
         print(self.defect_center_coords)
         defect_center_str = [round(i, 3) for i in self.defect_center_coords]
@@ -158,7 +158,7 @@ class DefectStructure(MSONable):
     def comparator(self,
                    defect_local_structure: Structure,
                    ltol: float,
-                   stol: float):
+                   stol: float) -> bool:
         return self.final_local_structure.matches(
             other=defect_local_structure, ltol=ltol, stol=stol,
             primitive_cell=False, scale=False)

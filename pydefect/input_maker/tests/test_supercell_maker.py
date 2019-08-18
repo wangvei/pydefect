@@ -19,7 +19,7 @@ class CalcIsotropyTest(PydefectTest):
         trans_mat = np.array([[2, 0, 0], [0, 2, 0], [0, 0, 1]])
         actual = calc_isotropy(self.struct, trans_mat)
         # (1 + 1) / 3 / 3
-        expected = 0.2222
+        expected = (0.2222, 90)
         self.assertEqual(expected, actual)
 
 
@@ -115,7 +115,6 @@ class SupercellTest(PydefectTest):
         supercells_kzn4p3 = Supercells(self.kzn4p3_struct,
                                        conventional_base=False,
                                        max_num_atoms=500,
-                                       min_num_atoms=16,
                                        criterion=1.1)
         supercell = supercells_kzn4p3.sorted_supercells_by_num_atoms[0]
         actual = supercell.structure

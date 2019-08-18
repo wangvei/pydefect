@@ -79,7 +79,7 @@ class GetDistancesFromStringTest(PydefectTest):
 
     def test_fail1(self):
         bad_string_list = "Mg 2.1 2.2 O 2.3 2.4".split()
-        with self.assertRaises(UnboundLocalError):
+        with self.assertRaises(KeyError):
             get_distances_from_string(bad_string_list)
 
     def test_fail2(self):
@@ -91,74 +91,64 @@ class GetDistancesFromStringTest(PydefectTest):
 class InsertAtoms(PydefectTest):
     def setUp(self) -> None:
         structure = self.get_structure_by_name("MgO64atoms")
-        atoms = {"Al": [0, 0, 0.01], "Na": [0, 0, 0.02],
-                 "Mg": [0, 0, 0.03], "O": [0, 0, 0.04]}
+        atoms = [{"element": "Al", "coords": [0, 0, 0.01]},
+                 {"element": "Na", "coords": [0, 0, 0.02]},
+                 {"element": "Mg", "coords": [0, 0, 0.03]},
+                 {"element": "O",  "coords": [0, 0, 0.04]}]
         self.inserted_structure, self.inserted_atoms \
             = insert_atoms(structure, atoms)
 
     def test(self):
-        expected = [{'element': 'Al', 'index': 1, 'coord': [0, 0, 0.01]},
-                    {'element': 'Na', 'index': 0, 'coord': [0, 0, 0.02]},
-                    {'element': 'Mg', 'index': 2, 'coord': [0, 0, 0.03]},
-                    {'element': 'O', 'index': 35, 'coord': [0, 0, 0.04]}]
+        expected = [{'element': 'Al', 'index': 1, 'coords': [0, 0, 0.01]},
+                    {'element': 'Na', 'index': 0, 'coords': [0, 0, 0.02]},
+                    {'element': 'Mg', 'index': 2, 'coords': [0, 0, 0.03]},
+                    {'element': 'O', 'index': 35, 'coords': [0, 0, 0.04]}]
         self.assertEqual(expected, self.inserted_atoms)
         self.assertEqual("Al", str(self.inserted_structure[1].specie))
         self.assertArrayAlmostEqual(
             [0, 0, 0.04], list(self.inserted_structure[35].frac_coords), 5)
 
+
 class SelectDefectsTest(PydefectTest):
 
-    def test(self):
-        name_set = [{"name": 'Va_Mg1', "charge": -1},
-                    {"name": 'Va_Mg1', "charge": 0},
-                    {"name": 'O_i1', "charge": 0},
-                    {"name": 'O_i1', "charge": 1}]
+    def setUp(self) -> None:
+        self.name_set = [{"name": 'Va_Mg1', "charge": -1},
+                         {"name": 'Va_Mg1', "charge": 0},
+                         {"name": 'Va_O1', "charge": 0},
+                         {"name": 'O_i1', "charge": 0},
+                         {"name": 'O_i1', "charge": 1}]
 
-        actual_va = select_defects(name_set, keywords=["Va"])
-        print(actual_va)
-        actual_specified = select_defects(name_set, specified_defects=["Va_Mg1_1"])
-        print(actual_specified)
-#        expected_va = [{"name": 'Va_Mg1_-1'}, {"name": 'Va_Mg1_0'}]
-#        print(expected_va)
-#        self.assertEqual(sorted(actual_va), sorted(expected_va))
+    def test_keywords1(self):
+        actual_va = select_defects(self.name_set, keywords=["Va"])
+        expected_va = [{'name': 'Va_Mg1', 'charge': -1},
+                       {'name': 'Va_Mg1', 'charge': 0},
+                       {'name': 'Va_O1', 'charge': 0}]
+        self.assertEqual(expected_va, actual_va)
 
+    def test_keywords2(self):
+        actual_va = select_defects(self.name_set, keywords=["Mg_i1"])
+        self.assertEqual([], actual_va)
 
+    def test_specified(self):
+        actual_specified = \
+            select_defects(self.name_set, specified_defects=["Va_Mg1_-1"])
+        expected_specified = [{'name': 'Va_Mg1', 'charge': -1}]
+        self.assertEqual(expected_specified, actual_specified)
 
-        # actual__i = select_defect_names(name_set, ["_i"], return_str=True)
-        # expected__i = ['Mg_i1_0', 'Mg_i1_1', 'Mg_i1_2', 'O_i1_-2', 'O_i1_-1',
-        #                'O_i1_0']
+    def test_specified_not_exit(self):
+        with self.assertRaises(ValueError):
+            select_defects(self.name_set, specified_defects=["Va_Mg2_-1"])
 
-        # actual_va_and__i = \
-        #     select_defect_names(name_set, ["Va", "_i"], return_str=True)
-        # expected_va_and__i = expected_va + expected__i
-
-        # actual_va_o = select_defect_names(name_set, ["Va_O"], return_str=True)
-        # expected_va_o = ['Va_O1_0', 'Va_O1_-1', 'Va_O1_-2', 'Va_O2_0']
-
-        # actual_va_o_0 = \
-        #     select_defect_names(name_set, ["Va_O[0-9]_0"], return_str=True)
-        # expected_va_o_0 = ['Va_O1_0', 'Va_O2_0']
-
-        # actual_va_o1 = select_defect_names(name_set, ["Va_O1"], return_str=True)
-        # expected_va_o1 = ['Va_O1_0', 'Va_O1_-1', 'Va_O1_-2']
-
-        # self.assertEqual(sorted(actual__i), sorted(expected__i))
-        # self.assertEqual(sorted(actual_va_and__i), sorted(expected_va_and__i))
-        # self.assertEqual(sorted(actual_va_o), sorted(expected_va_o))
-        # self.assertEqual(sorted(actual_va_o_0), sorted(expected_va_o_0))
-        # self.assertEqual(sorted(actual_va_o1), sorted(expected_va_o1))
+    def test_set_both_fail(self):
+        with self.assertRaises(ValueError):
+            select_defects(self.name_set, keywords=["Va"],
+                           specified_defects=["Va_Mg1_-1"])
 
 
 class DefectInitialSettingTest(PydefectTest):
 
     def setUp(self):
         """
-        The following condition can be generated by typing
-
-        python3 defect_initial_setting.py -p POSCAR-MgO64atoms -d Al N
-        --included Va_O1_-1 Va_O1_-2 --excluded Va_O1_1 Va_O1_2
-        --displacement_distance 0.15 --symprec 0.001 --cutoff 2.0 -e 4
-        -i 0.1 0.1 0.1
         """
         self.structure = self.get_structure_by_name("MgO64atoms")
         space_group_symbol = "Fm-3m"

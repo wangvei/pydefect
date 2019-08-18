@@ -77,9 +77,9 @@ def get_oxidation_state(element: Union[str, Element]) -> int:
         return 0
 
 
-def set_oxi_states(dopants: list,
-                   oxidation_states: dict,
-                   structure: Structure) -> dict:
+def get_oxidation_states(dopants: list,
+                         oxidation_states: dict,
+                         structure: Structure) -> dict:
     """Set oxidation states (OSs).
 
     Args:
@@ -132,12 +132,9 @@ def dopant_info(dopant: Union[str, Element]) -> Union[str, None]:
     """
     dopant = str(dopant)
     if Element.is_valid_symbol(dopant):
-        electronegativity = get_electronegativity(dopant)
-        oxidation_state = get_oxidation_state(dopant)
-
         out = [f"   Dopant element: {dopant}",
-               f"Electronegativity: {electronegativity}",
-               f"  Oxidation state: {oxidation_state}"]
+               f"Electronegativity: {get_electronegativity(dopant)}",
+               f"  Oxidation state: {get_oxidation_state(dopant)}"]
         return "\n".join(out)
     else:
         logger.warning(f"{dopant} is not an element name.")
@@ -203,35 +200,44 @@ def select_defects(defect_set: List[dict],
 
     Args:
         defect_set (list):
-            A set of defect dict with "name" keys.
+            A list of defect dict with "name" and "charge" keys.
+           e.g. [{"name": "Va_O1", "charge": 0, ..},
+                 {"name": "Va_Mg1", "charge": 1, ..}]
         keywords (str/list):
             Keywords determining if name is selected or not.
         specified_defects (list):
-                Specifies particular defect to be considered.
+            Specifies particular defect to be considered.
+            In this case, only name needs to exist in the cancdidate.
+            For example, Va_O1_-1 is fine while Va_O2_-1 is not in the above
+            defect_set.
 
     Return:
-         list of defects.
+         list of defect dict.
     """
+    if keywords and specified_defects:
+        raise ValueError("Setting both keywords and specified_defects are not "
+                         "allowed.")
 
-    if specified_defects:
-        new_list = []
-        for sd in specified_defects:
-            name = DefectName.from_str(sd)
-            for d in defect_set:
-                print(name)
-                if name.is_name_matched(d["name"]):
-                    dd = d.copy()
-                    dd["charge"] = name.charge
-                    new_list.append(dd)
-                    break
-            else:
-                raise ValueError(f"Specified defect {sd} is invalid.")
-    elif keywords:
+    if keywords:
         new_list = []
         for defect in defect_set:
             name = DefectName(name=defect["name"], charge=defect["charge"])
             if name.is_name_matched(keywords):
                 new_list.append(defect)
+
+    elif specified_defects:
+        new_list = []
+        for specified_defect in specified_defects:
+            name = DefectName.from_str(specified_defect)
+            for defect in defect_set:
+                if name.is_name_matched(defect["name"]):
+                    dd = defect.copy()
+                    dd["charge"] = name.charge
+                    new_list.append(dd)
+                    break
+            else:
+                raise ValueError(f"Specified defect {specified_defect} does "
+                                 f"not exist.")
     else:
         return defect_set
 
@@ -616,7 +622,7 @@ class DefectInitialSetting(MSONable):
         element_set = host_element_set + tuple(dopants)
 
         electronegativity = {e: get_electronegativity(e) for e in element_set}
-        oxidation_states = set_oxi_states(dopants, oxidation_states, s)
+        oxidation_states = get_oxidation_states(dopants, oxidation_states, s)
 
         symmetrized_structure.add_oxidation_state_by_element(oxidation_states)
 
@@ -636,8 +642,7 @@ class DefectInitialSetting(MSONable):
             # set element name of equivalent site
             element = equiv_site[0].species_string
             # need to omit sign and numbers, eg Zn2+ -> Zn
-            element = \
-                ''.join([i for i in element if not (i.isdigit() or i in "+-")])
+            element = ''.join([i for i in element if i.isalpha()])
 
             # increment number of inequivalent sites for element
             num_irreducible_sites[element] += 1

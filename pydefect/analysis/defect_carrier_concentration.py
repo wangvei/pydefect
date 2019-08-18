@@ -633,8 +633,7 @@ class DefectConcentration(MSONable):
     def calc_quenched_equilibrium_concentration(self,
                                                 temperature: float = 298,
                                                 verbose: bool = True):
-        """
-        Calculate defect concentrations quenched to low temperature.
+        """Calculate defect concentrations quenched to low temperature.
 
         Args:
             temperature (float):
@@ -668,7 +667,7 @@ class DefectConcentration(MSONable):
                                     xlim: list = None,
                                     ylim: list = None,
                                     set_vbm_zero=True):
-        """ Get a matplotlib plot.
+        """Get a matplotlib plot.
 
         Args:
             title (str):

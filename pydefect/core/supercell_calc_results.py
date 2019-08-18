@@ -4,7 +4,7 @@ import json
 import os
 from collections import defaultdict
 from pathlib import Path
-from typing import Union
+from typing import Union, Tuple
 
 import numpy as np
 from monty.json import MontyEncoder, MSONable
@@ -36,19 +36,21 @@ def analyze_procar(hob_index: dict,
                    procar: Procar,
                    eigenvalues: dict,
                    structure: Structure,
-                   neighboring_sites: list = None):
+                   neighboring_sites: list = None) -> Tuple[dict, dict, dict]:
     """ Analyze Procar to investigate defect properties
 
     Args:
         hob_index (dict):
-           Highest occupied band index for each spin channel
+           Highest occupied band (HOB) index for each spin channel
            {Spin.up: 100, Spin.down: 100}
         procar (Procar):
+            Pymatgen Procar class object.
         eigenvalues:
            eigenvalues[Spin][k-index][band-index] = [energy, occupation]
         structure:
+            Structure used for extracting symbol_set
         neighboring_sites:
-
+            Atomic site indices neighboring a defect.
     Return:
         band_edge_energies (dict):
             Averaged band energy over k-space as function of spin and band_edge
@@ -58,9 +60,9 @@ def analyze_procar(hob_index: dict,
             ex. {Spin.up: {"hob": {"top": {"Mg": {"s": 0.1, ...}, "O": {...},..
                            "lub": {...},
                  Spin.down: {...}}
-        participation_ratio
+        participation_ratio (dict):
            Participation ratio averaged over k-space as function of Spin and
-           band_edge
+           band_edge.
     """
 
     band_edge_energies = defaultdict(lambda: defaultdict(dict))

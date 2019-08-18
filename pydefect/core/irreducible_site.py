@@ -55,5 +55,5 @@ class IrreducibleSite(MSONable):
         self.magmom = magmom
 
     @property
-    def num_atoms(self):
+    def num_atoms(self) -> int:
         return self.last_index - self.first_index + 1
