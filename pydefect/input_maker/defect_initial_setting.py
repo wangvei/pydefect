@@ -201,8 +201,8 @@ def select_defects(defect_set: List[dict],
     Args:
         defect_set (list):
             A list of defect dict with "name" and "charge" keys.
-           e.g. [{"name": "Va_O1", "charge": 0, ..},
-                 {"name": "Va_Mg1", "charge": 1, ..}]
+           e.g. [{"name": "Va_O1", "charges": [0, 1, 2], ..},
+                 {"name": "Va_Mg1", "charge": [0, -1, -2], ..}]
         keywords (str/list):
             Keywords determining if name is selected or not.
         specified_defects (list):
@@ -212,7 +212,9 @@ def select_defects(defect_set: List[dict],
             defect_set.
 
     Return:
-         list of defect dict.
+         list of defect dict. Charges must be list
+           e.g. [{"name": "Va_O1", "charges": [2], ..},
+                 {"name": "Va_Mg1", "charge": [0], ..}]
     """
     if keywords and specified_defects:
         raise ValueError("Setting both keywords and specified_defects are not "
@@ -221,23 +223,32 @@ def select_defects(defect_set: List[dict],
     if keywords:
         new_list = []
         for defect in defect_set:
-            name = DefectName(name=defect["name"], charge=defect["charge"])
-            if name.is_name_matched(keywords):
-                new_list.append(defect)
+            charges = []
+            for charge in defect["charges"]:
+                name = DefectName(name=defect["name"], charge=charge)
+                if name.is_name_matched(keywords):
+                    charges.append(charge)
+            if charges:
+                new_defect = defect.copy()
+                new_defect["charges"] = charges
+                new_list.append(new_defect)
 
     elif specified_defects:
         new_list = []
-        for specified_defect in specified_defects:
-            name = DefectName.from_str(specified_defect)
-            for defect in defect_set:
+        for defect in defect_set:
+            charges = []
+            for specified_defect in specified_defects:
+                name = DefectName.from_str(specified_defect)
                 if name.is_name_matched(defect["name"]):
-                    dd = defect.copy()
-                    dd["charge"] = name.charge
-                    new_list.append(dd)
-                    break
-            else:
-                raise ValueError(f"Specified defect {specified_defect} does "
-                                 f"not exist.")
+                    charges.append(name.charge)
+
+            new_defect = defect.copy()
+            new_defect["charges"] = charges
+            new_list.append(new_defect)
+
+        if not new_list:
+            raise ValueError(f"Any specified defects {specified_defects} do "
+                             f"not exist.")
     else:
         return defect_set
 
@@ -750,12 +761,14 @@ class DefectInitialSetting(MSONable):
 
             # Returned inserted_atoms contains indices in the returned structure
             structure, inserted_atoms = \
-                insert_atoms(structure, complex_defect["inserted_atoms"])
+                insert_atoms(structure, complex_defect.inserted_atoms)
             for i in inserted_atoms:
                 changes_of_num_elements[i["element"]] += -1
 
             coords = [i["coords"] for i in inserted_atoms + removed_atoms]
             center = defect_center_from_coords(coords, self.structure)
+
+            charges = candidate_charge_set(complex_defect.extreme_charge_state)
 
             defect_set.append(
                 {"name": name,
@@ -765,7 +778,7 @@ class DefectInitialSetting(MSONable):
                  "inserted_atoms": inserted_atoms,
                  "changes_of_num_elements": dict(changes_of_num_elements),
                  "initial_site_symmetry": complex_defect.point_group,
-                 "charges": -complex_defect.oxidation_state,
+                 "charges": charges,
                  "num_equiv_sites": complex_defect.multiplicity,
                  "center": center})
 

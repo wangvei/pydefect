@@ -214,7 +214,8 @@ def main():
         "--name", dest="name", type=str,
         help="Set the complex defect name.")
     parser_complex_defects.add_argument(
-        "--oxidation_state", dest="oxidation_state", type=str, default=None,
+        "--extreme_charge_state", dest="extreme_charge_state", type=str,
+        default=None,
         help=".")
     parser_complex_defects.add_argument(
         "--annotation", dest="annotation", type=str, default=None,

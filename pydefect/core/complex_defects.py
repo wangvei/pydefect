@@ -34,7 +34,7 @@ class ComplexDefect(MSONable):
                  inserted_atoms: List[dict],
                  point_group: str,
                  multiplicity: int,
-                 oxidation_state: int,
+                 extreme_charge_state: int,
                  annotation: Optional[str] = None):
         """
         Args:
@@ -49,15 +49,14 @@ class ComplexDefect(MSONable):
                 Multiplicity of the complex defect in supercell perfect structure.
             annotation (str):
                 Annotation used when analyzing results.
-            oxidation_state (int):
-                Total oxidation state of the complex defect.
+            extreme_charge_state (int):
 
         """
         self.removed_atom_indices = removed_atom_indices[:]
         self.inserted_atoms = inserted_atoms[:]
         self.point_group = point_group
         self.multiplicity = multiplicity
-        self.oxidation_state = oxidation_state
+        self.extreme_charge_state = extreme_charge_state
         self.annotation = annotation
 
     def __repr__(self):
@@ -71,7 +70,7 @@ class ComplexDefect(MSONable):
              "inserted_atoms":       self.inserted_atoms,
              "point_group":          self.point_group,
              "multiplicity":         self.multiplicity,
-             "oxidation_state":      self.oxidation_state,
+             "extreme_charge_state": self.extreme_charge_state,
              "annotation":           self.annotation})
 
         return d
@@ -127,11 +126,24 @@ class ComplexDefects(MSONable):
 
         return cls.from_dict(d)
 
+    @classmethod
+    def from_dict(cls, d):
+        # orderedDict disables MSONable.
+        structure = d["structure"]
+        if isinstance(structure, dict):
+            structure = Structure.from_dict(structure)
+
+        complex_defects = OrderedDict()
+        for k, v in d["complex_defects"].items():
+            complex_defects[k] = ComplexDefect.from_dict(v)
+
+        return cls(structure=structure, complex_defects=complex_defects)
+
     def add_defect(self,
                    removed_atom_indices: list,
                    inserted_atoms: List[dict],
                    name: Optional[str] = None,
-                   oxidation_state: Optional[int] = None,
+                   extreme_charge_state: Optional[int] = None,
                    annotation: Optional[str] = None,
                    symprec: float = SYMMETRY_TOLERANCE,
                    angle_tolerance: float = ANGLE_TOL) -> None:
@@ -146,7 +158,7 @@ class ComplexDefects(MSONable):
 
         complex_defect = \
             ComplexDefect(removed_atom_indices, inserted_atoms,
-                          point_group, multiplicity, oxidation_state,
+                          point_group, multiplicity, extreme_charge_state,
                           annotation)
 
         self.complex_defects[name] = complex_defect

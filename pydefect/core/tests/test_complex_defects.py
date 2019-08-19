@@ -47,7 +47,7 @@ class ComplexDefectsTest(PydefectTest):
                                                "coords": [0.375, 0.5, 0.5]}],
                               point_group="mm2",
                               multiplicity=192,
-                              oxidation_state=-1)
+                              extreme_charge_state=1)
 
         self.cu2o = \
             ComplexDefects(self.structure, OrderedDict({"split": split}))
@@ -64,6 +64,9 @@ class ComplexDefectsTest(PydefectTest):
         self.cu2o.site_set_to_yaml_file(tmp_file)
         self.assertTrue(filecmp.cmp("expected_complex_defects.yaml", tmp_file))
 
+    def test_msonable(self):
+        self.assertMSONable(self.cu2o)
+
     def test_from_files(self):
         actual = ComplexDefects.from_files(
             structure=self.structure,
@@ -75,7 +78,7 @@ class ComplexDefectsTest(PydefectTest):
         self.cu2o.add_defect(removed_atom_indices=[0, 32],
                              inserted_atoms=[],
                              name="divacancy",
-                             oxidation_state=-1)
+                             extreme_charge_state=1)
 
         print(self.cu2o.complex_defects["divacancy"])
 

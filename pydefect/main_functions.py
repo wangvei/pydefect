@@ -164,20 +164,28 @@ def complex_defects(args):
         structure = Structure.from_file(args.dposcar)
         cds = ComplexDefects(structure=structure)
 
-    if len(args.inserted_elements) * 3 != len(args.inserted_coords):
+    if (args.inserted_elements and not args.inserted_coords) or \
+            (not args.inserted_elements and args.inserted_coords):
+        raise ValueError(f"For interstitial sites, both elements and "
+                         f"fractional coordinates need to be entered.")
+    elif args.inserted_elements and args.inserted_coords and \
+            len(args.inserted_elements) * 3 != len(args.inserted_coords):
         raise ValueError(f"The numbers of inserted elements "
                          f"{args.inserted_elements} and coords "
                          f"{args.inserted_coords} are invalid")
 
+    inserted_elements = args.inserted_elements if args.inserted_elements else []
+    inserted_coords = args.inserted_coords if args.inserted_coords else []
+
     inserted_atoms = []
-    for i, e in enumerate(args.inserted_elements):
-        coords = [args.inserted_coords[3 * i + j] for j in range(3)]
+    for i, e in enumerate(inserted_elements):
+        coords = [inserted_coords[3 * i + j] for j in range(3)]
         inserted_atoms.append({"element": e, "coords": coords})
 
     cds.add_defect(removed_atom_indices=args.removed_atom_indices,
                    inserted_atoms=inserted_atoms,
                    name=args.name,
-                   oxidation_state=args.oxidation_state,
+                   extreme_charge_state=args.extreme_charge_state,
                    annotation=args.annotation,
                    symprec=args.symprec,
                    angle_tolerance=args.angle_tolerance)
