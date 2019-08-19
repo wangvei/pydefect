@@ -182,14 +182,15 @@ class DefectEigenvalue(MSONable):
             plt.show()
 
     def add_eigenvalues_to_plot(self, axs):
-        occupied_eigenvalues = []
-        occupied_x = []
-        unoccupied_eigenvalues = []
-        unoccupied_x = []
-        partial_occupied_eigenvalues = []
-        partial_occupied_x = []
 
         for i, s in enumerate(self.eigenvalues.keys()):
+            occupied_eigenvalues = []
+            occupied_x = []
+            unoccupied_eigenvalues = []
+            unoccupied_x = []
+            partial_occupied_eigenvalues = []
+            partial_occupied_x = []
+
             ax = axs[i]
             for k_index, eigen in enumerate(self.eigenvalues[s]):
                 for band_index, e in enumerate(eigen):
@@ -207,12 +208,11 @@ class DefectEigenvalue(MSONable):
 
 #                    if k_index == 1 and e[0] - eigen[band_index-1][0] > 0.1:
                     if band_index < len(eigen) - 1:
-                        if (e[0] < self.fermi_level and
-                            eigen[band_index + 1][0] - e[0] > 0.2) or \
-                                (e[0] > self.fermi_level
-                                 and e[0] - eigen[band_index - 1][0] > 0.2):
+                        if (e[0] < self.fermi_level and eigen[band_index + 1][0] - e[0] > 0.2) or \
+                                (e[0] > self.fermi_level and e[0] - eigen[band_index - 1][0] > 0.2):
                             ax.annotate(str(band_index + 1),
                                         xy=(k_index + 0.05, e[0]),
+                                        va='center',
                                         fontsize=10)
 
             ax.plot(occupied_x, occupied_eigenvalues, 'o')

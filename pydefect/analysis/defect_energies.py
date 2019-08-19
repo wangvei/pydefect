@@ -118,12 +118,8 @@ class DefectEnergies(MSONable):
                     natom_change * \
                     (relative_chem_pot.elem_coords[elem] + standard_e[elem])
 
-            print("numchange", d.changes_of_num_elements)
-
             energy = (d.relative_total_energy + d.correction_energy +
                       element_interchange_energy)
-
-            print("total", d.name, d.charge, energy)
 
             e = {"energy": energy, "convergence": d.is_converged,
                  "is_shallow": d.is_shallow}
