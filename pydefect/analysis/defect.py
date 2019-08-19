@@ -60,7 +60,7 @@ def diagnose_band_edges(participation_ratio: dict,
                         supercell_cbm: float,
                         different_criterion: float = 0.12,
                         localized_criterion: float = 0.4,
-                        near_edge_energy_criterion: float = 0.5):
+                        near_edge_energy_criterion: float = 0.3):
     """ Diagnose the band edge states in supercell with a defect.
 
     Args:

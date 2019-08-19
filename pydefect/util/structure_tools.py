@@ -126,15 +126,18 @@ def get_displacements(final_structure: Structure,
         initial_center = initial_structure[defect_center].frac_coords
         final_center = final_structure[defect_center].frac_coords
         if anchor_atom_index:
-            defect_migration_frac_coords = \
-                (final_structure[defect_center].frac_coords
-                 - initial_structure[defect_center].frac_coords
-                 - drift_frac_coords)
+            final_fcoords = final_structure[defect_center].frac_coords
+            initial_fcoords = (initial_structure[defect_center].frac_coords +
+                               drift_frac_coords)
             # Note: Defect migration distance is estimated based on the initial
             #       lattice constants. Now, it is fine as anchor_atom_index is
             #       set only when the lattice constants are unchanged.
-            defect_migration_distance = \
-                initial_structure.lattice.norm(defect_migration_frac_coords)[0]
+            _, d2 = pbc_shortest_vectors(lattice=initial_structure.lattice,
+                                         fcoords1=final_fcoords,
+                                         fcoords2=initial_fcoords,
+                                         return_d2=True)
+            defect_migration_distance = d2[0][0] ** 0.5
+
         else:
             defect_migration_distance = None
 
