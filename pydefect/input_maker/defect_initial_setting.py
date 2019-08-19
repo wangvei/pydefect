@@ -788,9 +788,9 @@ class DefectInitialSetting(MSONable):
                          removed_sites: List[IrreducibleSite],
                          inserted_element: Optional[str]) -> list:
         defect_set = []
-        changes_of_num_elements = defaultdict(int)
 
         for rs in removed_sites:
+            changes_of_num_elements = defaultdict(int)
             in_name = inserted_element if inserted_element else "Va"
             name = "_".join([in_name, rs.irreducible_name])
             center = rs.representative_coords

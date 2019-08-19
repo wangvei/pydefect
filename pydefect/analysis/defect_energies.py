@@ -99,7 +99,7 @@ class DefectEnergies(MSONable):
         supercell_cbm = perfect.cbm
 
         if system is None:
-            system = ""
+            system = str(perfect.final_structure.composition)
         title = system + " condition " + chem_pot_label
 
         # Chemical potentials
@@ -112,13 +112,20 @@ class DefectEnergies(MSONable):
 
         for d in defects:
             # Calculate defect formation energies at the vbm
-            element_interchange_energy = \
-                - sum([v * (relative_chem_pot.elem_coords[k] + standard_e[k])
-                       for k, v in d.changes_of_num_elements.items()])
+            element_interchange_energy = 0
+            for elem, natom_change in d.changes_of_num_elements.items():
+                element_interchange_energy += \
+                    natom_change * \
+                    (relative_chem_pot.elem_coords[elem] + standard_e[elem])
+
+            print("numchange", d.changes_of_num_elements)
+
             energy = (d.relative_total_energy + d.correction_energy +
                       element_interchange_energy)
 
-            e = {"energy": float(energy), "convergence": d.is_converged,
+            print("total", d.name, d.charge, energy)
+
+            e = {"energy": energy, "convergence": d.is_converged,
                  "is_shallow": d.is_shallow}
 
             if not d.multiplicity.is_integer():

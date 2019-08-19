@@ -452,7 +452,7 @@ def divide_dirname(dirname: str) -> Tuple[str, int, Optional[str]]:
     """
     split_dirname = dirname.split("_")
     digit_positions = [x for x, y in enumerate(split_dirname) if y.isdigit()]
-
+    print(digit_positions)
     if len(digit_positions) != 1:
         raise ValueError(f"The dirname {dirname} is not valid")
     else:
