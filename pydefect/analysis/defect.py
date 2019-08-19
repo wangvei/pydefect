@@ -403,3 +403,6 @@ class Defect(MSONable):
     @property
     def is_shallow(self) -> bool:
         return any(i.is_shallow for i in self.band_edge_states.values())
+
+    def set_band_edge_state(self, spin: Spin, state: str):
+        self.band_edge_states[spin] = BandEdgeState.from_string(state)

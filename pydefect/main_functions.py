@@ -294,18 +294,8 @@ def supercell_calc_results(args):
     for d in dirs:
         if os.path.isdir(d):
             logger.info("Parsing data in {}...".format(d))
-            if args.band_edge:
-                if args.band_edge[0] == "up":
-                    spin = Spin.up
-                elif args.band_edge[0] == "down":
-                    spin = Spin.down
-                else:
-                    raise ValueError("band edge flag is inadequate. "
-                                     "Ex. -be up no_in_gap")
-                state = args.band_edge[1]
-                dft_results = SupercellCalcResults.load_json(args.json)
-                dft_results.set_band_edges(spin=spin, state=state)
-            elif d in ["perfect", "perfect/"]:
+
+            if d in ["perfect", "perfect/"]:
                 try:
                     dft_results = SupercellCalcResults.from_vasp_files(
                         directory_path=d,
@@ -531,6 +521,20 @@ def defects(args):
     #     unitcell = UnitcellCalcResults.load_json(args.unitcell)
     # except FileNotFoundError:
     #     print("{} not found".format(args.unitcell))
+
+    if args.band_edge:
+        if args.band_edge[0] == "up":
+            spin = Spin.up
+        elif args.band_edge[0] == "down":
+            spin = Spin.down
+        else:
+            raise ValueError("band edge flag is inadequate. "
+                             "Ex. -be up no_in_gap")
+        state = args.band_edge[1]
+        defect = Defect.load_json(args.json)
+        defect.set_band_edge_state(spin=spin, state=state)
+        defect.to_json_file(args.json)
+        return True
 
     try:
         perfect = SupercellCalcResults.load_json(args.perfect)

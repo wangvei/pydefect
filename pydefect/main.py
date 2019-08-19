@@ -340,8 +340,6 @@ def main():
     parser_supercell_results.add_argument(
         "-de", dest="defect_entry_name", type=str, default="defect_entry.json")
     parser_supercell_results.add_argument(
-        "-be", dest="band_edge", type=str, nargs="+", default=None)
-    parser_supercell_results.add_argument(
         "--json", dest="json", type=str, default="dft_results.json",
         help="dft_results.json type file name.")
     parser_supercell_results.add_argument(
@@ -557,6 +555,8 @@ def main():
     parser_defects.add_argument(
         "--dft_results", dest="dft_results", type=str,
         default="dft_results.json")
+    parser_defects.add_argument(
+        "-be", dest="band_edge", type=str, nargs="+", default=None)
 
     parser_defects.set_defaults(func=defects)
 
