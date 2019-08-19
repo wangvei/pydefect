@@ -114,7 +114,7 @@ class DefectEnergies(MSONable):
             # Calculate defect formation energies at the vbm
             element_interchange_energy = 0
             for elem, natom_change in d.changes_of_num_elements.items():
-                element_interchange_energy += \
+                element_interchange_energy -= \
                     natom_change * \
                     (relative_chem_pot.elem_coords[elem] + standard_e[elem])
 

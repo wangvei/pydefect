@@ -844,7 +844,7 @@ class DefectInitialSetting(MSONable):
                 name = "_".join([e, interstitial_name])
                 extreme_charge = self.oxidation_states[e]
                 charges = candidate_charge_set(extreme_charge)
-                changes_of_num_elements[e] += -1
+                changes_of_num_elements[e] += 1
                 inserted_atom = [{"element": e,
                                   "coords": i.representative_coords}]
                 structure, inserted_atoms = \

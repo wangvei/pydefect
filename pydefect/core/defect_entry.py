@@ -271,7 +271,6 @@ class DefectEntry(MSONable):
         with open(yaml_filename, "r") as f:
             yaml_data = yaml.safe_load(f)
 
-        print(abs_dir)
         disp_dist = yaml_data.get("displacement_distance", disp_dist)
         # Perfect and perturbed defect structures.
         perfect_structure = \
@@ -451,8 +450,16 @@ def divide_dirname(dirname: str) -> Tuple[str, int, Optional[str]]:
             -> name = "Mg_i+Va_O1*2", charge = 2, annotation = "coord1"
     """
     split_dirname = dirname.split("_")
-    digit_positions = [x for x, y in enumerate(split_dirname) if y.isdigit()]
-    print(digit_positions)
+
+    def is_digit(n):
+        try:
+            int(n)
+            return True
+        except ValueError:
+            return False
+
+    digit_positions = [x for x, y in enumerate(split_dirname) if is_digit(y)]
+
     if len(digit_positions) != 1:
         raise ValueError(f"The dirname {dirname} is not valid")
     else:
