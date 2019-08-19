@@ -60,7 +60,7 @@ class ComplexDefect(MSONable):
         self.annotation = annotation
 
     def __repr__(self):
-        outs = [f"oxidation_state: {self.oxidation_state}",
+        outs = [f"extreme charge state: {self.extreme_charge_state}",
                 f"annotation: {self.annotation}"]
         return "\n".join(outs)
 
