@@ -225,7 +225,7 @@ class DefectEntry(MSONable):
     def from_yaml(cls,
                   yaml_filename: Optional[str] = None,
                   disp_dist: float = 0.2,
-                  symprec: float = DEFECT_SYMMETRY_TOLERANCE,
+                  defect_symprec: float = DEFECT_SYMMETRY_TOLERANCE,
                   angle_tolerance: float = ANGLE_TOL,
                   cutoff: float = CUTOFF_RADIUS,
                   calc_num_equiv_site: bool = True,
@@ -336,7 +336,7 @@ class DefectEntry(MSONable):
                 neighboring_sites.append(i)
 
         sga = SpacegroupAnalyzer(
-            pristine_defect_structure, symprec, angle_tolerance)
+            pristine_defect_structure, defect_symprec, angle_tolerance)
         initial_site_symmetry = sga.get_point_group_symbol()
 
         num_equiv_sites = None

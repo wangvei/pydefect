@@ -41,14 +41,28 @@ logger = get_logger(__name__)
 
 
 def recommend_supercell(args):
-    supercells = Supercells(structure=Structure.from_file(args.poscar),
-                            conventional_base=not args.primitive,
+    structure = Structure.from_file(args.poscar)
+    is_conventional_base = not args.primitive
+    supercells = Supercells(structure=structure,
+                            conventional_base=is_conventional_base,
                             max_num_atoms=args.max_num_atoms,
                             min_num_atoms=args.min_num_atoms,
-                            criterion=args.isotropy_criterion)
+                            criterion=args.isotropy_criterion,
+                            rhombohedral_angle=args.rhombohedral_angle,
+                            symprec=args.symprec,
+                            angle_tolerance=args.angle_tolerance)
 
-    if supercells.supercells:
-        if args.set:
+    if not supercells.supercells:
+        logger.warning("No supercell satisfies the criterion.")
+    else:
+        if not args.set:
+            if args.most_isotropic:
+                supercell = supercells.most_isotropic_supercell
+            else:
+                supercell = supercells.smallest_supercell
+
+            supercell.to(args.sposcar, args.uposcar)
+        else:
             logger.info(f"Number of supercells: {len(supercells.supercells)}")
 
             for supercell in supercells.supercells:
@@ -57,41 +71,31 @@ def recommend_supercell(args):
                 if np.count_nonzero(supercell.trans_mat) == 3:
                     mat = [str(supercell.trans_mat[i][i]) for i in range(3)]
                 else:
-                    mat = [str(j) for i in supercell.trans_mat for j in i]
-                name = "_".join([args.sposcar,
-                                 prefix + "x".join(mat),
-                                 str(supercell.num_atoms),
-                                 str(supercell.isotropy[0])])
+                    def mod_str(num):
+                        return "".join([n if n != "-" else "m" for n in num])
+
+                    mat = "x".join([mod_str(j)
+                                    for i in supercell.trans_mat for j in i])
+
+                name = f"{args.sposcar}_{prefix + mat}_{supercell.num_atoms}_" \
+                       f"{supercell.isotropy[0]}"
                 supercell.to_poscar(poscar_filename=name)
 
             supercells.supercells[0].to_uposcar(uposcar_filename=args.uposcar)
-
-        else:
-            if args.most_isotropic:
-                supercell = supercells.most_isotropic_supercell
-            else:
-                supercell = supercells.smallest_supercell
-
-            supercell.to_poscar(poscar_filename=args.sposcar)
-            supercell.to_uposcar(uposcar_filename=args.uposcar)
-
-    else:
-        logger.warning("No supercell satisfies the criterion.")
 
 
 def initial_setting(args):
     if args.print_dopant:
         print(dopant_info(args.print_dopant))
-
     else:
-        structure = Structure.from_file(args.poscar)
+        structure = Structure.from_file(args.sposcar)
+        # transformation_matrix and cell_multiplicity are parsed from POSCAR
         with open(args.poscar) as f:
             first_line = f.readline()
-            transformation_matrix = [int(x) for x in
-                                     first_line.split(":")[1].split(",")[
-                                         0].split()]
-            cell_multiplicity = int(
-                first_line.split(":")[2].split(",")[0].split()[0])
+            transformation_matrix = \
+                [int(x) for x in first_line.split(":")[1].split(",")[0].split()]
+            cell_multiplicity = \
+                int(first_line.split(":")[2].split(",")[0].split()[0])
 
         defect_setting = \
             DefectInitialSetting.from_basic_settings(
@@ -99,7 +103,7 @@ def initial_setting(args):
                 transformation_matrix=transformation_matrix,
                 cell_multiplicity=cell_multiplicity,
                 dopants=args.dopants,
-                is_antisite=args.is_antisite,
+                is_antisite=args.no_antisite,
                 en_diff=args.en_diff,
                 included=args.included,
                 excluded=args.excluded,
@@ -107,7 +111,8 @@ def initial_setting(args):
                 cutoff=args.cutoff,
                 symprec=args.symprec,
                 angle_tolerance=args.angle_tolerance,
-                interstitial_sites=args.interstitials)
+                interstitial_sites=args.interstitials,
+                complex_defect_names=args.complex_defect_names)
 
         defect_setting.to()
 
@@ -319,7 +324,7 @@ def supercell_calc_results(args):
                             outcar=args.outcar,
                             procar=True,
                             defect_entry=de,
-                            symprec=args.symprec,
+                            defect_symprec=args.symprec,
                             angle_tolerance=args.angle_tolerance)
                 except IOError:
                     logger.warning("Parsing data in {} failed.".format(d))

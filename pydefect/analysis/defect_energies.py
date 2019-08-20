@@ -373,7 +373,7 @@ class DefectEnergies(MSONable):
             y_min, y_max = min([y, y_min]), max([y, y_max])
             # Unfilled and filled circles for shallow and transition levels
             if max(charge_set) < 0:
-                ax.plot(x_min, y, marker="o", mec="black", mfc="white")
+                ax.plot(x_min, y, marker="o", mec=color[i], mfc="white")
 
             # Add points between x_min and x_max
             for cp, charges in zip(tl["cross_points"], tl["charges"]):
@@ -391,7 +391,7 @@ class DefectEnergies(MSONable):
             charge_set.add(charge)
             y_min, y_max = min([y, y_min]), max([y, y_max])
             if min(charge_set) > 0:
-                ax.plot(x_max, y, marker="o", mec="black", mfc="white")
+                ax.plot(x_max, y, marker="o", mec=color[i], mfc="white")
 
             # -----------------------------------------------------------------
             # set x and y arrays to be compatible with matplotlib style.
@@ -426,8 +426,8 @@ class DefectEnergies(MSONable):
                 chg = f"{charge}: {annotation}" if annotation else str(charge)
 
                 ax.annotate(
-                    chg, (x, y), color=color[i], fontsize=11,
-                    bbox=dict(facecolor='white', edgecolor=color[i], pad=2))
+                    chg, (x, y), color=color[i], fontsize=9,
+                    bbox=dict(facecolor='white', edgecolor=color[i], pad=1))
 
             if show_all_energies:
                 for c, e in lowest_energies[name].items():

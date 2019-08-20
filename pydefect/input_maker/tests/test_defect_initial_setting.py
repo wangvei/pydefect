@@ -18,24 +18,24 @@ __maintainer__ = "Yu Kumagai"
 
 class CandidateChargeSetTest(PydefectTest):
     def test_range1(self):
-        actual_positive = [i for i in candidate_charge_set(2)]
-        expected_positive = [0, 1, 2]
-        self.assertEqual(actual_positive, expected_positive)
+        actual_positive = candidate_charge_set(2)
+        expected_positive = {0, 1, 2}
+        self.assertEqual(expected_positive, actual_positive)
 
     def test_range2(self):
-        actual_negative = [i for i in candidate_charge_set(-2)]
-        expected_negative = [-2, -1, 0]
-        self.assertEqual(actual_negative, expected_negative)
+        actual_negative = candidate_charge_set(-2)
+        expected_negative = {-2, -1, 0}
+        self.assertEqual(expected_negative, actual_negative)
 
     def test_range3(self):
-        actual_positive = [i for i in candidate_charge_set(3)]
-        expected_positive = [-1, 0, 1, 2, 3]
-        self.assertEqual(actual_positive, expected_positive)
+        actual_positive = candidate_charge_set(3)
+        expected_positive = {-1, 0, 1, 2, 3}
+        self.assertEqual(expected_positive, actual_positive)
 
     def test_range4(self):
-        actual_negative = [i for i in candidate_charge_set(-3)]
-        expected_negative = [-3, -2, -1, 0, 1]
-        self.assertEqual(actual_negative, expected_negative)
+        actual_negative = candidate_charge_set(-3)
+        expected_negative = {-3, -2, -1, 0, 1}
+        self.assertEqual(expected_negative, actual_negative)
 
 
 class GetElectronegativityTest(PydefectTest):
@@ -112,37 +112,42 @@ class InsertAtoms(PydefectTest):
 class SelectDefectsTest(PydefectTest):
 
     def setUp(self) -> None:
-        self.name_set = [{"name": 'Va_Mg1', "charge": -1},
-                         {"name": 'Va_Mg1', "charge": 0},
-                         {"name": 'Va_O1', "charge": 0},
-                         {"name": 'O_i1', "charge": 0},
-                         {"name": 'O_i1', "charge": 1}]
+        self.name_set = {"Va_Mg1": {"charges": {-1, 0, 1, 2}},
+                         "Va_O1": {"charges": {0}},
+                         "O_i1": {"charges": {0, 1}}}
 
     def test_keywords1(self):
         actual_va = select_defects(self.name_set, keywords=["Va"])
-        expected_va = [{'name': 'Va_Mg1', 'charge': -1},
-                       {'name': 'Va_Mg1', 'charge': 0},
-                       {'name': 'Va_O1', 'charge': 0}]
+        expected_va = {"Va_Mg1": {"charges": {-1, 0, 1, 2}},
+                       "Va_O1": {"charges": {0}},
+                       "O_i1": {"charges": set()}}
         self.assertEqual(expected_va, actual_va)
 
     def test_keywords2(self):
         actual_va = select_defects(self.name_set, keywords=["Mg_i1"])
-        self.assertEqual([], actual_va)
+        expected_va = {"Va_Mg1": {"charges": set()},
+                       "Va_O1": {"charges": set()},
+                       "O_i1": {"charges": set()}}
+        self.assertEqual(expected_va, actual_va)
 
     def test_specified(self):
         actual_specified = \
-            select_defects(self.name_set, specified_defects=["Va_Mg1_-1"])
-        expected_specified = [{'name': 'Va_Mg1', 'charge': -1}]
+            select_defects(self.name_set,
+                           specified_defects=["Va_Mg1_1", "Va_Mg1_3"])
+        print(actual_specified)
+        expected_specified = {"Va_Mg1": {"charges": {1, 3}},
+                              "Va_O1": {"charges": set()},
+                              "O_i1": {"charges": set()}}
         self.assertEqual(expected_specified, actual_specified)
 
-    def test_specified_not_exit(self):
-        with self.assertRaises(ValueError):
-            select_defects(self.name_set, specified_defects=["Va_Mg2_-1"])
-
-    def test_set_both_fail(self):
-        with self.assertRaises(ValueError):
-            select_defects(self.name_set, keywords=["Va"],
-                           specified_defects=["Va_Mg1_-1"])
+    def test_included_excluded(self):
+        actual = select_defects(self.name_set,
+                                included=["Va_Mg1_3"], excluded=["Va_O1_0"])
+        print(actual)
+        expected = {"Va_Mg1": {"charges": {-1, 0, 1, 2, 3}},
+                    "Va_O1": {"charges": set()},
+                    "O_i1": {"charges": {0, 1}}}
+        self.assertEqual(expected, actual)
 
 
 class DefectInitialSettingTest(PydefectTest):

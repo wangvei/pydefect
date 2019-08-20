@@ -1,8 +1,11 @@
 # -*- coding: utf-8 -*-
 from inspect import signature, _empty
+from typing import Callable
 from os.path import join
 from pydefect.util.logger import get_logger
-
+import os
+from pathlib import Path, PurePath
+import yaml
 
 __author__ = "Yu Kumagai"
 __maintainer__ = "Yu Kumagai"
@@ -10,36 +13,29 @@ __maintainer__ = "Yu Kumagai"
 logger = get_logger(__name__)
 
 
-def overwrite_default_args(class_method, main_args):
-    """ Use the defaults in class.classmethod
+def get_user_settings(yaml_filename: str = "pydefect.yaml") -> dict:
+    config_path = Path.cwd()
+    home = Path.home()
 
-    Args:
-        class_method (classmethod):
-            classmethod. When using __init__, class is fine.
-        main_args (dict):
-            Args set by main
+    while True:
+        if config_path == home or config_path == Path("/"):
+            return {}
 
-    Return:
-        args (dict): Overwritten args by options
-    """
+        f = config_path / yaml_filename
+        if f.exists():
+            user_settings = yaml.load(f)
+            break
+        else:
+            config_path = config_path.parent
 
-    args_with_default = []
-    sig = signature(class_method)
-
-    for name, param in sig.parameters.items():
-        if param.default != _empty:
-            args_with_default.append(name)
-
-    args = {}
-    for a in args_with_default:
-        if hasattr(main_args, a):
-            if getattr(main_args, a) is not None:
-                args[a] = getattr(main_args, a)
-
-    return args
+    # for k, v in user_settings:
+    #     if k not in globals():
+    #         raise ValueError(f"Invalid config parameter: {k}")
+    #     else:
+    #         [k] = v
 
 
-def get_default_args(class_method):
+def get_default_args(class_method: Callable) -> dict:
     defaults = {}
     sig = signature(class_method)
     for name, param in sig.parameters.items():

@@ -226,7 +226,7 @@ class SupercellCalcResults(MSONable):
                         outcar: str = None,
                         procar: Union[str, bool] = False,
                         cutoff: float = CUTOFF_RADIUS,
-                        symprec: float = DEFECT_SYMMETRY_TOLERANCE,
+                        defect_symprec: float = DEFECT_SYMMETRY_TOLERANCE,
                         angle_tolerance: float = ANGLE_TOL):
         """ Constructs class object from vasp output files.
 
@@ -248,7 +248,7 @@ class SupercellCalcResults(MSONable):
                 timestamp.
             cutoff (float):
                 Cutoff Radius determining the neighboring sites.
-            symprec (float):
+            defect_symprec (float):
                 Distance precision used for symmetry analysis.
             angle_tolerance (float):
                 Angle precision used for symmetry analysis.
@@ -286,7 +286,7 @@ class SupercellCalcResults(MSONable):
 
         final_structure = contcar.structure
         volume = contcar.structure.volume
-        sga = SpacegroupAnalyzer(final_structure, symprec, angle_tolerance)
+        sga = SpacegroupAnalyzer(final_structure, defect_symprec, angle_tolerance)
         site_symmetry = sga.get_point_group_symbol()
 
         total_energy = outcar.final_energy

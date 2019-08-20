@@ -22,27 +22,27 @@ __maintainer__ = "Yu Kumagai"
 
 logger = get_logger(__name__)
 
+__version__ = '0.0.1'
+__date__ = 'will be inserted'
+
 
 def main():
     parser = argparse.ArgumentParser(
         description="""                            
-    pydefect is a package for first-principles point defect calculations. It 
-    allows one to construct input files, parse first-principles calculation 
-    results, and analyze data.""",
-        epilog="""                                 
+    pydefect is a package that helps researchers to do first-principles point 
+    defect calculations with the VASP code.""",
+        epilog=f"""                                 
     Author: Yu Kumagai, Akira Takahashi
-    Version: {}                                                                 
-    Last updated: {}""".format("0.0.1", "will be inserted"),
-        #   Last updated: {}""".format(__version__, __date__),
+    Version: {__version__}                                                                 
+    Last updated: {__date__}""",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    #        allow_abbrev=False)
 
     subparsers = parser.add_subparsers()
 
     # -- recommend_supercell --------------------------------------------------
     parser_recommend_supercell = subparsers.add_parser(
         name="recommend_supercell",
-        description="Tools for recommendation of an optimal supercell for "
+        description="Tools for recommendation of an optimal supercell(s) for "
                     "defect calculations",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
         aliases=['rs'])
@@ -50,30 +50,50 @@ def main():
     defaults = get_default_args(Supercells)
 
     parser_recommend_supercell.add_argument(
-        "-p", dest="poscar", type=str, default="POSCAR")
+        "-p", dest="poscar", type=str, default="POSCAR",
+        help="Input poscar file name.")
     parser_recommend_supercell.add_argument(
-        "-s", dest="sposcar", type=str, default="SPOSCAR")
+        "-s", dest="sposcar", type=str, default="SPOSCAR",
+        help="Generated supercell poscar file name.")
     parser_recommend_supercell.add_argument(
-        "-u", dest="uposcar", type=str, default="UPOSCAR")
+        "-u", dest="uposcar", type=str, default="UPOSCAR",
+        help="Conventional or primitive unit cell poscar file name. The cell "
+             "multiplicity and interstitial recommendation based on charge "
+             "density is based on this ")
     parser_recommend_supercell.add_argument(
         "-c", "--criterion", dest="isotropy_criterion", type=float,
         default=defaults["criterion"],
-        help="Isotropy criterion.")
+        help="Criterion used for screening candidate supercells.")
     parser_recommend_supercell.add_argument(
         "--min_num_atoms", dest="min_num_atoms", type=int,
         default=defaults["min_num_atoms"],
-        help="Minimum number of atoms")
+        help="Minimum number of atoms in the candidate supercells")
     parser_recommend_supercell.add_argument(
         "--max_num_atoms", dest="max_num_atoms", type=int,
         default=defaults["max_num_atoms"],
-        help="Maximum number of atoms")
+        help="Maximum number of atoms in the candidate supercells")
     parser_recommend_supercell.add_argument(
         "-pr", "--primitive", dest="primitive", action="store_true",
-        help="Set when the supercell is expanded based on the primitive cell.")
+        help="Set when the supercell is expanded based on the primitive cell."
+             "When the conventional and primitive unit cells are the same,"
+             "this flag has no meaning.")
     parser_recommend_supercell.add_argument(
         "-i", "--most_isotropic", dest="most_isotropic", action="store_true",
-        help="Output the smallest criterion supercell instead of the smallest "
-             "supercell.")
+        help="Generate the supercell with the smallest isotropy instead of the "
+             "smallest supercell.")
+    parser_recommend_supercell.add_argument(
+        "--rhombohedral_angle", dest="rhombohedral_angle", type=float,
+        default=defaults["rhombohedral_angle"],
+        help="Only the supercells with rhombohedral_angle <= lattice angle <= "
+             "180 - rhombohedral_angle are returned. ")
+    parser_recommend_supercell.add_argument(
+        "--symprec", dest="symprec", type=float,
+        default=defaults["symprec"],
+        help="Set length precision used for symmetry analysis [A].")
+    parser_recommend_supercell.add_argument(
+        "--angle_tol", dest="angle_tolerance", type=float,
+        default=defaults["angle_tolerance"],
+        help="Set angle precision used for symmetry analysis.")
     parser_recommend_supercell.add_argument(
         "-set", dest="set", action="store_true",
         help="Output all the supercells satisfying the criterion.")
@@ -83,35 +103,36 @@ def main():
     # -- initial_setting ------------------------------------------------------
     parser_initial = subparsers.add_parser(
         name="initial_setting",
-        description="Tools for configuring initial settings for a set of "
-                    "defect calculations.",
+        description="Tools for configuring initial settings for a standard set "
+                    "of point-defect calculations.",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
         aliases=['is'])
 
     defaults = get_default_args(DefectInitialSetting.from_basic_settings)
 
     parser_initial.add_argument(
-        "-p", "--poscar", dest="poscar", default="SPOSCAR", type=str,
-        help="POSCAR-type file name for the supercell.")
+        "-s", dest="sposcar", default="SPOSCAR", type=str,
+        help="POSCAR-type file name for the supercell. DPOSCAR will be "
+             "returned, which has the same size but different atom sequence.")
     parser_initial.add_argument(
         "-d", "--dopants", dest="dopants", nargs="+", type=str,
         default=defaults["dopants"],
-        help="Dopant elements, e.g., Ga In.")
+        help="Dopant elements, e.g., Ga In")
     parser_initial.add_argument(
         "-a", "--antisite", dest="is_antisite", action="store_false",
         help="Set if antisite defects are not considered.")
     parser_initial.add_argument(
-        "-e", dest="en_diff", type=float, default=defaults["en_diff"],
-        help="Criterion of the electronegativity_difference that determines "
-             "antisites and/or substituted impurities.")
+        "--en_diff", dest="en_diff", type=float, default=defaults["en_diff"],
+        help="Criterion of the electronegativity difference that determines "
+             "antisites and/or substituted impurity types.")
     parser_initial.add_argument(
         "--included", dest="included", type=str, nargs="+",
         default=defaults["included"],
-        help="Exceptionally included defects. E.g., Va_O2_-1.")
+        help="Exceptionally included defects with full names. E.g., Va_O2_-1.")
     parser_initial.add_argument(
         "--excluded", dest="excluded", type=str, nargs="+",
         default=defaults["excluded"],
-        help="Exceptionally excluded defects. E.g., Va_O2_0.")
+        help="Exceptionally excluded defects with full names. E.g., Va_O2_0.")
     parser_initial.add_argument(
         "--displacement_distance", dest="displacement_distance", type=float,
         default=defaults["displacement_distance"],
@@ -133,6 +154,10 @@ def main():
         "--interstitial_sites", dest="interstitials", type=str, nargs="+",
         default=defaults["interstitial_sites"],
         help="Interstitial site names.")
+    parser_initial.add_argument(
+        "--complex_defect_names", dest="complex_defect_names", type=str,
+        nargs="+", default=defaults["complex_defect_names"],
+        help="Complex defect names.")
     parser_initial.add_argument(
         "--print_dopant", dest="print_dopant", type=str,
         help="Print dopant information that can be added a posteriori.")
@@ -343,8 +368,8 @@ def main():
         "--json", dest="json", type=str, default="dft_results.json",
         help="dft_results.json type file name.")
     parser_supercell_results.add_argument(
-        "--symprec", dest="symprec", type=float,
-        default=defaults["symprec"],
+        "--defect_symprec", dest="symprec", type=float,
+        default=defaults["defect_symprec"],
         help="Set length precision used for symmetry analysis [A].")
     parser_supercell_results.add_argument(
         "--angle_tol", dest="angle_tolerance", type=float,
@@ -491,15 +516,6 @@ def main():
     parser_vasp_oba_set.add_argument(
         "-c", "--charge", dest="charge", type=int,
         help="Charge state.")
-    # parser_vasp_oba_set.add_argument(
-    #     "-gga", "--prev_gga", dest="prev_gga",
-    #     action="store_true", help=".")
-    # parser_vasp_oba_set.add_argument(
-    #     "-gpre", "--prev_dir_gw_pre2", dest="prev_dir_gw_pre2", type=str,
-    #     help=".")
-    # parser_vasp_oba_set.add_argument(
-    #     "-gw", "--prev_dir_gw0", dest="prev_dir_gw0", type=str,
-    #     help=".")
     parser_vasp_oba_set.add_argument(
         "-vos_kw", "--vos_kwargs", dest="vos_kwargs", type=str, nargs="+",
         default=None, help="keyword arguments.")

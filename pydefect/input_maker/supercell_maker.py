@@ -94,6 +94,10 @@ class Supercell:
         self.comment = f"trans_mat: {trans_mat_str}, multi: {multiplicity}, " \
                        f"isotropy: {self.isotropy[0]}\n"
 
+    def to(self, poscar_filename: str, uposcar_filename: str) -> None:
+        self.to_poscar(poscar_filename)
+        self.to_uposcar(uposcar_filename)
+
     def to_poscar(self, poscar_filename: str) -> None:
         poscar_str = self.structure.to(fmt="poscar").splitlines(True)
         poscar_str[0] = self.comment
@@ -132,10 +136,10 @@ class Supercells:
                 Criterion to judge if a supercell is isotropic or not.
             rhombohedral_angle (float):
                 Rhombohedral primitive cells may have very small or very large
-                lattice angles not suited for first-principles calculations. If
-                rhombohedral_angle is set, only the supercells with
-                rhombohedral_angle <= alpha <= 180 - rhombohedral_angle are
-                returned. Then, the new supercells are iteratively
+                lattice angles not suited for first-principles calculations.
+                Therefore, only the supercells with
+                rhombohedral_angle <= lattice angle <= 180 - rhombohedral_angle
+                are returned. Then, the new supercells are iteratively
                 created by multiplying [[1, 1, -1], [-1, 1, 1], [1, -1, 1]] or
                 [[1, 1, 0], [0, 1, 1], [1, 0, 1]].
             symprec (float):

@@ -2,7 +2,7 @@
 import json
 from collections import defaultdict
 from itertools import permutations
-from typing import Union, List, Optional, Tuple
+from typing import Union, List, Optional, Tuple, Dict
 
 from monty.json import MontyEncoder, MSONable
 from monty.serialization import loadfn, dumpfn
@@ -32,7 +32,7 @@ __maintainer__ = "Yu Kumagai"
 logger = get_logger(__name__)
 
 
-def candidate_charge_set(i: int) -> list:
+def candidate_charge_set(i: int) -> set:
     """Candidate charge set for defect charge states.
 
     The input value is included for both positive and negative numbers, and
@@ -46,15 +46,15 @@ def candidate_charge_set(i: int) -> list:
         i (int): an integer
     """
     if i >= 0:
-        charge_set = [i for i in range(i + 1)]
+        charge_set = {i for i in range(i + 1)}
         if i % 2 == 1:
-            charge_set.insert(0, -1)
+            charge_set.add(-1)
     else:
-        charge_set = [i for i in range(i, 1)]
+        charge_set = {i for i in range(i, 1)}
         if i % 2 == 1:
-            charge_set.append(1)
+            charge_set.add(1)
 
-    return charge_set
+    return set(charge_set)
 
 
 def get_electronegativity(element: Union[str, Element]) -> float:
@@ -193,18 +193,27 @@ def insert_atoms(structure: Structure,
     return inserted_structure, inserted_atoms_with_indices
 
 
-def select_defects(defect_set: List[dict],
+def select_defects(defect_set: Dict[str, dict],
                    keywords: Union[str, list, None] = None,
-                   specified_defects: Optional[List[str]] = None) -> List[dict]:
+                   included: Optional[list] = None,
+                   excluded: Optional[list] = None,
+                   specified_defects: Optional[List[str]] = None
+                   ) -> Dict[str, dict]:
     """ Returns names including one of keywords.
 
     Args:
         defect_set (list):
             A list of defect dict with "name" and "charge" keys.
-           e.g. [{"name": "Va_O1", "charges": [0, 1, 2], ..},
-                 {"name": "Va_Mg1", "charge": [0, -1, -2], ..}]
+           e.g.  {"Va_Mg1": {"charges": {-1, 0, 1, 2}},
+                  "Va_O1": {"charges": {0}},
+                  "O_i1": {"charges": {0, 1}}}
+
         keywords (str/list):
             Keywords determining if name is selected or not.
+        included (list):
+            Exceptionally included defects with full names.
+        excluded (list):
+            Exceptionally excluded defects with full names.
         specified_defects (list):
             Specifies particular defect to be considered.
             In this case, only name needs to exist in the cancdidate.
@@ -216,43 +225,39 @@ def select_defects(defect_set: List[dict],
            e.g. [{"name": "Va_O1", "charges": [2], ..},
                  {"name": "Va_Mg1", "charge": [0], ..}]
     """
-    if keywords and specified_defects:
-        raise ValueError("Setting both keywords and specified_defects are not "
-                         "allowed.")
+    included = included if included else list()
+    excluded = excluded if excluded else list()
+    specified_defects = specified_defects if specified_defects else list()
 
-    if keywords:
-        new_list = []
-        for defect in defect_set:
-            charges = []
+    for name, defect in defect_set.items():
+        if specified_defects:
+            new_charges = set()
+            for i in specified_defects:
+                defect_name = DefectName.from_str(i)
+                if defect_name.is_name_matched(name):
+                    new_charges.add(defect_name.charge)
+            defect["charges"] = new_charges
+            continue
+
+        for e in excluded:
+            defect_name = DefectName.from_str(e)
+            if defect_name.is_name_matched(name):
+                defect["charges"].discard(defect_name.charge)
+
+        for i in included:
+            defect_name = DefectName.from_str(i)
+            if defect_name.is_name_matched(name):
+                defect["charges"].add(defect_name.charge)
+
+        if keywords:
+            new_charges = set()
             for charge in defect["charges"]:
-                name = DefectName(name=defect["name"], charge=charge)
-                if name.is_name_matched(keywords):
-                    charges.append(charge)
-            if charges:
-                new_defect = defect.copy()
-                new_defect["charges"] = charges
-                new_list.append(new_defect)
+                defect_name = DefectName(name=name, charge=charge)
+                if defect_name.is_name_matched(keywords):
+                    new_charges.add(charge)
+            defect["charges"] = new_charges
 
-    elif specified_defects:
-        new_list = []
-        for defect in defect_set:
-            charges = []
-            for specified_defect in specified_defects:
-                name = DefectName.from_str(specified_defect)
-                if name.is_name_matched(defect["name"]):
-                    charges.append(name.charge)
-
-            new_defect = defect.copy()
-            new_defect["charges"] = charges
-            new_list.append(new_defect)
-
-        if not new_list:
-            raise ValueError(f"Any specified defects {specified_defects} do "
-                             f"not exist.")
-    else:
-        return defect_set
-
-    return new_list
+    return defect_set
 
 
 class DefectInitialSetting(MSONable):
@@ -742,8 +747,8 @@ class DefectInitialSetting(MSONable):
         self._write_defect_in(defect_in_file)
         self.structure.to(fmt="poscar", filename=poscar_file)
 
-    def _complex_set(self) -> list:
-        defect_set = []
+    def _complex_set(self) -> dict:
+        defect_set = {}
         changes_of_num_elements = defaultdict(int)
 
         for name, complex_defect in self.complex_defects.items():
@@ -770,9 +775,8 @@ class DefectInitialSetting(MSONable):
 
             charges = candidate_charge_set(complex_defect.extreme_charge_state)
 
-            defect_set.append(
-                {"name": name,
-                 "defect_type": DefectType.complex,
+            defect_set[name] = \
+                {"defect_type": DefectType.complex,
                  "initial_structure": structure,
                  "removed_atoms": removed_atoms,
                  "inserted_atoms": inserted_atoms,
@@ -780,14 +784,14 @@ class DefectInitialSetting(MSONable):
                  "initial_site_symmetry": complex_defect.point_group,
                  "charges": charges,
                  "num_equiv_sites": complex_defect.multiplicity,
-                 "center": center})
+                 "center": center}
 
         return defect_set
 
     def _substituted_set(self,
                          removed_sites: List[IrreducibleSite],
-                         inserted_element: Optional[str]) -> list:
-        defect_set = []
+                         inserted_element: Optional[str]) -> dict:
+        defect_set = {}
 
         for rs in removed_sites:
             changes_of_num_elements = defaultdict(int)
@@ -818,9 +822,8 @@ class DefectInitialSetting(MSONable):
             charges = candidate_charge_set(
                 inserted_oxi_state - self.oxidation_states[rs.element])
 
-            defect_set.append(
-                {"name": name,
-                 "defect_type": defect_type,
+            defect_set[name] = \
+                {"defect_type": defect_type,
                  "initial_structure": structure,
                  "removed_atoms": removed_atoms,
                  "inserted_atoms": inserted_atoms,
@@ -828,12 +831,12 @@ class DefectInitialSetting(MSONable):
                  "initial_site_symmetry": symmetry,
                  "charges": charges,
                  "num_equiv_sites": num_equiv_sites,
-                 "center": center})
+                 "center": center}
 
         return defect_set
 
-    def _inserted_set(self, inserted_elements: List[str]) -> list:
-        defect_set = []
+    def _inserted_set(self, inserted_elements: List[str]) -> dict:
+        defect_set = {}
         for interstitial_name, i in self.interstitials.items():
             center = i.representative_coords
             symmetry = i.site_symmetry
@@ -850,9 +853,8 @@ class DefectInitialSetting(MSONable):
                 structure, inserted_atoms = \
                     insert_atoms(self.structure, inserted_atom)
 
-                defect_set.append(
-                    {"name": name,
-                     "defect_type": DefectType.interstitial,
+                defect_set[name] = \
+                    {"defect_type": DefectType.interstitial,
                      "initial_structure": structure,
                      "removed_atoms": list(),
                      "inserted_atoms": inserted_atoms,
@@ -860,7 +862,7 @@ class DefectInitialSetting(MSONable):
                      "initial_site_symmetry": symmetry,
                      "charges": charges,
                      "num_equiv_sites": num_equiv_sites,
-                     "center": center})
+                     "center": center}
 
         return defect_set
 
@@ -868,26 +870,29 @@ class DefectInitialSetting(MSONable):
                         keywords: Optional[list] = None,
                         specified_defects: Optional[list] = None):
         """ Return defect name list based on DefectInitialSetting object. """
-        vacancies = self._substituted_set(removed_sites=self.irreducible_sites,
-                                          inserted_element=None)
+        defects = {}
+        # vacancies
+        defects.update(self._substituted_set(
+            removed_sites=self.irreducible_sites, inserted_element=None))
 
-        substituted = []
+        # substituted
         configs = self.antisite_configs + self.dopant_configs
         for in_elem, out_elem in configs:
             removed_sites = \
                 [i for i in self.irreducible_sites if out_elem == i.element]
-            substituted += self._substituted_set(removed_sites=removed_sites,
-                                                 inserted_element=in_elem)
+            defects.update(self._substituted_set(
+                removed_sites=removed_sites, inserted_element=in_elem))
+
+        # interstitials
         inserted_elements = self.structure.symbol_set + tuple(self.dopants)
-        interstitials = self._inserted_set(inserted_elements=inserted_elements)
+        defects.update(self._inserted_set(inserted_elements=inserted_elements))
 
-        complexes = self._complex_set()
-
-        defect_set = vacancies + substituted + interstitials + complexes
-        defect_set = select_defects(defect_set, keywords, specified_defects)
+        # antisites
+        defects.update(self._complex_set())
+        defects = select_defects(defects, keywords, specified_defects)
 
         self.defect_entries = []
-        for defect in defect_set:
+        for name, defect in defects.items():
             center = defect.pop("center")
             for charge in defect.pop("charges"):
                 inserted_indices = \
@@ -907,6 +912,7 @@ class DefectInitialSetting(MSONable):
 
                 self.defect_entries.append(
                     DefectEntry(
+                        name=name,
                         perturbed_initial_structure=perturbed_structure,
                         cutoff=self.cutoff,
                         charge=charge,
