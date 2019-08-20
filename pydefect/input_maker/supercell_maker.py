@@ -161,24 +161,25 @@ class Supercells:
             self.conventional_base = False
 
         self.unitcell = unitcell.get_sorted_structure()
-        unitcell_num_atoms = self.unitcell.num_sites
-        unitcell_mul = int(unitcell_num_atoms / primitive_cell.num_sites)
+        print(self.unitcell)
+        primitive_cell_num_atoms = primitive_cell.num_sites
+        unitcell_mul = int(primitive_cell_num_atoms / primitive_cell.num_sites)
 
-        if max_num_atoms < unitcell_num_atoms:
+        if max_num_atoms < primitive_cell_num_atoms:
             raise CellSizeError("Number of atoms in unitcell is too large.")
 
         self.supercells = []
         # Only rhombohedral primitive is not an identical matrix.
         based_trans_mat = np.identity(3, dtype="int8")
         # Normal incremented matrix one by one
-        incremented_matrix = np.identity(3, dtype="int8")
+        incremented_mat = np.identity(3, dtype="int8")
         trans_mat = np.identity(3, dtype="int8")
 
-        for i in range(int(max_num_atoms / unitcell_num_atoms)):
+        for i in range(int(max_num_atoms / primitive_cell_num_atoms)):
             isotropy, angle = calc_isotropy(self.unitcell, trans_mat)
             multiplicity = int(unitcell_mul * round(np.linalg.det(trans_mat)))
 
-            if multiplicity * unitcell_num_atoms > max_num_atoms:
+            if multiplicity * primitive_cell_num_atoms > max_num_atoms:
                 break
 
             rhombohedral_shape = None
@@ -209,9 +210,9 @@ class Supercells:
                 # lattice length, are incremented at the same time.
                 for j in range(3):
                     if super_abc[j] / min(super_abc) < 1.05:
-                        incremented_matrix[j, j] += 1
+                        incremented_mat[j, j] += 1
 
-            trans_mat = np.dot(incremented_matrix, based_trans_mat)
+            trans_mat = np.dot(incremented_mat, based_trans_mat)
 
     @property
     def sorted_supercells_by_num_atoms(self) -> list:
