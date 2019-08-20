@@ -43,7 +43,6 @@ def calc_isotropy(structure: Structure,
     average_abc = np.mean(super_abc)
 
     isotropy = np.sum(np.abs(super_abc - average_abc) / average_abc) / 3
-
     return round(isotropy, 4), alpha
 
 
@@ -169,6 +168,10 @@ class Supercells:
             raise CellSizeError("Number of atoms in unitcell is too large.")
 
         self.supercells = []
+        # Only rhombohedral primitive is not an identical matrix.
+        based_trans_mat = np.identity(3, dtype="int8")
+        # Normal incremented matrix one by one
+        incremented_matrix = np.identity(3, dtype="int8")
         trans_mat = np.identity(3, dtype="int8")
 
         for i in range(int(max_num_atoms / unitcell_num_atoms)):
@@ -194,20 +197,21 @@ class Supercells:
                 multiplied_matrix = np.array([[ 1,  1, -1],
                                               [-1,  1,  1],
                                               [ 1, -1,  1]])
+                based_trans_mat = np.dot(multiplied_matrix, based_trans_mat)
             elif rhombohedral_shape == "blunt":
                 multiplied_matrix = np.array([[1, 1, 0],
                                               [0, 1, 1],
                                               [1, 0, 1]])
+                based_trans_mat = np.dot(multiplied_matrix, based_trans_mat)
             else:
                 super_abc = (self.unitcell * trans_mat).lattice.abc
                 # multi indices within 1.05a, where a is the shortest supercell
                 # lattice length, are incremented at the same time.
-                multiplied_matrix = np.identity(3, dtype="int8")
                 for j in range(3):
                     if super_abc[j] / min(super_abc) < 1.05:
-                        multiplied_matrix[j, j] += 1
+                        incremented_matrix[j, j] += 1
 
-            trans_mat = np.dot(multiplied_matrix, trans_mat)
+            trans_mat = np.dot(incremented_matrix, based_trans_mat)
 
     @property
     def sorted_supercells_by_num_atoms(self) -> list:
