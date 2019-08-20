@@ -161,11 +161,9 @@ class Supercells:
             self.conventional_base = False
 
         self.unitcell = unitcell.get_sorted_structure()
-        print(self.unitcell)
-        primitive_cell_num_atoms = primitive_cell.num_sites
-        unitcell_mul = int(primitive_cell_num_atoms / primitive_cell.num_sites)
+        unitcell_mul = int(len(self.unitcell) / len(primitive_cell))
 
-        if max_num_atoms < primitive_cell_num_atoms:
+        if max_num_atoms < len(primitive_cell):
             raise CellSizeError("Number of atoms in unitcell is too large.")
 
         self.supercells = []
@@ -175,11 +173,11 @@ class Supercells:
         incremented_mat = np.identity(3, dtype="int8")
         trans_mat = np.identity(3, dtype="int8")
 
-        for i in range(int(max_num_atoms / primitive_cell_num_atoms)):
+        for i in range(int(max_num_atoms / len(primitive_cell))):
             isotropy, angle = calc_isotropy(self.unitcell, trans_mat)
             multiplicity = int(unitcell_mul * round(np.linalg.det(trans_mat)))
-
-            if multiplicity * primitive_cell_num_atoms > max_num_atoms:
+            num_atoms = int(multiplicity * len(primitive_cell))
+            if num_atoms > max_num_atoms:
                 break
 
             rhombohedral_shape = None
@@ -189,7 +187,6 @@ class Supercells:
                 elif angle > 180 - rhombohedral_angle:
                     rhombohedral_shape = "blunt"
 
-            num_atoms = int(multiplicity * primitive_cell.num_sites)
             if isotropy < criterion and num_atoms >= min_num_atoms:
                 self.supercells.append(
                     Supercell(self.unitcell, trans_mat, multiplicity))

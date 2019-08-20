@@ -188,16 +188,14 @@ class DefectEnergies(MSONable):
             for c in self.defect_energies[n].keys():
                 for a, de in self.defect_energies[n][c].items():
                     outs.extend(
-                        ["name: {}:".format(n),
-                         "charge: {}".format(c),
-                         "Annotation: {}".format(a),
-                         "Energy @ ef=0 (eV): {}".format(round(de["energy"], 4)),
-                         "Convergence: {}".format(de["convergence"]),
-                         "Is shallow: {}".format(de["is_shallow"]),
-                         "multiplicity: {}".format(
-                             self.multiplicity[n][c][a]),
-                         "magnetization: {}".format(
-                             self.magnetization[n][c][a])])
+                        [f"name: {n}:",
+                         f"charge: {c}",
+                         f"Annotation: {e}",
+                         f"Energy @ef=0 (eV): {round(de['energy'], 4)}",
+                         f"Convergence: {de['convergence']}",
+                         f"Is shallow: {de['is_shallow']}",
+                         f"multiplicity: {self.multiplicity[n][c][a]}",
+                         f"magnetization: {self.magnetization[n][c][a]}"])
                     outs.append("")
 
         return "\n".join(outs)
