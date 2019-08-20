@@ -175,6 +175,9 @@ class Supercells:
             isotropy, angle = calc_isotropy(self.unitcell, trans_mat)
             multiplicity = int(unitcell_mul * round(np.linalg.det(trans_mat)))
 
+            if multiplicity * unitcell_num_atoms > max_num_atoms:
+                break
+
             rhombohedral_shape = None
             if rhombohedral_angle and rhombohedral:
                 if angle < rhombohedral_angle:
@@ -205,9 +208,6 @@ class Supercells:
                         multiplied_matrix[j, j] += 1
 
             trans_mat = np.dot(multiplied_matrix, trans_mat)
-
-            if multiplicity * unitcell_num_atoms > max_num_atoms:
-                break
 
     @property
     def sorted_supercells_by_num_atoms(self) -> list:

@@ -155,7 +155,7 @@ class Ewald(MSONable):
 
         return 2 * ewald * self.prod_cutoff_fwhm
 
-    def to_json_file(self, filename: str):
+    def to_json_file(self, filename: str) -> None:
         with open(filename, 'w') as fw:
             json.dump(self.as_dict(), fw, indent=2, cls=MontyEncoder)
 

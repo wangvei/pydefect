@@ -1,4 +1,4 @@
-from monty.json import MontyEncoder, MSONable
+from monty.json import MSONable
 from pydefect.corrections.corrections import Correction
 from pydefect.corrections.efnv_corrections import Ewald, ExtendedFnvCorrection
 from pydefect.core.unitcell_calc_results import UnitcellCalcResults
@@ -26,6 +26,32 @@ class GkoCorrection(Correction, MSONable):
                  after_ele_pc: float,
                  before_ion_pc: float,
                  ave_pot_diff: float):
+        """
+        Args:
+            before_charge (int):
+                Charge state before the transition.
+            after_charge (int):
+                Charge state after the transition.
+            ewald_electronic_part (Ewald):
+                Ewald object for the electronic part.
+            ewald_ionic_part (Ewald):
+                Ewald object for the ionic part.
+            before_ele_pc (float):
+                Point-charge (PC) correction energy for electronic part before
+                the transition.
+            after_ele_pc (float):
+                Point-charge (PC) correction energy for electronic part after
+                the transition.
+            before_ion_pc (float):
+                Point-charge (PC) correction energy for ionic part before the
+                transition.
+            ave_pot_diff (float)):
+                Average potential difference before the transition.
+
+        """
+        if abs(after_charge - before_charge) != 1:
+            raise ValueError(f"Charge transition {before_charge} -> "
+                             f"{after_charge} is invalid.")
 
         self.before_charge = before_charge
         self.after_charge = after_charge
@@ -43,11 +69,6 @@ class GkoCorrection(Correction, MSONable):
                      after_charge: int,
                      unitcell_dft: UnitcellCalcResults,
                      efnv_correction: ExtendedFnvCorrection):
-
-        charge_diff = after_charge - before_charge
-        if abs(charge_diff) != 1:
-            raise ValueError(f"Charge transition {before_charge} -> "
-                             f"{after_charge} is invalid.")
 
         volume = structure.lattice.volume
         ave_pot_diff = efnv_correction.ave_pot_diff
@@ -71,29 +92,17 @@ class GkoCorrection(Correction, MSONable):
                 f"Before electronic PC: {self.before_ele_pc}",
                 f"Before ionic PC: {self.before_ion_pc}",
                 f"Finite-size contribution: {self.ave_pot_diff}"]
+
         return "\n".join(outs)
 
     @property
-    def correction_energy(self):
+    def correction_energy(self) -> float:
         charge_diff = self.after_charge - self.before_charge
-        if charge_diff == 1:
-            return (self.after_ele_pc - self.before_ele_pc
-                    - self.before_ion_pc - self.ave_pot_diff)
-        elif charge_diff == -1:
-            return (self.after_ele_pc - self.before_ele_pc
-                    + self.before_ion_pc + self.ave_pot_diff)
-        else:
-            raise ValueError(f"Charge transition {self.before_charge} -> "
-                             f"{self.after_charge} is invalid.")
+        return self.pc_correction_energy + charge_diff * self.ave_pot_diff
 
     @property
-    def pc_correction_energy(self):
+    def pc_correction_energy(self) -> float:
         charge_diff = self.after_charge - self.before_charge
-        if charge_diff == 1:
-            return self.after_ele_pc - self.before_ele_pc - self.before_ion_pc
-        if charge_diff == -1:
-            return self.after_ele_pc - self.before_ele_pc + self.before_ion_pc
-        else:
-            raise ValueError(f"Charge transition {self.before_charge} -> "
-                             f"{self.after_charge} is invalid.")
+        return ((self.after_ele_pc - self.before_ele_pc) -
+                charge_diff * self.before_ion_pc)
 
