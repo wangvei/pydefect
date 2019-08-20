@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
 
 import json
-
+from collections import defaultdict
+from typing import Optional
 import matplotlib.pyplot as plt
 import numpy as np
 from monty.json import MSONable, MontyEncoder
 from pydefect.analysis.defect import Defect
-from pydefect.core.error_classes import UnitcellCalcResultsError
 from pydefect.core.unitcell_calc_results import UnitcellCalcResults
 from pydefect.util.logger import get_logger
 
@@ -24,12 +24,12 @@ class DefectEigenvalue(MSONable):
                  charge: int,
                  kpoint_coords: list,
                  eigenvalues: np.array,
-                 vbm: float,
-                 cbm: float,
                  supercell_vbm: float,
                  supercell_cbm: float,
                  fermi_level: float,
                  magnetization: float,
+                 vbm: float = None,
+                 cbm: float = None,
                  orbital_character: dict = None,
                  eigenvalue_correction: dict = None,
                  band_edge_states: dict = None):
@@ -71,12 +71,12 @@ class DefectEigenvalue(MSONable):
         self.charge = charge
         self.kpoint_coords = kpoint_coords
         self.eigenvalues = eigenvalues
-        self.vbm = vbm
-        self.cbm = cbm
         self.supercell_vbm = supercell_vbm
         self.supercell_cbm = supercell_cbm
         self.fermi_level = fermi_level
         self.magnetization = magnetization
+        self.vbm = vbm
+        self.cbm = cbm
         self.orbital_character = orbital_character
         self.eigenvalue_correction = \
             dict(eigenvalue_correction) if eigenvalue_correction else None
@@ -99,16 +99,19 @@ class DefectEigenvalue(MSONable):
                    charge=defect.charge,
                    kpoint_coords=defect.kpoint_coords,
                    eigenvalues=defect.eigenvalues,
-                   vbm=unitcell.band_edge[0],
-                   cbm=unitcell.band_edge[1],
                    supercell_vbm=defect.supercell_vbm,
                    supercell_cbm=defect.supercell_cbm,
                    fermi_level=defect.fermi_level,
                    magnetization=defect.magnetization,
+                   vbm=unitcell.band_edge[0],
+                   cbm=unitcell.band_edge[1],
                    orbital_character=defect.orbital_character,
                    band_edge_states=defect.band_edge_states)
 
-    def plot(self, yrange=None, title=None, filename=None):
+    def plot(self,
+             yrange: Optional[str] = None,
+             title: Optional[str] = None,
+             filename: Optional[str] = None) -> None:
         """ Plots the defect eigenvalues.
         Args:
             yrange (list):
@@ -122,10 +125,8 @@ class DefectEigenvalue(MSONable):
         fig, axs = plt.subplots(nrows=1, ncols=num_figure, sharey='all')
         fig.subplots_adjust(wspace=0)
 
-        title = \
-            "_".join([self.name, str(self.charge)]) if title is None else title
+        title = title if title else "_".join([self.name, str(self.charge)])
         fig.suptitle(title, fontsize=12)
-
         plt.title(title, fontsize=15)
 
         axs[0].set_ylabel("Eigenvalues (eV)", fontsize=12)
@@ -139,7 +140,7 @@ class DefectEigenvalue(MSONable):
 
         for i, s in enumerate(self.band_edge_states):
             # show band-edge states
-            axs[i].set_title(s.name.upper() + ": " + str(self.band_edge_states[s]))
+            axs[i].set_title(f"{s.name.upper()}: {self.band_edge_states[s]}")
             axs[i].set_ylim(yrange[0], yrange[1])
             axs[i].set_xlim(-1, k_index + 1)
 
@@ -149,71 +150,62 @@ class DefectEigenvalue(MSONable):
 
             axs[i].set_xticklabels(x_labels)
 
-            axs[i].axhline(y=self.vbm, linewidth=0.7, linestyle="-", color='b')
-            axs[i].axhline(y=self.cbm, linewidth=0.7, linestyle="-", color='b')
             axs[i].axhline(y=self.supercell_vbm, linewidth=0.7,
                            linestyle="-", color='r')
             axs[i].axhline(y=self.supercell_cbm, linewidth=0.7,
                            linestyle="-", color='r')
             axs[i].axhline(y=self.fermi_level, linewidth=1, linestyle="--",
                            color='g')
+            if self.vbm:
+                axs[i].axhline(y=self.vbm, linewidth=0.7, linestyle="-",
+                               color='b')
+            if self.cbm:
+                axs[i].axhline(y=self.cbm, linewidth=0.7, linestyle="-",
+                               color='b')
 
-        axs[num_figure - 1].annotate(
-            "Fermi\nlevel", xy=(k_index + 1, self.fermi_level - 0.2),
-            fontsize=10)
-#        axs[0].annotate("vbm", xy=(-1, self.vbm), fontsize=10)
-#        axs[0].annotate("cbm", xy=(-1, self.cbm), fontsize=10)
+        axs[num_figure - 1].annotate("Fermi\nlevel", fontsize=8, color='g',
+                                     xy=(k_index + 1, self.fermi_level - 0.2))
+        if self.vbm:
+            axs[0].annotate("vbm", xy=(-1, self.vbm), fontsize=8, color='b')
+        if self.cbm:
+            axs[0].annotate("cbm", xy=(-1, self.cbm), fontsize=8, color='b')
 
-
-#         # def set_axis_style(ax, labels):
-#         #     ax.get_xaxis().set_tick_params(direction='out')
-#         #     ax.xaxis.set_ticks_position('bottom')
-#         #     ax.set_xticks(np.arange(1, len(labels) + 1))
-#         #     ax.set_xticklabels(labels)
-#         #     ax.set_xlim(0.25, len(labels) + 0.75)
-
-        if filename:
-            plt.savefig(filename)
-        else:
-            plt.show()
+        plt.savefig(filename) if filename else plt.show()
 
     def add_eigenvalues_to_plot(self, axs):
 
+        k_index = 0
         for i, s in enumerate(self.eigenvalues.keys()):
-            occupied_eigenvalues = []
-            occupied_x = []
-            unoccupied_eigenvalues = []
-            unoccupied_x = []
-            partial_occupied_eigenvalues = []
-            partial_occupied_x = []
+            eigenvalues = defaultdict(list)
+            k_indices = defaultdict(list)
 
             ax = axs[i]
             for k_index, eigen in enumerate(self.eigenvalues[s]):
-                for band_index, e in enumerate(eigen):
-                    occupancy = e[1]
-                    if occupancy < 0.1:
-                        unoccupied_eigenvalues.append(e[0])
-                        unoccupied_x.append(k_index)
+                for band_index, (energy, occupation) in enumerate(eigen):
+                    if occupation < 0.1:
+                        eigenvalues["unoccupied"].append(energy)
+                        k_indices["unoccupied"].append(k_index)
 
-                    elif occupancy > 0.9:
-                        occupied_eigenvalues.append(e[0])
-                        occupied_x.append(k_index)
+                    elif occupation > 0.9:
+                        eigenvalues["occupied"].append(energy)
+                        k_indices["occupied"].append(k_index)
                     else:
-                        partial_occupied_eigenvalues.append(e[0])
-                        partial_occupied_x.append(k_index)
+                        eigenvalues["partial"].append(energy)
+                        k_indices["partial"].append(k_index)
 
-#                    if k_index == 1 and e[0] - eigen[band_index-1][0] > 0.1:
                     if band_index < len(eigen) - 1:
-                        if (e[0] < self.fermi_level and eigen[band_index + 1][0] - e[0] > 0.2) or \
-                                (e[0] > self.fermi_level and e[0] - eigen[band_index - 1][0] > 0.2):
+                        if (energy < self.fermi_level and
+                            eigen[band_index + 1][0] - energy > 0.2) or \
+                                (energy > self.fermi_level and
+                                 energy - eigen[band_index - 1][0] > 0.2):
                             ax.annotate(str(band_index + 1),
-                                        xy=(k_index + 0.05, e[0]),
+                                        xy=(k_index + 0.05, energy),
                                         va='center',
                                         fontsize=10)
 
-            ax.plot(occupied_x, occupied_eigenvalues, 'o')
-            ax.plot(unoccupied_x, unoccupied_eigenvalues, 'o')
-            ax.plot(partial_occupied_x, partial_occupied_eigenvalues, 'o')
+            ax.plot(k_indices["occupied"], eigenvalues["occupied"], 'o')
+            ax.plot(k_indices["unoccupied"], eigenvalues["unoccupied"], 'o')
+            ax.plot(k_indices["partial"], eigenvalues["partial"], 'o')
 
         return k_index
 

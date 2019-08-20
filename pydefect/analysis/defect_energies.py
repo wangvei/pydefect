@@ -15,7 +15,8 @@ from pydefect.core.defect_name import DefectName
 from pydefect.core.supercell_calc_results import SupercellCalcResults
 from pydefect.core.unitcell_calc_results import UnitcellCalcResults
 from pydefect.util.logger import get_logger
-from pydefect.util.tools import sanitize_keys_in_dict, defaultdict_to_dict
+from pydefect.util.tools import (
+    sanitize_keys_in_dict, defaultdict_to_dict, all_combination)
 
 __author__ = "Yu Kumagai"
 __maintainer__ = "Yu Kumagai"
@@ -184,19 +185,20 @@ class DefectEnergies(MSONable):
 
     def __repr__(self):
         outs = []
-        for n in self.defect_energies.keys():
-            for c in self.defect_energies[n].keys():
-                for a, de in self.defect_energies[n][c].items():
-                    outs.extend(
-                        [f"name: {n}:",
-                         f"charge: {c}",
-                         f"Annotation: {e}",
-                         f"Energy @ef=0 (eV): {round(de['energy'], 4)}",
-                         f"Convergence: {de['convergence']}",
-                         f"Is shallow: {de['is_shallow']}",
-                         f"multiplicity: {self.multiplicity[n][c][a]}",
-                         f"magnetization: {self.magnetization[n][c][a]}"])
-                    outs.append("")
+        for name, charge, annotation, defect_energy \
+                in all_combination(self.defect_energies):
+            multiplicity = self.multiplicity[name][charge][annotation]
+            magnetization = self.magnetization[name][charge][annotation]
+            outs.extend(
+                [f"name: {name}:",
+                 f"charge: {charge}",
+                 f"Annotation: {e}",
+                 f"Energy @ef=0 (eV): {round(defect_energy['energy'], 4)}",
+                 f"Convergence: {defect_energy['convergence']}",
+                 f"Is shallow: {defect_energy['is_shallow']}",
+                 f"multiplicity: {multiplicity}",
+                 f"magnetization: {magnetization}"])
+            outs.append("")
 
         return "\n".join(outs)
 
@@ -412,6 +414,7 @@ class DefectEnergies(MSONable):
                     ax.annotate(s, (pos_x, pos_y), color=color[i], fontsize=10)
 
             # Arrange the charge states at the middle of the transition levels.
+            margin_y = 0
             charge_pos = [[(a[0] + b[0]) / 2, (a[1] + b[1] + margin_y) / 2]
                           for a, b in zip(cross_points, cross_points[1:])]
 
@@ -420,12 +423,11 @@ class DefectEnergies(MSONable):
             for j, (x, y) in enumerate(charge_pos):
                 charge = sorted_charge_set[j]
                 annotation = lowest_energy_annotations[name][charge]
-                if annotation:
-                    s = ": ".join([str(charge), annotation])
-                else:
-                    s = str(charge)
+                chg = f"{charge}: {annotation}" if annotation else str(charge)
 
-                ax.annotate(s, (x, y), color=color[i], fontsize=13)
+                ax.annotate(
+                    chg, (x, y), color=color[i], fontsize=11,
+                    bbox=dict(facecolor='white', edgecolor=color[i], pad=2))
 
             if show_all_energies:
                 for c, e in lowest_energies[name].items():
@@ -472,8 +474,6 @@ class DefectEnergies(MSONable):
         if fermi_levels:
             y = y_min * 0.85 + y_max * 0.15
             for i, (t, f) in enumerate(fermi_levels):
-                print(i)
-                print(t, f)
                 plt.axvline(x=f - self.vbm, linewidth=1.0, linestyle=':',
                             color='g')
                 ax.annotate(t, ((f - self.vbm), y), fontsize=10, color='green')
