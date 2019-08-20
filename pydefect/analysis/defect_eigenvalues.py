@@ -94,10 +94,6 @@ class DefectEigenvalue(MSONable):
             defect (Defect):
                 Defect namedtuple object of a defect supercell DFT calculation
         """
-        if unitcell.is_set_all is False:
-            raise UnitcellCalcResultsError(
-                "All the unitcell-related property is not set yet. ")
-
         # Note: vbm, cbm, perfect_vbm, perfect_cbm are in absolute energy.
         return cls(name=defect.name,
                    charge=defect.charge,
