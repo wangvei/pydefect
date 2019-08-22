@@ -3,6 +3,7 @@ import json
 from collections import defaultdict
 from itertools import permutations
 from typing import Union, List, Optional, Tuple, Dict
+from functools import reduce
 
 from monty.json import MontyEncoder, MSONable
 from monty.serialization import loadfn, dumpfn
@@ -652,6 +653,9 @@ class DefectInitialSetting(MSONable):
         lattice = symmetrized_structure.lattice.matrix
         sym_dataset = sga.get_symmetry_dataset()
 
+        sorted_structure = \
+            Structure.from_sites(reduce(lambda a, b: a + b, equiv_sites))
+
         # Initialize the last index for iteration.
         last_index = 0
         for i, equiv_site in enumerate(equiv_sites):
@@ -675,7 +679,7 @@ class DefectInitialSetting(MSONable):
                                              representative_coords,
                                              lattice, symprec)[0]
             coordination_distances = \
-                get_coordination_distances(symmetrized_structure, first_index)
+                get_coordination_distances(sorted_structure, first_index)
 
             irreducible_sites.append(IrreducibleSite(irreducible_name,
                                                      element,
@@ -715,7 +719,7 @@ class DefectInitialSetting(MSONable):
                     logger.warning(f"Electronegativity of {dopant} and/or "
                                    f"{elem} is not defined")
 
-        return cls(structure=structure,
+        return cls(structure=sorted_structure,
                    space_group_symbol=space_group_symbol,
                    transformation_matrix=transformation_matrix,
                    cell_multiplicity=cell_multiplicity,
