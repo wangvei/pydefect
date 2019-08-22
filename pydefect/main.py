@@ -35,7 +35,11 @@ def main():
     user_settings = get_user_settings()
 
     def simple_override(d: dict, keys: Union[list, str]) -> None:
-        """Override dict if keys exist in user_setting."""
+        """Override dict if keys exist in user_setting.
+
+        When the value in the user_settings is a dict, it will be changed to
+        list.
+        """
         if isinstance(keys, str):
             keys = [keys]
         for key in keys:
@@ -75,11 +79,15 @@ def main():
                     "ldaul":      None}
 
     simple_override(vos_defaults,
-                    ["kpt_density", "potcar_set", "perfect_incar_setting",
-                     "ldauu", "ldaul"])
+                    ["xc",
+                     "kpt_density",
+                     "perfect_incar_setting",
+                     "potcar_set",
+                     "ldauu",
+                     "ldaul"])
 
-    if "perfect_vos_kwargs" in user_settings.keys():
-        vos_defaults["vos_kwargs"].update(user_settings["perfect_vos_kwargs"])
+    vos_defaults["vos_kwargs"].update(
+        user_settings.get("perfect_vos_kwargs", {}))
     simple_override(vos_defaults["vos_kwargs"], ["symprec", "angle_tolerance"])
     vos_defaults["vos_kwargs"] = dict2list(vos_defaults["vos_kwargs"])
 
@@ -150,42 +158,66 @@ def main():
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
         aliases=['ur'])
 
+    ur_defaults = {"volume_dir": None,
+                   "static_diele_dir": None,
+                   "ionic_diele_dir": None,
+                   "band_edge_dir": None,
+                   "dos_dir": None,
+                   "poscar": "CONTCAR",
+                   "outcar": "OUTCAR",
+                   "vasprun": "vasprun.xml"}
+
+    simple_override(ur_defaults,
+                    ["volume_dir",
+                     "static_diele_dir",
+                     "ionic_diele_dir",
+                     "band_edge_dir",
+                     "dos_dir",
+                     "poscar",
+                     "outcar",
+                     "vasprun"])
+
     parser_unitcell_results.add_argument(
         "--json_file", dest="json_file", default="unitcell.json", type=str,
         help="Json file for the unitcell info.")
     parser_unitcell_results.add_argument(
         "--static_diele", dest="static_diele", default=None, type=float,
         nargs="+",
-        help="Set static dielectric constant")
+        help="Set static (electronic) dielectric constant.")
     parser_unitcell_results.add_argument(
         "--ionic_diele", dest="ionic_diele", default=None, type=float,
         nargs="+",
-        help="Set ionic dielectric constant")
+        help="Set ionic dielectric constant.")
 
     parser_unitcell_results.add_argument(
-        "--band_edge_dir", dest="band_edge_dir", default=None, type=str,
+        "--band_edge_dir", dest="band_edge_dir",
+        default=ur_defaults["band_edge_dir"], type=str,
         help="Set band edge from a vasprun.xml file")
 
     parser_unitcell_results.add_argument(
-        "--static_diele_dir", dest="static_diele_dir", default=None, type=str,
+        "--static_diele_dir", dest="static_diele_dir",
+        default=ur_defaults["static_diele_dir"], type=str,
         help="Set static dielectric constant from an OUTCAR file")
     parser_unitcell_results.add_argument(
-        "--ionic_diele_dir", dest="ionic_diele_dir", default=None, type=str,
+        "--ionic_diele_dir", dest="ionic_diele_dir",
+        default=ur_defaults["ionic_diele_dir"], type=str,
         help="Set ionic dielectric constant from an OUTCAR file")
 
     parser_unitcell_results.add_argument(
-        "--volume_dir", dest="volume_dir", default=None, type=str,
+        "--volume_dir", dest="volume_dir",
+        default=ur_defaults["volume_dir"], type=str,
         help="Set volume from a POSCAR file")
 
     parser_unitcell_results.add_argument(
-        "--total_dos_dir", dest="total_dos_dir", default=None, type=str,
+        "--total_dos_dir", dest="total_dos_dir",
+        default=ur_defaults["dos_dir"], type=str,
         help="Set total density of states from a vasprun.xml file")
     parser_unitcell_results.add_argument(
-        "-p", dest="poscar", type=str, default="POSCAR")
+        "-p", dest="poscar", type=str, default=ur_defaults["poscar"])
     parser_unitcell_results.add_argument(
-        "-o", dest="outcar", type=str, default="OUTCAR")
+        "-o", dest="outcar", type=str, default=ur_defaults["outcar"])
     parser_unitcell_results.add_argument(
-        "-v", dest="vasprun", type=str, default="vasprun.xml")
+        "-v", dest="vasprun", type=str, default=ur_defaults["vasprun"])
     parser_unitcell_results.add_argument(
         "--print", dest="print", action="store_true",
         help="Print Unitcell class object information.")
@@ -427,7 +459,7 @@ def main():
         aliases=['dvos'])
 
     # all the defaults must be declared here.
-    dvos_defaults = {"vos_kwargs": dict(),
+    dvos_defaults = {"dvos_kwargs": dict(),
                      "xc":         "pbesol",
                      "defect_kpt_density": DEFECT_KPT_DENSITY,
                      "defect_incar_setting": None,
@@ -436,13 +468,18 @@ def main():
                      "ldaul":      None}
 
     simple_override(dvos_defaults,
-                    ["kpt_density", "potcar_set", "perfect_incar_setting",
-                     "ldauu", "ldaul"])
+                    ["xc",
+                     "defect_kpt_density",
+                     "defect_incar_setting",
+                     "potcar_set",
+                     "ldauu",
+                     "ldaul"])
 
-    if "perfect_vos_kwargs" in user_settings.keys():
-        dvos_defaults["vos_kwargs"].update(user_settings["perfect_vos_kwargs"])
-    simple_override(dvos_defaults["vos_kwargs"], ["symprec", "angle_tolerance"])
-    dvos_defaults["vos_kwargs"] = dict2list(dvos_defaults["vos_kwargs"])
+    dvos_defaults["dvos_kwargs"].update(
+        user_settings.get("defect_vos_kwargs", {}))
+    simple_override(
+        dvos_defaults["dvos_kwargs"], ["symprec", "angle_tolerance"])
+    dvos_defaults["dvos_kwargs"] = dict2list(dvos_defaults["dvos_kwargs"])
 
     parser_defect_vasp_set.add_argument(
         "--defect_in", dest="defect_in", default="defect.in", type=str,
@@ -462,7 +499,7 @@ def main():
         nargs="+", help="Filtering keywords.")
     parser_defect_vasp_set.add_argument(
         "-vos_kw", "--vos_kwargs", dest="vos_kwargs", type=str,
-        default={}, nargs="+",
+        default=dvos_defaults["dvos_kwargs"], nargs="+",
         help="Keywords for vasp_oba_set.")
     parser_defect_vasp_set.add_argument(
         "-d", dest="particular_defects", type=str, default=None, nargs="+",
@@ -471,17 +508,18 @@ def main():
         "--force_overwrite", dest="force_overwrite", action="store_true",
         help="Set if the existing folders are overwritten.")
     parser_defect_vasp_set.add_argument(
-        "-k", "--kpt_density", dest="kpt_density", default=2.3, type=float,
-        help="K-points density.")
+        "-k", "--kpt_density", dest="kpt_density",
+        default=dvos_defaults["defect_kpt_density"], type=float,
+        help="K-point density in Angstrom along each direction .")
     parser_defect_vasp_set.add_argument(
         "-nw", "--no_wavecar", dest="wavecar", action="store_false",
         help="Do not make WAVECAR file or not.")
     parser_defect_vasp_set.add_argument(
-        "-ldauu", dest="ldauu", type=str, default=None, nargs="+",
-        help=".")
+        "-ldauu", dest="ldauu", type=dict, default=dvos_defaults["ldauu"],
+        nargs="+", help=".")
     parser_defect_vasp_set.add_argument(
-        "-ldaul", dest="ldaul", type=str, default=None, nargs="+",
-        help=".")
+        "-ldaul", dest="ldaul", type=str, default=dvos_defaults["ldaul"],
+        nargs="+", help=".")
 
     del dvos_defaults
 

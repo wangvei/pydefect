@@ -153,11 +153,13 @@ class UnitcellCalcResults(MSONable):
     def set_static_dielectric_tensor_from_vasp(self, directory_path,
                                                outcar_name="OUTCAR"):
         outcar = Outcar(os.path.join(directory_path, outcar_name))
+        outcar.read_lepsilon()
         self._static_dielectric_tensor = np.array(outcar.dielectric_tensor)
 
     def set_ionic_dielectric_tensor_from_vasp(self, directory_path,
                                               outcar_name="OUTCAR"):
         outcar = Outcar(os.path.join(directory_path, outcar_name))
+        outcar.read_lepsilon_ionic()
         self._ionic_dielectric_tensor = np.array(outcar.dielectric_ionic_tensor)
 
     def set_total_dos_from_vasp(self, directory_path,
