@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
+import re
 from inspect import signature, _empty
-from typing import Callable
+from typing import Callable, Optional
 from os.path import join
 from pydefect.util.logger import get_logger
 import os
@@ -23,16 +24,19 @@ def get_user_settings(yaml_filename: str = "pydefect.yaml") -> dict:
 
         f = config_path / yaml_filename
         if f.exists():
-            user_settings = yaml.load(f)
+            with open(f, "r") as f:
+                d = yaml.load(f)
             break
+
         else:
             config_path = config_path.parent
 
-    # for k, v in user_settings:
-    #     if k not in globals():
-    #         raise ValueError(f"Invalid config parameter: {k}")
-    #     else:
-    #         [k] = v
+    # Add full path
+    for k, v in d.items():
+        if isinstance(v, str) and re.match(r'\S*/\S*', v):
+            d[k] = str(config_path / v)
+
+    return d
 
 
 def get_default_args(class_method: Callable) -> dict:
@@ -45,7 +49,29 @@ def get_default_args(class_method: Callable) -> dict:
     return defaults
 
 
-def list2dict(arg_list, flags):
+def potcar_str2dict(potcar_list: Optional[str]) -> dict:
+    potcar_list = potcar_list.split() if potcar_list else list()
+    d = {}
+    for p in potcar_list:
+        element = p.split("_")[0]
+        d = {element: p}
+    return d
+
+
+def dict2list(arg_dicts: dict) -> list:
+    arg_dicts = arg_dicts if arg_dicts else dict()
+    flattened_list = []
+    for k, v in arg_dicts.items():
+        flattened_list.append(k)
+        if isinstance(v, str):
+            flattened_list.extend(v.split())
+        else:
+            flattened_list.append(str(v))
+
+    return flattened_list
+
+
+def list2dict(arg_list: Optional[list], flags: list) -> dict:
     """
     flags: string flags
 
@@ -90,7 +116,7 @@ def list2dict(arg_list, flags):
                 value = [float(arg_list[v]) for v in range(flag_indices[i] + 1,
                                                            flag_indices[i + 1])]
             except ValueError:
-                raise ValueError("Invalid input {}".format(arg_list))
+                raise ValueError(f"Invalid input {arg_list}")
 
         d[arg_list[flag_indices[i]]] = value
 

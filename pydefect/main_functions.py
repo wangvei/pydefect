@@ -30,14 +30,125 @@ from pydefect.input_maker.defect_initial_setting import (
     dopant_info, DefectInitialSetting)
 from pydefect.input_maker.supercell_maker import Supercells
 from pydefect.util.logger import get_logger
-from pydefect.util.main_tools import list2dict, generate_objects
+from pydefect.util.main_tools import (
+    list2dict, generate_objects, potcar_str2dict)
 from pymatgen import Structure, Spin
 from pymatgen.core.periodic_table import Element
 
-__author__ = "Yu Kumagai, Akira Takahashi"
+__author__ = "Yu Kumagai"
 __maintainer__ = "Yu Kumagai"
 
 logger = get_logger(__name__)
+
+
+def vasp_oba_set(args):
+
+    flags = [str(s) for s in list(Element)]
+    ldauu = list2dict(args.ldauu, flags)
+    ldaul = list2dict(args.ldaul, flags)
+    potcar_set = potcar_str2dict(args.potcar_set)
+    base_kwargs = {"task":                  args.task,
+                   "xc":                    args.xc,
+                   "kpt_density":           args.kpt_density,
+                   "standardize_structure": args.standardize,
+                   "ldauu": ldauu,
+                   "ldaul": ldaul}
+
+    flags = list(chain.from_iterable(incar_flags.values()))
+    base_user_incar_settings = list2dict(args.incar_setting, flags)
+
+    flags = list(signature(ObaSet.make_input).parameters.keys())
+    base_kwargs.update(list2dict(args.vos_kwargs, flags))
+
+    original_dir = os.getcwd()
+    dirs = args.dirs if args.dirs else ["."]
+
+    for d in dirs:
+        os.chdir(os.path.join(original_dir, d))
+        logger.info("Constructing vasp set in {}".format(d))
+        user_incar_settings = deepcopy(base_user_incar_settings)
+        kwargs = deepcopy(base_kwargs)
+
+        if args.prior_info:
+            if os.path.exists("prior_info.json"):
+                prior_info = PriorInfo.load_json("prior_info.json")
+                kwargs["band_gap"] = prior_info["band_gap"]
+                kwargs["is_magnetization"] = True \
+                    if abs(prior_info["total_magnetization"]) > 0.1 else False
+
+        if args.prev_dir:
+            files = {"CHGCAR": "C", "WAVECAR": "M", "WAVEDER": "M"}
+            oba_set = ObaSet.from_prev_calc(args.prev_dir,
+                                            charge=args.charge,
+                                            copied_file_names=files, **kwargs)
+        else:
+            s = Structure.from_file(args.poscar)
+            oba_set = \
+                ObaSet.make_input(structure=s,
+                                  charge=args.charge,
+                                  user_incar_settings=user_incar_settings,
+                                  weak_incar_settings={"LWAVE": args.wavecar},
+                                  override_potcar_set=potcar_set,
+                                  **kwargs)
+
+        oba_set.write_input(".")
+
+    os.chdir(original_dir)
+
+
+def unitcell_calc_results(args):
+    if args.print:
+        print(UnitcellCalcResults.load_json(filename=args.json_file))
+        return
+
+    try:
+        dft_results = UnitcellCalcResults.load_json(filename=args.json_file)
+    except IOError:
+        dft_results = UnitcellCalcResults()
+
+    if args.band_edge_dir:
+        try:
+            dft_results.set_band_edge_from_vasp(args.band_edge_dir,
+                                                vasprun_name=args.vasprun)
+        except IOError:
+            raise FileNotFoundError(args.band_edge_dir, "is not appropriate.")
+
+    if args.static_diele:
+        dft_results.static_dielectric_tensor = args.static_diele
+    elif args.static_diele_dir:
+        try:
+            dft_results.set_static_dielectric_tensor_from_vasp(
+                args.static_diele_dir, outcar_name=args.outcar)
+        except IOError:
+            raise FileNotFoundError(
+                args.static_diele_dir, "is not appropriate.")
+        except AttributeError as e:
+            logger.error(str(e))
+
+    if args.ionic_diele:
+        dft_results.ionic_dielectric_tensor = args.ionic_diele
+    elif args.ionic_diele_dir:
+        try:
+            dft_results.set_ionic_dielectric_tensor_from_vasp(
+                args.ionic_diele_dir, outcar_name=args.outcar)
+        except IOError:
+            raise FileNotFoundError(args.ionic_diele_dir, "not appropriate.")
+
+    if args.volume_dir:
+        try:
+            dft_results.set_volume_from_vasp(
+                args.volume_dir, contcar_name=args.poscar)
+        except IOError:
+            raise FileNotFoundError(args.volume_dir, "not appropriate.")
+
+    if args.total_dos_dir:
+        try:
+            dft_results.set_total_dos_from_vasp(args.total_dos_dir,
+                                                vasprun_name=args.vasprun)
+        except IOError:
+            raise FileNotFoundError(args.total_dos_dir, "not appropriate.")
+
+    dft_results.to_json_file(args.json_file)
 
 
 def recommend_supercell(args):
@@ -90,7 +201,7 @@ def initial_setting(args):
     else:
         structure = Structure.from_file(args.sposcar)
         # transformation_matrix and cell_multiplicity are parsed from POSCAR
-        with open(args.poscar) as f:
+        with open(args.sposcar) as f:
             first_line = f.readline()
             transformation_matrix = \
                 [int(x) for x in first_line.split(":")[1].split(",")[0].split()]
@@ -103,7 +214,7 @@ def initial_setting(args):
                 transformation_matrix=transformation_matrix,
                 cell_multiplicity=cell_multiplicity,
                 dopants=args.dopants,
-                is_antisite=args.no_antisite,
+                is_antisite=args.is_antisite,
                 en_diff=args.en_diff,
                 included=args.included,
                 excluded=args.excluded,
@@ -137,20 +248,20 @@ def interstitial(args):
         if len(coords) == 3:
             coords = [coords]
         elif len(coords) % 3 == 0:
-            length = int(len(coords) / 3)
-            coords = [[coords[3 * i + j]
-                       for j in range(3)] for i in range(length)]
+            n_coords = int(len(coords) / 3)
+            coords = \
+                [[coords[3 * i + j] for j in range(3)] for i in range(n_coords)]
         else:
-            raise ValueError(
-                f"Interstitial coordinates {args.interstitial_coords} invalid")
+            raise ValueError(f"Interstitial coordinates "
+                             f"{args.interstitial_coords} are invalid")
 
-        dis = DefectInitialSetting.from_defect_in(poscar=args.dposcar,
-                                                  defect_in_file="defect.in")
-        trans_mat = [[dis.transformation_matrix[3 * i + j]
-                      for j in range(3)]
-                     for i in range(3)]
+        defect_initial_setting = \
+            DefectInitialSetting.from_defect_in(poscar=args.dposcar,
+                                                defect_in_file="defect.in")
         # To change coords from unitcell to supercell multiply inverse of
         # trans_mat to coords.
+        tm_list = defect_initial_setting.transformation_matrix
+        trans_mat = [[tm_list[3 * i + j] for j in range(3)] for i in range(3)]
         inv_trans_mat = np.linalg.inv(trans_mat)
         supercell_coords = [np.dot(inv_trans_mat, c).tolist() for c in coords]
 
@@ -159,15 +270,15 @@ def interstitial(args):
                                    symprec=args.symprec,
                                    angle_tolerance=args.angle_tolerance)
 
-        interstitial_set.site_set_to_yaml_file(filename=args.yaml)
+        interstitial_set.site_set_to_yaml_file(yaml_filename=args.yaml)
 
 
 def complex_defects(args):
     try:
-        cds = ComplexDefects.from_files(args.dposcar, args.yaml)
+        complex_defects_obj = ComplexDefects.from_files(args.dposcar, args.yaml)
     except FileNotFoundError:
         structure = Structure.from_file(args.dposcar)
-        cds = ComplexDefects(structure=structure)
+        complex_defects_obj = ComplexDefects(structure=structure)
 
     if (args.inserted_elements and not args.inserted_coords) or \
             (not args.inserted_elements and args.inserted_coords):
@@ -187,15 +298,16 @@ def complex_defects(args):
         coords = [inserted_coords[3 * i + j] for j in range(3)]
         inserted_atoms.append({"element": e, "coords": coords})
 
-    cds.add_defect(removed_atom_indices=args.removed_atom_indices,
-                   inserted_atoms=inserted_atoms,
-                   name=args.name,
-                   extreme_charge_state=args.extreme_charge_state,
-                   annotation=args.annotation,
-                   symprec=args.symprec,
-                   angle_tolerance=args.angle_tolerance)
+    complex_defects_obj.add_defect(
+        removed_atom_indices=args.removed_atom_indices,
+        inserted_atoms=inserted_atoms,
+        name=args.name,
+        extreme_charge_state=args.extreme_charge_state,
+        annotation=args.annotation,
+        symprec=args.symprec,
+        angle_tolerance=args.angle_tolerance)
 
-    cds.site_set_to_yaml_file(filename=args.yaml)
+    complex_defects_obj.site_set_to_yaml_file(yaml_filename=args.yaml)
 
 
 def defect_vasp_oba_set(args):
@@ -336,61 +448,6 @@ def supercell_calc_results(args):
             logger.warning("{} does not exist, so nothing is done.".format(d))
 
 
-def unitcell_calc_results(args):
-    if args.print:
-        print(UnitcellCalcResults.load_json(filename=args.json_file))
-        return
-
-    try:
-        dft_results = UnitcellCalcResults.load_json(filename=args.json_file)
-    except IOError:
-        dft_results = UnitcellCalcResults()
-
-    if args.band_edge_dir:
-        try:
-            dft_results.set_band_edge_from_vasp(args.band_edge_dir,
-                                                vasprun_name=args.vasprun)
-        except IOError:
-            raise FileNotFoundError(args.band_edge_dir, "is not appropriate.")
-
-    if args.static_diele:
-        dft_results.static_dielectric_tensor = args.static_diele
-    elif args.static_diele_dir:
-        try:
-            dft_results.set_static_dielectric_tensor_from_vasp(
-                args.static_diele_dir, outcar_name=args.outcar)
-        except IOError:
-            raise FileNotFoundError(
-                args.static_diele_dir, "is not appropriate.")
-        except AttributeError as e:
-            logger.error(str(e))
-
-    if args.ionic_diele:
-        dft_results.ionic_dielectric_tensor = args.ionic_diele
-    elif args.ionic_diele_dir:
-        try:
-            dft_results.set_ionic_dielectric_tensor_from_vasp(
-                args.ionic_diele_dir, outcar_name=args.outcar)
-        except IOError:
-            raise FileNotFoundError(args.ionic_diele_dir, "not appropriate.")
-
-    if args.volume_dir:
-        try:
-            dft_results.set_volume_from_vasp(
-                args.volume_dir, contcar_name=args.poscar)
-        except IOError:
-            raise FileNotFoundError(args.volume_dir, "not appropriate.")
-
-    if args.total_dos_dir:
-        try:
-            dft_results.set_total_dos_from_vasp(args.total_dos_dir,
-                                                vasprun_name=args.vasprun)
-        except IOError:
-            raise FileNotFoundError(args.total_dos_dir, "not appropriate.")
-
-    dft_results.to_json_file(args.json_file)
-
-
 def efnv_correction(args):
     if args.print:
         print(ExtendedFnvCorrection.load_json(args.json_file))
@@ -462,63 +519,6 @@ def efnv_correction(args):
 
         c.plot_distance_vs_potential(join(directory, "potential.pdf"))
         c.to_json_file(join(directory, "correction.json"))
-
-
-def vasp_oba_set(args):
-
-    #TODO: When writing GW part, refer oba_set_main.py in obadb
-
-    flags = [str(s) for s in list(Element)]
-    ldauu = list2dict(args.ldauu, flags)
-    ldaul = list2dict(args.ldaul, flags)
-
-    base_kwargs = {"task":                  args.task,
-                   "xc":                    args.xc,
-                   "kpt_density":           args.kpt_density,
-                   "standardize_structure": args.standardize,
-                   "ldauu": ldauu,
-                   "ldaul": ldaul}
-
-    flags = list(chain.from_iterable(incar_flags.values()))
-    base_user_incar_settings = list2dict(args.incar_setting, flags)
-
-    flags = list(signature(ObaSet.make_input).parameters.keys())
-    base_kwargs.update(list2dict(args.vos_kwargs, flags))
-
-    original_dir = os.getcwd()
-    dirs = args.dirs if args.dirs else ["."]
-
-    for d in dirs:
-        os.chdir(os.path.join(original_dir, d))
-        logger.info("Constructing vasp set in {}".format(d))
-        user_incar_settings = deepcopy(base_user_incar_settings)
-        kwargs = deepcopy(base_kwargs)
-
-        if args.prior_info:
-            if os.path.exists("prior_info.json"):
-                prior_info = PriorInfo.load_json("prior_info.json")
-                kwargs["band_gap"] = prior_info["band_gap"]
-                kwargs["is_magnetization"] = True \
-                    if abs(prior_info["total_magnetization"]) > 0.1 else False
-
-        if args.prev_dir:
-            files = {"CHGCAR": "C", "WAVECAR": "M", "WAVEDER": "M"}
-            oba_set = ObaSet.from_prev_calc(args.prev_dir,
-                                            charge=args.charge,
-                                            copied_file_names=files, **kwargs)
-        else:
-            s = Structure.from_file(args.poscar)
-            oba_set = \
-                ObaSet.make_input(structure=s,
-                                  charge=args.charge,
-                                  user_incar_settings=user_incar_settings,
-                                  weak_incar_settings={"LWAVE": args.wavecar},
-                                  additional_user_potcar_yaml=args.potcar,
-                                  **kwargs)
-
-        oba_set.write_input(".")
-
-    os.chdir(original_dir)
 
 
 def defects(args):

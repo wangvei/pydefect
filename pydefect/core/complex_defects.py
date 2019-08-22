@@ -104,30 +104,32 @@ class ComplexDefects(MSONable):
 
         return d
 
-    def site_set_to_yaml_file(self, filename="complex_defects.yaml"):
-        with open(filename, "w") as f:
+    def site_set_to_yaml_file(self,
+                              yaml_filename: str = "complex_defects.yaml"):
+        with open(yaml_filename, "w") as f:
             f.write(yaml.dump(self.set_as_dict()))
 
-    def to_yaml_file(self, filename="complex_defects.yaml"):
-        with open(filename, "w") as f:
+    def to_yaml_file(self,
+                     yaml_filename: str = "complex_defects.yaml"):
+        with open(yaml_filename, "w") as f:
             f.write(yaml.dump(self.as_dict()))
 
     @classmethod
     def from_files(cls,
                    structure: Union[str, Structure] = "DPOSCAR",
-                   filename="complex_defects.yaml"):
+                   yaml_filename: str = "complex_defects.yaml"):
         if isinstance(structure, str):
             d = {"structure": Structure.from_file(structure)}
         else:
             d = {"structure": structure}
 
-        with open(filename, "r") as f:
+        with open(yaml_filename, "r") as f:
             d["complex_defects"] = yaml.load(f)
 
         return cls.from_dict(d)
 
     @classmethod
-    def from_dict(cls, d):
+    def from_dict(cls, d: dict):
         # orderedDict disables MSONable.
         structure = d["structure"]
         if isinstance(structure, dict):

@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import argparse
+from typing import Union
 
 from pydefect.core.defect_entry import DefectEntry
 from pydefect.core.interstitial_site import InterstitialSiteSet
@@ -9,13 +10,16 @@ from pydefect.core.supercell_calc_results import SupercellCalcResults
 from pydefect.core.complex_defects import ComplexDefects
 from pydefect.input_maker.defect_initial_setting import DefectInitialSetting
 from pydefect.input_maker.supercell_maker import Supercells
+from pydefect.core.config import (
+    SYMMETRY_TOLERANCE, ANGLE_TOL, PERFECT_KPT_DENSITY, DEFECT_KPT_DENSITY)
 from pydefect.main_functions import (
     recommend_supercell, initial_setting, interstitial, complex_defects,
     defect_vasp_oba_set, defect_entry, supercell_calc_results,
     unitcell_calc_results, efnv_correction, vasp_oba_set, defects, plot_energy,
     parse_eigenvalues, vasp_parchg_set, local_structure, concentration)
 from pydefect.util.logger import get_logger
-from pydefect.util.main_tools import get_default_args
+from pydefect.util.main_tools import (
+    get_user_settings, get_default_args, dict2list)
 
 __author__ = "Yu Kumagai, Akira Takahashi"
 __maintainer__ = "Yu Kumagai"
@@ -27,6 +31,20 @@ __date__ = 'will be inserted'
 
 
 def main():
+
+    user_settings = get_user_settings()
+
+    def simple_override(d: dict, keys: Union[list, str]) -> None:
+        """Override dict if keys exist in user_setting."""
+        if isinstance(keys, str):
+            keys = [keys]
+        for key in keys:
+            if key in user_settings:
+                v = user_settings[key]
+                if isinstance(v, dict):
+                    v = dict2list(v)
+                d[key] = v
+
     parser = argparse.ArgumentParser(
         description="""                            
     pydefect is a package that helps researchers to do first-principles point 
@@ -39,6 +57,141 @@ def main():
 
     subparsers = parser.add_subparsers()
 
+    # -- vasp_oba_set ---------------------------------------------------------
+    parser_vasp_oba_set = subparsers.add_parser(
+        name="vasp_oba_set",
+        description="Tools for constructing vasp input set with oba_set",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+        aliases=['vos'])
+
+    # all the defaults must be declared here.
+    vos_defaults = {"vos_kwargs": {"symprec": SYMMETRY_TOLERANCE,
+                                   "angle_tolerance": ANGLE_TOL},
+                    "xc":         "pbesol",
+                    "kpt_density": PERFECT_KPT_DENSITY,
+                    "perfect_incar_setting": None,
+                    "potcar_set": None,
+                    "ldauu":      None,
+                    "ldaul":      None}
+
+    simple_override(vos_defaults,
+                    ["kpt_density", "potcar_set", "perfect_incar_setting",
+                     "ldauu", "ldaul"])
+
+    if "perfect_vos_kwargs" in user_settings.keys():
+        vos_defaults["vos_kwargs"].update(user_settings["perfect_vos_kwargs"])
+    simple_override(vos_defaults["vos_kwargs"], ["symprec", "angle_tolerance"])
+    vos_defaults["vos_kwargs"] = dict2list(vos_defaults["vos_kwargs"])
+
+    # write use potcar setting
+    parser_vasp_oba_set.add_argument(
+        "-p", "--poscar", dest="poscar", default="POSCAR", type=str,
+        help="POSCAR-type file name.")
+    parser_vasp_oba_set.add_argument(
+        "--potcar", dest="potcar_set", default=vos_defaults["potcar_set"],
+        type=str, nargs="+",
+        help="User specifying POTCAR set. E.g., Mg_pv O_h")
+    parser_vasp_oba_set.add_argument(
+        "-x", "--xc", dest="xc", default=vos_defaults["xc"], type=str,
+        help="Exchange-correlation (XC) interaction treatment.")
+    parser_vasp_oba_set.add_argument(
+        "-t", "--task", dest="task", default="structure_opt", type=str,
+        help="The task name. See document of vise.")
+    parser_vasp_oba_set.add_argument(
+        "-k", "--kpt_density", dest="kpt_density",
+        default=vos_defaults["kpt_density"], type=float,
+        help="K-point density in Angstrom along each direction .")
+    parser_vasp_oba_set.add_argument(
+        "-s", "--standardize", dest="standardize", action="store_false",
+        help="Store if one doesn't want the cell to be transformed to a "
+             "primitive cell.")
+    parser_vasp_oba_set.add_argument(
+        "-d", "--prev_dir", dest="prev_dir", type=str,
+        help="Inherit input files from the previous directory.")
+    parser_vasp_oba_set.add_argument(
+        "-c", "--charge", dest="charge", type=int, default=0,
+        help="Supercell charge state.")
+    parser_vasp_oba_set.add_argument(
+        "-vos_kw", "--vos_kwargs", dest="vos_kwargs", type=str, nargs="+",
+        default=vos_defaults["vos_kwargs"],
+        help="Keyword arguments in make_input classmethod of ObaSet in vise. "
+             "See document in vise for details.")
+    parser_vasp_oba_set.add_argument(
+        "-is", "--incar_setting", dest="incar_setting", type=str, nargs="+",
+        default=vos_defaults["perfect_incar_setting"],
+        help="user_incar_setting in make_input classmethod of ObaSet in vise. "
+             "See document in vise for details.")
+    parser_vasp_oba_set.add_argument(
+        "--dirs", dest="dirs", nargs="+", type=str,
+        help="Make vasp set for the directories in the same condition."
+             "In pydefect, it is used especially for competing phases.")
+    parser_vasp_oba_set.add_argument(
+        "-pi", "-prior_info", dest="prior_info", action="store_true",
+        help="Set if prior_info.json is read for competing phase calculations.")
+    parser_vasp_oba_set.add_argument(
+        "-nw", "--no_wavecar", dest="wavecar", action="store_false",
+        help="Set if one doesn't want to generate WAVECAR file.")
+    parser_vasp_oba_set.add_argument(
+        "-ldauu", dest="ldauu", type=dict, default=vos_defaults["ldauu"],
+        nargs="+", help=".")
+    parser_vasp_oba_set.add_argument(
+        "-ldaul", dest="ldaul", type=str, default=vos_defaults["ldaul"],
+        nargs="+", help=".")
+
+    # delete the default dict to avoid bugs.
+    del vos_defaults
+
+    parser_vasp_oba_set.set_defaults(func=vasp_oba_set)
+
+    # -- unitcell_calc_results ------------------------------------------------
+    parser_unitcell_results = subparsers.add_parser(
+        name="unitcell_results",
+        description="Tools for analyzing vasp unitcell results",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+        aliases=['ur'])
+
+    parser_unitcell_results.add_argument(
+        "--json_file", dest="json_file", default="unitcell.json", type=str,
+        help="Json file for the unitcell info.")
+    parser_unitcell_results.add_argument(
+        "--static_diele", dest="static_diele", default=None, type=float,
+        nargs="+",
+        help="Set static dielectric constant")
+    parser_unitcell_results.add_argument(
+        "--ionic_diele", dest="ionic_diele", default=None, type=float,
+        nargs="+",
+        help="Set ionic dielectric constant")
+
+    parser_unitcell_results.add_argument(
+        "--band_edge_dir", dest="band_edge_dir", default=None, type=str,
+        help="Set band edge from a vasprun.xml file")
+
+    parser_unitcell_results.add_argument(
+        "--static_diele_dir", dest="static_diele_dir", default=None, type=str,
+        help="Set static dielectric constant from an OUTCAR file")
+    parser_unitcell_results.add_argument(
+        "--ionic_diele_dir", dest="ionic_diele_dir", default=None, type=str,
+        help="Set ionic dielectric constant from an OUTCAR file")
+
+    parser_unitcell_results.add_argument(
+        "--volume_dir", dest="volume_dir", default=None, type=str,
+        help="Set volume from a POSCAR file")
+
+    parser_unitcell_results.add_argument(
+        "--total_dos_dir", dest="total_dos_dir", default=None, type=str,
+        help="Set total density of states from a vasprun.xml file")
+    parser_unitcell_results.add_argument(
+        "-p", dest="poscar", type=str, default="POSCAR")
+    parser_unitcell_results.add_argument(
+        "-o", dest="outcar", type=str, default="OUTCAR")
+    parser_unitcell_results.add_argument(
+        "-v", dest="vasprun", type=str, default="vasprun.xml")
+    parser_unitcell_results.add_argument(
+        "--print", dest="print", action="store_true",
+        help="Print Unitcell class object information.")
+
+    parser_unitcell_results.set_defaults(func=unitcell_calc_results)
+
     # -- recommend_supercell --------------------------------------------------
     parser_recommend_supercell = subparsers.add_parser(
         name="recommend_supercell",
@@ -47,7 +200,8 @@ def main():
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
         aliases=['rs'])
 
-    defaults = get_default_args(Supercells)
+    rs_defaults = get_default_args(Supercells)
+    simple_override(rs_defaults, ["symprec", "angle_tolerance"])
 
     parser_recommend_supercell.add_argument(
         "-p", dest="poscar", type=str, default="POSCAR",
@@ -62,15 +216,15 @@ def main():
              "density is based on this ")
     parser_recommend_supercell.add_argument(
         "-c", "--criterion", dest="isotropy_criterion", type=float,
-        default=defaults["criterion"],
+        default=rs_defaults["criterion"],
         help="Criterion used for screening candidate supercells.")
     parser_recommend_supercell.add_argument(
         "--min_num_atoms", dest="min_num_atoms", type=int,
-        default=defaults["min_num_atoms"],
+        default=rs_defaults["min_num_atoms"],
         help="Minimum number of atoms in the candidate supercells")
     parser_recommend_supercell.add_argument(
         "--max_num_atoms", dest="max_num_atoms", type=int,
-        default=defaults["max_num_atoms"],
+        default=rs_defaults["max_num_atoms"],
         help="Maximum number of atoms in the candidate supercells")
     parser_recommend_supercell.add_argument(
         "-pr", "--primitive", dest="primitive", action="store_true",
@@ -83,16 +237,16 @@ def main():
              "smallest supercell.")
     parser_recommend_supercell.add_argument(
         "--rhombohedral_angle", dest="rhombohedral_angle", type=float,
-        default=defaults["rhombohedral_angle"],
+        default=rs_defaults["rhombohedral_angle"],
         help="Only the supercells with rhombohedral_angle <= lattice angle <= "
              "180 - rhombohedral_angle are returned. ")
     parser_recommend_supercell.add_argument(
         "--symprec", dest="symprec", type=float,
-        default=defaults["symprec"],
+        default=rs_defaults["symprec"],
         help="Set length precision used for symmetry analysis [A].")
     parser_recommend_supercell.add_argument(
-        "--angle_tol", dest="angle_tolerance", type=float,
-        default=defaults["angle_tolerance"],
+        "--angle_tolerance", dest="angle_tolerance", type=float,
+        default=rs_defaults["angle_tolerance"],
         help="Set angle precision used for symmetry analysis.")
     parser_recommend_supercell.add_argument(
         "-set", dest="set", action="store_true",
@@ -108,7 +262,9 @@ def main():
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
         aliases=['is'])
 
-    defaults = get_default_args(DefectInitialSetting.from_basic_settings)
+    is_defaults = get_default_args(DefectInitialSetting.from_basic_settings)
+    simple_override(is_defaults, ["symprec", "angle_tolerance",
+                                  "cutoff", "displacement_distance"])
 
     parser_initial.add_argument(
         "-s", dest="sposcar", default="SPOSCAR", type=str,
@@ -116,47 +272,47 @@ def main():
              "returned, which has the same size but different atom sequence.")
     parser_initial.add_argument(
         "-d", "--dopants", dest="dopants", nargs="+", type=str,
-        default=defaults["dopants"],
+        default=is_defaults["dopants"],
         help="Dopant elements, e.g., Ga In")
     parser_initial.add_argument(
         "-a", "--antisite", dest="is_antisite", action="store_false",
-        help="Set if antisite defects are not considered.")
+        help="Set if antisite defects are *not* considered.")
     parser_initial.add_argument(
-        "--en_diff", dest="en_diff", type=float, default=defaults["en_diff"],
+        "--en_diff", dest="en_diff", type=float, default=is_defaults["en_diff"],
         help="Criterion of the electronegativity difference that determines "
              "antisites and/or substituted impurity types.")
     parser_initial.add_argument(
         "--included", dest="included", type=str, nargs="+",
-        default=defaults["included"],
+        default=is_defaults["included"],
         help="Exceptionally included defects with full names. E.g., Va_O2_-1.")
     parser_initial.add_argument(
         "--excluded", dest="excluded", type=str, nargs="+",
-        default=defaults["excluded"],
+        default=is_defaults["excluded"],
         help="Exceptionally excluded defects with full names. E.g., Va_O2_0.")
     parser_initial.add_argument(
         "--displacement_distance", dest="displacement_distance", type=float,
-        default=defaults["displacement_distance"],
+        default=is_defaults["displacement_distance"],
         help="Displacement distance. 0 means that random displacement is not "
              "considered.")
     parser_initial.add_argument(
         "--cutoff", dest="cutoff", type=float,
-        default=defaults["cutoff"],
+        default=is_defaults["cutoff"],
         help="Set the cutoff radius [A] in which atoms are displaced.")
     parser_initial.add_argument(
         "--symprec", dest="symprec", type=float,
-        default=defaults["symprec"],
+        default=is_defaults["symprec"],
         help="Set length precision used for symmetry analysis [A].")
     parser_initial.add_argument(
-        "--angle_tol", dest="angle_tolerance", type=float,
-        default=defaults["angle_tolerance"],
+        "--angle_tolerance", dest="angle_tolerance", type=float,
+        default=is_defaults["angle_tolerance"],
         help="Set angle precision used for symmetry analysis.")
     parser_initial.add_argument(
         "--interstitial_sites", dest="interstitials", type=str, nargs="+",
-        default=defaults["interstitial_sites"],
+        default=is_defaults["interstitial_sites"],
         help="Interstitial site names.")
     parser_initial.add_argument(
         "--complex_defect_names", dest="complex_defect_names", type=str,
-        nargs="+", default=defaults["complex_defect_names"],
+        nargs="+", default=is_defaults["complex_defect_names"],
         help="Complex defect names.")
     parser_initial.add_argument(
         "--print_dopant", dest="print_dopant", type=str,
@@ -171,43 +327,45 @@ def main():
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
         aliases=['i'])
 
-    defaults = get_default_args(InterstitialSiteSet.add_sites)
-    defaults.update(get_default_args(InterstitialSiteSet.from_files))
+    i_defaults = get_default_args(InterstitialSiteSet.add_sites)
+    i_defaults.update(get_default_args(InterstitialSiteSet.from_files))
+
+    simple_override(i_defaults, ["symprec", "angle_tolerance"])
 
     parser_interstitial.add_argument(
-        "--yaml", dest="yaml", type=str, default=defaults["filename"],
-        help="defect_entry.yaml-type file name to be read.")
+        "--yaml", dest="yaml", type=str, default=i_defaults["yaml_filename"],
+        help="interstitial.yaml file name.")
     parser_interstitial.add_argument(
-        "--dposcar", dest="dposcar", type=str, default=defaults["structure"],
+        "--dposcar", dest="dposcar", type=str, default=i_defaults["dposcar"],
         help="DPOSCAR-type file name.")
     parser_interstitial.add_argument(
         "-c", dest="interstitial_coords", nargs="+", type=float,
-        help="Interstitial coordinates. Eg., 0.5 0.5 0.5.")
+        help="Interstitial coordinates in the UPOSCAR cell. Eg., 0.5 0.5 0.5.")
     parser_interstitial.add_argument(
         "--name", dest="site_name", type=str, default=None,
-        help="Set the interstitial site name.")
+        help="Interstitial site name.")
     parser_interstitial.add_argument(
         "--radius", dest="radius", type=str,
-        default=defaults["vicinage_radius"],
-        help="Radius for checking too closed neighbor atoms.")
+        default=i_defaults["vicinage_radius"],
+        help="Radius to judge whether too close atoms exist.")
     parser_interstitial.add_argument(
         "--force_add", dest="force_add", action="store_true",
-        help="Set if the interstitial site is added, although it is too close "
-             "to other atoms.")
+        help="Set if the interstitial site is forcibly added, although it is "
+             "too close to other atoms.")
     parser_interstitial.add_argument(
         "--symprec", dest="symprec", type=float,
-        default=defaults["symprec"],
+        default=i_defaults["symprec"],
         help="Set length precision used for symmetry analysis [A].")
     parser_interstitial.add_argument(
-        "--angle_tol", dest="angle_tolerance", type=float,
-        default=defaults["angle_tolerance"],
+        "--angle_tolerance", dest="angle_tolerance", type=float,
+        default=i_defaults["angle_tolerance"],
         help="Set angle precision used for symmetry analysis.")
     parser_interstitial.add_argument(
-        "--method", dest="method", type=str, default=defaults["method"],
-        help="Name of method.")
+        "--method", dest="method", type=str, default=i_defaults["method"],
+        help="Name of method determining the interstitial site.")
     parser_interstitial.add_argument(
         "--chgcar", dest="chgcar",  type=str, default=None,
-        help="CHGCAR type filename to determine the local charge minimum.")
+        help="CHGCAR type filename to determine the local charge minima.")
     parser_interstitial.set_defaults(func=interstitial)
 
     # -- complex_defects -------------------------------------------------------
@@ -217,41 +375,45 @@ def main():
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
         aliases=['cd'])
 
-    defaults = get_default_args(ComplexDefects.add_defect)
-    defaults.update(get_default_args(ComplexDefects.from_files))
+    cd_defaults = get_default_args(ComplexDefects.add_defect)
+    cd_defaults.update(get_default_args(ComplexDefects.from_files))
+    simple_override(cd_defaults, ["symprec", "angle_tolerance"])
 
     parser_complex_defects.add_argument(
-        "--yaml", dest="yaml", type=str, default=defaults["filename"],
-        help="Yaml-type file name to be read/written.")
+        "--yaml", dest="yaml", type=str, default=cd_defaults["yaml_filename"],
+        help="complex_defect.yaml file name.")
     parser_complex_defects.add_argument(
-        "--dposcar", dest="dposcar", type=str, default=defaults["structure"],
+        "--dposcar", dest="dposcar", type=str, default=cd_defaults["structure"],
         help="DPOSCAR-type file name.")
     parser_complex_defects.add_argument(
         "-r", dest="removed_atom_indices", nargs="+", type=int,
-        help="")
+        help="Removed atom indices when constructing a complex defect.")
     parser_complex_defects.add_argument(
         "-i", dest="inserted_elements", nargs="+", type=str,
-        help="")
+        help="Inserted atom elements when constructing a complex defect."
+             "E.g., Mg Al")
     parser_complex_defects.add_argument(
         "-c", dest="inserted_coords", nargs="+", type=float,
-        help="")
+        help="Inserted atom coordinates when constructing a complex defect."
+             "E.g., 0 0 0  0.25 0.25 0.25")
     parser_complex_defects.add_argument(
-        "--name", dest="name", type=str,
-        help="Set the complex defect name.")
+        "--name", dest="name", type=str, help="Complex defect name.")
     parser_complex_defects.add_argument(
         "--extreme_charge_state", dest="extreme_charge_state", type=str,
         default=None,
-        help=".")
+        help="Extreme charge state of the complex defect. For example, in case"
+             "of V_Na + V_O, the extreme charge state would be "
+             "(-1) + (+2) = 1.")
     parser_complex_defects.add_argument(
         "--annotation", dest="annotation", type=str, default=None,
-        help=".")
+        help="Annotation of the complex defect.")
     parser_complex_defects.add_argument(
         "--symprec", dest="symprec", type=float,
-        default=defaults["symprec"],
+        default=cd_defaults["symprec"],
         help="Set length precision used for symmetry analysis [A].")
     parser_complex_defects.add_argument(
-        "--angle_tol", dest="angle_tolerance", type=float,
-        default=defaults["angle_tolerance"],
+        "--angle_tolerance", dest="angle_tolerance", type=float,
+        default=cd_defaults["angle_tolerance"],
         help="Set angle precision used for symmetry analysis.")
     parser_complex_defects.set_defaults(func=complex_defects)
 
@@ -264,6 +426,24 @@ def main():
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
         aliases=['dvos'])
 
+    # all the defaults must be declared here.
+    dvos_defaults = {"vos_kwargs": dict(),
+                     "xc":         "pbesol",
+                     "defect_kpt_density": DEFECT_KPT_DENSITY,
+                     "defect_incar_setting": None,
+                     "potcar_set": None,
+                     "ldauu":      None,
+                     "ldaul":      None}
+
+    simple_override(dvos_defaults,
+                    ["kpt_density", "potcar_set", "perfect_incar_setting",
+                     "ldauu", "ldaul"])
+
+    if "perfect_vos_kwargs" in user_settings.keys():
+        dvos_defaults["vos_kwargs"].update(user_settings["perfect_vos_kwargs"])
+    simple_override(dvos_defaults["vos_kwargs"], ["symprec", "angle_tolerance"])
+    dvos_defaults["vos_kwargs"] = dict2list(dvos_defaults["vos_kwargs"])
+
     parser_defect_vasp_set.add_argument(
         "--defect_in", dest="defect_in", default="defect.in", type=str,
         help="defect.in-type file name.")
@@ -271,8 +451,12 @@ def main():
         "--dposcar", dest="dposcar", default="DPOSCAR", type=str,
         help="DPOSCAR-type file name.")
     parser_defect_vasp_set.add_argument(
-        "-py", "--potcar_yaml", dest="potcar", default=None, type=str,
-        help="User specifying Potcar yaml file.")
+        "--potcar", dest="potcar_set", default=dvos_defaults["potcar_set"],
+        type=str, nargs="+",
+        help="User specifying POTCAR set. E.g., Mg_pv O_h")
+    parser_defect_vasp_set.add_argument(
+        "-x", "--xc", dest="xc", default=dvos_defaults["xc"], type=str,
+        help="XC interaction treatment.")
     parser_defect_vasp_set.add_argument(
         "-kw", "--keywords", dest="keywords", type=str, default=None,
         nargs="+", help="Filtering keywords.")
@@ -287,9 +471,6 @@ def main():
         "--force_overwrite", dest="force_overwrite", action="store_true",
         help="Set if the existing folders are overwritten.")
     parser_defect_vasp_set.add_argument(
-        "-x", "--xc", dest="xc", default="pbesol", type=str,
-        help="XC interaction treatment.")
-    parser_defect_vasp_set.add_argument(
         "-k", "--kpt_density", dest="kpt_density", default=2.3, type=float,
         help="K-points density.")
     parser_defect_vasp_set.add_argument(
@@ -301,9 +482,9 @@ def main():
     parser_defect_vasp_set.add_argument(
         "-ldaul", dest="ldaul", type=str, default=None, nargs="+",
         help=".")
-#    parser_recommend_supercell.add_argument(
-#        "-set", dest="set", action="store_true",
-#        help="Output all the supercells satisfying the criterion.")
+
+    del dvos_defaults
+
     parser_defect_vasp_set.set_defaults(func=defect_vasp_oba_set)
 
     # -- defect_entry ---------------------------------------------------------
@@ -372,7 +553,7 @@ def main():
         default=defaults["defect_symprec"],
         help="Set length precision used for symmetry analysis [A].")
     parser_supercell_results.add_argument(
-        "--angle_tol", dest="angle_tolerance", type=float,
+        "--angle_toleranec", dest="angle_tolerance", type=float,
         default=defaults["angle_tolerance"],
         help="Set angle precision used for symmetry analysis.")
     parser_supercell_results.add_argument(
@@ -380,55 +561,6 @@ def main():
         help="Print SupercellCalcResults class object information.")
 
     parser_supercell_results.set_defaults(func=supercell_calc_results)
-
-    # -- unitcell_calc_results ------------------------------------------------
-    parser_unitcell_results = subparsers.add_parser(
-        name="unitcell_results",
-        description="Tools for analyzing vasp unitcell results",
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-        aliases=['ur'])
-
-    parser_unitcell_results.add_argument(
-        "--json_file", dest="json_file", default="unitcell.json", type=str,
-        help="Json file for the unitcell info.")
-    parser_unitcell_results.add_argument(
-        "--static_diele", dest="static_diele", default=None, type=float,
-        nargs="+",
-        help="Set static dielectric constant")
-    parser_unitcell_results.add_argument(
-        "--ionic_diele", dest="ionic_diele", default=None, type=float,
-        nargs="+",
-        help="Set ionic dielectric constant")
-
-    parser_unitcell_results.add_argument(
-        "--band_edge_dir", dest="band_edge_dir", default=None, type=str,
-        help="Set band edge from a vasprun.xml file")
-
-    parser_unitcell_results.add_argument(
-        "--static_diele_dir", dest="static_diele_dir", default=None, type=str,
-        help="Set static dielectric constant from an OUTCAR file")
-    parser_unitcell_results.add_argument(
-        "--ionic_diele_dir", dest="ionic_diele_dir", default=None, type=str,
-        help="Set ionic dielectric constant from an OUTCAR file")
-
-    parser_unitcell_results.add_argument(
-        "--volume_dir", dest="volume_dir", default=None, type=str,
-        help="Set volume from a POSCAR file")
-
-    parser_unitcell_results.add_argument(
-        "--total_dos_dir", dest="total_dos_dir", default=None, type=str,
-        help="Set total density of states from a vasprun.xml file")
-    parser_unitcell_results.add_argument(
-        "-p", dest="poscar", type=str, default="POSCAR")
-    parser_unitcell_results.add_argument(
-        "-o", dest="outcar", type=str, default="OUTCAR")
-    parser_unitcell_results.add_argument(
-        "-v", dest="vasprun", type=str, default="vasprun.xml")
-    parser_unitcell_results.add_argument(
-        "--print", dest="print", action="store_true",
-        help="Print Unitcell class object information.")
-
-    parser_unitcell_results.set_defaults(func=unitcell_calc_results)
 
     # -- FNV correction -------------------------------------------------------
     parser_correction = subparsers.add_parser(
@@ -482,63 +614,6 @@ def main():
         help="Print FNV correction information.")
 
     parser_correction.set_defaults(func=efnv_correction)
-
-    # -- vasp_oba_set ---------------------------------------------------------
-    parser_vasp_oba_set = subparsers.add_parser(
-        name="vasp_oba_set",
-        description="Tools for constructing vasp input set with oba_set",
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-        aliases=['vos'])
-
-    # write use potcar setting
-    parser_vasp_oba_set.add_argument(
-        "-p", "--poscar", dest="poscar", default="POSCAR", type=str,
-        help="POSCAR-type file name for the supercell.")
-    parser_vasp_oba_set.add_argument(
-        "-py", "--potcar_yaml", dest="potcar", default=None, type=str,
-        help="User specifying Potcar yaml file.")
-    parser_vasp_oba_set.add_argument(
-        "-x", "--xc", dest="xc", default="pbesol", type=str,
-        help="XC interaction treatment.")
-    parser_vasp_oba_set.add_argument(
-        "-t", "--task", dest="task", default="structure_opt", type=str,
-        help="The task name.")
-    parser_vasp_oba_set.add_argument(
-        "-k", "--kpt_density", dest="kpt_density", default=3, type=float,
-        help="K-points density.")
-    parser_vasp_oba_set.add_argument(
-        "-s", "--standardize", dest="standardize", action="store_false",
-        help="Store if one doesn't want the cell to be transformed to a "
-             "primitive one.")
-    parser_vasp_oba_set.add_argument(
-        "-d", "--prev_dir", dest="prev_dir", type=str,
-        help=".")
-    parser_vasp_oba_set.add_argument(
-        "-c", "--charge", dest="charge", type=int,
-        help="Charge state.")
-    parser_vasp_oba_set.add_argument(
-        "-vos_kw", "--vos_kwargs", dest="vos_kwargs", type=str, nargs="+",
-        default=None, help="keyword arguments.")
-    parser_vasp_oba_set.add_argument(
-        "-is", "--incar_setting", dest="incar_setting", type=str, nargs="+",
-        default=None, help="INCAR setting to be overwritten.")
-    parser_vasp_oba_set.add_argument(
-        "--dirs", dest="dirs", nargs="+", type=str,
-        help="Make vasp set for the directories.")
-    parser_vasp_oba_set.add_argument(
-        "-pi", "-prior_info", dest="prior_info", action="store_true",
-        help="Set if prior_info.json is not read.")
-    parser_vasp_oba_set.add_argument(
-        "-nw", "--no_wavecar", dest="wavecar", action="store_false",
-        help="Do not make WAVECAR file or not.")
-    parser_vasp_oba_set.add_argument(
-        "-ldauu", dest="ldauu", type=str, default=None, nargs="+",
-        help=".")
-    parser_vasp_oba_set.add_argument(
-        "-ldaul", dest="ldaul", type=str, default=None, nargs="+",
-        help=".")
-
-    parser_vasp_oba_set.set_defaults(func=vasp_oba_set)
 
     # -- defects -------------------------------------------------------------
     parser_defects = subparsers.add_parser(

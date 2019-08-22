@@ -124,8 +124,8 @@ class InterstitialSiteSet(MSONable):
         return {"interstitial_site_set": self.site_set_as_dict(),
                 "structure":          self.structure.as_dict()}
 
-    def site_set_to_yaml_file(self, filename="interstitials.yaml"):
-        with open(filename, "w") as f:
+    def site_set_to_yaml_file(self, yaml_filename="interstitials.yaml"):
+        with open(yaml_filename, "w") as f:
             f.write(yaml.dump(self.site_set_as_dict()))
 
     @property
@@ -150,14 +150,14 @@ class InterstitialSiteSet(MSONable):
 
     @classmethod
     def from_files(cls,
-                   structure: Union[str, Structure] = "DPOSCAR",
-                   filename="interstitials.yaml"):
-        if isinstance(structure, str):
-            d = {"structure": Structure.from_file(structure)}
+                   dposcar: Union[str, Structure] = "DPOSCAR",
+                   yaml_filename="interstitials.yaml"):
+        if isinstance(dposcar, str):
+            d = {"structure": Structure.from_file(dposcar)}
         else:
-            d = {"structure": structure}
+            d = {"structure": dposcar}
 
-        with open(filename, "r") as f:
+        with open(yaml_filename, "r") as f:
             d["interstitial_site_set"] = yaml.load(f)
 
         return cls.from_dict(d)

@@ -101,8 +101,8 @@ method: manual"""
 
     def test_from_files(self):
         actual = InterstitialSiteSet.from_files(
-            structure=self.structure,
-            filename="expected_interstitials.yaml").as_dict()
+            dposcar=self.structure,
+            yaml_filename="expected_interstitials.yaml").as_dict()
         expected = self.interstitial_site_set.as_dict()
         self.assertEqual(expected, actual)
 
