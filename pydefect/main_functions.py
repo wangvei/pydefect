@@ -7,6 +7,7 @@ from glob import glob
 from inspect import signature
 from itertools import chain
 from os.path import join
+from pathlib import Path
 
 import numpy as np
 from chempotdiag.chem_pot_diag import ChemPotDiag
@@ -82,6 +83,7 @@ def vasp_oba_set(args):
                                             charge=args.charge,
                                             copied_file_names=files, **kwargs)
         else:
+            print(kwargs)
             s = Structure.from_file(args.poscar)
             oba_set = \
                 ObaSet.make_input(structure=s,
@@ -137,7 +139,7 @@ def unitcell_calc_results(args):
     if args.volume_dir:
         try:
             dft_results.set_volume_from_vasp(
-                args.volume_dir, contcar_name=args.poscar)
+                args.volume_dir, contcar_name=args.contcar)
         except IOError:
             raise FileNotFoundError(args.volume_dir, "not appropriate.")
 
@@ -312,8 +314,25 @@ def complex_defects(args):
 
 def defect_vasp_oba_set(args):
 
+    flags = [str(s) for s in list(Element)]
+    ldauu = list2dict(args.ldauu, flags)
+    ldaul = list2dict(args.ldaul, flags)
+    potcar_set = potcar_str2dict(args.potcar_set)
+    kwargs = {
+        "standardize_structure":False,
+        "task": "defect",
+        "xc": args.xc,
+        "override_potcar_set": potcar_set,
+        "sort_structure": False,
+        "weak_incar_settings": {"LWAVE": args.wavecar},
+        "kpt_mode": "manual",
+        "kpt_density": args.kpt_density,
+        "only_even": False,
+        "ldauu": ldauu,
+        "ldaul": ldaul}
+
     flags = list(signature(ObaSet.make_input).parameters.keys())
-    kwargs = list2dict(args.vos_kwargs, flags)
+    kwargs.update(list2dict(args.vos_kwargs, flags))
 
     def make_dir(name, obrs):
         """Helper function"""
@@ -328,44 +347,24 @@ def defect_vasp_oba_set(args):
             os.makedirs(name)
             obrs.write_input(name)
 
-    dis = DefectInitialSetting.from_defect_in(
+    defect_initial_setting = DefectInitialSetting.from_defect_in(
         poscar=args.dposcar, defect_in_file=args.defect_in)
-    dis.make_defect_set(keywords=args.keywords,
-                        specified_defects=args.particular_defects)
+    defect_initial_setting.make_defect_set(
+        keywords=args.keywords, specified_defects=args.particular_defects)
 
     if not args.particular_defects:
-        oba_set = ObaSet.make_input(
-            structure=dis.structure,
-            standardize_structure=False,
-            task="defect",
-            xc=args.xc,
-            additional_user_potcar_yaml=args.potcar,
-            sort_structure=False,
-            weak_incar_settings={"LWAVE": args.wavecar},
-            kpt_mode="manual",
-            kpt_density=args.kpt_density,
-            only_even=False,
-            user_incar_settings={"ISPIN": 1},
-            **kwargs)
+        oba_set = ObaSet.make_input(structure=defect_initial_setting.structure,
+                                    user_incar_settings={"ISPIN": 1},
+                                    **kwargs)
 
         make_dir("perfect", oba_set)
 
-    for de in dis.defect_entries:
+    for de in defect_initial_setting.defect_entries:
         defect_name = "_".join([de.name, str(de.charge)])
         json_file_name = os.path.join(defect_name, "defect_entry.json")
 
         oba_set = ObaSet.make_input(structure=de.perturbed_initial_structure,
                                     charge=de.charge,
-                                    standardize_structure=False,
-                                    task="defect",
-                                    xc=args.xc,
-                                    additional_user_potcar_yaml=args.potcar,
-                                    sort_structure=False,
-                                    weak_incar_settings=
-                                    {"LWAVE": args.wavecar},
-                                    kpt_mode="manual",
-                                    kpt_density=args.kpt_density,
-                                    only_even=False,
                                     **kwargs)
 
         make_dir(defect_name, oba_set)
@@ -459,7 +458,6 @@ def efnv_correction(args):
         for directory in dirs:
             c = ManualCorrection(manual_correction_energy=args.manual)
             c.to_json_file(join(directory, "correction.json"))
-
         return
 
     try:
@@ -473,28 +471,15 @@ def efnv_correction(args):
         raise FileNotFoundError("JSON for the perfect supercell is not found.")
 
     # Ewald parameter related
-    if args.dump_ewald_json:
+    if not Path(args.ewald_json).is_file():
         logger.info("optimizing ewald...")
-        ewald_kwargs = {}
-        if args.ewald_init:
-            ewald_kwargs["initial_value"] = args.ewald_init
-        if args.ewald_convergence:
-            ewald_kwargs["convergence"] = args.ewald_convergence
-        if args.ewald_init:
-            ewald_kwargs["prod_cutoff_fwhm"] = args.ewald_accuracy
-        ewald_data = \
-            Ewald.from_optimization(perfect_dft_data.final_structure,
-                                    unitcell_dft_data.total_dielectric_tensor,
-                                    **ewald_kwargs)
-        ewald_data.to_json_file(args.dump_ewald_json)
-        ewald_filename = args.dump_ewald_json
-    elif args.read_ewald_json:
-        try:
-            ewald_filename = args.read_ewald_json
-        except IOError:
-            raise FileNotFoundError("JSON for ewald parameter is not found.")
-    else:
-        raise IOError("Ewald parameter is a mandatory.")
+        ewald = Ewald.from_optimization(
+            structure=perfect_dft_data.final_structure,
+            dielectric_tensor=unitcell_dft_data.total_dielectric_tensor,
+            initial_ewald_param=args.ewald_initial_param,
+            convergence=args.ewald_convergence,
+            prod_cutoff_fwhm=args.ewald_accuracy)
+        ewald.to_json_file(args.ewald_json)
 
     for directory in dirs:
         json_to_make = join(directory, "correction.json")
@@ -514,8 +499,7 @@ def efnv_correction(args):
                                defect_dft=defect_dft_data,
                                perfect_dft=perfect_dft_data,
                                unitcell_dft=unitcell_dft_data,
-                               ewald_json=args.read_ewald_json,
-                               to_filename=args.dump_ewald_json)
+                               ewald_json=args.ewald_json)
 
         c.plot_distance_vs_potential(join(directory, "potential.pdf"))
         c.to_json_file(join(directory, "correction.json"))

@@ -20,6 +20,7 @@ from pydefect.main_functions import (
 from pydefect.util.logger import get_logger
 from pydefect.util.main_tools import (
     get_user_settings, get_default_args, dict2list)
+from pydefect.corrections.efnv_corrections import Ewald
 
 __author__ = "Yu Kumagai, Akira Takahashi"
 __maintainer__ = "Yu Kumagai"
@@ -88,7 +89,7 @@ def main():
 
     vos_defaults["vos_kwargs"].update(
         user_settings.get("perfect_vos_kwargs", {}))
-    simple_override(vos_defaults["vos_kwargs"], ["symprec", "angle_tolerance"])
+#    simple_override(vos_defaults["vos_kwargs"], ["symprec", "angle_tolerance"])
     vos_defaults["vos_kwargs"] = dict2list(vos_defaults["vos_kwargs"])
 
     # write use potcar setting
@@ -163,7 +164,8 @@ def main():
                    "ionic_diele_dir": None,
                    "band_edge_dir": None,
                    "dos_dir": None,
-                   "poscar": "CONTCAR",
+                   "unitcell_json": "unitcell.json",
+                   "contcar": "CONTCAR",
                    "outcar": "OUTCAR",
                    "vasprun": "vasprun.xml"}
 
@@ -173,7 +175,8 @@ def main():
                      "ionic_diele_dir",
                      "band_edge_dir",
                      "dos_dir",
-                     "poscar",
+                     "unitcell_json",
+                     "contcar",
                      "outcar",
                      "vasprun"])
 
@@ -213,7 +216,7 @@ def main():
         default=ur_defaults["dos_dir"], type=str,
         help="Set total density of states from a vasprun.xml file")
     parser_unitcell_results.add_argument(
-        "-p", dest="poscar", type=str, default=ur_defaults["poscar"])
+        "-c", dest="contcar", type=str, default=ur_defaults["contcar"])
     parser_unitcell_results.add_argument(
         "-o", dest="outcar", type=str, default=ur_defaults["outcar"])
     parser_unitcell_results.add_argument(
@@ -221,6 +224,8 @@ def main():
     parser_unitcell_results.add_argument(
         "--print", dest="print", action="store_true",
         help="Print Unitcell class object information.")
+
+    del ur_defaults
 
     parser_unitcell_results.set_defaults(func=unitcell_calc_results)
 
@@ -284,6 +289,8 @@ def main():
         "-set", dest="set", action="store_true",
         help="Output all the supercells satisfying the criterion.")
 
+    del rs_defaults
+
     parser_recommend_supercell.set_defaults(func=recommend_supercell)
 
     # -- initial_setting ------------------------------------------------------
@@ -295,8 +302,11 @@ def main():
         aliases=['is'])
 
     is_defaults = get_default_args(DefectInitialSetting.from_basic_settings)
-    simple_override(is_defaults, ["symprec", "angle_tolerance",
-                                  "cutoff", "displacement_distance"])
+    simple_override(is_defaults,
+                    ["symprec",
+                     "angle_tolerance",
+                     "cutoff",
+                     "displacement_distance"])
 
     parser_initial.add_argument(
         "-s", dest="sposcar", default="SPOSCAR", type=str,
@@ -350,6 +360,8 @@ def main():
         "--print_dopant", dest="print_dopant", type=str,
         help="Print dopant information that can be added a posteriori.")
 
+    del is_defaults
+
     parser_initial.set_defaults(func=initial_setting)
 
     # -- interstitial ---------------------------------------------------------
@@ -362,7 +374,8 @@ def main():
     i_defaults = get_default_args(InterstitialSiteSet.add_sites)
     i_defaults.update(get_default_args(InterstitialSiteSet.from_files))
 
-    simple_override(i_defaults, ["symprec", "angle_tolerance"])
+    simple_override(i_defaults,
+                    ["vicinage_radius", "symprec", "angle_tolerance"])
 
     parser_interstitial.add_argument(
         "--yaml", dest="yaml", type=str, default=i_defaults["yaml_filename"],
@@ -398,6 +411,9 @@ def main():
     parser_interstitial.add_argument(
         "--chgcar", dest="chgcar",  type=str, default=None,
         help="CHGCAR type filename to determine the local charge minima.")
+
+    del i_defaults
+
     parser_interstitial.set_defaults(func=interstitial)
 
     # -- complex_defects -------------------------------------------------------
@@ -431,8 +447,7 @@ def main():
     parser_complex_defects.add_argument(
         "--name", dest="name", type=str, help="Complex defect name.")
     parser_complex_defects.add_argument(
-        "--extreme_charge_state", dest="extreme_charge_state", type=str,
-        default=None,
+        "--extreme_charge_state", dest="extreme_charge_state", type=int,
         help="Extreme charge state of the complex defect. For example, in case"
              "of V_Na + V_O, the extreme charge state would be "
              "(-1) + (+2) = 1.")
@@ -447,6 +462,9 @@ def main():
         "--angle_tolerance", dest="angle_tolerance", type=float,
         default=cd_defaults["angle_tolerance"],
         help="Set angle precision used for symmetry analysis.")
+
+    del cd_defaults
+
     parser_complex_defects.set_defaults(func=complex_defects)
 
     # -- defect_vasp_set_maker ------------------------------------------------
@@ -477,8 +495,8 @@ def main():
 
     dvos_defaults["dvos_kwargs"].update(
         user_settings.get("defect_vos_kwargs", {}))
-    simple_override(
-        dvos_defaults["dvos_kwargs"], ["symprec", "angle_tolerance"])
+#    simple_override(
+#        dvos_defaults["dvos_kwargs"], ["symprec", "angle_tolerance"])
     dvos_defaults["dvos_kwargs"] = dict2list(dvos_defaults["dvos_kwargs"])
 
     parser_defect_vasp_set.add_argument(
@@ -533,7 +551,7 @@ def main():
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
         aliases=['de'])
 
-    defaults = get_default_args(DefectEntry.from_yaml)
+    de_defaults = get_default_args(DefectEntry.from_yaml)
 
     parser_defect_entry.add_argument(
         "--print", dest="print", action="store_true",
@@ -549,11 +567,13 @@ def main():
         help="defect_entry.json type file name.")
     parser_defect_entry.add_argument(
         "--cutoff", "-c", dest="cutoff", type=float,
-        default=defaults["cutoff"],
+        default=de_defaults["cutoff"],
         help="Cutoff radius to determine the neighboring atoms.")
     parser_defect_entry.add_argument(
         "--no_calc_sites", dest="calc_sites", action="store_false",
         help="Do not calculate number of equivalent sites (clusters).")
+
+    del de_defaults
 
     parser_defect_entry.set_defaults(func=defect_entry)
 
@@ -564,7 +584,13 @@ def main():
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
         aliases=['sr'])
 
-    defaults = get_default_args(SupercellCalcResults.from_vasp_files)
+    sr_defaults = get_default_args(SupercellCalcResults.from_vasp_files)
+    simple_override(sr_defaults,
+                    ["vasprun",
+                     "contcar",
+                     "outcar",
+                     "defect_symprec",
+                     "angle_tolerance"])
 
     parser_supercell_results.add_argument(
         "--dirs", dest="dirs", nargs="+", type=str,
@@ -573,11 +599,11 @@ def main():
         "--dir_all", dest="dir_all", action="store_true",
         help="Make dft_results.json for *[0-9] and " "perfect directory.")
     parser_supercell_results.add_argument(
-        "-v", dest="vasprun", default=defaults["vasprun"], type=str)
+        "-v", dest="vasprun", default=sr_defaults["vasprun"], type=str)
     parser_supercell_results.add_argument(
-        "-c", dest="contcar", default=defaults["contcar"], type=str)
+        "-c", dest="contcar", default=sr_defaults["contcar"], type=str)
     parser_supercell_results.add_argument(
-        "-o", dest="outcar", default=defaults["outcar"], type=str)
+        "-o", dest="outcar", default=sr_defaults["outcar"], type=str)
     parser_supercell_results.add_argument(
         "-s", dest="not_check_shallow", action="store_false",
         help="Not check whether the defects are shallow.")
@@ -588,25 +614,32 @@ def main():
         help="dft_results.json type file name.")
     parser_supercell_results.add_argument(
         "--defect_symprec", dest="symprec", type=float,
-        default=defaults["defect_symprec"],
+        default=sr_defaults["defect_symprec"],
         help="Set length precision used for symmetry analysis [A].")
     parser_supercell_results.add_argument(
         "--angle_toleranec", dest="angle_tolerance", type=float,
-        default=defaults["angle_tolerance"],
+        default=sr_defaults["angle_tolerance"],
         help="Set angle precision used for symmetry analysis.")
     parser_supercell_results.add_argument(
         "--print", dest="print", action="store_true",
         help="Print SupercellCalcResults class object information.")
 
+    del sr_defaults
+
     parser_supercell_results.set_defaults(func=supercell_calc_results)
 
-    # -- FNV correction -------------------------------------------------------
+    # -- extended FNV correction -----------------------------------------------
     parser_correction = subparsers.add_parser(
         name="extended_fnv_correction",
         description="Tools for extended FNV correction for error of defect "
                     "formation energy due to finite supercell size.",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
         aliases=['efc'])
+
+    efc_defaults = get_default_args(Ewald.from_optimization)
+    efc_defaults.update({"unitcell_json": "../unitcell/unitcell.json",
+                         "perfect_json": "perfect/dft_results.json"})
+    simple_override(efc_defaults, ["unitcell_json", "perfect_json"])
 
     # when no corrections are required for some reasons
     parser_correction.add_argument(
@@ -615,32 +648,36 @@ def main():
     parser_correction.add_argument(
         "-m", "--manual", dest="manual", type=float, default=0.0,
         help="Set manual correction energy.")
+
     # needed files
     parser_correction.add_argument(
-        "--unitcell_json", dest="unitcell_json", default="unitcell.json",
+        "--unitcell_json", dest="unitcell_json",
+        default=efc_defaults["unitcell_json"],
         type=str)
     parser_correction.add_argument(
         "--perfect_json", dest="perfect_json",
-        default="perfect/dft_results.json", type=str)
+        default=efc_defaults["perfect_json"], type=str)
+
     # ewald
     parser_correction.add_argument(
-        "--read_ewald_json", dest="read_ewald_json", default="ewald.json",
+        "--ewald_json", dest="ewald_json", default="ewald.json",
         type=str)
     parser_correction.add_argument(
-        "--dump_ewald_json", dest="dump_ewald_json", default="ewald.json",
-        type=str)
+        "--ewald_initial_param", dest="ewald_initial_param",
+        default=efc_defaults["initial_ewald_param"])
     parser_correction.add_argument(
-        "--ewald_init", dest="ewald_init", default=None)
+        "--ewald_convergence", dest="ewald_convergence",
+        default=efc_defaults["convergence"])
     parser_correction.add_argument(
-        "--ewald_convergence", dest="ewald_convergence", default=None)
-    parser_correction.add_argument(
-        "--ewald_accuracy", dest="ewald_accuracy", default=None)
+        "--ewald_accuracy", dest="ewald_accuracy",
+        default=efc_defaults["prod_cutoff_fwhm"])
+
     # correction
     parser_correction.add_argument(
         "--dirs", dest="dirs", nargs="+", type=str, help="Directory names.")
     parser_correction.add_argument(
         "--dir_all", dest="dir_all", action="store_true",
-        help="Make dft_results.json for *[0-9] and " "perfect directory.")
+        help="Make dft_results.json for *[0-9] and perfect directory.")
     parser_correction.add_argument(
         "--force_overwrite", dest="force_overwrite", action="store_true",
         help="Overwrite already existing correction.json.")
@@ -651,6 +688,8 @@ def main():
         "--print", dest="print", action="store_true",
         help="Print FNV correction information.")
 
+    del efc_defaults
+
     parser_correction.set_defaults(func=efnv_correction)
 
     # -- defects -------------------------------------------------------------
@@ -660,6 +699,9 @@ def main():
                     "are used for analyzing results.",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
         aliases=['d'])
+
+    d_defaults = {"perfect_json": "perfect/dft_results.json"}
+    simple_override(d_defaults, "perfect_json")
 
     parser_defects.add_argument(
         "--defect_dirs", dest="defect_dirs", nargs="+", type=str,
@@ -674,7 +716,7 @@ def main():
         help="defect.json type file name.")
     parser_defects.add_argument(
         "--perfect", dest="perfect", type=str,
-        default="perfect/dft_results.json",
+        default=d_defaults["perfect_json"],
         help="Json file name for the SupercellCalcResults class object of the "
              "perfect supercell result.")
     parser_defects.add_argument(
@@ -697,6 +739,12 @@ def main():
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
         aliases=['pe'])
 
+    pe_defaults = {"unitcell_json": "../unitcell/unitcell.json",
+                   "perfect_json": "perfect/dft_results.json",
+                   "chem_pot_yaml": "../competing_phases/vertices.yaml"}
+    simple_override(pe_defaults,
+                    ["unitcell_json", "perfect_json", "chem_pot_yaml"])
+
     parser_plot_energy.add_argument(
         "--name", dest="name", type=str, default="",
         help="System name that is written in the title.")
@@ -714,11 +762,12 @@ def main():
         default="defect_energies.json",
         help="DefectEnergies class object json file name.")
     parser_plot_energy.add_argument(
-        "--unitcell", dest="unitcell", type=str, default="unitcell.json",
+        "--unitcell", dest="unitcell", type=str,
+        default=pe_defaults["unitcell_json"],
         help="UnitcellCalcResults class object json file name.")
     parser_plot_energy.add_argument(
         "--perfect", dest="perfect", type=str,
-        default="perfect/dft_results.json",
+        default=pe_defaults["perfect_json"],
         help="Json file name for the SupercellCalcResults class object of the "
              "perfect supercell result.")
     parser_plot_energy.add_argument(
@@ -730,7 +779,7 @@ def main():
              "are required in each directory.")
     parser_plot_energy.add_argument(
         "--chem_pot_yaml", dest="chem_pot_yaml", type=str,
-        default="chem_pot.yaml",
+        default=pe_defaults["chem_pot_yaml"],
         help="Yaml file name for the chemical potential.")
     parser_plot_energy.add_argument(
         "--chem_pot_label", dest="chem_pot_label", type=str, default="A",
@@ -751,6 +800,8 @@ def main():
     #     "-u", dest="u", action="store_true",
     #     help="Calculate the U values at given defect name and three charges")
 
+    del pe_defaults
+
     parser_plot_energy.set_defaults(func=plot_energy)
 
     # -- parse_eigenvalues ----------------------------------------------------
@@ -759,6 +810,9 @@ def main():
         description="Tools for parsing defect eigenvalues",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
         aliases=['eig'])
+
+    eig_defaults = {"unitcell_json": "../unitcell/unitcell.json"}
+    simple_override(eig_defaults, "unitcell_json")
 
     parser_parse_eigenvalues.add_argument(
         "--title", dest="title", type=str, default="",
@@ -770,13 +824,9 @@ def main():
         "-s", "--save_file", dest="save_file", type=str, default=None,
         help="File name to save the plot.")
     parser_parse_eigenvalues.add_argument(
-        "--unitcell", dest="unitcell", type=str, default="unitcell.json",
+        "--unitcell", dest="unitcell", type=str,
+        default=eig_defaults["unitcell_json"],
         help="UnitcellCalcResults class object json file name.")
-    # parser_parse_eigenvalues.add_argument(
-    #     "--perfect", dest="perfect", type=str,
-    #     default="perfect/dft_results.json",
-    #     help="Json file name for the SupercellCalcResults class object of the "
-    #          "perfect supercell result.")
     parser_parse_eigenvalues.add_argument(
         "--d", dest="defect", type=str, default="defect.json")
     parser_parse_eigenvalues.add_argument(
@@ -784,6 +834,8 @@ def main():
         help="Directory name for the defect supercell result. "
              "defect_entry.json, dft_results.json, and correction.json files "
              "are required in the directory.")
+
+    del eig_defaults
 
     parser_parse_eigenvalues.set_defaults(func=parse_eigenvalues)
 
@@ -835,12 +887,16 @@ def main():
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
         aliases=['c'])
 
+    c_defaults = {"unitcell_json": "../unitcell/unitcell.json"}
+    simple_override(c_defaults, "unitcell_json")
+
     parser_concentration.add_argument(
         "--energies", dest="energies", type=str,
         default="defect_energies.json",
         help="DefectEnergies class object json file name.")
     parser_concentration.add_argument(
-        "--unitcell", dest="unitcell", type=str, default="unitcell.json",
+        "--unitcell", dest="unitcell", type=str,
+        default=c_defaults["unitcell_json"],
         help="UnitcellCalcResults class object json file name.")
     parser_concentration.add_argument(
         "--filtering", dest="filtering", type=str, help="Filtering word.")
@@ -855,6 +911,8 @@ def main():
         help="Temperature for calculating the Fermi level. When two "
              "temperatures are supplied, the first temperature is quenched to "
              "the second temperature.")
+
+    del c_defaults
 
     parser_concentration.set_defaults(func=concentration)
 
@@ -878,9 +936,6 @@ def main():
 
     args = parser.parse_args()
     args.func(args)
-
-#    filtering_words=args.filtering_words,
-
 
 if __name__ == "__main__":
     main()

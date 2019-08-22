@@ -256,12 +256,20 @@ class SupercellCalcResults(MSONable):
         p = Path(directory_path)
 
         # get the names of the latest files in the directory_path
-        if not vasprun:
+        if vasprun:
+            vasprun = Path(directory_path) / vasprun
+        else:
             vasprun = str(max(p.glob("*vasprun*"), key=os.path.getctime))
-        if not contcar:
+
+        if contcar:
+            contcar = Path(directory_path) / contcar
+        else:
             poscar_files = list(p.glob("*CONTCAR*")) + list(p.glob("*POSCAR*"))
             contcar = str(max(poscar_files, key=os.path.getctime))
-        if not outcar:
+
+        if outcar:
+            outcar = Path(directory_path) / outcar
+        else:
             outcar = str(max(p.glob("*OUTCAR*"), key=os.path.getctime))
 
         vasprun = parse_file(Vasprun, vasprun)
