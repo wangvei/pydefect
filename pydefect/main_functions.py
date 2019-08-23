@@ -83,7 +83,6 @@ def vasp_oba_set(args):
                                             charge=args.charge,
                                             copied_file_names=files, **kwargs)
         else:
-            print(kwargs)
             s = Structure.from_file(args.poscar)
             oba_set = \
                 ObaSet.make_input(structure=s,
@@ -349,10 +348,11 @@ def defect_vasp_oba_set(args):
 
     defect_initial_setting = DefectInitialSetting.from_defect_in(
         poscar=args.dposcar, defect_in_file=args.defect_in)
-    defect_initial_setting.make_defect_set(
-        keywords=args.keywords, specified_defects=args.particular_defects)
 
-    if not args.particular_defects:
+    defect_initial_setting.make_defect_set(
+        keywords=args.keywords, specified_defects=args.specified_defects)
+
+    if not args.specified_defects:
         oba_set = ObaSet.make_input(structure=defect_initial_setting.structure,
                                     user_incar_settings={"ISPIN": 1},
                                     **kwargs)
@@ -506,10 +506,6 @@ def efnv_correction(args):
 
 
 def defects(args):
-    # try:
-    #     unitcell = UnitcellCalcResults.load_json(args.unitcell)
-    # except FileNotFoundError:
-    #     print("{} not found".format(args.unitcell))
 
     if args.band_edge:
         if args.band_edge[0] == "up":

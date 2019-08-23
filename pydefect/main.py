@@ -39,7 +39,7 @@ def main():
         """Override dict if keys exist in user_setting.
 
         When the value in the user_settings is a dict, it will be changed to
-        list.
+        list using dict2list.
         """
         if isinstance(keys, str):
             keys = [keys]
@@ -89,7 +89,7 @@ def main():
 
     vos_defaults["vos_kwargs"].update(
         user_settings.get("perfect_vos_kwargs", {}))
-#    simple_override(vos_defaults["vos_kwargs"], ["symprec", "angle_tolerance"])
+    simple_override(vos_defaults["vos_kwargs"], ["symprec", "angle_tolerance"])
     vos_defaults["vos_kwargs"] = dict2list(vos_defaults["vos_kwargs"])
 
     # write use potcar setting
@@ -495,8 +495,8 @@ def main():
 
     dvos_defaults["dvos_kwargs"].update(
         user_settings.get("defect_vos_kwargs", {}))
-#    simple_override(
-#        dvos_defaults["dvos_kwargs"], ["symprec", "angle_tolerance"])
+    simple_override(
+        dvos_defaults["dvos_kwargs"], ["symprec", "angle_tolerance"])
     dvos_defaults["dvos_kwargs"] = dict2list(dvos_defaults["dvos_kwargs"])
 
     parser_defect_vasp_set.add_argument(
@@ -520,8 +520,8 @@ def main():
         default=dvos_defaults["dvos_kwargs"], nargs="+",
         help="Keywords for vasp_oba_set.")
     parser_defect_vasp_set.add_argument(
-        "-d", dest="particular_defects", type=str, default=None, nargs="+",
-        help="Particular defect names to be added.")
+        "-d", dest="specified_defects", type=str, default=None, nargs="+",
+        help="Particularly specified defect names to be added.")
     parser_defect_vasp_set.add_argument(
         "--force_overwrite", dest="force_overwrite", action="store_true",
         help="Set if the existing folders are overwritten.")

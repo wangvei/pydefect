@@ -879,7 +879,7 @@ class DefectInitialSetting(MSONable):
         defects.update(self._substituted_set(
             removed_sites=self.irreducible_sites, inserted_element=None))
 
-        # substituted
+        # substituted + antisite
         configs = self.antisite_configs + self.dopant_configs
         for in_elem, out_elem in configs:
             removed_sites = \
@@ -891,9 +891,14 @@ class DefectInitialSetting(MSONable):
         inserted_elements = self.structure.symbol_set + tuple(self.dopants)
         defects.update(self._inserted_set(inserted_elements=inserted_elements))
 
-        # antisites
+        # complex defects
         defects.update(self._complex_set())
-        defects = select_defects(defects, keywords, specified_defects)
+
+        defects = select_defects(defect_set=defects,
+                                 keywords=keywords,
+                                 included=self.included,
+                                 excluded=self.excluded,
+                                 specified_defects=specified_defects)
 
         self.defect_entries = []
         for name, defect in defects.items():
