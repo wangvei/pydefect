@@ -259,7 +259,7 @@ def interstitial(args):
         defect_initial_setting = \
             DefectInitialSetting.from_defect_in(poscar=args.dposcar,
                                                 defect_in_file="defect.in")
-        # To change coords from unitcell to supercell multiply inverse of
+        # To change coords from unitcell to supercell, multiply inverse of
         # trans_mat to coords.
         tm_list = defect_initial_setting.transformation_matrix
         trans_mat = [[tm_list[3 * i + j] for j in range(3)] for i in range(3)]
@@ -318,7 +318,7 @@ def defect_vasp_oba_set(args):
     ldaul = list2dict(args.ldaul, flags)
     potcar_set = potcar_str2dict(args.potcar_set)
     kwargs = {
-        "standardize_structure":False,
+        "standardize_structure": False,
         "task": "defect",
         "xc": args.xc,
         "override_potcar_set": potcar_set,
@@ -409,7 +409,7 @@ def supercell_calc_results(args):
 
     for d in dirs:
         if os.path.isdir(d):
-            logger.info("Parsing data in {}...".format(d))
+            logger.info(f"Parsing data in {d} ...")
 
             if d in ["perfect", "perfect/"]:
                 try:
@@ -423,8 +423,6 @@ def supercell_calc_results(args):
                     raise IOError("Parsing data in perfect failed")
             else:
                 try:
-    #                filename = join(args.perfect_results, "dft_results.json")
-    #                perfect_results = SupercellCalcResults.load_json(filename)
                     de = DefectEntry.load_json(join(d, args.defect_entry_name))
 
                     dft_results = \
@@ -438,13 +436,12 @@ def supercell_calc_results(args):
                             defect_symprec=args.symprec,
                             angle_tolerance=args.angle_tolerance)
                 except IOError:
-                    logger.warning("Parsing data in {} failed.".format(d))
+                    logger.warning(f"Parsing data in {d} failed.")
                     continue
 
-            dft_results.to_json_file(
-                filename=join(d, "dft_results.json"))
+            dft_results.to_json_file(filename=join(d, "dft_results.json"))
         else:
-            logger.warning("{} does not exist, so nothing is done.".format(d))
+            logger.warning(f"{d} does not exist, so nothing is done.")
 
 
 def efnv_correction(args):
@@ -485,11 +482,10 @@ def efnv_correction(args):
         json_to_make = join(directory, "correction.json")
 
         if os.path.exists(json_to_make) and not args.force_overwrite:
-            logger.warning("{} exists. ExtendedFnvCorrection was not done."
-                           .format(json_to_make))
+            logger.warning(f"{json_to_make} already exists, so nothing done.")
             continue
 
-        logger.info("correcting {} ...".format(directory))
+        logger.info(f"correcting {directory} ...")
         entry = DefectEntry.load_json(join(directory, "defect_entry.json"))
         defect_dft_data = SupercellCalcResults.load_json(
             join(directory, "dft_results.json"))
@@ -513,8 +509,7 @@ def defects(args):
         elif args.band_edge[0] == "down":
             spin = Spin.down
         else:
-            raise ValueError("band edge flag is inadequate. "
-                             "Ex. -be up no_in_gap")
+            raise ValueError("band edge is inadequate (e.g. -be up no_in_gap).")
         state = args.band_edge[1]
         defect = Defect.load_json(args.json)
         defect.set_band_edge_state(spin=spin, state=state)
@@ -579,10 +574,13 @@ def plot_energy(args):
         chem_pot = ChemPotDiag.load_vertices_yaml(args.chem_pot_yaml)
 
         # First construct DefectEnergies class object.
-        defect_energies = DefectEnergies.from_objects(
-            unitcell=unitcell, perfect=perfect, defects=defect_list,
-            chem_pot=chem_pot, chem_pot_label=args.chem_pot_label,
-            system=args.name)
+        defect_energies = \
+            DefectEnergies.from_objects(unitcell=unitcell,
+                                        perfect=perfect,
+                                        defects=defect_list,
+                                        chem_pot=chem_pot,
+                                        chem_pot_label=args.chem_pot_label,
+                                        system=args.name)
 
     defect_energies.to_json_file(filename=args.energies)
 
@@ -618,23 +616,27 @@ def parse_eigenvalues(args):
     unitcell = UnitcellCalcResults.load_json(args.unitcell)
 
     # TODO: Modify here to run w/o correction
-    logger.info("parsing directory {}...".format(args.defect_dir))
+    logger.info(f"parsing directory {args.defect_dir}...")
     filename = join(args.defect_dir, args.defect)
     defect = Defect.load_json(filename)
 
     defect_eigenvalues = DefectEigenvalue.from_files(unitcell=unitcell,
                                                      defect=defect)
 
-    defect_eigenvalues.plot(yrange=args.y_range, title=args.title,
+    defect_eigenvalues.plot(yrange=args.y_range,
+                            title=args.title,
                             filename=args.save_file)
 
 
 def vasp_parchg_set(args):
-    user_incar_settings = {"LPARD": True, "LSEPB": True, "KPAR": 1,
+    user_incar_settings = {"LPARD": True,
+                           "LSEPB": True,
+                           "KPAR": 1,
                            "IBAND": args.band_indices}
 
     if args.kpoint_indices:
         user_incar_settings["KPUSE"] = args.kpoint_indices
+
     oba_set = ObaSet.from_prev_calc(dirname=args.read_dir,
                                     parse_calc_results=False,
                                     parse_magnetization=False,
@@ -645,6 +647,7 @@ def vasp_parchg_set(args):
                                     parse_kpoints=True,
                                     copied_file_names={"WAVECAR": "L"},
                                     user_incar_settings=user_incar_settings)
+
     oba_set.write_input(args.write_dir)
 
 
@@ -652,9 +655,8 @@ def local_structure(args):
     defects_dirs = args.defect_dirs if args.defect_dirs else glob('*[0-9]/')
 
     for d in defects_dirs:
-        logger.info("parsing directory {}...".format(d))
         filename = join(d, args.defect)
-        logger.info("parsing directory {}...".format(d))
+        logger.info(f"parsing directory {d}...")
         try:
             defect = Defect.load_json(filename)
         except FileNotFoundError:
@@ -668,6 +670,7 @@ def local_structure(args):
 def concentration(args):
     defect_energies = DefectEnergies.load_json(args.energies)
     unitcell = UnitcellCalcResults.load_json(args.unitcell)
+
     defect_concentration = DefectConcentration.from_calc_results(
         defect_energies=defect_energies,
         unitcell=unitcell,
@@ -675,41 +678,12 @@ def concentration(args):
 
     defect_concentration.calc_equilibrium_concentration(
         temperature=args.temperature, verbose=args.verbose)
+
     defect_concentration.calc_quenched_equilibrium_concentration(
         verbose=args.verbose)
+
     print(defect_concentration)
     defect_concentration.calc_concentrations()
     plt = defect_concentration.plot_carrier_concentrations()
     plt.show()
-
-
-# def make_refined_structure(args):
-#     defects_dirs = args.defect_dirs if args.defect_dirs else glob('*[0-9]/')
-#     original_dir = os.getcwd()
-
-    # for d in defects_dirs:
-    #     print(d.rjust(12), end="  ")
-    #     os.chdir(join(original_dir, d))
-    #     calc_results = SupercellCalcResults.load_json(args.dft_results)
-    #     if not calc_results.is_converged:
-    #         raise NoConvergenceError("Vasp is not converged.")
-
-        # if calc_results.symmetrized_structure:
-        #     os.mkdir(join(original_dir, d, "refined"))
-        #     os.chdir(join(original_dir, d, "refined"))
-        #     oba_set = ObaSet.from_prev_calc(dirname="..",
-        #                                     parse_calc_results=False,
-        #                                     parse_magnetization=False,
-        #                                     standardize_structure=False,
-        #                                     sort_structure=False,
-        #                                     parse_potcar=True,
-        #                                     parse_incar=True,
-        #                                     parse_kpoints=True,
-        #                                     copied_file_names={"WAVECAR": "L"})
-        #     oba_set.write_input(".")
-        #     poscar = Poscar(calc_results.symmetrized_structure)
-        #     poscar.write_file("POSCAR")
-        # else:
-        #     raise ValueError("No symmetrized structure in DFT results.")
-
 

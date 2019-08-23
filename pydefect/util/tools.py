@@ -9,6 +9,24 @@ from pymatgen import Spin
 logger = get_logger(__name__)
 
 
+def is_str_digit(n: str) -> bool:
+    try:
+        int(n)
+        return True
+    except ValueError:
+        return False
+
+
+def is_str_int(n: str) -> bool:
+    try:
+        if int(n) - float(n) < 1e-5:
+            return True
+        else:
+            return False
+    except ValueError:
+        return False
+
+
 def spin_key_to_str(arg: Optional[dict],
                     value_to_str=False) -> Optional[dict]:
     """ Change Spin object in key to int.

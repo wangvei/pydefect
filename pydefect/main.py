@@ -547,7 +547,7 @@ def main():
     parser_defect_entry = subparsers.add_parser(
         name="defect_entry",
         description="Tools for configuring defect_entry files for post process"
-                    "of defect calculations. By default, print defect_entry.",
+                    "of defect calculations.",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
         aliases=['de'])
 

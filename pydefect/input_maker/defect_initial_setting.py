@@ -88,16 +88,18 @@ def get_oxidation_states(dopants: list,
         oxidation_states (dict): Dopant element list {"Al": 3, "N": -3, ..}
         structure (Structure): Host structure.
 
-        1. Use specified oxidation states.
+     The oxidation states are determined in the following order.
+        1. Use specified oxidation states by hand. (If they lack some elements,
+           use oxidation_states function.
         2. Use the pymatgen oxidation guess.
-        3. Use the OSs in the oxidation_state_dict.
-        If not sufficient in 1 and 2, use the oxidation_state_dict.
+        3. Use the OSs in the oxidation_states function.
 
     Return
         Dict of oxidation_states.
     """
     host_element_set = structure.composition.elements
     element_set = host_element_set + dopants
+
     # Electronegativity and oxidation states for constituents and dopants
     if oxidation_states:
         d = {}
@@ -138,7 +140,7 @@ def dopant_info(dopant: Union[str, Element]) -> Union[str, None]:
                f"  Oxidation state: {get_oxidation_state(dopant)}"]
         return "\n".join(out)
     else:
-        logger.warning(f"{dopant} is not an element name.")
+        logger.warning(f"{dopant} is not a proper element name.")
         return
 
 
@@ -222,9 +224,9 @@ def select_defects(defect_set: Dict[str, dict],
             defect_set.
 
     Return:
-         list of defect dict. Charges must be list
-           e.g. [{"name": "Va_O1", "charges": [2], ..},
-                 {"name": "Va_Mg1", "charge": [0], ..}]
+         list of defect dict. Charges are set
+           e.g.  {"Va_Mg1": {"charges": {0, 1, 2}},
+                  "Va_O1": {"charges": {0}},..}
     """
     included = included if included else list()
     excluded = excluded if excluded else list()
@@ -630,15 +632,16 @@ class DefectInitialSetting(MSONable):
         complex_defect_names = \
             complex_defect_names if complex_defect_names else list()
 
+        # Here, the structure is sorted by elements.
         s = structure.get_sorted_structure()
-        sga = SpacegroupAnalyzer(s, symprec, angle_tolerance)
+        sga = SpacegroupAnalyzer(structure, symprec, angle_tolerance)
         symmetrized_structure = sga.get_symmetrized_structure()
         space_group_symbol = sga.get_space_group_symbol()
 
         host_element_set = s.symbol_set
         element_set = host_element_set + tuple(dopants)
 
-        electronegativity = {e: get_electronegativity(e) for e in element_set}
+        electroneg = {e: get_electronegativity(e) for e in element_set}
         oxidation_states = get_oxidation_states(dopants, oxidation_states, s)
 
         symmetrized_structure.add_oxidation_state_by_element(oxidation_states)
@@ -653,6 +656,7 @@ class DefectInitialSetting(MSONable):
         lattice = symmetrized_structure.lattice.matrix
         sym_dataset = sga.get_symmetry_dataset()
 
+        # Once again we need to sort the structure by equivalent sites
         sorted_structure = \
             Structure.from_sites(reduce(lambda a, b: a + b, equiv_sites))
 
@@ -696,9 +700,8 @@ class DefectInitialSetting(MSONable):
             for elem1, elem2 in permutations(host_element_set, 2):
                 if elem1 == elem2:
                     continue
-                elif elem1 in electronegativity and elem2 in electronegativity:
-                    if abs(electronegativity[elem1] -
-                           electronegativity[elem2]) < en_diff:
+                elif elem1 in electroneg and elem2 in electroneg:
+                    if abs(electroneg[elem1] - electroneg[elem2]) < en_diff:
                         antisite_configs.append([elem1, elem2])
                 else:
                     logger.warning(f"Electronegativity of {elem1} and/or " 
@@ -711,9 +714,8 @@ class DefectInitialSetting(MSONable):
                 logger.warning(f"Dopant {dopant} constitutes host.")
                 continue
             for elem in host_element_set:
-                if elem and dopant in electronegativity:
-                    if abs(electronegativity[elem] -
-                           electronegativity[dopant]) < en_diff:
+                if elem and dopant in electroneg:
+                    if abs(electroneg[elem] - electroneg[dopant]) < en_diff:
                         dopant_configs.append([dopant, elem])
                 else:
                     logger.warning(f"Electronegativity of {dopant} and/or "
@@ -735,7 +737,7 @@ class DefectInitialSetting(MSONable):
                    symprec=symprec,
                    angle_tolerance=angle_tolerance,
                    oxidation_states=oxidation_states,
-                   electronegativity=electronegativity)
+                   electronegativity=electroneg)
 
     def to_yaml_file(self, filename: str = "defect.yaml") -> None:
         dumpfn(self.as_dict(), filename)

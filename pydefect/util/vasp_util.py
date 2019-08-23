@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
-import numpy as np
 from collections import defaultdict
 
+import numpy as np
 from pymatgen.core.composition import Composition
 from pymatgen.core.sites import Element
 from pymatgen.core.structure import Structure

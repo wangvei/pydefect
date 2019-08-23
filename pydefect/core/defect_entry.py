@@ -22,6 +22,7 @@ from pydefect.util.structure_tools import (
 from pydefect.util.vasp_util import element_diff_from_structures
 from pydefect.core.config import (
     DEFECT_SYMMETRY_TOLERANCE, ANGLE_TOL, CUTOFF_RADIUS)
+from pydefect.util.tools import is_str_digit
 
 __author__ = "Yu Kumagai"
 __maintainer__ = "Yu Kumagai"
@@ -39,7 +40,7 @@ class DefectType(Enum):
     def __repr__(self):
         return self.value
 
-    # This is a must.
+    # Don't remove here. This is a must.
     def __str__(self):
         return self.value
 
@@ -320,6 +321,7 @@ class DefectEntry(MSONable):
             inserted_atoms.append({"element": str(inserted_atom.specie),
                                    "index": i,
                                    "coords": list(inserted_atom.frac_coords)})
+
             pristine_defect_structure.insert(i, inserted_atom.specie,
                                              inserted_atom.frac_coords)
 
@@ -416,10 +418,6 @@ class DefectEntry(MSONable):
     @property
     def anchor_atom_index(self) -> int:
         """ Returns an index of atom that is the farthest from the defect. """
-        # distance_set = \
-        #     self.initial_structure.lattice.get_all_distances(
-        #         self.defect_center, self.initial_structure.frac_coords)[0]
-
         return anchor_atom_index(structure=self.initial_structure,
                                  center=self.defect_center_coords)
 
@@ -450,15 +448,7 @@ def divide_dirname(dirname: str) -> Tuple[str, int, Optional[str]]:
             -> name = "Mg_i+Va_O1*2", charge = 2, annotation = "coord1"
     """
     split_dirname = dirname.split("_")
-
-    def is_digit(n):
-        try:
-            int(n)
-            return True
-        except ValueError:
-            return False
-
-    digit_positions = [x for x, y in enumerate(split_dirname) if is_digit(y)]
+    digit_positions = [x for x, y in enumerate(split_dirname) if is_str_digit(y)]
 
     if len(digit_positions) != 1:
         raise ValueError(f"The dirname {dirname} is not valid")

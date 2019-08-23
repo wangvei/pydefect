@@ -1,8 +1,9 @@
 # -*- coding: utf-8 -*-
-from typing import Callable
 from pathlib import Path
-from pymatgen.util.testing import PymatgenTest
+from typing import Callable
+
 from pymatgen.core.structure import Structure
+from pymatgen.util.testing import PymatgenTest
 
 
 class PydefectTest(PymatgenTest):
