@@ -38,7 +38,7 @@ setting_keys = ["symprec",
                 "ionic_diele_dir",
                 "band_edge_dir",
                 "dos_dir",
-                "untcell_json",
+                "unitcell_json",
                 "perfect_json",
                 "chem_pot_yaml",
                 "competing_phases_incar_setting"]
