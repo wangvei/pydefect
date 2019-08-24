@@ -1,8 +1,13 @@
 # -*- coding: utf-8 -*-
 from pathlib import Path
-from pydefect.util.testing import PydefectTest
+
 from pydefect.util.main_tools import (
-    get_user_settings, get_default_args, potcar_str2dict, dict2list, list2dict)
+    get_user_settings, get_default_args, potcar_str2dict, dict2list, list2dict,
+    generate_objects_from_json_files)
+from pydefect.util.testing import PydefectTest
+from pydefect.core.defect_entry import DefectEntry
+from pydefect.corrections.efnv_corrections import ExtendedFnvCorrection
+
 __author__ = "Yu Kumagai"
 __maintainer__ = "Yu Kumagai"
 
@@ -106,3 +111,14 @@ class List2DictTest(PydefectTest):
         flattened_list = ["ENCUT", "500", "MAGMOM"]
         with self.assertRaises(ValueError):
             list2dict(flattened_list, self.key_candidates)
+
+
+class GenerateObjectsFromJsonFilesTest(PydefectTest):
+    def test_success(self) -> None:
+        directory = self.DEFECTS_MGO_DIR / "Va_O1_0"
+        filenames = ["defect_entry.json", "correction.json"]
+        classes = [DefectEntry, ExtendedFnvCorrection]
+        self.objects = generate_objects_from_json_files(
+            directory, filenames, classes)
+        self.assertTrue(isinstance(self.objects[0], DefectEntry))
+        self.assertTrue(isinstance(self.objects[1], ExtendedFnvCorrection))

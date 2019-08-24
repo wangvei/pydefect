@@ -6,7 +6,7 @@ from typing import Union
 
 import yaml
 from monty.json import MSONable
-from vise.util.structure_handler import get_coordination_distances
+from pydefect.util.structure_tools import get_coordination_distances
 from pydefect.core.config import SYMMETRY_TOLERANCE, ANGLE_TOL
 from pydefect.database.num_symmetry_operation import num_symmetry_operation
 from pydefect.util.logger import get_logger
@@ -164,10 +164,11 @@ class InterstitialSiteSet(MSONable):
 
     def add_sites(self,
                   coords: list,
+                  cutoff: float,
                   vicinage_radius: float = 0.3,
                   symprec: float = SYMMETRY_TOLERANCE,
                   angle_tolerance: float = ANGLE_TOL,
-                  method: str = "manual"):
+                  method: str = "manual") -> None:
         """ Add interstitial sites
 
         Note that symprec must be the same as that used for
@@ -191,6 +192,8 @@ class InterstitialSiteSet(MSONable):
                 in enumerate(zip(coords, atom_indices, are_inserted)):
             if not inserted:
                 continue
+            site_name = "i" + str(i + 1)
+
             site_symmetry = symmetry_dataset["site_symmetry_symbols"][ai]
             wyckoff = symmetry_dataset["wyckoffs"][ai]
             multiplicity = num_symmetry_operation(site_symmetry)
@@ -199,7 +202,8 @@ class InterstitialSiteSet(MSONable):
             defect_str = self.structure.copy()
             defect_str.append(DummySpecie(), coord)
             coordination_distances = \
-                get_coordination_distances(defect_str, len(defect_str) - 1)
+                get_coordination_distances(defect_str, len(defect_str) - 1,
+                                           cutoff)
 
             interstitial_site = \
                 InterstitialSite(representative_coords=coord,
@@ -209,7 +213,7 @@ class InterstitialSiteSet(MSONable):
                                  coordination_distances=coordination_distances,
                                  method=method)
 
-            self.interstitial_sites["i" + str(i)] = interstitial_site
+            self.interstitial_sites[site_name] = interstitial_site
 
 
 def interstitials_from_charge_density(
@@ -220,7 +224,7 @@ def interstitials_from_charge_density(
         tol: float = 0.2,
         radius: float = 0.4,
         symprec: float = SYMMETRY_TOLERANCE,
-        angle_tolerance: float = ANGLE_TOL):
+        angle_tolerance: float = ANGLE_TOL) -> None:
     """ Print interstitial sites determined from charge density local minimum
 
     Note that symprec must be the same as that used for

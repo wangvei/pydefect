@@ -6,7 +6,8 @@ __author__ = "Yu Kumagai"
 __maintainer__ = "Yu Kumagai"
 
 
-def get_logger(name, level=logging.DEBUG,
+def get_logger(name: str,
+               level=logging.DEBUG,
                log_format='%(asctime)s %(levelname)s %(name)s %(message)s',
                stream=sys.stdout):
     logger = logging.getLogger(name)

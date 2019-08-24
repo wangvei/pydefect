@@ -4,59 +4,72 @@ import os
 
 import numpy as np
 from pydefect.util.structure_tools import (
-    perturb_neighboring_atoms, get_displacements, defect_center_from_coords,
+    perturb_neighboring_atoms, get_minimum_distance, get_displacements, defect_center_from_coords,
+    distance_list,
     atomic_distances, create_saturated_interstitial_structure,
     count_equivalent_clusters, get_point_group_op_number,
-    get_symmetry_multiplicity)
+    get_symmetry_multiplicity, get_coordination_distances)
 from pymatgen.core.structure import Structure
-from pymatgen.util.testing import PymatgenTest
 from vise.util.structure_handler import get_symmetry_dataset
+from pydefect.util.testing import PydefectTest
 
 __author__ = "Yu Kumagai"
 __maintainer__ = "Yu Kumagai"
 
-test_files = os.path.join(os.path.dirname(__file__), "..", "..", "..",
-                          "test_files")
-test_dir_input_structure = os.path.join(test_files, "input_maker")
-test_dir_core = os.path.join(test_files, "core", "MgO", "defects")
+
+class PerturbNeighborsTest(PydefectTest):
+
+    def setUp(self) -> None:
+        self.structure = self.get_structure_by_name("MgO64atoms")
+        # Mg at [0, 0, 0] is assumed to be inserted
+        center = [0.5, 0.5, 0.5]
+        cutoff = self.structure.lattice.a / 4
+        self.distance = 0.2
+        inserted_atom_indices = [7]
+
+        self.perturbed_structure, self.perturbed_sites = \
+            perturb_neighboring_atoms(self.structure, center, cutoff,
+                                      self.distance, inserted_atom_indices)
+
+        # Mg-Mg = 2.976
+        cutoff_larger = cutoff * 1.42
+        _, self.perturbed_sites_2 = \
+            perturb_neighboring_atoms(self.structure, center, cutoff_larger,
+                                      self.distance, inserted_atom_indices)
+
+    def test_perturbed_sites_smaller(self):
+        expected = [43, 47, 53, 55, 62, 63]
+        self.assertEqual(expected, self.perturbed_sites)
+
+    def test_perturbed_sites_larger(self):
+        expected = [12, 13, 14, 15, 18, 19, 22, 23, 25, 27, 29, 31, 43, 47, 53,
+                    55, 62, 63]
+        self.assertEqual(expected, self.perturbed_sites_2)
+
+    def test_displacement_distance(self):
+        distances = []
+        for s in [43, 47, 53, 55, 62, 63]:
+            disp = (self.perturbed_structure[s].frac_coords -
+                    self.structure[s].frac_coords)
+            distances.append(np.linalg.norm(disp) * self.structure.lattice.a)
+        print(distances)
+        self.assertLessEqual(max(distances), self.distance)
 
 
-class PerturbNeighborsTest(PymatgenTest):
+class GetMinimumDistanceTest(PydefectTest):
+    def setUp(self) -> None:
+        self.structure = self.get_structure_by_name("KZn4P3")
 
-    def test(self):
-        structure = \
-            Structure.from_file(os.path.join(test_dir_input_structure,
-                                             "POSCAR-MgO64atoms"))
-        center = [0.0, 0.0, 0.0]
-        cutoff = 3.0
-        distance = 0.2
-        inserted_atom_indices = [0]
-
-        # TODO: test the displacement distances
-        perturbed_defect_structure, perturbed_sites = \
-            perturb_neighboring_atoms(structure, center, cutoff, distance,
-                                      inserted_atom_indices)
-        true_perturbed_sites = [40, 44, 48, 50, 56, 57]
-        self.assertEqual(perturbed_sites, true_perturbed_sites)
-
-#        self.structure = Structure.from_file("POSCAR-Sn2Nb2O7")
-
-    # def test_get_coordination_environment(self):
-    #     print(get_coordination_environment(self.structure, 0))
-    #     # print(get_coordination_environment(self.structure, 4))
-    #     # print(get_coordination_environment(self.structure, 8))
-    #     # print(get_coordination_environment(self.structure, 16))
-
-    # def test_get_neighbors(self):
-    #     a = get_coordination_distances(self.structure, 0)
-    #     for k, v in a.items():
-    #         print(k + ": " + " ".join([str(round(i, 2)) for i in v]))
+    def test_minimum_distance(self):
+        actual = get_minimum_distance(self.structure)
+        expected = 2.3103506255400017
+        self.assertEqual(expected, actual)
 
 
-class GetDisplacementsTest(PymatgenTest):
+class GetDisplacementsTest(PydefectTest):
     def setUp(self):
-        contcar = Structure.from_file(os.path.join("CONTCAR-MgO-VO"))
-        poscar = Structure.from_file(os.path.join("POSCAR-MgO-VO"))
+        contcar = self.get_structure_by_name("MgO64atoms-Va_O_0")
+        poscar = self.get_structure_by_name("MgO64atoms")
         center = [0.25, 0.25, 0.25]
         anchor_atom_index = 14
 
@@ -72,7 +85,7 @@ class GetDisplacementsTest(PymatgenTest):
         self.assertAlmostEqual(self.disp_norms[1], norm_expected)
 
 
-class DefectCenterFromCoordsTest(PymatgenTest):
+class DefectCenterFromCoordsTest(PydefectTest):
     def setUp(self):
         self._defect_coords = [[0.1, 0.2, 0.3], [-0.1, 0, 0.1]]
         self._poscar = Structure.from_file(
@@ -85,7 +98,7 @@ class DefectCenterFromCoordsTest(PymatgenTest):
         self.assertArrayAlmostEqual(actual, expected)
 
 
-class AtomicDistancesTest(PymatgenTest):
+class AtomicDistancesTest(PydefectTest):
 
     def setUp(self):
         structure = Structure.from_file("POSCAR-atom_distances")
@@ -98,7 +111,7 @@ class AtomicDistancesTest(PymatgenTest):
         self.assertArrayAlmostEqual(actual, expected)
 
 
-class CreateSaturatedInterstitialStructureTest(PymatgenTest):
+class CreateSaturatedInterstitialStructureTest(PydefectTest):
     def setUp(self):
         self.structure = Structure.from_file("POSCAR-MgO64atoms")
 
@@ -112,7 +125,7 @@ class CreateSaturatedInterstitialStructureTest(PymatgenTest):
         print(are_inserted)
 
 
-class CountEquivalentClustersTest(PymatgenTest):
+class CountEquivalentClustersTest(PydefectTest):
 
     def setUp(self):
         self.structure = Structure.from_file("POSCAR-MgO64atoms")
@@ -123,7 +136,7 @@ class CountEquivalentClustersTest(PymatgenTest):
         print(count_equivalent_clusters(self.structure, self.inserted_atom_coords, self.removed_atom_coords))
 
 
-class GetPointGroupOpNumberTest(PymatgenTest):
+class GetPointGroupOpNumberTest(PydefectTest):
     def setUp(self):
         structure = Structure.from_file("POSCAR-MgO64atoms")
         self.sym_dataset = get_symmetry_dataset(structure)
@@ -135,3 +148,12 @@ class GetPointGroupOpNumberTest(PymatgenTest):
         print(get_symmetry_multiplicity(self.sym_dataset, coords, self.lattice))
 
 
+class GetCoordinationDistancesTest(PydefectTest):
+    def setUp(self) -> None:
+        self.structure = self.get_structure_by_name("KZn4P3")
+
+    def test_get_coordination_environment(self):
+        actual = get_coordination_distances(self.structure,
+                                            atom_index=1, cutoff=2.5)
+        expected = {'P': [2.31, 2.5, 2.5, 2.5]}
+        self.assertEqual(expected, actual)

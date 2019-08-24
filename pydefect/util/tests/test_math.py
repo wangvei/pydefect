@@ -1,19 +1,13 @@
 # -*- coding: utf-8 -*-
-import os
-import unittest
-
 import numpy as np
 from pydefect.util.math import normalized_random_3d_vector, random_vector
+from pydefect.util.testing import PydefectTest
 
 __author__ = "Yu Kumagai"
 __maintainer__ = "Yu Kumagai"
 
 
-test_dir = os.path.join(os.path.dirname(__file__), "..", "..", "..",
-                        "test_files", "input_maker")
-
-
-class NormalizedRandom3dVectorTest(unittest.TestCase):
+class NormalizedRandom3dVectorTest(PydefectTest):
 
     def setUp(self):
         self.v = normalized_random_3d_vector()
@@ -24,7 +18,7 @@ class NormalizedRandom3dVectorTest(unittest.TestCase):
         self.assertAlmostEqual(np.linalg.norm(self.v), 1.0)
 
 
-class RandomVectorTest(unittest.TestCase):
+class RandomVectorTest(PydefectTest):
 
     def setUp(self):
         self.distance = 3.0

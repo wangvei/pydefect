@@ -3,7 +3,7 @@ import re
 from inspect import signature, _empty
 from os.path import join
 from pathlib import Path
-from typing import Callable, Optional
+from typing import Callable, Optional, List
 
 import yaml
 from pydefect.util.logger import get_logger
@@ -216,25 +216,38 @@ def list2dict(flattened_list: Optional[list], key_candidates: list) -> dict:
     return d
 
 
-def generate_objects(directory: str,
-                     files: list,
-                     classes: list,
-                     raise_error: bool = True) -> Optional[list]:
-    """Generate class object from file
+def generate_objects_from_json_files(
+        directory: str,
+        json_filenames: List[str],
+        classes: list,
+        raise_error: bool = True) -> Optional[list]:
+    """Generate class objects from directory and file names
 
+    Note1: Filenames and classes correspond to each other. E.g.,
+           filenames = ["defect_entry.json", "correction.json"]
+           classes = [DefectEntry, ExtendedFnvCorrection]
+    Note2: All the classes need to have load_json classmethod.
 
+    Args:
+        directory (str): Directory name where files locate
+        json_filenames (list): List of file names 
+        classes (list): List of classes
+        raise_error (bool): Whether to raise error when parsing failed.
+
+    Return:
+        List of class objects.
     """
 
     objects = []
-    for f, c in zip(files, classes):
+    for filename, class_obj in zip(json_filenames, classes):
         try:
-            objects.append(c.load_json(join(directory, f)))
+            objects.append(class_obj.load_json(join(directory, filename)))
         except IOError:
-            logger.warning(f"Parsing {f} in {directory} failed.")
+            logger.warning(f"Parsing {filename} in {directory} failed.")
             if raise_error:
                 raise
             else:
-                logger.warning(f"Parsing {f} in {directory} failed.")
+                logger.warning(f"Parsing {filename} in {directory} failed.")
                 return
 
     return objects

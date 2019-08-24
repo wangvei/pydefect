@@ -1,22 +1,22 @@
 # -*- coding: utf-8 -*-
+from collections import defaultdict
 from itertools import combinations
-from math import floor
 from typing import Union, List, Tuple
 
 import numpy as np
-import spglib
+from obadb.database.atom import charge as charge_list
 from pydefect.core.config import SYMMETRY_TOLERANCE, ANGLE_TOL
 from pydefect.core.error_classes import StructureError
 from pydefect.database.num_symmetry_operation import num_symmetry_operation
 from pydefect.util.logger import get_logger
 from pydefect.util.math import normalized_random_3d_vector, random_vector
+from pymatgen import Structure, DummySpecie
 from pymatgen.core.lattice import Lattice
 from pymatgen.core.periodic_table import DummySpecie, Specie
 from pymatgen.core.structure import Structure
-from pymatgen.io.vasp import Poscar
 from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
 from pymatgen.util.coord import pbc_shortest_vectors
-from vise.util.structure_handler import get_rotations
+from vise.util.structure_handler import get_rotations, logger
 
 __author__ = "Yu Kumagai"
 __maintainer__ = "Yu Kumagai"
@@ -28,7 +28,8 @@ def perturb_neighboring_atoms(structure: Structure,
                               center: List[float],
                               cutoff: float,
                               distance: float,
-                              inserted_atom_indices: List[int]):
+                              inserted_atom_indices: List[int]
+                              ) -> Tuple[Structure, list]:
     """ Return the structure with randomly perturbed atoms near the center
 
     Args:
@@ -39,29 +40,50 @@ def perturb_neighboring_atoms(structure: Structure,
         cutoff (float):
             Radius of a sphere in which atoms are perturbed.
         distance (float):
-            Max displacement_distance for the perturbation.
+            Max displacement distance for the perturbation.
         inserted_atom_indices (list):
             Inserted atom indices, which will not be perturbed.
+
+    Return:
+        Tuple of perturbed Structure and list of perturbed atom indices.
     """
     perturbed_structure = structure.copy()
     cartesian_coords = structure.lattice.get_cartesian_coords(center)
+    # neighbor is (PeriodicSite, distance, index)
     neighbors = structure.get_sites_in_sphere(
-        cartesian_coords, cutoff, include_index=True)
+        pt=cartesian_coords, r=cutoff, include_index=True)
     if not neighbors:
-        logger.warning("No neighbors withing the cutoff {}.".format(cutoff))
+        logger.warning(f"No neighbors withing the cutoff {cutoff}.")
 
     sites = []
-    # Since translate_sites accepts only one vector, we need to iterate this.
     for i in neighbors:
+        # not perturb inserted atoms
         if i[2] in inserted_atom_indices:
             continue
+        # Since translate_sites accepts only one vector, iterate this.
         vector = random_vector(normalized_random_3d_vector(), distance)
         site_index = i[2]
         sites.append(site_index)
-        perturbed_structure.translate_sites(site_index, vector,
-                                            frac_coords=False)
+        perturbed_structure.translate_sites(
+            indices=site_index, vector=vector, frac_coords=False)
 
     return perturbed_structure, sites
+
+
+def get_minimum_distance(structure: Structure) -> float:
+    """Return the minimum distance in the inter-atomic distances
+
+    Args:
+        structure (Structure): Input structure:
+
+    Return:
+        distance
+    """
+    distance_matrix = structure.distance_matrix
+    mask = np.ones(distance_matrix.shape, dtype=bool)
+    np.fill_diagonal(mask, 0)
+
+    return distance_matrix[mask].min()
 
 
 def get_displacements(final_structure: Structure,
@@ -224,8 +246,8 @@ def distance_list(structure: Structure,
        coords (1x3 numpy array):
            Fractional coordinates
     """
-    return [structure.lattice.get_distance_and_image(host, coords)[0]
-            for host in structure.frac_coords]
+    return [structure.lattice.get_distance_and_image(fcoord, coords)[0]
+            for fcoord in structure.frac_coords]
 
 
 def atomic_distances(lattice: Lattice,
@@ -467,4 +489,39 @@ def first_appearance_index(structure: Structure,
         return 0
 
 
+def get_coordination_distances(structure: Structure,
+                               atom_index: int,
+                               cutoff: float) -> dict:
+    """Calculated the coordination environment at the given atomic index.
 
+    Args:
+        structure (Structure):
+            pmg Structure class object
+        atom_index (int):
+            The atomic index
+        cutoff (float):
+            Cutoff distance used to detect the coordination.
+
+    Return:
+        coords (dict):
+            values are tuples of Element object and distance.
+            example  {'O': [(PeriodicSite: O (0.0000, 0.0000, -2.1234)
+            [-0.5000, -0.5000, 0.5000], 2.123447), ...
+    """
+    neighbors = structure.get_neighbors(
+        structure.sites[atom_index], cutoff, include_index=True)
+
+    coordination_distances = defaultdict(list)
+
+    for site, dist, index in neighbors:
+        # remove oxidation state from species_string, e.g., Mg2+ -> Mg
+        specie = ''.join([i for i in site.species_string if i.isalpha()])
+        # float is needed as the numpy.float is not compatible with the
+        # combination of OrderedDict and yaml. Otherwise, the interstitial.yaml
+        # shows ugly printing.
+        coordination_distances[specie].append(round(float(dist), 2))
+
+    for distances in coordination_distances.values():
+        distances.sort()
+
+    return dict(coordination_distances)

@@ -384,6 +384,9 @@ def main():
         "--dposcar", dest="dposcar", type=str, default=i_defaults["dposcar"],
         help="DPOSCAR-type file name.")
     parser_interstitial.add_argument(
+        "--defect_in", dest="defect_in", default="defect.in", type=str,
+        help="defect.in-type file name.")
+    parser_interstitial.add_argument(
         "-c", dest="interstitial_coords", nargs="+", type=float,
         help="Interstitial coordinates in the UPOSCAR cell. Eg., 0.5 0.5 0.5.")
     parser_interstitial.add_argument(

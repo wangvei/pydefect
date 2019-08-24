@@ -32,7 +32,7 @@ from pydefect.input_maker.defect_initial_setting import (
 from pydefect.input_maker.supercell_maker import Supercells
 from pydefect.util.logger import get_logger
 from pydefect.util.main_tools import (
-    list2dict, generate_objects, potcar_str2dict)
+    list2dict, generate_objects_from_json_files, potcar_str2dict)
 from pymatgen import Structure, Spin
 from pymatgen.core.periodic_table import Element
 
@@ -266,7 +266,11 @@ def interstitial(args):
         inv_trans_mat = np.linalg.inv(trans_mat)
         supercell_coords = [np.dot(inv_trans_mat, c).tolist() for c in coords]
 
+        defect_in = \
+            DefectInitialSetting.from_defect_in(args.dposcar, args.defect_in)
+
         interstitial_set.add_sites(coords=supercell_coords,
+                                   cutoff=defect_in.cutoff,
                                    vicinage_radius=args.radius,
                                    symprec=args.symprec,
                                    angle_tolerance=args.angle_tolerance)
@@ -547,7 +551,7 @@ def defects(args):
         logger.info("parsing directory {}...".format(d))
         files = [args.defect_entry, args.dft_results, args.correction]
         classes = [DefectEntry, SupercellCalcResults, ExtendedFnvCorrection]
-        input_objects = generate_objects(d, files, classes, raise_error=False)
+        input_objects = generate_objects_from_json_files(d, files, classes, raise_error=False)
 
         if input_objects:
             defect = Defect.from_objects(defect_entry=input_objects[0],

@@ -8,10 +8,10 @@ from functools import reduce
 from monty.json import MontyEncoder, MSONable
 from monty.serialization import loadfn, dumpfn
 from vise.util.structure_handler import (
-    get_point_group_from_dataset, get_coordination_distances)
+    get_point_group_from_dataset)
 from pydefect.core.config import (
-    ELECTRONEGATIVITY_DIFFERENCE, DISPLACEMENT_DISTANCE, CUTOFF_RADIUS,
-    SYMMETRY_TOLERANCE, ANGLE_TOL)
+    ELECTRONEGATIVITY_DIFFERENCE, DISPLACEMENT_DISTANCE, SYMMETRY_TOLERANCE,
+    ANGLE_TOL)
 from pydefect.core.complex_defects import ComplexDefects
 from pydefect.core.defect_entry import DefectType, DefectEntry
 from pydefect.core.defect_name import DefectName
@@ -21,8 +21,8 @@ from pydefect.core.irreducible_site import IrreducibleSite
 from pydefect.database.atom import electronegativity_list, oxidation_state_dict
 from pydefect.util.logger import get_logger
 from pydefect.util.structure_tools import (
-    first_appearance_index, perturb_neighboring_atoms,
-    defect_center_from_coords)
+    get_minimum_distance, first_appearance_index, perturb_neighboring_atoms,
+    defect_center_from_coords, get_coordination_distances)
 from pymatgen.core.periodic_table import Element
 from pymatgen.core.structure import Structure
 from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
@@ -584,7 +584,7 @@ class DefectInitialSetting(MSONable):
                             excluded: Optional[list] = None,
                             displacement_distance: float
                             = DISPLACEMENT_DISTANCE,
-                            cutoff: float = CUTOFF_RADIUS,
+                            cutoff: Optional[float] = None,
                             symprec: float = SYMMETRY_TOLERANCE,
                             angle_tolerance: float = ANGLE_TOL,
                             interstitial_sites: list = None,
@@ -649,6 +649,9 @@ class DefectInitialSetting(MSONable):
         # num_irreducible_sites["Mg"] = 2 <-> Mg has 2 inequivalent sites
         num_irreducible_sites = defaultdict(int)
 
+        if not cutoff:
+            cutoff = round(get_minimum_distance(s) * 1.4, 2)
+
         # Set of IrreducibleSite class objects
         irreducible_sites = list()
 
@@ -683,7 +686,8 @@ class DefectInitialSetting(MSONable):
                                              representative_coords,
                                              lattice, symprec)[0]
             coordination_distances = \
-                get_coordination_distances(sorted_structure, first_index)
+                get_coordination_distances(sorted_structure, first_index,
+                                           cutoff)
 
             irreducible_sites.append(IrreducibleSite(irreducible_name,
                                                      element,
