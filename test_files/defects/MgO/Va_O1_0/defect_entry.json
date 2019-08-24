@@ -684,12 +684,12 @@
         "abc": [
           0.25,
           0.0,
-          0.0
+          0.5
         ],
         "xyz": [
           2.104864,
           0.0,
-          0.0
+          4.209728
         ],
         "label": "O",
         "properties": {}
@@ -1977,12 +1977,12 @@
         "abc": [
           0.25,
           0.0,
-          0.0
+          0.5
         ],
         "xyz": [
           2.104864,
           0.0,
-          0.0
+          4.209728
         ],
         "label": "O",
         "properties": {}
@@ -2592,7 +2592,7 @@
   "removed_atoms": [
     {
       "element": "O",
-      "index": 33,
+      "index": 32,
       "coords": [
         0.25,
         0.0,
@@ -2606,28 +2606,15 @@
   },
   "charge": 0,
   "initial_site_symmetry": "m-3m",
-  "cutoff": 3.2,
+  "cutoff": 2.95,
   "neighboring_sites": [
     0,
     4,
     16,
     17,
     24,
-    26,
-    32,
-    39,
-    40,
-    41,
-    42,
-    47,
-    48,
-    51,
-    52,
-    55,
-    57,
-    59,
-    61
+    26
   ],
   "annotation": null,
-  "num_equiv_sites": 32
+  "num_equiv_sites": 33
 }

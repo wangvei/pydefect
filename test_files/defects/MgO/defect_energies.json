@@ -5,21 +5,21 @@
     "Va_Mg1": {
       "0": {
         "null": {
-          "energy": 8.530564026666628,
+          "energy": 8.530564346666655,
           "convergence": true,
-          "is_shallow": true
+          "is_shallow": false
         }
       },
       "-2": {
         "null": {
-          "energy": 15.407883278921702,
+          "energy": 15.647968226135092,
           "convergence": true,
           "is_shallow": false
         }
       },
       "-1": {
         "null": {
-          "energy": 11.763892465375246,
+          "energy": 11.849495579274695,
           "convergence": true,
           "is_shallow": false
         }
@@ -28,67 +28,67 @@
     "Va_O1": {
       "0": {
         "null": {
-          "energy": 1.2747377933333262,
+          "energy": 1.2747381133333526,
           "convergence": true,
           "is_shallow": false
         }
       },
       "1": {
         "null": {
-          "energy": -4.420132277509195,
+          "energy": -4.376806563147029,
           "convergence": true,
           "is_shallow": false
         }
       },
       "2": {
         "null": {
-          "energy": -9.074072793779592,
+          "energy": -8.955991768440738,
           "convergence": true,
           "is_shallow": false
         }
       }
     },
-    "Mg_i0": {
+    "Mg_i1": {
       "0": {
         "null": {
-          "energy": 11.054279233333329,
+          "energy": 11.054279553333355,
           "convergence": true,
           "is_shallow": false
         }
       },
       "1": {
         "null": {
-          "energy": 2.9704627235462517,
+          "energy": 2.970363043545529,
           "convergence": true,
           "is_shallow": false
         }
       },
       "2": {
         "null": {
-          "energy": -4.694326678560568,
+          "energy": -4.694526358565689,
           "convergence": true,
           "is_shallow": false
         }
       }
     },
-    "O_i0": {
+    "O_i1": {
       "0": {
         "null": {
-          "energy": 11.193335246666653,
+          "energy": 11.19333556666668,
           "convergence": true,
           "is_shallow": false
         }
       },
       "-2": {
         "null": {
-          "energy": 21.846498975884316,
+          "energy": 21.84669929589292,
           "convergence": true,
           "is_shallow": false
         }
       },
       "-1": {
         "null": {
-          "energy": 16.03774448047568,
+          "energy": 16.037844800475654,
           "convergence": true,
           "is_shallow": false
         }
@@ -97,21 +97,21 @@
     "divacancy": {
       "0": {
         "null": {
-          "energy": 4.1044847199999595,
+          "energy": 4.104485039999986,
           "convergence": true,
           "is_shallow": false
         }
       },
       "-2": {
         "null": {
-          "energy": 16.76824971527244,
+          "energy": 16.768450035268092,
           "convergence": true,
           "is_shallow": false
         }
       },
       "-1": {
         "null": {
-          "energy": 9.894940475167449,
+          "energy": 9.895040795166157,
           "convergence": true,
           "is_shallow": false
         }
@@ -121,27 +121,27 @@
   "multiplicity": {
     "Va_Mg1": {
       "0": {
-        "null": 32.0
+        "null": 33.0
       },
       "-2": {
-        "null": 32.0
+        "null": 33.0
       },
       "-1": {
-        "null": 32.0
+        "null": 33.0
       }
     },
     "Va_O1": {
       "0": {
-        "null": 32.0
+        "null": 33.0
       },
       "1": {
-        "null": 32.0
+        "null": 33.0
       },
       "2": {
-        "null": 32.0
+        "null": 33.0
       }
     },
-    "Mg_i0": {
+    "Mg_i1": {
       "0": {
         "null": 24.0
       },
@@ -152,7 +152,7 @@
         "null": 24.0
       }
     },
-    "O_i0": {
+    "O_i1": {
       "0": {
         "null": 24.0
       },
@@ -189,7 +189,7 @@
     },
     "Va_O1": {
       "0": {
-        "null": -0.0
+        "null": 0.0
       },
       "1": {
         "null": 1.0
@@ -198,9 +198,9 @@
         "null": -0.0
       }
     },
-    "Mg_i0": {
+    "Mg_i1": {
       "0": {
-        "null": -0.0
+        "null": 0.0
       },
       "1": {
         "null": -0.0
@@ -209,12 +209,12 @@
         "null": 0.0
       }
     },
-    "O_i0": {
+    "O_i1": {
       "0": {
         "null": 2.0
       },
       "-2": {
-        "null": 0.0
+        "null": -0.0
       },
       "-1": {
         "null": 1.0
@@ -225,7 +225,7 @@
         "null": -0.0
       },
       "-2": {
-        "null": 0.0
+        "null": -0.0
       },
       "-1": {
         "null": 1.0
@@ -234,7 +234,7 @@
   },
   "vbm": 3.0673,
   "cbm": 7.7256,
-  "supercell_vbm": 2.9614,
+  "supercell_vbm": 2.9615,
   "supercell_cbm": 8.6443,
   "title": " condition A"
 }

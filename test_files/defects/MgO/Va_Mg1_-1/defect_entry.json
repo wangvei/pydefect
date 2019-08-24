@@ -44,12 +44,12 @@
         "abc": [
           0.0,
           0.0,
-          0.0
+          0.5
         ],
         "xyz": [
           0.0,
           0.0,
-          0.0
+          4.209728
         ],
         "label": "Mg",
         "properties": {}
@@ -1337,12 +1337,12 @@
         "abc": [
           0.0,
           0.0,
-          0.0
+          0.5
         ],
         "xyz": [
           0.0,
           0.0,
-          0.0
+          4.209728
         ],
         "label": "Mg",
         "properties": {}
@@ -2592,7 +2592,7 @@
   "removed_atoms": [
     {
       "element": "Mg",
-      "index": 1,
+      "index": 0,
       "coords": [
         0.0,
         0.0,
@@ -2606,21 +2606,8 @@
   },
   "charge": -1,
   "initial_site_symmetry": "m-3m",
-  "cutoff": 3.2,
+  "cutoff": 2.95,
   "neighboring_sites": [
-    0,
-    7,
-    8,
-    9,
-    10,
-    15,
-    16,
-    19,
-    20,
-    23,
-    25,
-    27,
-    29,
     31,
     35,
     47,
@@ -2629,5 +2616,5 @@
     57
   ],
   "annotation": null,
-  "num_equiv_sites": 32
+  "num_equiv_sites": 33
 }
