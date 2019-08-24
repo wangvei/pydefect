@@ -671,7 +671,7 @@ class DefectInitialSetting(MSONable):
             # increment number of inequivalent sites for element
             num_irreducible_sites[element] += 1
 
-            first_index = last_index + 1
+            first_index = last_index
             last_index = last_index + len(equiv_site)
             # np.array must be converted to list be consistent with arg type.
             representative_coords = list(equiv_site[0].frac_coords)
