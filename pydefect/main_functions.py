@@ -376,7 +376,7 @@ def defect_vasp_oba_set(args):
                 lines = f.readlines()
                 for index, line in enumerate(lines.copy()):
                     if index - 8 in de.neighboring_sites:
-                        lines[index] = line.strip() + "  Disp\n"
+                        lines[index] = line.strip() + "  Neighbor\n"
 
             with open(poscar_name, "w") as f:
                 for line in lines:
@@ -451,6 +451,14 @@ def efnv_correction(args):
 
     dirs = glob('*[0-9]/') if args.dir_all else args.dirs
 
+    if args.plot_potential:
+        for directory in dirs:
+            json_file = join(directory, "correction.json")
+            c = ExtendedFnvCorrection.load_json(json_file)
+            c.plot_distance_vs_potential(join(directory, "potential.pdf"),
+                                         args.y_range)
+        return
+
     if args.nocorr:
         for directory in dirs:
             c = ManualCorrection(manual_correction_energy=args.manual)
@@ -497,7 +505,8 @@ def efnv_correction(args):
                                unitcell_dft=unitcell_dft_data,
                                ewald_json=args.ewald_json)
 
-        c.plot_distance_vs_potential(join(directory, "potential.pdf"))
+        c.plot_distance_vs_potential(join(directory, "potential.pdf"),
+                                     args.y_range)
         c.to_json_file(join(directory, "correction.json"))
 
 
@@ -574,6 +583,7 @@ def plot_energy(args):
         chem_pot = ChemPotDiag.load_vertices_yaml(args.chem_pot_yaml)
 
         # First construct DefectEnergies class object.
+#        print(args.)
         defect_energies = \
             DefectEnergies.from_objects(unitcell=unitcell,
                                         perfect=perfect,
@@ -623,7 +633,7 @@ def parse_eigenvalues(args):
     defect_eigenvalues = DefectEigenvalue.from_files(unitcell=unitcell,
                                                      defect=defect)
 
-    defect_eigenvalues.plot(yrange=args.y_range,
+    defect_eigenvalues.plot(y_range=args.y_range,
                             title=args.title,
                             filename=args.save_file)
 

@@ -38,6 +38,10 @@ class GetUserSettingsTest(PydefectTest):
         expected = cwd / "test" / "unitcell" / "structure_opt"
         self.assertEqual(str(expected), actual)
 
+    def test_fail(self):
+        with self.assertRaises(ValueError):
+            get_user_settings("pydefect_fail.yaml")
+
 
 class GetDefaultArgsTest(PydefectTest):
     def setUp(self) -> None:
@@ -86,9 +90,9 @@ class List2DictTest(PydefectTest):
         self.key_candidates = ["ENCUT", "MAGMOM", "LWAVE"]
 
     def test_dict2list(self):
-        flattened_list = ["ENCUT", "500", "MAGMOM", "4", "4", "LWAVE", "F"]
+        flattened_list = ["ENCUT", "500", "MAGMOM", "4", "4.0", "LWAVE", "F"]
         actual = list2dict(flattened_list, self.key_candidates)
-        expected = {"ENCUT": 500, "MAGMOM": [4, 4], "LWAVE": False}
+        expected = {"ENCUT": 500, "MAGMOM": [4, 4.0], "LWAVE": False}
         self.assertEqual(expected, actual)
 
     def test_fail(self):

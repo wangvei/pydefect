@@ -11,7 +11,7 @@ logger = get_logger(__name__)
 
 def is_str_digit(n: str) -> bool:
     try:
-        int(n)
+        float(n)
         return True
     except ValueError:
         return False

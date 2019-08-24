@@ -688,6 +688,14 @@ def main():
         "--print", dest="print", action="store_true",
         help="Print FNV correction information.")
 
+    # plot potential
+    parser_correction.add_argument(
+        "--plot_potential", dest="plot_potential", action="store_true",
+        help="Only replot the potential profile.")
+    parser_correction.add_argument(
+        "-y", "--y_range", dest="y_range", type=float, nargs='+', default=None,
+        help="Two float values for the y-range of the plot.")
+
     del efc_defaults
 
     parser_correction.set_defaults(func=efnv_correction)
@@ -729,6 +737,8 @@ def main():
     parser_defects.add_argument(
         "-be", dest="band_edge", type=str, nargs="+", default=None)
 
+    del d_defaults
+
     parser_defects.set_defaults(func=defects)
 
     # -- plot_energy ----------------------------------------------------------
@@ -749,10 +759,10 @@ def main():
         "--name", dest="name", type=str, default="",
         help="System name that is written in the title.")
     parser_plot_energy.add_argument(
-        "-x", "--xrange", dest="x_range", type=float, nargs='+', default=None,
+        "-x", "--x_range", dest="x_range", type=float, nargs='+', default=None,
         help="Two float values for the x-range of the plot.")
     parser_plot_energy.add_argument(
-        "-y", "--yrange", dest="y_range", type=float, nargs='+', default=None,
+        "-y", "--y_range", dest="y_range", type=float, nargs='+', default=None,
         help="Two float values for the y-range of the plot.")
     parser_plot_energy.add_argument(
         "-s", "--save_file", dest="save_file", type=str, default=None,
@@ -818,7 +828,7 @@ def main():
         "--title", dest="title", type=str, default="",
         help="Title of the plot.")
     parser_parse_eigenvalues.add_argument(
-        "-y", "--yrange", dest="y_range", type=float, nargs='+', default=None,
+        "-y", "--y_range", dest="y_range", type=float, nargs='+', default=None,
         help="Two float values for the y-range of the plot.")
     parser_parse_eigenvalues.add_argument(
         "-s", "--save_file", dest="save_file", type=str, default=None,
@@ -937,5 +947,7 @@ def main():
     args = parser.parse_args()
     args.func(args)
 
+
 if __name__ == "__main__":
     main()
+

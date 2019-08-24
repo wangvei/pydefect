@@ -228,38 +228,6 @@ def distance_list(structure: Structure,
             for host in structure.frac_coords]
 
 
-def fold_positions(structure: Structure) -> Structure:
-    """ Fold atomic positions in fractional coords into from 0 to 1.
-
-    For example, [-0.3, 1.9, 0.5] -> [0.7, 0.9, 0.5]
-
-    Args:
-        structure(Structure):
-
-    Returns:
-        Structure
-    """
-    for i, site in enumerate(structure):
-        modification_vector = [-floor(v) for v in site.frac_coords]
-        structure.translate_sites(i, modification_vector)
-    return structure
-
-
-def fold_positions_in_poscar(poscar: Poscar):
-    """ Same as fold_positions but for poscar
-
-    Args:
-        poscar (Poscar):
-
-    Returns:
-        Poscar:
-
-    """
-    s = poscar.structure
-    fold_positions(s)
-    return Poscar(s)
-
-
 def atomic_distances(lattice: Lattice,
                      points: list) -> np.array:
     """ return a list of distances between the given points.
@@ -289,7 +257,7 @@ def are_distances_same(lattice: Lattice,
     distances = []
     for a, b in combinations(points, 2):
         distance = lattice.get_distance_and_image(a, b)[0]
-        if any(abs(distance - compared_distances) < 0.0001):
+        if any(abs(distance - compared_distances) < 1e-4):
             distances.append(distance)
         else:
             return False
@@ -499,38 +467,4 @@ def first_appearance_index(structure: Structure,
         return 0
 
 
-class ModSpacegroupAnalyzer(SpacegroupAnalyzer):
-    def get_refined_structure(self, is_sorted=False):
-        """
-        Get the refined structure based on the symmetry. The refined
-        structure is a *conventional* cell setting with atoms moved to the
-        expected symmetry positions.
 
-        Returns:
-            Refined structure.
-        """
-        # Atomic positions have to be specified by scaled positions for spglib.
-        lattice, scaled_positions, numbers \
-            = spglib.refine_cell(self._cell, self._symprec, self._angle_tol)
-
-        species = [self._unique_species[i - 1] for i in numbers]
-        s = Structure(lattice, species, scaled_positions)
-
-        return s.get_sorted_structure() if is_sorted else s
-
-    def get_anchored_refined_structure(self, index):
-        """
-        Get the refined structure based on detected symmetry. The refined
-        structure is a *conventional* cell setting with atoms moved to the
-        expected symmetry positions.
-
-        Returns:
-            Refined structure.
-        """
-        # Atomic positions have to be specified by scaled positions for spglib.
-        lattice, scaled_positions, numbers \
-            = spglib.refine_cell(self._cell, self._symprec, self._angle_tol)
-
-        species = [self._unique_species[i - 1] for i in numbers]
-        s = Structure(lattice, species, scaled_positions)
-        return s.get_sorted_structure(), numbers

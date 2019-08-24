@@ -350,7 +350,8 @@ class ExtendedFnvCorrection(Correction, MSONable):
     def max_sphere_radius(self) -> float:
         return calc_max_sphere_radius(self.lattice_matrix)
 
-    def plot_distance_vs_potential(self, file_name: str) -> None:
+    def plot_distance_vs_potential(self, file_name: str,
+                                   yrange: Optional[list] = None) -> None:
         property_without_defect = list(zip(self.symbols_without_defect,
                                            self.distances_from_defect,
                                            self.difference_electrostatic_pot))
@@ -388,6 +389,10 @@ class ExtendedFnvCorrection(Correction, MSONable):
         point_y = [self.ave_pot_diff, self.ave_pot_diff]
         ax.plot(point_x, point_y, c=(0, 0, 0), label="potential difference")
         ax.legend(loc="upper left")
+
+        if yrange:
+            plt.ylim(yrange[0], yrange[1])
+
         plt.title("Distance vs potential")
 
         plt.savefig(file_name, format="pdf")

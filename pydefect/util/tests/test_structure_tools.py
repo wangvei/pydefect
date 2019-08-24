@@ -6,7 +6,8 @@ import numpy as np
 from pydefect.util.structure_tools import (
     perturb_neighboring_atoms, get_displacements, defect_center_from_coords,
     atomic_distances, create_saturated_interstitial_structure,
-    count_equivalent_clusters, get_point_group_op_number, get_symmetry_multiplicity)
+    count_equivalent_clusters, get_point_group_op_number,
+    get_symmetry_multiplicity)
 from pymatgen.core.structure import Structure
 from pymatgen.util.testing import PymatgenTest
 from vise.util.structure_handler import get_symmetry_dataset

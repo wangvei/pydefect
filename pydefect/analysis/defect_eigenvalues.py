@@ -109,12 +109,12 @@ class DefectEigenvalue(MSONable):
                    band_edge_states=defect.band_edge_states)
 
     def plot(self,
-             yrange: Optional[str] = None,
+             y_range: Optional[str] = None,
              title: Optional[str] = None,
              filename: Optional[str] = None) -> None:
         """ Plots the defect eigenvalues.
         Args:
-            yrange (list):
+            y_range (list):
                 1x2 list for determining y energy range.
             title (str):
                 Title of the plot
@@ -131,8 +131,8 @@ class DefectEigenvalue(MSONable):
 
         axs[0].set_ylabel("Eigenvalues (eV)", fontsize=12)
 
-        if yrange is None:
-            yrange = [self.supercell_vbm - 3, self.supercell_cbm + 3]
+        if y_range is None:
+            y_range = [self.supercell_vbm - 3, self.supercell_cbm + 3]
 
         k_index = self.add_eigenvalues_to_plot(axs)
 
@@ -141,7 +141,7 @@ class DefectEigenvalue(MSONable):
         for i, s in enumerate(self.band_edge_states):
             # show band-edge states
             axs[i].set_title(f"{s.name.upper()}: {self.band_edge_states[s]}")
-            axs[i].set_ylim(yrange[0], yrange[1])
+            axs[i].set_ylim(y_range[0], y_range[1])
             axs[i].set_xlim(-1, k_index + 1)
 
             axs[i].get_xaxis().set_tick_params(direction='out')

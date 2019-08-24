@@ -252,7 +252,7 @@ def interstitials_from_charge_density(
     equiv_atoms = sym_db["equivalent_atoms"]
 
     print("")
-    print(f"Inequivalent indices:")
+    print("++ Inequivalent indices and site symmetries ++")
     for i, ii in enumerate(interstitial_indices):
         if ii == equiv_atoms[ii]:
             print(i, sym_db["site_symmetry_symbols"][ii])

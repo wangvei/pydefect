@@ -14,6 +14,35 @@ __maintainer__ = "Yu Kumagai"
 
 logger = get_logger(__name__)
 
+setting_keys = ["symprec",
+                "defect_symprec",
+                "angle_tolerance",
+                "kpt_density",
+                "defect_kpt_density",
+                "perfect_incar_setting",
+                "defect_incar_setting",
+                "perfect_vos_kwargs",
+                "defect_vos_kwargs",
+                "ldauu",
+                "ldaul",
+                "xc",
+                "no_wavecar",
+                "potcar_set",
+                "outcar",
+                "contcar",
+                "vicinage_radius",
+                "cutoff",
+                "displacement_distance",
+                "volume_dir",
+                "static_diele_dir",
+                "ionic_diele_dir",
+                "band_edge_dir",
+                "dos_dir",
+                "untcell_json",
+                "perfect_json",
+                "chem_pot_yaml",
+                "competing_phases_incar_setting"]
+
 
 def get_user_settings(yaml_filename: str = "pydefect.yaml") -> dict:
     """Get the user specifying settings written in yaml_filename
@@ -32,6 +61,7 @@ def get_user_settings(yaml_filename: str = "pydefect.yaml") -> dict:
     Return:
         Dictionary of configs.
     """
+
     config_path = Path.cwd()
     home = Path.home()
 
@@ -50,6 +80,9 @@ def get_user_settings(yaml_filename: str = "pydefect.yaml") -> dict:
 
     # Add full path
     for k, v in user_settings.items():
+        if k not in setting_keys:
+            raise ValueError(f"Keys in pydefect.yaml is invalid."
+                             f"The candidate keys are {setting_keys}")
         if isinstance(v, str) and re.match(r'\S*/\S*', v):
             user_settings[k] = str(config_path / v)
 
