@@ -12,15 +12,17 @@ __author__ = "Yu Kumagai"
 __maintainer__ = "Yu Kumagai"
 
 
-def element_diff_from_structures(structure1, structure2):
+def element_diff_from_structures(structure: Structure,
+                                 ref_structure: Structure) -> dict:
     """
     Returns dict of change of numbers of elements from structure2 to structure1
     For defect calculations, structure2 should be "perfect".
     """
-    c_diff = (Composition(structure1.composition, allow_negative=True)
-              - Composition(structure2.composition, allow_negative=True))
+    to_comp = Composition(structure.composition, allow_negative=True)
+    from_comp = Composition(ref_structure.composition, allow_negative=True)
+    comp_diff = to_comp - from_comp
 
-    return {str(e): int(c_diff[e]) for e in c_diff}
+    return {str(e): int(diff) for e, diff in comp_diff.items()}
 
 
 def get_num_electrons_from_potcar(potcar, nions, charge=0):

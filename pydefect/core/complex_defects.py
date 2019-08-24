@@ -10,7 +10,7 @@ from pydefect.core.config import SYMMETRY_TOLERANCE, ANGLE_TOL
 from pydefect.core.interstitial_site import represent_odict, construct_odict
 from pydefect.util.logger import get_logger
 from pymatgen.core.structure import Structure
-from pydefect.util.structure_tools import count_equivalent_clusters
+from pydefect.util.structure_tools import num_equivalent_clusters
 
 __author__ = "Yu Kumagai"
 __maintainer__ = "Yu Kumagai"
@@ -152,11 +152,11 @@ class ComplexDefects(MSONable):
 
         inserted_atom_coords = [i["coords"] for i in inserted_atoms]
         multiplicity, point_group = \
-            count_equivalent_clusters(self.structure,
-                                      inserted_atom_coords,
-                                      removed_atom_indices,
-                                      symprec,
-                                      angle_tolerance)
+            num_equivalent_clusters(self.structure,
+                                    inserted_atom_coords,
+                                    removed_atom_indices,
+                                    symprec,
+                                    angle_tolerance)
 
         complex_defect = \
             ComplexDefect(removed_atom_indices, inserted_atoms,

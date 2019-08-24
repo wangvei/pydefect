@@ -21,7 +21,7 @@ from pydefect.core.irreducible_site import IrreducibleSite
 from pydefect.database.atom import electronegativity_list, oxidation_state_dict
 from pydefect.util.logger import get_logger
 from pydefect.util.structure_tools import (
-    get_minimum_distance, first_appearance_index, perturb_neighboring_atoms,
+    get_minimum_distance, first_appearing_index, perturb_neighboring_atoms,
     defect_center_from_coords, get_coordination_distances)
 from pymatgen.core.periodic_table import Element
 from pymatgen.core.structure import Structure
@@ -45,6 +45,9 @@ def candidate_charge_set(i: int) -> set:
 
     Args:
         i (int): an integer
+
+    Return:
+        Set of candidate charges
     """
     if i >= 0:
         charge_set = {i for i in range(i + 1)}
@@ -59,22 +62,38 @@ def candidate_charge_set(i: int) -> set:
 
 
 def get_electronegativity(element: Union[str, Element]) -> float:
-    """Get a Pauling electronegativity obtained from wikipedia"""
+    """Get a Pauling electronegativity obtained from wikipedia
+
+    If it doesn't exist in the database, 0.0 is returned.
+
+    Args:
+         element (str/ Element): Input element
+
+    Return:
+         Electronegativity
+    """
     try:
         return electronegativity_list[str(element)]
     except KeyError:
-        logger.warning(
-            f"Electronegativity of {element} is unavailable, so set to 0.")
+        logger.warning(f"Electronegativity: {element} is unavailable. Set 0.")
         return 0.0
 
 
 def get_oxidation_state(element: Union[str, Element]) -> int:
-    """Get a typical oxidation stat """
+    """Get a typical oxidation state
+
+    If it doesn't exist in the database, 0 is returned.
+
+    Args:
+         element (str/ Element): Input element
+
+    Return:
+         Oxidation state
+     """
     try:
         return oxidation_state_dict[str(element)]
     except KeyError:
-        logger.warning(
-            f"Oxidation state of {element} is unavailable, so set to 0.")
+        logger.warning(f"Oxidation state: {element} is unavailable. Set 0.")
         return 0
 
 
@@ -170,7 +189,7 @@ def get_distances_from_string(string: list) -> dict:
 
 
 def insert_atoms(structure: Structure,
-                 inserted_atoms: List[dict]) -> Tuple[Structure, list]:
+                 inserted_atoms: List[dict]) -> Tuple[Structure, List[dict]]:
     """  Return structure with atoms and the indices atoms are inserted.
 
     Args:
@@ -178,11 +197,15 @@ def insert_atoms(structure: Structure,
         inserted_atoms (list):
            List of dict with "element" and "coords" keys.
            Not that "index" is absent as it is not determined, yet.
+
+    Return:
+        Tuple of inserted Structure and list of dict of inserted atom info.
+
     """
     inserted_structure = structure.copy()
     inserted_atoms_with_indices = []
     for atom in inserted_atoms:
-        index = first_appearance_index(inserted_structure, atom["element"])
+        index = first_appearing_index(inserted_structure, atom["element"])
         inserted_structure.insert(index, atom["element"], atom["coords"])
         # The atom indices locating after k need to be incremented.
         for i in inserted_atoms_with_indices:
@@ -675,7 +698,7 @@ class DefectInitialSetting(MSONable):
             num_irreducible_sites[element] += 1
 
             first_index = last_index
-            last_index = last_index + len(equiv_site)
+            last_index = last_index + len(equiv_site) - 1
             # np.array must be converted to list be consistent with arg type.
             representative_coords = list(equiv_site[0].frac_coords)
             irreducible_name = element + str(num_irreducible_sites[element])

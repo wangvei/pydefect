@@ -18,7 +18,7 @@ from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
 from pydefect.core.error_classes import StructureError
 from pydefect.util.logger import get_logger
 from pydefect.util.structure_tools import (
-    count_equivalent_clusters, defect_center_from_coords, distance_list)
+    num_equivalent_clusters, defect_center_from_coords, distance_list)
 from pydefect.util.vasp_util import element_diff_from_structures
 from pydefect.core.config import (
     DEFECT_SYMMETRY_TOLERANCE, ANGLE_TOL, CUTOFF_RADIUS)
@@ -343,10 +343,10 @@ class DefectEntry(MSONable):
 
         num_equiv_sites = None
         if calc_num_equiv_site:
-            num_equiv_sites, _ = count_equivalent_clusters(perfect_structure,
-                                                           inserted_atom_coords,
-                                                           removed_atom_indices,
-                                                           disp_dist)
+            num_equiv_sites, _ = num_equivalent_clusters(perfect_structure,
+                                                         inserted_atom_coords,
+                                                         removed_atom_indices,
+                                                         disp_dist)
         pristine_defect_structure.set_charge(charge)
         defect_structure.set_charge(charge)
         defect_type = determine_defect_type(inserted_atoms, removed_atoms)

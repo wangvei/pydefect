@@ -7,30 +7,23 @@ from pydefect.util.vasp_util import element_diff_from_structures, \
 from pymatgen.core.structure import Structure
 from pymatgen.electronic_structure.core import Spin
 from pymatgen.io.vasp import Procar
+from pydefect.util.testing import PydefectTest
 
 __author__ = "Yu Kumagai"
 __maintainer__ = "Yu Kumagai"
 
 
-test_dir = os.path.join(os.path.dirname(__file__), "..", "..", "..",
-                        "test_files", "core")
-
-
-class ElementDiffFromPoscarFilesTest(unittest.TestCase):
+class ElementDiffFromPoscarFilesTest(PydefectTest):
     def test(self):
-        poscar1 = os.path.join(test_dir, "POSCAR-MgO8atoms")
-        poscar2 = os.path.join(test_dir, "POSCAR-MgO8atoms-Va_O1+N_O")
+        structure = self.get_structure_by_name("MgO64atoms-Va_Mg+Va_O-unrelax")
+        ref_structure =  self.get_structure_by_name("MgO64atoms")
 
-        actual = element_diff_from_structures(poscar1, poscar2)
-        expected = {"O": 2, "N": -1}
-        self.assertEqual(actual, expected)
-
-
-test_dir2 = os.path.join(os.path.dirname(__file__), "..", "..", "..",
-                         "test_files", "vasp_util")
+        actual = element_diff_from_structures(structure, ref_structure)
+        expected = {"Mg": -1, "O": -1}
+        self.assertEqual(expected, actual)
 
 
-class CalcParticipationRatioTest(unittest.TestCase):
+class CalcParticipationRatioTest(PydefectTest):
     def test(self):
         procar = Procar(os.path.join(test_dir2, "CO", "PROCAR"))
 
@@ -46,7 +39,7 @@ class CalcParticipationRatioTest(unittest.TestCase):
         self.assertEqual(actual, 1.0)
 
 
-class CalcOrbitalCharacterTest(unittest.TestCase):
+class CalcOrbitalCharacterTest(PydefectTest):
     def test(self):
         procar = Procar(os.path.join(test_dir2, "CO", "PROCAR"))
         structure = Structure.from_file(os.path.join(test_dir2, "CO", "CONTCAR"))
@@ -57,7 +50,7 @@ class CalcOrbitalCharacterTest(unittest.TestCase):
         print(actual)
 
 
-class CalcOrbitalSimilarityTest(unittest.TestCase):
+class CalcOrbitalSimilarityTest(PydefectTest):
     def test(self):
         test_dir3 = os.path.join(test_dir, "MgO", "defects", "perfect")
         procar_perfect = Procar(os.path.join(test_dir3, "PROCAR"))

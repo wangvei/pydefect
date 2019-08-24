@@ -102,8 +102,6 @@ class List2DictTest(PydefectTest):
 
     def test_fail(self):
         flattened_list = ["ENCAT", "500"]
-        list2dict(flattened_list, self.key_candidates)
-
         with self.assertRaises(ValueError):
             list2dict(flattened_list, self.key_candidates)
 

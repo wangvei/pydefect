@@ -4,19 +4,18 @@ from itertools import combinations
 from typing import Union, List, Tuple
 
 import numpy as np
-from obadb.database.atom import charge as charge_list
+from vise.util.structure_handler import get_rotations
+
 from pydefect.core.config import SYMMETRY_TOLERANCE, ANGLE_TOL
 from pydefect.core.error_classes import StructureError
 from pydefect.database.num_symmetry_operation import num_symmetry_operation
-from pydefect.util.logger import get_logger
 from pydefect.util.math import normalized_random_3d_vector, random_vector
-from pymatgen import Structure, DummySpecie
 from pymatgen.core.lattice import Lattice
-from pymatgen.core.periodic_table import DummySpecie, Specie
+from pymatgen.core.periodic_table import DummySpecie, Element
 from pymatgen.core.structure import Structure
 from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
 from pymatgen.util.coord import pbc_shortest_vectors
-from vise.util.structure_handler import get_rotations, logger
+from pydefect.util.logger import get_logger
 
 __author__ = "Yu Kumagai"
 __maintainer__ = "Yu Kumagai"
@@ -141,9 +140,8 @@ def get_displacements(final_structure: Structure,
     else:
         drift_frac_coords = np.zeros(3)
 
-    # When the defect is an atom itself, the defect coordinates in the final
-    # structure is well defined. Otherwise, it is assumed not to be moved
-    # wrt the anchoring atom.
+    # Except for interstitials, it is assumed that the defect center is not
+    # moved w.r.t. the anchoring atom.
     if isinstance(defect_center, int):
         initial_center = initial_structure[defect_center].frac_coords
         final_center = final_structure[defect_center].frac_coords
@@ -215,14 +213,17 @@ def get_displacements(final_structure: Structure,
 
 def defect_center_from_coords(defect_coords: list,
                               structure: Structure) -> list:
-    """Return defect center from given coordinates.
+    """Return defect center in fractional coordinates from given coordinates.
 
     Args:
         defect_coords (list):
         structure (Structure):
+
+    Return:
+        Averaged fractional coordinates along x-, y-, and z-directions .
     """
     # First defect_coords is used as a base point under periodic boundary
-    # condition. Here, we are aware of the case when two defect positions
+    # condition. Here, we are concerned about the case when two defect positions
     # are, e.g., [0.01, 0.01, 0.01] and [0.99, 0.99, 0.99].
     base = defect_coords[0]
     shortest_defect_coords = []
@@ -238,54 +239,24 @@ def defect_center_from_coords(defect_coords: list,
 
 def distance_list(structure: Structure,
                   coords: np.array) -> list:
-    """ Return a list of the shortest distances between a point and its images
+    """Return a list of the shortest distances between a point and atoms
 
     Args:
        structure (Structure):
            pmg structure class object
        coords (1x3 numpy array):
-           Fractional coordinates
+           Fractional coordinates of a single point.
+
+    Return:
+        List of the shortest distances from coords to atoms
     """
-    return [structure.lattice.get_distance_and_image(fcoord, coords)[0]
-            for fcoord in structure.frac_coords]
+    distance = []
+    for frac_coord in structure.frac_coords:
+        # return of get_distance_and_image is (distance, jimage).
+        dist = structure.lattice.get_distance_and_image(frac_coord, coords)[0]
+        distance.append(dist)
 
-
-def atomic_distances(lattice: Lattice,
-                     points: list) -> np.array:
-    """ return a list of distances between the given points.
-
-    Args:
-        lattice (Lattice):
-        points (list):
-    """
-    distances = []
-    for a, b in combinations(points, 2):
-        distances.append(lattice.get_distance_and_image(a, b)[0])
-    return np.array(distances)
-
-
-def are_distances_same(lattice: Lattice,
-                       points: list,
-                       compared_distances: np.array,
-                       symprec: float = SYMMETRY_TOLERANCE) -> bool:
-    """ Check whether the calculated inter-point distances are the same.
-
-    Args:
-        lattice (Lattice):
-        points (list):
-        compared_distances (np.array):
-        symprec (float):
-    """
-    distances = []
-    for a, b in combinations(points, 2):
-        distance = lattice.get_distance_and_image(a, b)[0]
-        if any(abs(distance - compared_distances) < 1e-4):
-            distances.append(distance)
-        else:
-            return False
-
-    return all(abs(np.sort(np.array(distances)) - np.sort(compared_distances))
-               < symprec)
+    return distance
 
 
 def create_saturated_interstitial_structure(
@@ -348,7 +319,6 @@ def create_saturated_interstitial_structure(
         neighboring_atom_indices, distances = \
             get_neighboring_atom_indices(saturated_structure,
                                          coord, dist_tol)
-        are_inserted.append(neighboring_atom_indices == [])
 
         if neighboring_atom_indices:
             are_inserted.append(False)
@@ -386,32 +356,42 @@ def create_saturated_interstitial_structure(
 
 
 def get_neighboring_atom_indices(structure: Structure,
-                                 coord: list,
-                                 dist_tol: float) -> tuple:
-    """ Return the neighboring atom indices within dist_tol distance. """
+                                 coords: list,
+                                 cutoff: float) -> Tuple[list, list]:
+    """ Return the neighboring atom indices within the cutoff distance.
+   
+    Args:
+        structure (Structure): Input structure.
+        coords (list): Fractional coordinates of a centering point
+        cutoff (float):
+            Radius of a sphere in which atoms are considered as neighbors
+
+    Return:
+         Tuple of (neighboring indices, distances)
+    """
     neighboring_indices = []
     distances = []
     for j, site in enumerate(structure):
         # returned tuple of (distance, periodic lattice translations)
-        distance = structure.lattice.get_distance_and_image(coord,
+        distance = structure.lattice.get_distance_and_image(coords,
                                                             site.frac_coords)
-        if distance[0] < dist_tol:
+        if distance[0] < cutoff:
             neighboring_indices.append(j)
             distances.append(distance[0])
 
     return neighboring_indices, distances
 
 
-def count_equivalent_clusters(perfect_structure: Structure,
-                              inserted_atom_coords: list,
-                              removed_atom_indices: list,
-                              symprec: float = SYMMETRY_TOLERANCE,
-                              angle_tolerance: float = ANGLE_TOL) \
-        -> Tuple[int, str]:
-    """Calculate the equivalent clusters in the
+def num_equivalent_clusters(structure: Structure,
+                            inserted_atom_coords: list,
+                            removed_atom_indices: list,
+                            symprec: float = SYMMETRY_TOLERANCE,
+                            angle_tolerance: float = ANGLE_TOL
+                            ) -> Tuple[int, str]:
+    """Calculate number of equivalent clusters in the structure.
 
     Args:
-        perfect_structure (Structure):
+        structure (Structure):
             Supercell is assumed to big enough.
         inserted_atom_coords (list):
         removed_atom_indices (list):
@@ -421,70 +401,41 @@ def count_equivalent_clusters(perfect_structure: Structure,
             Angle tolerance in degree used for identifying the space group.
 
     Returns:
-        count (int):
+        Tuple of (num_equivalent_clusters (int), point_group (str))
     """
-    sga = SpacegroupAnalyzer(perfect_structure, symprec, angle_tolerance)
+    sga = SpacegroupAnalyzer(structure, symprec, angle_tolerance)
     num_symmop = len(sga.get_symmetry_operations())
 
-    structure_w_cluster = perfect_structure.copy()
+    structure_with_cluster = structure.copy()
     for i in inserted_atom_coords:
-        structure_w_cluster.append(DummySpecie(), i)
-    structure_w_cluster.remove_sites(removed_atom_indices)
+        structure_with_cluster.append(DummySpecie(), i)
+    structure_with_cluster.remove_sites(removed_atom_indices)
 
-    sga_w_cluster = \
-        SpacegroupAnalyzer(structure_w_cluster, symprec, angle_tolerance)
-    sym_dataset = sga_w_cluster.get_symmetry_dataset()
+    sga_with_cluster = \
+        SpacegroupAnalyzer(structure_with_cluster, symprec, angle_tolerance)
+    sym_dataset = sga_with_cluster.get_symmetry_dataset()
     point_group = sym_dataset["pointgroup"]
 
     return int(num_symmop / num_symmetry_operation(point_group)), point_group
 
 
-def get_point_group_op_number(sym_dataset: dict,
-                              coords: list,
-                              lattice: np.array,
-                              symprec: float = SYMMETRY_TOLERANCE):
-    """
-    Args:
-        sym_dataset (dict):
-            spglib get_symmetry_dataset.
-        coords (list):
-            Fractional coordinates.
-        lattice (numpy.array):
-            3x3 numpy array
-        symprec (float):
-            Distance tolerance in cartesian coordinates Unit is compatible with
-            the cell.
-    """
-    full_rotations = sym_dataset["rotations"]
-    translations = sym_dataset["translations"]
-    rotations = get_rotations(coords, lattice, full_rotations, translations,
-                              symprec)
-    return len(rotations)
-
-
-def get_symmetry_multiplicity(sym_dataset: dict,
-                              coords: list,
-                              lattice: np.array,
-                              symprec: float = SYMMETRY_TOLERANCE):
-    return int(len(sym_dataset["rotations"]) /
-               get_point_group_op_number(sym_dataset, coords, lattice,
-                                         symprec))
-
-
-def first_appearance_index(structure: Structure,
-                           specie: Union[str, Specie]) -> int:
+def first_appearing_index(structure: Structure,
+                          element: Union[str, Element]) -> int:
     """Return first index where the specie appears. Return 0 if not exist
 
-    Used for inserting an element to a Structure, so if the element does not
-    exist, 0 is returned such that the new specie is inserted to
-    the first place by structure.insert(inserted_index, specie, coords).
+    If the element does not exist, 0 is returned.
 
-    :param structure:
-    :param specie:
-    :return:
+    Args:
+        structure: Input structure
+        element: String of element or Element
+    Return:
+        Int of first index
     """
-    if specie in structure.symbol_set:
-        return min(structure.indices_from_symbol(specie))
+    if isinstance(element, Element):
+        element = str(element)
+
+    if element in structure.symbol_set:
+        return min(structure.indices_from_symbol(element))
     else:
         return 0
 
@@ -500,13 +451,11 @@ def get_coordination_distances(structure: Structure,
         atom_index (int):
             The atomic index
         cutoff (float):
-            Cutoff distance used to detect the coordination.
+            Radius of a sphere in which atoms are considered as neighbors
 
     Return:
-        coords (dict):
-            values are tuples of Element object and distance.
-            example  {'O': [(PeriodicSite: O (0.0000, 0.0000, -2.1234)
-            [-0.5000, -0.5000, 0.5000], 2.123447), ...
+        Dict composed of specie name keys and distance list.
+        E.g., {"Mg": [1.82, 1.82, 1.82, 1.82], ..}
     """
     neighbors = structure.get_neighbors(
         structure.sites[atom_index], cutoff, include_index=True)
