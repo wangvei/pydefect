@@ -69,16 +69,28 @@ def get_defect_charge_from_vasp(structure, potcar="POTCAR", incar="INCAR"):
 def calc_participation_ratio(procar: Procar,
                              spin: Spin,
                              band_index: int,
-                             atom_indices: list):
+                             atom_indices: list) -> float:
     """ Returns sum of participation ratios at atom_indices sites
 
     The PROCAR data of the form below. It should VASP uses 1-based indexing,
     but all indices are converted to 0-based here.::
+        { spin: nd.array accessed with (k-point index, band index,
+                                          ion index, orbital index) }
 
-        {
-            spin: nd.array accessed with (k-point index, band index,
-                                          ion index, orbital index)
-        }
+    Note that the k-point weight is not considered, so all the k-points are
+    treated equally.
+
+    Args:
+        procar: Pymatgen Procar class object.
+        spin: Spin object
+        band_index: Index of band that begins from zero
+        atom_indices:
+            List of atom indices, for which the participation ratio is
+            calculated.
+
+    Return:
+        float of the participation ratio.
+
     """
     # sum along k-point and orbital
     sum_per_atom = np.sum(procar.data[spin][:, band_index, :, :], axis=(0, 2))
@@ -106,25 +118,27 @@ def calc_orbital_character(procar: Procar,
         a dictionary in the {Element:{s: value, p: value, d: value}
         where s, p, and d are OrbitalType in pymatgen.
     """
-    d = defaultdict(dict)
+    orbital_components = {}
 
-    def projection_sum(atom_indices: list, start: int, end: int):
-        return float(np.sum(procar.data[spin][kpoint_index, band_index,
-                            atom_indices, start:end + 1]))
+    def projection_sum(atom_indices: tuple, first: int, last: int):
+        end = last + 1
+        procar_sum = np.sum(
+            procar.data[spin][kpoint_index, band_index, atom_indices, first:end]
+        )
+        return float(procar_sum)
 
-    for name in structure.symbol_set:
+    for element in structure.symbol_set:
         # get list of index
-        indices = \
-            [i for i, e in enumerate(structure.species) if e == Element(name)]
-        d[name]["s"] = projection_sum(indices, 0, 0)
-        d[name]["p"] = projection_sum(indices, 1, 3)
-        d[name]["d"] = projection_sum(indices, 4, 8)
+        indices = structure.indices_from_symbol(element)
+        orbital_components[element] = {"s": projection_sum(indices, 0, 0),
+                                       "p": projection_sum(indices, 1, 3),
+                                       "d": projection_sum(indices, 4, 8)}
         try:
-            d[name]["f"] = projection_sum(indices, 9, 16)
+            orbital_components[element]["f"] = projection_sum(indices, 9, 16)
         except KeyError:
             pass
 
-    return dict(d)
+    return orbital_components
 
 
 def calc_orbital_difference(orbital_1: dict, orbital_2: dict) -> float:
