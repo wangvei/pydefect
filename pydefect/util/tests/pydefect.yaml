@@ -1,0 +1,10 @@
+# This file is needed for the unittest.
+symprec: 0.01
+perfect_incar_setting:
+  ALGO: False
+ldauu:
+  Mn: 5 
+  O: 3
+xc: hse
+potcar_set: Mg_pv O_h
+volume_dir: test/unitcell/structure_opt
