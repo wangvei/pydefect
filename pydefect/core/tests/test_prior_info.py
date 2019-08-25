@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
-import tempfile
 import os
+import tempfile
 import unittest
 
 from pydefect.core.prior_info import PriorInfo

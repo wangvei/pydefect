@@ -1,21 +1,17 @@
 # -*- coding: utf-8 -*-
 from collections import defaultdict
-from itertools import combinations
 from typing import Union, List, Tuple
 
 import numpy as np
-from vise.util.structure_handler import get_rotations
-
 from pydefect.core.config import SYMMETRY_TOLERANCE, ANGLE_TOL
 from pydefect.core.error_classes import StructureError
 from pydefect.database.num_symmetry_operation import num_symmetry_operation
+from pydefect.util.logger import get_logger
 from pydefect.util.math import normalized_random_3d_vector, random_vector
-from pymatgen.core.lattice import Lattice
 from pymatgen.core.periodic_table import DummySpecie, Element
 from pymatgen.core.structure import Structure
 from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
 from pymatgen.util.coord import pbc_shortest_vectors
-from pydefect.util.logger import get_logger
 
 __author__ = "Yu Kumagai"
 __maintainer__ = "Yu Kumagai"

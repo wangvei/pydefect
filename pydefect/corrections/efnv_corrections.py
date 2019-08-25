@@ -10,9 +10,9 @@ from typing import Optional
 
 import matplotlib.pyplot as plt
 import numpy as np
-from numpy import cos, sqrt, dot, cross, pi, exp, mean
 from monty.json import MontyEncoder, MSONable
 from monty.serialization import loadfn
+from numpy import cos, sqrt, dot, cross, pi, exp, mean
 from numpy.linalg import norm
 from pydefect.core.config import COLOR
 from pydefect.core.defect_entry import DefectEntry

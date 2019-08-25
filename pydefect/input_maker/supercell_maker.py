@@ -5,13 +5,13 @@ from copy import deepcopy
 from typing import Union
 
 import numpy as np
-from vise.util.structure_handler import (
-    find_spglib_standard_conventional, find_spglib_standard_primitive)
 from pydefect.core.config import SYMMETRY_TOLERANCE, ANGLE_TOL
 from pydefect.core.error_classes import CellSizeError
 from pydefect.util.logger import get_logger
 from pymatgen.core.structure import Structure
 from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
+from vise.util.structure_handler import (
+    find_spglib_standard_conventional, find_spglib_standard_primitive)
 
 __author__ = "Yu Kumagai"
 __maintainer__ = "Yu Kumagai"

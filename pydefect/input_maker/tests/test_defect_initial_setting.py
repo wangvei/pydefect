@@ -1,16 +1,13 @@
 # -*- coding: utf-8 -*-
-import os
 import tempfile
 
-from pymatgen.core.structure import Structure
-
+from pydefect.core.defect_entry import DefectType
+from pydefect.core.irreducible_site import IrreducibleSite
 from pydefect.input_maker.defect_initial_setting import (
     candidate_charge_set, get_electronegativity, get_oxidation_state,
     dopant_info, get_distances_from_string, insert_atoms, select_defects,
     DefectInitialSetting)
-from pydefect.core.irreducible_site import IrreducibleSite
 from pydefect.util.testing import PydefectTest
-from pydefect.core.defect_entry import DefectType
 
 __author__ = "Yu Kumagai"
 __maintainer__ = "Yu Kumagai"

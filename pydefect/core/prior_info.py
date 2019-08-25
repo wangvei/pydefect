@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 import json
 
-from monty.serialization import loadfn
 from monty.json import MSONable
+from monty.serialization import loadfn
 
 __author__ = "Yu Kumagai"
 __maintainer__ = "Yu Kumagai"

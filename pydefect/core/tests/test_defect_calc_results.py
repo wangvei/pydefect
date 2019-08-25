@@ -1,18 +1,17 @@
 # -*- coding: utf-8 -*-
 
-from collections import defaultdict
-import numpy as np
 import os
 import tempfile
 import unittest
+from collections import defaultdict
 
-from pymatgen.electronic_structure.core import Spin
-from pymatgen.util.testing import PymatgenTest
-
+import numpy as np
 from pydefect.core.defect_entry import DefectEntry
 from pydefect.core.supercell_calc_results \
     import SupercellCalcResults
 from pydefect.util.tools import defaultdict_to_dict
+from pymatgen.electronic_structure.core import Spin
+from pymatgen.util.testing import PymatgenTest
 
 __author__ = "Yu Kumagai"
 __maintainer__ = "Yu Kumagai"

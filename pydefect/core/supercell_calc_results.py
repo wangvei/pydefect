@@ -9,12 +9,12 @@ from typing import Union, Tuple
 import numpy as np
 from monty.json import MontyEncoder, MSONable
 from monty.serialization import loadfn
-from vise.analyzer.band_gap import band_gap_properties
 from pydefect.core.config import DEFECT_SYMMETRY_TOLERANCE, ANGLE_TOL, \
     CUTOFF_RADIUS
 from pydefect.core.defect_entry import DefectEntry
 from pydefect.core.error_classes import NoConvergenceError, StructureError
 from pydefect.util.logger import get_logger
+from pydefect.util.structure_tools import get_displacements
 from pydefect.util.tools import spin_key_to_str, str_key_to_spin, parse_file, \
     defaultdict_to_dict
 from pydefect.util.vasp_util import calc_participation_ratio, \
@@ -24,7 +24,7 @@ from pymatgen.electronic_structure.core import Spin
 from pymatgen.io.vasp.inputs import Poscar
 from pymatgen.io.vasp.outputs import Outcar, Vasprun, Procar
 from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
-from pydefect.util.structure_tools import get_displacements
+from vise.analyzer.band_gap import band_gap_properties
 
 __author__ = "Yu Kumagai"
 __maintainer__ = "Yu Kumagai"

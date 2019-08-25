@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
-from copy import deepcopy
 from collections import OrderedDict
+from copy import deepcopy
 from typing import Optional, List, Union
 
 import yaml
@@ -9,8 +9,8 @@ from monty.json import MSONable
 from pydefect.core.config import SYMMETRY_TOLERANCE, ANGLE_TOL
 from pydefect.core.interstitial_site import represent_odict, construct_odict
 from pydefect.util.logger import get_logger
-from pymatgen.core.structure import Structure
 from pydefect.util.structure_tools import num_equivalent_clusters
+from pymatgen.core.structure import Structure
 
 __author__ = "Yu Kumagai"
 __maintainer__ = "Yu Kumagai"

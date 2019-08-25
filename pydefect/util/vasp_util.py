@@ -1,9 +1,7 @@
 # -*- coding: utf-8 -*-
-from collections import defaultdict
 
 import numpy as np
 from pymatgen.core.composition import Composition
-from pymatgen.core.sites import Element
 from pymatgen.core.structure import Structure
 from pymatgen.electronic_structure.core import Spin
 from pymatgen.io.vasp import Potcar, Incar, Procar

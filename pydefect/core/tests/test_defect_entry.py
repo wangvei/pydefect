@@ -1,14 +1,11 @@
 # -*- coding: utf-8 -*-
 import tempfile
-import os
 import unittest
+
 import numpy as np
-
-from pymatgen.core.structure import Structure
-from pydefect.util.testing import PydefectTest
-
-from pydefect.core.defect_entry import DefectType, DefectEntry, divide_dirname
 from pydefect.core.config import CUTOFF_RADIUS
+from pydefect.core.defect_entry import DefectType, DefectEntry, divide_dirname
+from pydefect.util.testing import PydefectTest
 
 __author__ = "Yu Kumagai"
 __maintainer__ = "Yu Kumagai"

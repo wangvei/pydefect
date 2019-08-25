@@ -1,28 +1,26 @@
 # -*- coding: utf-8 -*-
+import json
+import os
+import shutil
 from copy import deepcopy
 from enum import Enum, unique
-import json
-import numpy as np
-import os
-import ruamel.yaml as yaml
-from typing import Optional, Tuple
 from pathlib import Path
-import shutil
+from typing import Optional, Tuple
 
+import numpy as np
+import ruamel.yaml as yaml
 from monty.json import MontyEncoder, MSONable
 from monty.serialization import loadfn
-
-from pymatgen.core.structure import Structure
-from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
-
+from pydefect.core.config import (
+    DEFECT_SYMMETRY_TOLERANCE, ANGLE_TOL, CUTOFF_RADIUS)
 from pydefect.core.error_classes import StructureError
 from pydefect.util.logger import get_logger
 from pydefect.util.structure_tools import (
     num_equivalent_clusters, defect_center_from_coords, distance_list)
-from pydefect.util.vasp_util import element_diff_from_structures
-from pydefect.core.config import (
-    DEFECT_SYMMETRY_TOLERANCE, ANGLE_TOL, CUTOFF_RADIUS)
 from pydefect.util.tools import is_str_digit
+from pydefect.util.vasp_util import element_diff_from_structures
+from pymatgen.core.structure import Structure
+from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
 
 __author__ = "Yu Kumagai"
 __maintainer__ = "Yu Kumagai"

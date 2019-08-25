@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 from typing import Optional
+
 from monty.json import MSONable
 
 __author__ = "Yu Kumagai"

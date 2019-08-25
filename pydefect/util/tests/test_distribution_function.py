@@ -1,7 +1,5 @@
 # -*- coding: utf-8 -*-
 
-import os
-
 import numpy as np
 from pydefect.util.distribution_function import fermi_dirac_distribution, \
     bose_einstein_distribution, maxwell_boltzmann_distribution

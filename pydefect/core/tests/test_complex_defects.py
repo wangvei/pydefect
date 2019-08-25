@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
 
-from collections import OrderedDict
-import tempfile
 import filecmp
+import tempfile
+from collections import OrderedDict
 
-from pydefect.util.testing import PydefectTest
 from pydefect.core.complex_defects import ComplexDefect, ComplexDefects
+from pydefect.util.testing import PydefectTest
 
 __author__ = "Yu Kumagai"
 __maintainer__ = "Yu Kumagai"

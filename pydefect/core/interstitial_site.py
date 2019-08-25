@@ -6,12 +6,12 @@ from typing import Union
 
 import yaml
 from monty.json import MSONable
-from pydefect.util.structure_tools import get_coordination_distances
 from pydefect.core.config import SYMMETRY_TOLERANCE, ANGLE_TOL
 from pydefect.database.num_symmetry_operation import num_symmetry_operation
 from pydefect.util.logger import get_logger
 from pydefect.util.structure_tools \
     import create_saturated_interstitial_structure
+from pydefect.util.structure_tools import get_coordination_distances
 from pymatgen.analysis.defects.utils import ChargeDensityAnalyzer
 from pymatgen.core.periodic_table import DummySpecie
 from pymatgen.core.structure import Structure

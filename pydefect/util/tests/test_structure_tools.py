@@ -1,15 +1,13 @@
 # -*- coding: utf-8 -*-
 
-import os
-
 import numpy as np
 from pydefect.util.structure_tools import (
     perturb_neighboring_atoms, get_minimum_distance, get_displacements,
     defect_center_from_coords, distance_list,
     create_saturated_interstitial_structure, get_neighboring_atom_indices,
     num_equivalent_clusters, first_appearing_index, get_coordination_distances)
-from pymatgen.core.structure import Structure
 from pydefect.util.testing import PydefectTest
+from pymatgen.core.structure import Structure
 
 __author__ = "Yu Kumagai"
 __maintainer__ = "Yu Kumagai"

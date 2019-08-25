@@ -1,18 +1,16 @@
 # -*- coding: utf-8 -*-
 import json
 from collections import defaultdict
+from functools import reduce
 from itertools import permutations
 from typing import Union, List, Optional, Tuple, Dict
-from functools import reduce
 
 from monty.json import MontyEncoder, MSONable
 from monty.serialization import loadfn, dumpfn
-from vise.util.structure_handler import (
-    get_point_group_from_dataset)
+from pydefect.core.complex_defects import ComplexDefects
 from pydefect.core.config import (
     ELECTRONEGATIVITY_DIFFERENCE, DISPLACEMENT_DISTANCE, SYMMETRY_TOLERANCE,
     ANGLE_TOL)
-from pydefect.core.complex_defects import ComplexDefects
 from pydefect.core.defect_entry import DefectType, DefectEntry
 from pydefect.core.defect_name import DefectName
 from pydefect.core.error_classes import InvalidFileError
@@ -26,6 +24,8 @@ from pydefect.util.structure_tools import (
 from pymatgen.core.periodic_table import Element
 from pymatgen.core.structure import Structure
 from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
+from vise.util.structure_handler import (
+    get_point_group_from_dataset)
 
 __author__ = "Yu Kumagai"
 __maintainer__ = "Yu Kumagai"

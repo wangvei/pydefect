@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 import numpy as np
-from pymatgen.core import IStructure, Lattice
 from pydefect.input_maker.supercell_maker import (
     Supercell, Supercells, calc_isotropy)
 from pydefect.util.testing import PydefectTest
+from pymatgen.core import IStructure, Lattice
 
 __author__ = "Yu Kumagai"
 __maintainer__ = "Yu Kumagai"

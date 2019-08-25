@@ -1,19 +1,16 @@
 # -*- coding: utf-8 -*-
 
 import json
-import numpy as np
 import os
 
+import numpy as np
 from monty.json import MontyEncoder, MSONable
 from monty.serialization import loadfn
-
-from vise.analyzer.band_gap import band_gap_properties
-from pydefect.util.tools import make_symmetric_matrix
-
-from pymatgen.io.vasp.outputs import Outcar, Vasprun, Poscar
-from pymatgen.electronic_structure.core import Spin
-
 from pydefect.util.logger import get_logger
+from pydefect.util.tools import make_symmetric_matrix
+from pymatgen.electronic_structure.core import Spin
+from pymatgen.io.vasp.outputs import Outcar, Vasprun, Poscar
+from vise.analyzer.band_gap import band_gap_properties
 
 __author__ = "Yu Kumagai"
 __maintainer__ = "Yu Kumagai"

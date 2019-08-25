@@ -3,11 +3,9 @@
 import os
 import tempfile
 import unittest
-import numpy as np
-
-from pymatgen.util.testing import PymatgenTest
 
 from pydefect.core.unitcell_calc_results import UnitcellCalcResults
+from pymatgen.util.testing import PymatgenTest
 
 __author__ = "Yu Kumagai"
 __maintainer__ = "Yu Kumagai"
