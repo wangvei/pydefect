@@ -29,7 +29,7 @@ class DefectEntryTest(PydefectTest):
         changes_of_num_elements = {"O": -1}
         charge = 2
         initial_site_symmetry = "Oh"
-        num_equiv_sites = 4
+        multiplicity = 4
         neighboring_sites = [0, 1]
         self._MgO_Va_O1_2 = \
             DefectEntry(name=name,
@@ -43,7 +43,7 @@ class DefectEntryTest(PydefectTest):
                         initial_site_symmetry=initial_site_symmetry,
                         cutoff=CUTOFF_RADIUS,
                         neighboring_sites=neighboring_sites,
-                        num_equiv_sites=num_equiv_sites)
+                        multiplicity=multiplicity)
 
         # DefectEntry class object for a complex defect
         name = "2Va_O1+Mg_i1"
@@ -63,7 +63,7 @@ class DefectEntryTest(PydefectTest):
         charge = 2
         initial_site_symmetry = "mmm"
         neighboring_sites = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13]
-        num_equiv_sites = 48
+        multiplicity = 48
 
         self._MgO_complex = \
             DefectEntry(name=name,
@@ -77,7 +77,7 @@ class DefectEntryTest(PydefectTest):
                         initial_site_symmetry=initial_site_symmetry,
                         cutoff=CUTOFF_RADIUS,
                         neighboring_sites=neighboring_sites,
-                        num_equiv_sites=num_equiv_sites)
+                        multiplicity=multiplicity)
 
     def test_from_yaml(self):
         defect_entry_from_yaml = DefectEntry.from_yaml(

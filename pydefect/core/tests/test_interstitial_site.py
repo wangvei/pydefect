@@ -16,7 +16,7 @@ class InterstitialSiteTest(PydefectTest):
         representative_coords = [0.25, 0.25, 0.25]
         wyckoff = "b"
         site_symmetry = "m-3m"
-        symmetry_multiplicity = 8
+        multiplicity = 8
         coordination_distances = {"Mg": [2.12] * 6}
         method = "manual"
 
@@ -25,7 +25,7 @@ class InterstitialSiteTest(PydefectTest):
                 representative_coords=representative_coords,
                 wyckoff=wyckoff,
                 site_symmetry=site_symmetry,
-                symmetry_multiplicity=symmetry_multiplicity,
+                multiplicity=multiplicity,
                 coordination_distances=coordination_distances,
                 method=method)
 
@@ -33,7 +33,7 @@ class InterstitialSiteTest(PydefectTest):
         expected = """representative_coords: [0.25, 0.25, 0.25]
 wyckoff: b
 site_symmetry: m-3m
-symmetry_multiplicity: 8
+multiplicity: 8
 coordination_distances: {'Mg': [2.12, 2.12, 2.12, 2.12, 2.12, 2.12]}
 method: manual"""
         self.assertEqual(expected, str(self.mgo_interstitial))
@@ -56,7 +56,7 @@ class InterstitialSiteSetTest(PydefectTest):
             representative_coords=[0.125, 0.125, 0.125],
             wyckoff="b",
             site_symmetry="m-3m",
-            symmetry_multiplicity=64,
+            multiplicity=64,
             coordination_distances={"Mg": [2.12] * 4, "O": [2.12] * 4},
             method="manual")
 
@@ -64,7 +64,7 @@ class InterstitialSiteSetTest(PydefectTest):
             representative_coords=[0, 0.125, 0.125],
             wyckoff="b",
             site_symmetry="m-3m",
-            symmetry_multiplicity=64,
+            multiplicity=64,
             coordination_distances={"Mg": [2.12] * 6},
             method="Voronoi")
 
@@ -89,7 +89,7 @@ class InterstitialSiteSetTest(PydefectTest):
         expected = """representative_coords: [0.125, 0.125, 0.125]
 wyckoff: b
 site_symmetry: m-3m
-symmetry_multiplicity: 64
+multiplicity: 64
 coordination_distances: {'Mg': [2.12, 2.12, 2.12, 2.12], 'O': [2.12, 2.12, 2.12, 2.12]}
 method: manual"""
         self.assertEqual(expected, actual)
@@ -108,7 +108,7 @@ method: manual"""
 
     def test_add(self):
         coords = [[0.175, 0.175, 0.175]]
-        self.interstitial_site_set.add_sites(coords=coords)
+        self.interstitial_site_set.add_sites(frac_coords=coords)
         print(self.interstitial_site_set.interstitial_sites)
 
     # def test_add_from_charge_density(self):

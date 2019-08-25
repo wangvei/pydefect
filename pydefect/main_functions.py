@@ -258,7 +258,7 @@ def interstitial(args):
 
         defect_initial_setting = \
             DefectInitialSetting.from_defect_in(poscar=args.dposcar,
-                                                defect_in_file="defect.in")
+                                                defect_in_file=args.defect_in)
         # To change coords from unitcell to supercell, multiply inverse of
         # trans_mat to coords.
         tm_list = defect_initial_setting.transformation_matrix
@@ -266,11 +266,8 @@ def interstitial(args):
         inv_trans_mat = np.linalg.inv(trans_mat)
         supercell_coords = [np.dot(inv_trans_mat, c).tolist() for c in coords]
 
-        defect_in = \
-            DefectInitialSetting.from_defect_in(args.dposcar, args.defect_in)
-
-        interstitial_set.add_sites(coords=supercell_coords,
-                                   cutoff=defect_in.cutoff,
+        interstitial_set.add_sites(frac_coords=supercell_coords,
+                                   cutoff=defect_initial_setting.cutoff,
                                    vicinage_radius=args.radius,
                                    symprec=args.symprec,
                                    angle_tolerance=args.angle_tolerance)
@@ -303,9 +300,14 @@ def complex_defects(args):
         coords = [inserted_coords[3 * i + j] for j in range(3)]
         inserted_atoms.append({"element": e, "coords": coords})
 
+    defect_initial_setting = \
+        DefectInitialSetting.from_defect_in(poscar=args.dposcar,
+                                            defect_in_file=args.defect_in)
+
     complex_defects_obj.add_defect(
         removed_atom_indices=args.removed_atom_indices,
         inserted_atoms=inserted_atoms,
+        supercell_multiplicity=defect_initial_setting.cell_multiplicity,
         name=args.name,
         extreme_charge_state=args.extreme_charge_state,
         annotation=args.annotation,

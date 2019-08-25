@@ -17,7 +17,6 @@ from pymatgen.core.periodic_table import DummySpecie
 from pymatgen.core.structure import Structure
 from pymatgen.io.vasp.outputs import Chgcar
 from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
-
 __author__ = "Yu Kumagai"
 __maintainer__ = "Yu Kumagai"
 
@@ -25,33 +24,36 @@ logger = get_logger(__name__)
 
 
 class InterstitialSite(MSONable):
-    """Holds properties related to the interstitial site.
-
-    Args:
-        representative_coords (list):
-            Representative coordinates, namely the position of first_index
-        wyckoff (str):
-            A wyckoff letter.
-        site_symmetry (str):
-            Site symmetry.
-        coordination_distances (dict):
-            Coordination environment. An example is
-            {"Mg": [1.92, 1.95, 2.01], "Al": [1.82, 1.95]}
-        method (str):
-            The method name determining the interstitial site.
-    """
+    """Holds properties related to the interstitial site. """
 
     def __init__(self,
                  representative_coords: list,
                  wyckoff: str = None,
                  site_symmetry: str = None,
-                 symmetry_multiplicity: int = None,
+                 multiplicity: int = None,
                  coordination_distances: dict = None,
                  method: str = None):
+        """
+        Args:
+            representative_coords (list):
+                Representative coordinates, namely the position of first_index
+            wyckoff (str):
+                A wyckoff letter.
+            site_symmetry (str):
+                Site symmetry in Hermann–Mauguin notation.
+            multiplicity (int):
+                Multiplicity of the interstitial in supercell perfect structure.
+            coordination_distances (dict):
+                Coordination environment. An example is
+                {"Mg": [1.92, 1.95, 2.01], "Al": [1.82, 1.95]}
+            method (str):
+                The method name determining the interstitial site.
+        """
+
         self.representative_coords = representative_coords
         self.wyckoff = wyckoff
         self.site_symmetry = site_symmetry
-        self.symmetry_multiplicity = symmetry_multiplicity
+        self.multiplicity = multiplicity
         self.coordination_distances = coordination_distances
         self.method = method
 
@@ -59,7 +61,7 @@ class InterstitialSite(MSONable):
         outs = [f"representative_coords: {self.representative_coords}",
                 f"wyckoff: {self.wyckoff}",
                 f"site_symmetry: {self.site_symmetry}",
-                f"symmetry_multiplicity: {self.symmetry_multiplicity}",
+                f"multiplicity: {self.multiplicity}",
                 f"coordination_distances: {self.coordination_distances}",
                 f"method: {self.method}"]
         return "\n".join(outs)
@@ -69,7 +71,7 @@ class InterstitialSite(MSONable):
             {"representative_coords":  self.representative_coords,
              "wyckoff":                self.wyckoff,
              "site_symmetry":          self.site_symmetry,
-             "symmetry_multiplicity":  self.symmetry_multiplicity,
+             "multiplicity":           self.multiplicity,
              "coordination_distances": self.coordination_distances,
              "method":                 self.method})
 
@@ -135,7 +137,7 @@ class InterstitialSiteSet(MSONable):
             [v.representative_coords for v in self.interstitial_sites.values()]
 
     @classmethod
-    def from_dict(cls, d):
+    def from_dict(cls, d: dict):
         # orderedDict disables MSONable.
         structure = d["structure"]
         if isinstance(structure, dict):
@@ -163,7 +165,7 @@ class InterstitialSiteSet(MSONable):
         return cls.from_dict(d)
 
     def add_sites(self,
-                  coords: list,
+                  frac_coords: list,
                   cutoff: float,
                   vicinage_radius: float = 0.3,
                   symprec: float = SYMMETRY_TOLERANCE,
@@ -174,9 +176,23 @@ class InterstitialSiteSet(MSONable):
         Note that symprec must be the same as that used for
         DefectInitialSetting to keep the symmetry consistency such as
         point group, multiplicity and so on.
+
+        Args:
+            frac_coords (list):
+                Added fractional coords.
+            cutoff (float):
+                Cutoff radius in which atoms are considered as neighbors.
+            vicinage_radius (float):
+                Radius in which atoms are considered too close.
+            symprec (float):
+                Precision used for symmetry analysis in angstrom.
+            angle_tolerance (float):
+                Angle tolerance for symmetry analysis in degree
+            method (str):
+                Name of the method that determine the interstitial sites.
         """
         # Don't distinguish old and new interstitial coordinates for simplicity
-        total_coords = self.coords + coords
+        total_coords = self.coords + frac_coords
         saturated_structure, atom_indices, are_inserted = \
             create_saturated_interstitial_structure(
                 structure=self.structure,
@@ -187,16 +203,17 @@ class InterstitialSiteSet(MSONable):
 
         sga = SpacegroupAnalyzer(saturated_structure, symprec, angle_tolerance)
         symmetry_dataset = sga.get_symmetry_dataset()
+        num_symmop = len(sga.get_symmetry_operations())
 
         for i, (coord, ai, inserted) \
-                in enumerate(zip(coords, atom_indices, are_inserted)):
+                in enumerate(zip(frac_coords, atom_indices, are_inserted)):
             if not inserted:
                 continue
             site_name = "i" + str(i + 1)
 
             site_symmetry = symmetry_dataset["site_symmetry_symbols"][ai]
             wyckoff = symmetry_dataset["wyckoffs"][ai]
-            multiplicity = num_symmetry_operation(site_symmetry)
+            multiplicity = num_symmetry_operation(site_symmetry) * num_symmop
             # Calculate the coordination_distances.
             # Note that saturated_structure includes other interstitial sites.
             defect_str = self.structure.copy()
@@ -209,7 +226,7 @@ class InterstitialSiteSet(MSONable):
                 InterstitialSite(representative_coords=coord,
                                  wyckoff=wyckoff,
                                  site_symmetry=site_symmetry,
-                                 symmetry_multiplicity=multiplicity,
+                                 multiplicity=multiplicity,
                                  coordination_distances=coordination_distances,
                                  method=method)
 
@@ -230,6 +247,24 @@ def interstitials_from_charge_density(
     Note that symprec must be the same as that used for
     DefectInitialSetting to keep the symmetry consistency such as
     point group, multiplicity and so on.
+
+    Args:
+        chgcar_filename (str):
+            CHGCAR-type file name.
+        threshold_frac:
+            See docstrings of ChargeDensityAnalyzer.
+        threshold_abs:
+            See docstrings of ChargeDensityAnalyzer.
+        min_dist:
+            See docstrings of ChargeDensityAnalyzer.
+        tol:
+            See docstrings of ChargeDensityAnalyzer.
+        radius:
+            See docstrings of ChargeDensityAnalyzer.
+        symprec (float):
+            Precision used for symmetry analysis in angstrom.
+        angle_tolerance (float):
+            Angle tolerance for symmetry analysis in degree
     """
 
     chgcar = Chgcar.from_file(chgcar_filename)

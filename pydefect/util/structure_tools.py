@@ -378,13 +378,12 @@ def get_neighboring_atom_indices(structure: Structure,
     return neighboring_indices, distances
 
 
-def num_equivalent_clusters(structure: Structure,
-                            inserted_atom_coords: list,
-                            removed_atom_indices: list,
-                            symprec: float = SYMMETRY_TOLERANCE,
-                            angle_tolerance: float = ANGLE_TOL
-                            ) -> Tuple[int, str]:
-    """Calculate number of equivalent clusters in the structure.
+def cluster_point_group(structure: Structure,
+                        inserted_atom_coords: list,
+                        removed_atom_indices: list,
+                        symprec: float = SYMMETRY_TOLERANCE,
+                        angle_tolerance: float = ANGLE_TOL) -> str:
+    """Return cluster point group in the structure.
 
     Args:
         structure (Structure):
@@ -397,10 +396,10 @@ def num_equivalent_clusters(structure: Structure,
             Angle tolerance in degree used for identifying the space group.
 
     Returns:
-        Tuple of (num_equivalent_clusters (int), point_group (str))
+        point_group (str)
     """
-    sga = SpacegroupAnalyzer(structure, symprec, angle_tolerance)
-    num_symmop = len(sga.get_symmetry_operations())
+    # sga = SpacegroupAnalyzer(structure, symprec, angle_tolerance)
+    # num_symmop = len(sga.get_symmetry_operations())
 
     structure_with_cluster = structure.copy()
     for i in inserted_atom_coords:
@@ -412,7 +411,7 @@ def num_equivalent_clusters(structure: Structure,
     sym_dataset = sga_with_cluster.get_symmetry_dataset()
     point_group = sym_dataset["pointgroup"]
 
-    return int(num_symmop / num_symmetry_operation(point_group)), point_group
+    return point_group
 
 
 def first_appearing_index(structure: Structure,

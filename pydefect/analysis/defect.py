@@ -176,8 +176,8 @@ class Defect(MSONable):
                  initial_symmetry: str,
                  final_symmetry: str,
                  final_volume: float,
-                 num_equiv_sites: int,
-                 multiplicity: int,
+                 initial_multiplicity: int,
+                 final_multiplicity: int,
                  magnetization: float,
                  kpoint_coords: list,
                  eigenvalues: np.array,
@@ -209,8 +209,8 @@ class Defect(MSONable):
         # symmetries
         self.initial_symmetry = initial_symmetry
         self.final_symmetry = final_symmetry
-        self.num_equiv_sites = num_equiv_sites
-        self.multiplicity = multiplicity
+        self.initial_multiplicity = initial_multiplicity
+        self.final_multiplicity = final_multiplicity
         # magnetization
         self.magnetization = magnetization
         # kpoint
@@ -240,8 +240,9 @@ class Defect(MSONable):
 
         initial_nsymop = nsymop(defect_entry.initial_site_symmetry)
         final_nsymop = nsymop(dft_results.site_symmetry)
-        num_equiv_sites = defect_entry.num_equiv_sites
-        multiplicity = num_equiv_sites * initial_nsymop / final_nsymop
+        initial_multiplicity = defect_entry.multiplicity
+        final_multiplicity = \
+            initial_multiplicity * initial_nsymop / final_nsymop
 
         magnetization = round(dft_results.total_magnetization, 2)
 
@@ -277,8 +278,8 @@ class Defect(MSONable):
                    defect_center_coords=dft_results.defect_coords,
                    initial_symmetry=defect_entry.initial_site_symmetry,
                    final_symmetry=dft_results.site_symmetry,
-                   num_equiv_sites=num_equiv_sites,
-                   multiplicity=multiplicity,
+                   initial_multiplicity=initial_multiplicity,
+                   final_multiplicity=final_multiplicity,
                    magnetization=magnetization,
                    kpoint_coords=dft_results.kpoint_coords,
                    eigenvalues=dft_results.eigenvalues,
@@ -328,8 +329,8 @@ class Defect(MSONable):
                    defect_center_coords=d["defect_center_coords"],
                    initial_symmetry=d["initial_symmetry"],
                    final_symmetry=d["final_symmetry"],
-                   num_equiv_sites=d["num_equiv_sites"],
-                   multiplicity=d["multiplicity"],
+                   initial_multiplicity=d["initial_multiplicity"],
+                   final_multiplicity=d["final_multiplicity"],
                    magnetization=d["magnetization"],
                    kpoint_coords=d["kpoint_coords"],
                    eigenvalues=eigenvalues,
@@ -366,8 +367,8 @@ class Defect(MSONable):
              "defect_center_coords":        self.defect_center_coords,
              "initial_symmetry":            self.initial_symmetry,
              "final_symmetry":              self.final_symmetry,
-             "num_equiv_sites":             self.num_equiv_sites,
-             "multiplicity":                self.multiplicity,
+             "initial_multiplicity":        self.initial_multiplicity,
+             "final_multiplicity":          self.final_multiplicity,
              "magnetization":               self.magnetization,
              "kpoint_coords":               self.kpoint_coords,
              "eigenvalues":                 eigenvalues,

@@ -125,7 +125,7 @@ class DefectEnergies(MSONable):
             e = {"energy": energy, "convergence": d.is_converged,
                  "is_shallow": d.is_shallow}
 
-            if not d.multiplicity.is_integer():
+            if not d.final_multiplicity.is_integer():
                 logger.warning(
                     f"Multiplicity of {d.name} charge {d.charge} is invalid."
                     f"initial sym: {d.initial_symmetry}, final sym: "
@@ -137,7 +137,7 @@ class DefectEnergies(MSONable):
                     f"fractional magnetization: {d.magnetization}")
 
             defect_energies[d.name][d.charge][d.annotation] = e
-            multiplicity[d.name][d.charge][d.annotation] = d.multiplicity
+            multiplicity[d.name][d.charge][d.annotation] = d.final_multiplicity
             magnetization[d.name][d.charge][d.annotation] = d.magnetization
 
         return cls(defect_energies=defaultdict_to_dict(defect_energies),
@@ -312,11 +312,11 @@ class DefectEnergies(MSONable):
                     convergence = defect_energy["convergence"]
 
                     if n.is_name_matched(filtering_words) is False:
-                        logger.info("{} filtered out, so omitted.".format(n))
+                        logger.info(f"{n} filtered out, so omitted.")
                     elif exclude_shallow_defects and is_shallow:
-                        logger.info("{} is shallow, so omitted.".format(n))
+                        logger.info(f"{n} is shallow, so omitted.")
                     elif exclude_unconverged_defects and convergence is False:
-                        logger.info("{} unconverged, so omitted.".format(n))
+                        logger.info(f"{n} unconverged, so omitted.")
                     else:
                         continue
                     energy_by_annotation.pop(annotation)

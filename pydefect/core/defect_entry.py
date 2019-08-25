@@ -16,7 +16,7 @@ from pydefect.core.config import (
 from pydefect.core.error_classes import StructureError
 from pydefect.util.logger import get_logger
 from pydefect.util.structure_tools import (
-    num_equivalent_clusters, defect_center_from_coords, distance_list)
+    cluster_point_group, defect_center_from_coords, distance_list)
 from pydefect.util.tools import is_str_digit
 from pydefect.util.vasp_util import element_diff_from_structures
 from pymatgen.core.structure import Structure
@@ -91,7 +91,7 @@ class DefectEntry(MSONable):
                  cutoff: float,
                  neighboring_sites: list,
                  annotation: Optional[str] = None,
-                 num_equiv_sites: Optional[int] = None):
+                 multiplicity: Optional[int] = None):
         """
         Args:
             name (str):
@@ -126,8 +126,8 @@ class DefectEntry(MSONable):
             annotation (str):
                 Annotation used for distinguishing defects with same
                 net atom exchange but different local structures.
-            num_equiv_sites (int):
-                Number of equivalent sites in the given structure.
+            multiplicity (int):
+                Number of equivalent sites in the supercell structure.
         """
         self.name = name
         self.defect_type = defect_type
@@ -144,7 +144,7 @@ class DefectEntry(MSONable):
                 "No neighboring site detected, so increase cutoff radius.")
         self.neighboring_sites = neighboring_sites[:]
         self.annotation = annotation
-        self.num_equiv_sites = num_equiv_sites
+        self.multiplicity = multiplicity
 
     def __repr__(self):
         annotation = "" if self.annotation is None else self.annotation
@@ -161,7 +161,7 @@ class DefectEntry(MSONable):
                 "changes of num element: " + str(self.changes_of_num_elements),
                 "cut off radius: " + str(self.cutoff),
                 "neighboring sites: " + str(self.neighboring_sites),
-                "num_equiv sites: " + str(self.num_equiv_sites)]
+                "multiplicity: " + str(self.multiplicity)]
         return "\n".join(outs)
 
     def __str__(self):
@@ -197,7 +197,7 @@ class DefectEntry(MSONable):
             cutoff=d["cutoff"],
             neighboring_sites=d["neighboring_sites"],
             annotation=d["annotation"],
-            num_equiv_sites=d["num_equiv_sites"])
+            multiplicity=d["multiplicity"])
 
     def as_dict(self) -> dict:
         defect_type = str(self.defect_type)
@@ -216,7 +216,7 @@ class DefectEntry(MSONable):
              "cutoff": self.cutoff,
              "neighboring_sites": self.neighboring_sites,
              "annotation": self.annotation,
-             "num_equiv_sites": self.num_equiv_sites}
+             "multiplicity": self.multiplicity}
 
         return d
 
@@ -339,12 +339,12 @@ class DefectEntry(MSONable):
             pristine_defect_structure, defect_symprec, angle_tolerance)
         initial_site_symmetry = sga.get_point_group_symbol()
 
-        num_equiv_sites = None
+        multiplicity = None
         if calc_num_equiv_site:
-            num_equiv_sites, _ = num_equivalent_clusters(perfect_structure,
-                                                         inserted_atom_coords,
-                                                         removed_atom_indices,
-                                                         disp_dist)
+            multiplicity, _ = cluster_point_group(perfect_structure,
+                                                     inserted_atom_coords,
+                                                     removed_atom_indices,
+                                                     disp_dist)
         pristine_defect_structure.set_charge(charge)
         defect_structure.set_charge(charge)
         defect_type = determine_defect_type(inserted_atoms, removed_atoms)
@@ -361,7 +361,7 @@ class DefectEntry(MSONable):
                    cutoff=cutoff,
                    neighboring_sites=neighboring_sites,
                    annotation=annotation,
-                   num_equiv_sites=num_equiv_sites)
+                   multiplicity=multiplicity)
 
     @classmethod
     def load_json(cls, filename="defect_entry.json"):

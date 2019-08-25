@@ -5,7 +5,7 @@ from pydefect.util.structure_tools import (
     perturb_neighboring_atoms, get_minimum_distance, get_displacements,
     defect_center_from_coords, distance_list,
     create_saturated_interstitial_structure, get_neighboring_atom_indices,
-    num_equivalent_clusters, first_appearing_index, get_coordination_distances)
+    cluster_point_group, first_appearing_index, get_coordination_distances)
 from pydefect.util.testing import PydefectTest
 from pymatgen.core.structure import Structure
 
@@ -134,27 +134,25 @@ class GetNeighboringAtomIndicesTest(PydefectTest):
         self.assertEqual(expected_2, actual_2)
 
 
-class CountEquivalentClustersTest(PydefectTest):
+class ClusterPointGroupTest(PydefectTest):
 
     def setUp(self):
-        self.structure = Structure.from_file("POSCAR-MgO64atoms")
+        self.structure = self.get_structure_by_name("MgO64atoms")
         self.inserted_atom_coords = [[0.125, 0.125, 0.125]]
         self.removed_atom_indices = [0, 32]
 
     def test(self):
-        num_sites, point_group = \
-            num_equivalent_clusters(
-                structure=self.structure,
-                inserted_atom_coords=self.inserted_atom_coords,
-                removed_atom_indices=self.removed_atom_indices)
+        point_group = cluster_point_group(
+            structure=self.structure,
+            inserted_atom_coords=self.inserted_atom_coords,
+            removed_atom_indices=self.removed_atom_indices)
 
-        self.assertEqual(256, num_sites)
         self.assertEqual("3m", point_group)
 
 
 class FirstAppearingIndexTest(PydefectTest):
     def setUp(self):
-        self.structure = Structure.from_file("POSCAR-MgO64atoms")
+        self.structure = self.get_structure_by_name("MgO64atoms")
 
     def test_not_exist_specie(self):
         actual = first_appearing_index(self.structure, "H")

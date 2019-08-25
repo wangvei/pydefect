@@ -9,7 +9,8 @@ from monty.json import MSONable
 from pydefect.core.config import SYMMETRY_TOLERANCE, ANGLE_TOL
 from pydefect.core.interstitial_site import represent_odict, construct_odict
 from pydefect.util.logger import get_logger
-from pydefect.util.structure_tools import num_equivalent_clusters
+from pydefect.database.num_symmetry_operation import num_symmetry_operation
+from pydefect.util.structure_tools import cluster_point_group
 from pymatgen.core.structure import Structure
 
 __author__ = "Yu Kumagai"
@@ -40,9 +41,10 @@ class ComplexDefect(MSONable):
         """
         Args:
             removed_atom_indices (list):
-                List of removed atom indices in supercell perfect structure.
+                List of removed atom indices in the supercell perfect structure.
             inserted_atoms (List):
-                List of dict with "element" and "coords" keys.
+                List of dict with "element" and "coords" keys, e.g.,
+                {"Mg": [0.125, 0.125, 0.125], "O": [0.25, 0.25, 0.25]}
                 Not that "index" is absent as it is not determined, yet.
             point_group (str):
                 point group in Hermann–Mauguin notation.
@@ -83,8 +85,7 @@ class ComplexDefects(MSONable):
         """
         Args:
             structure (Structure):
-                Structure class object. Supercell used for defect
-                calculations.
+                Supercell used for the defect calculations.
             complex_defects (OrderedDict):
                 OrderedDict with keys of defect names and values of
                 ComplexDefect objects.
@@ -143,6 +144,7 @@ class ComplexDefects(MSONable):
     def add_defect(self,
                    removed_atom_indices: list,
                    inserted_atoms: List[dict],
+                   supercell_multiplicity: int,
                    name: Optional[str] = None,
                    extreme_charge_state: Optional[int] = None,
                    annotation: Optional[str] = None,
@@ -150,12 +152,14 @@ class ComplexDefects(MSONable):
                    angle_tolerance: float = ANGLE_TOL) -> None:
 
         inserted_atom_coords = [i["coords"] for i in inserted_atoms]
-        multiplicity, point_group = \
-            num_equivalent_clusters(self.structure,
-                                    inserted_atom_coords,
-                                    removed_atom_indices,
-                                    symprec,
-                                    angle_tolerance)
+
+        point_group = cluster_point_group(self.structure,
+                                          inserted_atom_coords,
+                                          removed_atom_indices,
+                                          symprec,
+                                          angle_tolerance)
+        multiplicity = \
+            supercell_multiplicity * num_symmetry_operation(point_group)
 
         complex_defect = \
             ComplexDefect(removed_atom_indices, inserted_atoms,

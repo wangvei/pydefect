@@ -217,7 +217,7 @@ class DefectInitialSettingTest(PydefectTest):
               "changes_of_num_elements": {"O": -1},
               "initial_site_symmetry": "m-3m",
               "charges": 2,
-              "num_equiv_sites": 64,
+              "multiplicity": 64,
               "center": [0, 0, 0]}
         self.defect_set = [d1]
 

@@ -780,50 +780,10 @@ class DefectInitialSetting(MSONable):
         self._write_defect_in(defect_in_file)
         self.structure.to(fmt="poscar", filename=poscar_file)
 
-    def _complex_set(self) -> dict:
-        defect_set = {}
-        changes_of_num_elements = defaultdict(int)
-
-        for name, complex_defect in self.complex_defects.items():
-            structure = self.structure.copy()
-            removed_atoms = []
-            for index in complex_defect.removed_atom_indices:
-                element = self.structure[index].species_string
-                coords = list(self.structure[index].frac_coords)
-                removed_atoms.append({"element": element,
-                                      "index": index,
-                                      "coords": coords})
-                changes_of_num_elements[element] += -1
-
-            structure.remove_sites(complex_defect.removed_atom_indices)
-
-            # Returned inserted_atoms contains indices in the returned structure
-            structure, inserted_atoms = \
-                insert_atoms(structure, complex_defect.inserted_atoms)
-            for i in inserted_atoms:
-                changes_of_num_elements[i["element"]] += -1
-
-            coords = [i["coords"] for i in inserted_atoms + removed_atoms]
-            center = defect_center_from_coords(coords, self.structure)
-
-            charges = candidate_charge_set(complex_defect.extreme_charge_state)
-
-            defect_set[name] = \
-                {"defect_type": DefectType.complex,
-                 "initial_structure": structure,
-                 "removed_atoms": removed_atoms,
-                 "inserted_atoms": inserted_atoms,
-                 "changes_of_num_elements": dict(changes_of_num_elements),
-                 "initial_site_symmetry": complex_defect.point_group,
-                 "charges": charges,
-                 "num_equiv_sites": complex_defect.multiplicity,
-                 "center": center}
-
-        return defect_set
-
     def _substituted_set(self,
                          removed_sites: List[IrreducibleSite],
                          inserted_element: Optional[str]) -> dict:
+        """Substituted impurity, antisites, and vacancies. """
         defect_set = {}
 
         for rs in removed_sites:
@@ -838,7 +798,7 @@ class DefectInitialSetting(MSONable):
                               "index": rs.first_index,
                               "coords": rs.representative_coords}]
             changes_of_num_elements[rs.element] += -1
-            num_equiv_sites = rs.num_atoms
+            multiplicity = rs.multiplicity
 
             if inserted_element:
                 defect_type = DefectType.substituted
@@ -863,17 +823,18 @@ class DefectInitialSetting(MSONable):
                  "changes_of_num_elements": dict(changes_of_num_elements),
                  "initial_site_symmetry": symmetry,
                  "charges": charges,
-                 "num_equiv_sites": num_equiv_sites,
+                 "multiplicity": multiplicity,
                  "center": center}
 
         return defect_set
 
     def _inserted_set(self, inserted_elements: List[str]) -> dict:
+        """Interstitials. """
         defect_set = {}
         for interstitial_name, i in self.interstitials.items():
             center = i.representative_coords
             symmetry = i.site_symmetry
-            num_equiv_sites = i.symmetry_multiplicity
+            multiplicity = i.multiplicity
 
             for e in inserted_elements:
                 changes_of_num_elements = defaultdict(int)
@@ -894,8 +855,50 @@ class DefectInitialSetting(MSONable):
                      "changes_of_num_elements": dict(changes_of_num_elements),
                      "initial_site_symmetry": symmetry,
                      "charges": charges,
-                     "num_equiv_sites": num_equiv_sites,
+                     "multiplicity": multiplicity,
                      "center": center}
+
+        return defect_set
+
+    def _complex_set(self) -> dict:
+        defect_set = {}
+        changes_of_num_elements = defaultdict(int)
+
+        for name, complex_defect in self.complex_defects.items():
+            structure = self.structure.copy()
+            removed_atoms = []
+            for index in complex_defect.removed_atom_indices:
+                element = self.structure[index].species_string
+                coords = list(self.structure[index].frac_coords)
+                removed_atoms.append({"element": element,
+                                      "index": index,
+                                      "coords": coords})
+                changes_of_num_elements[element] += -1
+
+            structure.remove_sites(complex_defect.removed_atom_indices)
+
+            # Returned inserted_atoms contains inserted atom indices in the
+            # returned structure
+            structure, inserted_atoms = \
+                insert_atoms(structure, complex_defect.inserted_atoms)
+            for i in inserted_atoms:
+                changes_of_num_elements[i["element"]] += -1
+
+            coords = [i["coords"] for i in inserted_atoms + removed_atoms]
+            center = defect_center_from_coords(coords, self.structure)
+
+            charges = candidate_charge_set(complex_defect.extreme_charge_state)
+
+            defect_set[name] = \
+                {"defect_type": DefectType.complex,
+                 "initial_structure": structure,
+                 "removed_atoms": removed_atoms,
+                 "inserted_atoms": inserted_atoms,
+                 "changes_of_num_elements": dict(changes_of_num_elements),
+                 "initial_site_symmetry": complex_defect.point_group,
+                 "charges": charges,
+                 "multiplicity": complex_defect.multiplicity,
+                 "center": center}
 
         return defect_set
 

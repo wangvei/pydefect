@@ -437,6 +437,9 @@ def main():
         "--dposcar", dest="dposcar", type=str, default=cd_defaults["structure"],
         help="DPOSCAR-type file name.")
     parser_complex_defects.add_argument(
+        "--defect_in", dest="defect_in", default="defect.in", type=str,
+        help="defect.in-type file name.")
+    parser_complex_defects.add_argument(
         "-r", dest="removed_atom_indices", nargs="+", type=int,
         help="Removed atom indices when constructing a complex defect.")
     parser_complex_defects.add_argument(
