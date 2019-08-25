@@ -5,9 +5,9 @@ from pydefect.util.structure_tools import (
     perturb_neighboring_atoms, get_minimum_distance, get_displacements,
     defect_center_from_coords, distance_list,
     create_saturated_interstitial_structure, get_neighboring_atom_indices,
-    cluster_point_group, first_appearing_index, get_coordination_distances)
-from pydefect.util.testing import PydefectTest
+    num_equivalent_clusters, first_appearing_index, get_coordination_distances)
 from pymatgen.core.structure import Structure
+from pydefect.util.testing import PydefectTest
 
 __author__ = "Yu Kumagai"
 __maintainer__ = "Yu Kumagai"
@@ -134,7 +134,7 @@ class GetNeighboringAtomIndicesTest(PydefectTest):
         self.assertEqual(expected_2, actual_2)
 
 
-class ClusterPointGroupTest(PydefectTest):
+class CountEquivalentClustersTest(PydefectTest):
 
     def setUp(self):
         self.structure = self.get_structure_by_name("MgO64atoms")
@@ -142,10 +142,11 @@ class ClusterPointGroupTest(PydefectTest):
         self.removed_atom_indices = [0, 32]
 
     def test(self):
-        point_group = cluster_point_group(
-            structure=self.structure,
-            inserted_atom_coords=self.inserted_atom_coords,
-            removed_atom_indices=self.removed_atom_indices)
+        num_sites, point_group = \
+            num_equivalent_clusters(
+                structure=self.structure,
+                inserted_atom_coords=self.inserted_atom_coords,
+                removed_atom_indices=self.removed_atom_indices)
 
         self.assertEqual("3m", point_group)
 

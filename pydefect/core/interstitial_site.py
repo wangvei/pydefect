@@ -204,6 +204,7 @@ class InterstitialSiteSet(MSONable):
         sga = SpacegroupAnalyzer(saturated_structure, symprec, angle_tolerance)
         symmetry_dataset = sga.get_symmetry_dataset()
         num_symmop = len(sga.get_symmetry_operations())
+        print(num_symmop)
 
         for i, (coord, ai, inserted) \
                 in enumerate(zip(frac_coords, atom_indices, are_inserted)):
@@ -213,7 +214,8 @@ class InterstitialSiteSet(MSONable):
 
             site_symmetry = symmetry_dataset["site_symmetry_symbols"][ai]
             wyckoff = symmetry_dataset["wyckoffs"][ai]
-            multiplicity = num_symmetry_operation(site_symmetry) * num_symmop
+            # multiplicity is reduced by the number of symmetry operation
+            multiplicity = num_symmop / num_symmetry_operation(site_symmetry)
             # Calculate the coordination_distances.
             # Note that saturated_structure includes other interstitial sites.
             defect_str = self.structure.copy()

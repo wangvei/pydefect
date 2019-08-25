@@ -9,8 +9,7 @@ from monty.json import MSONable
 from pydefect.core.config import SYMMETRY_TOLERANCE, ANGLE_TOL
 from pydefect.core.interstitial_site import represent_odict, construct_odict
 from pydefect.util.logger import get_logger
-from pydefect.database.num_symmetry_operation import num_symmetry_operation
-from pydefect.util.structure_tools import cluster_point_group
+from pydefect.util.structure_tools import num_equivalent_clusters
 from pymatgen.core.structure import Structure
 
 __author__ = "Yu Kumagai"
@@ -144,7 +143,6 @@ class ComplexDefects(MSONable):
     def add_defect(self,
                    removed_atom_indices: list,
                    inserted_atoms: List[dict],
-                   supercell_multiplicity: int,
                    name: Optional[str] = None,
                    extreme_charge_state: Optional[int] = None,
                    annotation: Optional[str] = None,
@@ -153,13 +151,12 @@ class ComplexDefects(MSONable):
 
         inserted_atom_coords = [i["coords"] for i in inserted_atoms]
 
-        point_group = cluster_point_group(self.structure,
-                                          inserted_atom_coords,
-                                          removed_atom_indices,
-                                          symprec,
-                                          angle_tolerance)
-        multiplicity = \
-            supercell_multiplicity * num_symmetry_operation(point_group)
+        multiplicity, point_group = \
+            num_equivalent_clusters(self.structure,
+                                    inserted_atom_coords,
+                                    removed_atom_indices,
+                                    symprec,
+                                    angle_tolerance)
 
         complex_defect = \
             ComplexDefect(removed_atom_indices, inserted_atoms,
