@@ -88,9 +88,8 @@ def calc_participation_ratio(procar: Procar,
             List of atom indices, for which the participation ratio is
             calculated.
 
-    Return:
+    Return (float):
         float of the participation ratio.
-
     """
     # sum along k-point and orbital
     sum_per_atom = np.sum(procar.data[spin][:, band_index, :, :], axis=(0, 2))
@@ -114,7 +113,7 @@ def calc_orbital_character(procar: Procar,
         band_index (int):
         kpoint_index (int):
 
-    Returns:
+    Returns (dict):
         a dictionary in the {Element:{s: value, p: value, d: value}
         where s, p, and d are OrbitalType in pymatgen.
     """
@@ -144,11 +143,17 @@ def calc_orbital_character(procar: Procar,
 def calc_orbital_difference(orbital_1: dict, orbital_2: dict) -> float:
     """ Calculate absolute difference of between two orbitals
 
+    If an element exists in one orbital, its difference corresponds to the
+    sum of the orbital component.
+
     Args:
         orbital_1 (dict):
             {"Mg": {"s": 0.1, ...}, "O": {...},..
         orbital_2 (dict):
             {"Al": {"s": 0.02, ...}, "Mg": {"s": 0.1, ...}, "O": {...},..
+
+    Return (float):
+        Sum of difference
     """
     element_set = set(list(orbital_1.keys()) + list(orbital_2.keys()))
 
