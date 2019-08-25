@@ -19,7 +19,7 @@ logger = get_logger(__name__)
 
 
 class UnitcellCalcResults(MSONable):
-    """ DFT results for a unitcell. """
+    """Container class with DFT results for a unitcell. """
 
     def __init__(self,
                  band_edge: list = None,
@@ -46,23 +46,19 @@ class UnitcellCalcResults(MSONable):
 
     def __repr__(self):
 
-        def xstr(s):
-            return 'None' if s is None else str(s)
+        def to(s):
+            return str(s) if s else "None"
 
-        band_edge = [None, None] if self._band_edge is None else self._band_edge
-
-        outs = ["vbm (eV): " + xstr(band_edge[0]),
-                "cbm (eV): " + xstr(band_edge[1]),
-                "static dielectric tensor:",
-                xstr(self._static_dielectric_tensor),
-                "ionic dielectric tensor:",
-                xstr(self._ionic_dielectric_tensor),
-                "total dielectric tensor:",
-                xstr(self.total_dielectric_tensor),
-                "volume (A^3): " + xstr(self._volume)]
-
-        is_total_dos = "None" if self._total_dos is None else "Exists"
-        outs.append("Total DOS: {}".format(is_total_dos))
+        band_edge = self._band_edge if self._band_edge else [None, None]
+        is_total_dos = "Exists" if self._total_dos else "None"
+        outs = \
+            [f"vbm (eV): {to(band_edge[0])}",
+             f"cbm (eV): {to(band_edge[1])}",
+             f"static dielectric tensor: {to(self._static_dielectric_tensor)}",
+             f"ionic dielectric tensor: {to(self._ionic_dielectric_tensor)}",
+             f"total dielectric tensor: {to(self.total_dielectric_tensor)}",
+             f"volume (A^3): {to(self._volume)}",
+             f"Total DOS: {is_total_dos}"]
 
         return "\n".join(outs)
 
@@ -73,7 +69,7 @@ class UnitcellCalcResults(MSONable):
     @staticmethod
     def check_attribute(name, attr):
         if attr is None:
-            logger.warning("{}: is None.".format(name))
+            logger.warning(f"{name}: is None.")
             return
         return attr
 
@@ -109,23 +105,22 @@ class UnitcellCalcResults(MSONable):
 
     @property
     def is_set_all(self):
-        for i in self._band_edge, self._static_dielectric_tensor, \
-                 self._ionic_dielectric_tensor, self._total_dos, self._volume:
-            if i is None:
-                return False
-
-        return True
+        return all([self._band_edge,
+                    self._static_dielectric_tensor,
+                    self._ionic_dielectric_tensor,
+                    self._total_dos,
+                    self._volume])
 
     @band_edge.setter
-    def band_edge(self, band_edge):
+    def band_edge(self, band_edge: float):
         self._band_edge = band_edge
 
     @static_dielectric_tensor.setter
-    def static_dielectric_tensor(self, d):
+    def static_dielectric_tensor(self, d: list):
         self._static_dielectric_tensor = make_symmetric_matrix(d)
 
     @ionic_dielectric_tensor.setter
-    def ionic_dielectric_tensor(self, d):
+    def ionic_dielectric_tensor(self, d: list):
         self._ionic_dielectric_tensor = make_symmetric_matrix(d)
 
     @total_dos.setter
@@ -133,43 +128,51 @@ class UnitcellCalcResults(MSONable):
         self._total_dos = total_dos
 
     @volume.setter
-    def volume(self, volume):
+    def volume(self, volume: float):
         self._volume = volume
 
     # setter from vasp results
-    def set_band_edge_from_vasp(self, directory_path,
-                                vasprun_name="vasprun.xml"):
+    def set_band_edge_from_vasp(self,
+                                directory_path: str,
+                                vasprun_name: str = "vasprun.xml") -> None:
         vasprun = Vasprun(os.path.join(directory_path, vasprun_name))
 
         # 2019/7/13 NEVER USE Vasprun.eigenvalue_band_properties
-        # THERE IS A BUG TO ESTIMATE VBM AND CBM of low band gap materials.
+        # THERE IS A BUG TO ESTIMATE VBM AND CBM of lower band gap materials.
         _, vbm_info, cbm_info = band_gap_properties(vasprun)
         self.is_direct = vbm_info["kpoints"] == cbm_info["kpoints"]
         self._band_edge = [vbm_info["energy"], cbm_info["energy"]]
 
-    def set_static_dielectric_tensor_from_vasp(self, directory_path,
-                                               outcar_name="OUTCAR"):
+    def set_static_dielectric_tensor_from_vasp(self,
+                                               directory_path: str,
+                                               outcar_name: str = "OUTCAR"
+                                               ) -> None:
         outcar = Outcar(os.path.join(directory_path, outcar_name))
         outcar.read_lepsilon()
         self._static_dielectric_tensor = np.array(outcar.dielectric_tensor)
 
-    def set_ionic_dielectric_tensor_from_vasp(self, directory_path,
-                                              outcar_name="OUTCAR"):
+    def set_ionic_dielectric_tensor_from_vasp(self,
+                                              directory_path: str,
+                                              outcar_name: str = "OUTCAR"
+                                              ) -> None:
         outcar = Outcar(os.path.join(directory_path, outcar_name))
         outcar.read_lepsilon_ionic()
         self._ionic_dielectric_tensor = np.array(outcar.dielectric_ionic_tensor)
 
-    def set_total_dos_from_vasp(self, directory_path,
-                                vasprun_name="vasprun.xml"):
+    def set_total_dos_from_vasp(self,
+                                directory_path: str,
+                                vasprun_name: str = "vasprun.xml") -> None:
         vasprun = Vasprun(os.path.join(directory_path, vasprun_name))
         dos, energies = vasprun.tdos.densities, vasprun.tdos.energies
         # only non-magnetic
         self._total_dos = [list(dos[Spin.up]), list(energies)]
 
-    def set_volume_from_vasp(self, directory_path, contcar_name="CONTCAR"):
+    def set_volume_from_vasp(self,
+                             directory_path: str,
+                             contcar_name: str = "CONTCAR") -> None:
         contcar = Poscar.from_file(os.path.join(directory_path, contcar_name))
         self._volume = contcar.structure.volume
 
-    def to_json_file(self, filename="unitcell.json"):
+    def to_json_file(self, filename: str = "unitcell.json") -> None:
         with open(filename, 'w') as fw:
             json.dump(self.as_dict(), fw, indent=2, cls=MontyEncoder)

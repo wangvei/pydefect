@@ -15,8 +15,9 @@ from pymatgen.core.structure import Structure
 __author__ = "Yu Kumagai"
 __maintainer__ = "Yu Kumagai"
 
-"""
+""" Module related to complex defects.
 
+The class structures are similar to the interstitial ones.
 """
 
 logger = get_logger(__name__)
@@ -44,13 +45,15 @@ class ComplexDefect(MSONable):
                 List of dict with "element" and "coords" keys.
                 Not that "index" is absent as it is not determined, yet.
             point_group (str):
-                point group
+                point group in Hermann–Mauguin notation.
             multiplicity (int):
-                Multiplicity of the complex defect in supercell perfect structure.
+                Multiplicity of the complex defect in supercell perfect
+                structure.
+            extreme_charge_state (int):
+                Extreme charge state that is used for determining the default
+                defect charges states to be calculated.
             annotation (str):
                 Annotation used when analyzing results.
-            extreme_charge_state (int):
-
         """
         self.removed_atom_indices = removed_atom_indices[:]
         self.inserted_atoms = inserted_atoms[:]
@@ -59,12 +62,7 @@ class ComplexDefect(MSONable):
         self.extreme_charge_state = extreme_charge_state
         self.annotation = annotation
 
-    def __repr__(self):
-        outs = [f"extreme charge state: {self.extreme_charge_state}",
-                f"annotation: {self.annotation}"]
-        return "\n".join(outs)
-
-    def as_dict(self):
+    def as_dict(self) -> dict:
         d = OrderedDict(
             {"removed_atom_indices": self.removed_atom_indices,
              "inserted_atoms":       self.inserted_atoms,
@@ -105,12 +103,13 @@ class ComplexDefects(MSONable):
         return d
 
     def site_set_to_yaml_file(self,
-                              yaml_filename: str = "complex_defects.yaml"):
+                              yaml_filename: str = "complex_defects.yaml"
+                              ) -> None:
         with open(yaml_filename, "w") as f:
             f.write(yaml.dump(self.set_as_dict()))
 
     def to_yaml_file(self,
-                     yaml_filename: str = "complex_defects.yaml"):
+                     yaml_filename: str = "complex_defects.yaml") -> None:
         with open(yaml_filename, "w") as f:
             f.write(yaml.dump(self.as_dict()))
 

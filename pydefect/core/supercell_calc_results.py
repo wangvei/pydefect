@@ -202,18 +202,16 @@ class SupercellCalcResults(MSONable):
         self.participation_ratio = participation_ratio
 
     def __repr__(self):
-        outs = ["total energy (eV): " + str(self.total_energy),
-                "total total_magnetization (mu_B): "
-                + str(self.total_magnetization),
-                "electrostatic potential: "
-                + str(self.electrostatic_potential),
-                "vbm: " + str(self.vbm),
-                "cbm: " + str(self.cbm),
-                "final structure: \n" + str(self.final_structure),
-                "site_symmetry: " + str(self.site_symmetry),
-                "volume: \n" + str(self.volume),
-                "Fermi level (eV): \n" + str(self.fermi_level),
-                "Orbital character (eV): \n" + str(self.orbital_character)]
+        outs = [f"total energy (eV): {self.total_energy}",
+                f"total total_magnetization (mu_B): {self.total_magnetization}",
+                f"electrostatic potential: {self.electrostatic_potential}",
+                f"vbm: {self.vbm}",
+                f"cbm: {self.cbm}",
+                f"final structure: {self.final_structure}", "",
+                f"site_symmetry: {self.site_symmetry}",
+                f"volume: {self.volume}",
+                f"Fermi level (eV): {self.fermi_level}",
+                f"Orbital character (eV): {self.orbital_character}"]
 
         return "\n".join(outs)
 
@@ -294,7 +292,8 @@ class SupercellCalcResults(MSONable):
 
         final_structure = contcar.structure
         volume = contcar.structure.volume
-        sga = SpacegroupAnalyzer(final_structure, defect_symprec, angle_tolerance)
+        sga = SpacegroupAnalyzer(final_structure, defect_symprec,
+                                 angle_tolerance)
         site_symmetry = sga.get_point_group_symbol()
 
         total_energy = outcar.final_energy
@@ -413,7 +412,8 @@ class SupercellCalcResults(MSONable):
         return loadfn(filename)
 
     def as_dict(self):
-        # Spin object must be converted to string for to_json_file.
+        # Spin object must be converted to string for to_json_file as Enum
+        # is not compatible with MSONable.
         eigenvalues = \
             {str(spin): v.tolist() for spin, v in self.eigenvalues.items()}
 

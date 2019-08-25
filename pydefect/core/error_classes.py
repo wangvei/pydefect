@@ -4,11 +4,6 @@ __author__ = "Yu Kumagai"
 __maintainer__ = "Yu Kumagai"
 
 
-class UnitcellCalcResultsError(Exception):
-    """Raised when the UnitcellCalcResults-related error is raised."""
-    pass
-
-
 class StructureError(Exception):
     """Raised when the Structure is inadequate."""
     pass

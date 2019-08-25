@@ -8,7 +8,7 @@ __maintainer__ = "Yu Kumagai"
 
 
 class IrreducibleSite(MSONable):
-    """ Holds properties related to the symmetrically equivalent atom set.
+    """ Container class related to the symmetrically equivalent atom set.
 
     Note1: atomic indices need to be sorted, meaning they can be written in a
            sequence, like 17..32

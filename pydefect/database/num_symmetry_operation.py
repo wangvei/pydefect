@@ -5,6 +5,7 @@ __maintainer__ = "Yu Kumagai"
 
 
 def num_symmetry_operation(point_group):
+    """ Return number of symmetry operations from Hermann–Mauguin notation. """
     d = {"1":     1,
          "-1":    2,
          "2":     2,

@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import json
+from typing import Optional
 
 from monty.json import MSONable
 from monty.serialization import loadfn
@@ -51,7 +52,7 @@ class PriorInfo(MSONable):
                 "is cluster: " + str(self.is_cluster)]
         return "\n".join(outs)
 
-    def dump_json(self, filename: str = "prior_info.json"):
+    def dump_json(self, filename: str = "prior_info.json") -> None:
         with open(filename, "w") as fw:
             json.dump(self.as_dict(), fw, indent=2)
 
@@ -60,16 +61,16 @@ class PriorInfo(MSONable):
         return loadfn(filename)
 
     @property
-    def is_magnetic(self):
+    def is_magnetic(self) -> Optional[bool]:
         try:
             return self.total_magnetization > self.mag_threshold
         except TypeError:
             return
 
     @property
-    def has_band_gap(self):
+    def has_band_gap(self) -> bool:
         return self.band_gap > self.band_gap_threshold
 
     @property
-    def is_metal(self):
+    def is_metal(self) -> bool:
         return self.band_gap < self.band_gap_threshold

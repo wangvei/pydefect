@@ -13,23 +13,13 @@ __maintainer__ = "Yu Kumagai"
 
 class ComplexDefectTest(PydefectTest):
     def setUp(self):
-
-        self.mgo = \
-            ComplexDefect(removed_atom_indices=[4, 25],
-                          inserted_atoms=[{"element": "Cu",
-                                          "coords": [0.375, 0.5, 0.5]}],
-                          point_group="mm2",
-                          multiplicity=96,
-                          oxidation_state=-1)
-
-#     def test_repr(self):
-#         expected = """representative_coords: [0.25, 0.25, 0.25]
-# wyckoff: b
-# site_symmetry: m-3m
-# symmetry_multiplicity: 8
-# coordination_distances: {'Mg': [2.12, 2.12, 2.12, 2.12, 2.12, 2.12]}
-# method: manual"""
-#         self.assertEqual(expected, str(self.mgo_interstitial))
+        self.mgo = ComplexDefect(removed_atom_indices=[4, 25],
+                                 inserted_atoms=[{"element": "Cu",
+                                                  "coords": [0.375, 0.5, 0.5]}],
+                                 point_group="mm2",
+                                 multiplicity=96,
+                                 extreme_charge_state=3,
+                                 annotation="test")
 
     def test_dict(self):
         d = self.mgo.as_dict()
@@ -38,7 +28,6 @@ class ComplexDefectTest(PydefectTest):
 
 
 class ComplexDefectsTest(PydefectTest):
-
     def setUp(self):
         self.structure = self.get_structure_by_name("Cu2O48atoms")
 
@@ -70,7 +59,7 @@ class ComplexDefectsTest(PydefectTest):
     def test_from_files(self):
         actual = ComplexDefects.from_files(
             structure=self.structure,
-            filename="expected_complex_defects.yaml").as_dict()
+            yaml_filename="expected_complex_defects.yaml").as_dict()
         expected = self.cu2o.as_dict()
         self.assertEqual(expected, actual)
 

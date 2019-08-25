@@ -59,12 +59,12 @@ class DefectName(MSONable):
             return "_".join([self.name_str, str(self.charge)])
 
     def __repr__(self):
-        annotation = "None" if self.annotation is None else self.annotation
+        annotation = self.annotation if self.annotation else None
 
         outs = ["DefectName Summary",
-                "Name: " + self.name_str,
-                "Charge: " + str(self.charge),
-                "Annotation" + annotation]
+                f"Name: {self.name_str}",
+                f"Charge: {self.charge}",
+                f"Annotation: {annotation}"]
         return "\n".join(outs)
 
     def __eq__(self, other):
@@ -74,8 +74,7 @@ class DefectName(MSONable):
         elif isinstance(other, DefectName):
             return True if self.__repr__() == other.__repr__() else False
         else:
-            raise TypeError(
-                "{} is not supported for comparison.".format(type(other)))
+            raise TypeError(f"{type(other)} is not supported for comparison.")
 
     def __hash__(self):
         return hash(self.name_str)
