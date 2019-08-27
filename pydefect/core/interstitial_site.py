@@ -2,21 +2,23 @@
 
 from collections import OrderedDict
 from copy import deepcopy
-from typing import Union
+from typing import Union, Optional
 
 import yaml
 from monty.json import MSONable
-from pydefect.core.config import SYMMETRY_TOLERANCE, ANGLE_TOL
+from pydefect.core.config import SYMMETRY_TOLERANCE, ANGLE_TOL, CUTOFF_FACTOR
 from pydefect.database.num_symmetry_operation import num_symmetry_operation
 from pydefect.util.logger import get_logger
-from pydefect.util.structure_tools \
-    import create_saturated_interstitial_structure
+from pydefect.util.structure_tools import (
+    create_saturated_interstitial_structure)
 from pydefect.util.structure_tools import get_coordination_distances
 from pymatgen.analysis.defects.utils import ChargeDensityAnalyzer
 from pymatgen.core.periodic_table import DummySpecie
 from pymatgen.core.structure import Structure
 from pymatgen.io.vasp.outputs import Chgcar
 from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
+from pydefect.util.structure_tools import get_minimum_distance
+
 __author__ = "Yu Kumagai"
 __maintainer__ = "Yu Kumagai"
 
@@ -166,7 +168,7 @@ class InterstitialSiteSet(MSONable):
 
     def add_sites(self,
                   frac_coords: list,
-                  cutoff: float,
+                  cutoff: Optional[float] = None,
                   vicinage_radius: float = 0.3,
                   symprec: float = SYMMETRY_TOLERANCE,
                   angle_tolerance: float = ANGLE_TOL,
@@ -179,7 +181,7 @@ class InterstitialSiteSet(MSONable):
 
         Args:
             frac_coords (list):
-                Added fractional coords.
+                Added fractional coords in the self.structure.
             cutoff (float):
                 Cutoff radius in which atoms are used to determine the
                 coordination distances.
@@ -202,20 +204,30 @@ class InterstitialSiteSet(MSONable):
                 symprec=symprec,
                 angle_tolerance=angle_tolerance)
 
+        if not cutoff:
+            cutoff = \
+                round(get_minimum_distance(self.structure) * CUTOFF_FACTOR, 2)
+
         sga = SpacegroupAnalyzer(saturated_structure, symprec, angle_tolerance)
         symmetry_dataset = sga.get_symmetry_dataset()
         num_symmop = len(sga.get_symmetry_operations())
 
-        for i, (coord, ai, inserted) \
-                in enumerate(zip(frac_coords, atom_indices, are_inserted)):
+        i = 1
+        for (coord, ai, inserted) in \
+                zip(frac_coords, atom_indices, are_inserted):
             if not inserted:
                 continue
-            site_name = "i" + str(i + 1)
-
+            while True:
+                if "i" + str(i) in self.interstitial_sites:
+                    i += 1
+                else:
+                    site_name = "i" + str(i)
+                    break
             site_symmetry = symmetry_dataset["site_symmetry_symbols"][ai]
             wyckoff = symmetry_dataset["wyckoffs"][ai]
             # multiplicity is reduced by the number of symmetry operation
-            multiplicity = num_symmop / num_symmetry_operation(site_symmetry)
+            multiplicity = int(num_symmop
+                               / num_symmetry_operation(site_symmetry))
             # Calculate the coordination_distances.
             # Note that saturated_structure includes other interstitial sites.
             defect_str = self.structure.copy()

@@ -1,17 +1,18 @@
 i1:
   representative_coords: [0.125, 0.125, 0.125]
-  wyckoff: b
-  site_symmetry: m-3m
-  symmetry_multiplicity: 64
+  wyckoff: c
+  site_symmetry: -43m
+  multiplicity: 64
   coordination_distances:
-    Mg: [2.12, 2.12, 2.12, 2.12]
-    O: [2.12, 2.12, 2.12, 2.12]
+    Mg: [1.84, 1.84, 1.84, 1.84]
+    O: [1.84, 1.84, 1.84, 1.84]
   method: manual
 i2:
   representative_coords: [0, 0.125, 0.125]
-  wyckoff: b
-  site_symmetry: m-3m
-  symmetry_multiplicity: 64
+  wyckoff: d
+  site_symmetry: m.mm
+  multiplicity: 192
   coordination_distances:
-    Mg: [2.12, 2.12, 2.12, 2.12, 2.12, 2.12]
-  method: Voronoi
+    Mg: [1.5, 1.5, 2.6, 2.6, 2.6, 2.6]
+    O: [1.5, 1.5, 2.6, 2.6, 2.6, 2.6]
+  method: manual
