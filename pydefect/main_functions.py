@@ -392,10 +392,15 @@ def defect_entry(args):
     if args.print:
         print(DefectEntry.load_json(args.json))
     elif args.make_defect_entry:
-        defect_entry_from_yaml = \
-            DefectEntry.from_yaml(yaml_filename=args.yaml,
-                                  cutoff=args.cutoff,
-                                  calc_num_equiv_site=args.calc_sites)
+        defect_structure = Structure.from_file(args.defect_poscar)
+        perfect_structure = Structure.from_file(args.perfect_poscar)
+
+        defect_entry_from_yaml = DefectEntry.from_calc_results(
+            defect_structure=defect_structure,
+            perfect_structure=perfect_structure,
+            displacement_distance=args.displacement_distance,
+            defect_name=args.defect_name)
+
         defect_entry_from_yaml.to_json_file(args.json)
     else:
         logger.warning("Set make_defect_entry or print option.")

@@ -557,7 +557,8 @@ def main():
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
         aliases=['de'])
 
-    de_defaults = get_default_args(DefectEntry.from_yaml)
+    de_defaults = get_default_args(DefectEntry.from_calc_results)
+    simple_override(de_defaults, ["displacement_distance"])
 
     parser_defect_entry.add_argument(
         "--print", dest="print", action="store_true",
@@ -576,8 +577,22 @@ def main():
         default=de_defaults["cutoff"],
         help="Cutoff radius to determine the neighboring atoms.")
     parser_defect_entry.add_argument(
-        "--no_calc_sites", dest="calc_sites", action="store_false",
-        help="Do not calculate number of equivalent sites (clusters).")
+        "--perfect_poscar", dest="perfect_poscar", type=str,
+        default="../perfect/POSCAR",
+        help="Perfect supercell POSCAR filename with a path from the current"
+             "working directory.")
+    parser_defect_entry.add_argument(
+        "--defect_poscar", dest="defect_poscar", type=str,
+        default="POSCAR",
+        help="Defect supercell POSCAR filename.")
+    parser_defect_entry.add_argument(
+        "--displacement_distance", dest="displacement_distance", type=float,
+        default=de_defaults["displacement_distance"],
+        help="Displacement distance.")
+    parser_defect_entry.add_argument(
+        "--defect_name", dest="defect_name", type=str,
+        default=de_defaults["defect_name"],
+        help="Defect name.")
 
     del de_defaults
 

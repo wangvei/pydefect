@@ -149,6 +149,8 @@ class ComplexDefects(MSONable):
                    symprec: float = SYMMETRY_TOLERANCE,
                    angle_tolerance: float = ANGLE_TOL) -> None:
 
+        # TODO: Add automatic extreme_charge_state setting.
+
         inserted_atom_coords = [i["coords"] for i in inserted_atoms]
 
         multiplicity, point_group = \

@@ -1,14 +1,11 @@
 # -*- coding: utf-8 -*-
 import json
 import os
-import shutil
 from copy import deepcopy
 from enum import Enum, unique
-from pathlib import Path
 from typing import Optional, Tuple
 
 import numpy as np
-import ruamel.yaml as yaml
 from monty.json import MontyEncoder, MSONable
 from monty.serialization import loadfn
 from pydefect.core.config import ANGLE_TOL, CUTOFF_FACTOR
@@ -51,8 +48,8 @@ class DefectType(Enum):
         for m in cls:
             if m.value == s or m.name == s:
                 return m
-        raise AttributeError("Defect type " + str(s) + " is not proper.\n" +
-                             "Supported info:\n" + cls.name_list())
+        raise AttributeError(f"Defect type {str(s)} is not proper.\n",
+                             f"Supported types:\n {cls.name_list()}")
 
     @classmethod
     def name_list(cls):
@@ -83,7 +80,7 @@ def determine_defect_type(inserted_atoms: list,
                 d = DefectType.complex
         else:
             d = DefectType.interstitial
-    elif len(inserted_atoms) == 0 or len(removed_atoms) == 0:
+    elif len(inserted_atoms) == 0 and len(removed_atoms) == 0:
         raise ValueError("No inserted and removed atoms")
     else:
         d = DefectType.vacancy
@@ -237,12 +234,13 @@ class DefectEntry(MSONable):
         return d
 
     @classmethod
-    def from_yaml(cls,
-                  yaml_filename: Optional[str] = None,
-                  disp_dist: float = 0.2,
-                  angle_tolerance: float = ANGLE_TOL,
-                  cutoff: Optional[float] = None,
-                  defect_name: str = None):
+    def from_calc_results(cls,
+                          defect_structure: Structure,
+                          perfect_structure: Structure,
+                          displacement_distance: float = 0.2,
+                          angle_tolerance: float = ANGLE_TOL,
+                          cutoff: Optional[float] = None,
+                          defect_name: Optional[str] = None):
         """Construct the DefectEntry object from perfect and defective POSCARs.
 
         Note1: displacement_distance needs to be the same as the twice of max
@@ -251,13 +249,9 @@ class DefectEntry(MSONable):
                accepted as the inserted atoms are assumed not to be moved from
                their original positions.
 
-        filename (str):
-            yaml filename.
         displacement_distance (float):
             Tolerance to judge whether the atoms are the same between the given
             defective and perfect supercell structures.
-        symprec (float):
-            Length tolerance in Angstrom used for identifying the space group.
         angle_tolerance (float):
             Angle tolerance used for identifying the space group.
         cutoff (str):
@@ -267,29 +261,8 @@ class DefectEntry(MSONable):
             Defect name such as "Va_O1_2_inward", "Mg_i+Va_O1*2_2_coord1".
             Although directory name is usually used, this is needed for e.g.,
             unittest.
-
-        An example of the yaml file.
-            defect_structure: POSCAR
-            perfect_structure: ../../defects/perfect/POSCAR
-            displacement_distance (optional): 0.2
         """
-        if yaml_filename is None:
-            org_yaml = \
-                Path(os.path.dirname(__file__)) / "default_defect_entry.yaml"
-            yaml_filename = "defect_entry.yaml"
-            shutil.copyfile(org_yaml, yaml_filename)
 
-        abs_dir = Path(yaml_filename).parent
-
-        with open(yaml_filename, "r") as f:
-            yaml_data = yaml.safe_load(f)
-
-        disp_dist = yaml_data.get("displacement_distance", disp_dist)
-        # Perfect and perturbed defect structures.
-        perfect_structure = \
-            Structure.from_file(abs_dir / yaml_data["perfect_structure"])
-        defect_structure = \
-            Structure.from_file(abs_dir / yaml_data["defect_structure"])
         element_diff = element_diff_from_structures(
             defect_structure, perfect_structure)
 
@@ -298,9 +271,7 @@ class DefectEntry(MSONable):
                 get_minimum_distance(perfect_structure) * CUTOFF_FACTOR, 2)
 
         if not defect_name:
-            defect_name = yaml_data.get("name", None)
-            if not defect_name:
-                _, defect_name = os.path.split(os.getcwd())
+            _, defect_name = os.path.split(os.getcwd())
         name, charge, annotation = divide_dirname(defect_name)
 
         inserted_atom_indices = [i for i in range(defect_structure.num_sites)]
@@ -309,10 +280,14 @@ class DefectEntry(MSONable):
             for j in inserted_atom_indices:
                 d_site = defect_structure[j]
                 distance = p_site.distance(d_site)
-                # check displacement_distance and species for comparison
-                if distance < disp_dist and p_site.specie == d_site.specie:
+                # If the atoms in the defect structure exist in perfect,
+                # they are not interstitials and so removed from the indices.
+                if (distance < displacement_distance
+                        and p_site.specie == d_site.specie):
                     inserted_atom_indices.remove(j)
                     break
+            # If the atoms in the perfect structure does not exist in perfect,
+            # they are vacancies
             else:
                 removed_atoms.append({"element": str(p_site.specie),
                                       "index": i,
@@ -320,7 +295,7 @@ class DefectEntry(MSONable):
 
         # check the consistency of the removed and inserted atoms
         if len(perfect_structure) + len(inserted_atom_indices) \
-                - len(removed_atoms) != len(defect_structure):
+                != len(defect_structure) + len(removed_atoms):
             raise StructureError(
                 "Atoms are not properly mapped within the displacement.")
 
@@ -328,6 +303,7 @@ class DefectEntry(MSONable):
         pristine_defect_structure = deepcopy(perfect_structure)
         removed_atom_indices = [i["index"] for i in removed_atoms]
         removed_atom_coords = [i["coords"] for i in removed_atoms]
+        # need reverse not to change the atom indices in the defect structure.
         for r in sorted(removed_atom_indices, reverse=True):
             pristine_defect_structure.pop(r)
 
@@ -342,9 +318,8 @@ class DefectEntry(MSONable):
                                              inserted_atom.frac_coords)
 
         inserted_atom_coords = [i["coords"] for i in inserted_atoms]
-        defect_center_coords = cls.calc_defect_center(removed_atom_coords,
-                                                      inserted_atom_coords,
-                                                      defect_structure)
+        defect_center_coords = cls.calc_defect_center_from_fcoords(
+            removed_atom_coords, inserted_atom_coords, defect_structure)
         neighboring_sites = []
 
         for i, site in enumerate(pristine_defect_structure):
@@ -358,7 +333,8 @@ class DefectEntry(MSONable):
             num_equivalent_clusters(perfect_structure,
                                     inserted_atom_coords,
                                     removed_atom_indices,
-                                    disp_dist, angle_tolerance)
+                                    displacement_distance,
+                                    angle_tolerance)
         pristine_defect_structure.set_charge(charge)
         defect_structure.set_charge(charge)
         defect_type = determine_defect_type(inserted_atoms, removed_atoms)
@@ -395,7 +371,6 @@ class DefectEntry(MSONable):
                                   + len(self.removed_atoms))
         # initial atom mapping.
         mapping = list(range(total_nions_in_perfect))
-
         removed_atom_indices = [i["index"] for i in self.removed_atoms]
         for o in sorted(removed_atom_indices, reverse=True):
             mapping.pop(o)
@@ -411,9 +386,9 @@ class DefectEntry(MSONable):
             json.dump(self.as_dict(), fw, indent=2, cls=MontyEncoder)
 
     @staticmethod
-    def calc_defect_center(removed_atom_coords: list,
-                           inserted_atom_coords: list,
-                           structure: Structure) -> list:
+    def calc_defect_center_from_fcoords(removed_atom_coords: list,
+                                        inserted_atom_coords: list,
+                                        structure: Structure) -> list:
         """ Calculates arithmetic average to estimate center in frac coords."""
         defect_coords = removed_atom_coords + inserted_atom_coords
         return defect_center_from_coords(defect_coords, structure)
@@ -424,7 +399,7 @@ class DefectEntry(MSONable):
         removed_atom_coords = [i["coords"] for i in self.removed_atoms]
         inserted_atom_coords = [i["coords"] for i in self.inserted_atoms]
 
-        return self.calc_defect_center(
+        return self.calc_defect_center_from_fcoords(
             removed_atom_coords, inserted_atom_coords, self.initial_structure)
 
     @property
@@ -460,7 +435,8 @@ def divide_dirname(dirname: str) -> Tuple[str, int, Optional[str]]:
             -> name = "Mg_i+Va_O1*2", charge = 2, annotation = "coord1"
     """
     split_dirname = dirname.split("_")
-    digit_positions = [x for x, y in enumerate(split_dirname) if is_str_digit(y)]
+    digit_positions = \
+        [x for x, y in enumerate(split_dirname) if is_str_digit(y)]
 
     if len(digit_positions) != 1:
         raise ValueError(f"The dirname {dirname} is not valid")
