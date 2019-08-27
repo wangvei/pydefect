@@ -111,12 +111,5 @@ method: manual"""
 #        self.interstitial_site_set.add_sites(frac_coords=coords, )
 #        print(self.interstitial_site_set.interstitial_sites)
 
-    # def test_add_from_charge_density(self):
-    #     chgcar_name = self.get_filename("core/CHGCAR-MgO8atoms")
-    #     trans_mat = [[2, 0, 0], [0, 2, 0], [0, 0, 2]]
-    #     self.interstitial_site_set.add_sites_from_charge_density(
-    #         chgcar_name, trans_mat)
-    #     print(self.interstitial_site_set.interstitial_sites)
-
     def test_msonable(self):
         self.assertMSONable(self.interstitial_site_set)

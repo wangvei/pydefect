@@ -272,7 +272,7 @@ class DefectEntry(MSONable):
 
         if not defect_name:
             _, defect_name = os.path.split(os.getcwd())
-        name, charge, annotation = divide_dirname(defect_name)
+        name, charge, annotation = divide_defect_name(defect_name)
 
         inserted_atom_indices = [i for i in range(defect_structure.num_sites)]
         removed_atoms = []
@@ -423,7 +423,7 @@ def anchor_atom_index(structure: Structure, center: np.array) -> int:
     return int(np.argmax(distance_set))
 
 
-def divide_dirname(dirname: str) -> Tuple[str, int, Optional[str]]:
+def divide_defect_name(defect_name: str) -> Tuple[str, int, Optional[str]]:
     """Return the divided dirname to name, charge, and annotation
 
     There must be only one digit in the split dirname, which is a charge state,
@@ -434,12 +434,12 @@ def divide_dirname(dirname: str) -> Tuple[str, int, Optional[str]]:
     "Mg_i+Va_O1*2_2_coord1"
             -> name = "Mg_i+Va_O1*2", charge = 2, annotation = "coord1"
     """
-    split_dirname = dirname.split("_")
+    split_dirname = defect_name.split("_")
     digit_positions = \
         [x for x, y in enumerate(split_dirname) if is_str_digit(y)]
 
     if len(digit_positions) != 1:
-        raise ValueError(f"The dirname {dirname} is not valid")
+        raise ValueError(f"The dirname {defect_name} is not valid")
     else:
         digit_pos = digit_positions[0]
         name = "_".join(split_dirname[:digit_pos])
@@ -450,17 +450,3 @@ def divide_dirname(dirname: str) -> Tuple[str, int, Optional[str]]:
     return name, charge, annotation
 
 
-def distances_from_defect_center(structure: Structure,
-                                 defect_entry: DefectEntry) -> list:
-    """ Returns a list of distances at atomic sites from defect center
-
-    Note that in the case of an interstitial-type defect, zero is also set for
-    the interstitial site itself.
-
-    Args:
-        structure (Structure):
-            pmg Structure class object for perfect supercell
-        defect_entry (DefectEntry):
-            DefectEntry class object considered
-    """
-    return distance_list(structure, defect_entry.defect_center_coords)

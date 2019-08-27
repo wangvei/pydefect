@@ -3,7 +3,8 @@ import tempfile
 
 import numpy as np
 from pydefect.core.defect_entry import (
-    DefectType, DefectEntry, determine_defect_type, divide_dirname)
+    DefectType, DefectEntry, determine_defect_type, anchor_atom_index,
+    divide_defect_name)
 from pydefect.util.testing import PydefectTest
 from pydefect.core.config import CUTOFF_FACTOR
 
@@ -198,23 +199,29 @@ class DefectEntryTest(PydefectTest):
         self.assertTrue(actual in expected)
 
 
+class AnchorAtomIndexTest(PydefectTest):
+    def test(self):
+        structure = self.get_structure_by_name(name="KZn4P3")
+        actual = anchor_atom_index(structure, [0.5, 0.5, 0.5])
+        self.assertEqual(7, actual)
+
+
 class DivideDirnameTest(PydefectTest):
     def setUp(self):
-        """ """
         # DefectEntry class object for a single vacancy
         self.dirname1 = "Va_Mg1_2"
         self.dirname2 = "Va_O1_2_inward"
         self.dirname3 = "Mg_i+Va_O1*2_-2_coord1"
 
     def test_dirname1(self):
-        self.assertEqual(("Va_Mg1", 2, None), divide_dirname(self.dirname1))
+        self.assertEqual(("Va_Mg1", 2, None), divide_defect_name(self.dirname1))
 
     def test_dirname2(self):
-        self.assertEqual(("Va_O1", 2, "inward"), divide_dirname(self.dirname2))
+        self.assertEqual(("Va_O1", 2, "inward"),
+                         divide_defect_name(self.dirname2))
 
     def test_dirname3(self):
         self.assertEqual(("Mg_i+Va_O1*2", -2, "coord1"),
-                         divide_dirname(self.dirname3))
-
+                         divide_defect_name(self.dirname3))
 
 
