@@ -234,13 +234,13 @@ class DefectEntry(MSONable):
         return d
 
     @classmethod
-    def from_calc_results(cls,
-                          defect_structure: Structure,
-                          perfect_structure: Structure,
-                          displacement_distance: float = 0.2,
-                          angle_tolerance: float = ANGLE_TOL,
-                          cutoff: Optional[float] = None,
-                          defect_name: Optional[str] = None):
+    def from_defect_structure(cls,
+                              defect_structure: Structure,
+                              perfect_structure: Structure,
+                              displacement_distance: float = 0.2,
+                              angle_tolerance: float = ANGLE_TOL,
+                              cutoff: Optional[float] = None,
+                              defect_name: Optional[str] = None):
         """Construct the DefectEntry object from perfect and defective POSCARs.
 
         Note1: displacement_distance needs to be the same as the twice of max

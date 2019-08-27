@@ -557,7 +557,7 @@ def main():
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
         aliases=['de'])
 
-    de_defaults = get_default_args(DefectEntry.from_calc_results)
+    de_defaults = get_default_args(DefectEntry.from_defect_structure)
     simple_override(de_defaults, ["displacement_distance"])
 
     parser_defect_entry.add_argument(

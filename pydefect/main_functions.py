@@ -395,7 +395,7 @@ def defect_entry(args):
         defect_structure = Structure.from_file(args.defect_poscar)
         perfect_structure = Structure.from_file(args.perfect_poscar)
 
-        defect_entry_from_yaml = DefectEntry.from_calc_results(
+        defect_entry_from_yaml = DefectEntry.from_defect_structure(
             defect_structure=defect_structure,
             perfect_structure=perfect_structure,
             displacement_distance=args.displacement_distance,
