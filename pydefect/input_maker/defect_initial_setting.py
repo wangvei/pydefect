@@ -10,7 +10,7 @@ from monty.serialization import loadfn, dumpfn
 from pydefect.core.complex_defects import ComplexDefects
 from pydefect.core.config import (
     ELECTRONEGATIVITY_DIFFERENCE, DISPLACEMENT_DISTANCE, SYMMETRY_TOLERANCE,
-    ANGLE_TOL)
+    ANGLE_TOL, CUTOFF_FACTOR)
 from pydefect.core.defect_entry import DefectType, DefectEntry
 from pydefect.core.defect_name import DefectName
 from pydefect.core.error_classes import InvalidFileError
@@ -377,8 +377,8 @@ class DefectInitialSetting(MSONable):
             self.complex_defect_names = complex_defect_names[:]
         else:
             self.complex_defect_names = [complex_defect_names]
-        self.included = included[:] if included else list()
-        self.excluded = excluded[:] if excluded else list()
+        self.included = included[:] if included else []
+        self.excluded = excluded[:] if excluded else []
         self.displacement_distance = displacement_distance
         self.cutoff = cutoff
         self.symprec = symprec
@@ -673,7 +673,7 @@ class DefectInitialSetting(MSONable):
         num_irreducible_sites = defaultdict(int)
 
         if not cutoff:
-            cutoff = round(get_minimum_distance(s) * 1.4, 2)
+            cutoff = round(get_minimum_distance(s) * CUTOFF_FACTOR, 2)
 
         # Set of IrreducibleSite class objects
         irreducible_sites = list()
@@ -686,8 +686,8 @@ class DefectInitialSetting(MSONable):
         sorted_structure = \
             Structure.from_sites(reduce(lambda a, b: a + b, equiv_sites))
 
-        # Initialize the last index for iteration.
-        last_index = 0
+        # Initialize the last index, which must start from -1 to begin with 0.
+        last_index = -1
         for i, equiv_site in enumerate(equiv_sites):
             # set element name of equivalent site
             element = equiv_site[0].species_string
@@ -697,8 +697,8 @@ class DefectInitialSetting(MSONable):
             # increment number of inequivalent sites for element
             num_irreducible_sites[element] += 1
 
-            first_index = last_index
-            last_index = last_index + len(equiv_site) - 1
+            first_index = last_index + 1
+            last_index = last_index + len(equiv_site)
             # np.array must be converted to list be consistent with arg type.
             representative_coords = list(equiv_site[0].frac_coords)
             irreducible_name = element + str(num_irreducible_sites[element])

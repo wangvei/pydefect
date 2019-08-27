@@ -156,20 +156,20 @@ class DefectInitialSettingTest(PydefectTest):
         space_group_symbol = "Fm-3m"
         transformation_matrix = [2, 0, 0, 0, 2, 0, 0, 0, 2]
         cell_multiplicity = 32
-        coordination_distances_mg = {"O": [2.12, 2.12, 2.12, 2.12, 2.12, 2.12]}
-        coordination_distances_o = {"Mg": [2.12, 2.12, 2.12, 2.12, 2.12, 2.12]}
+        coordination_distances_mg = {"O": [2.1] * 6}
+        coordination_distances_o = {"Mg": [2.1] * 6}
         mg1 = IrreducibleSite(irreducible_name="Mg1",
                               element="Mg",
-                              first_index=1,
-                              last_index=32,
+                              first_index=0,
+                              last_index=31,
                               representative_coords=[0.0, 0.0, 0.0],
                               wyckoff="a",
                               site_symmetry="m-3m",
                               coordination_distances=coordination_distances_mg)
         o1 = IrreducibleSite(irreducible_name="O1",
                              element="O",
-                             first_index=33,
-                             last_index=64,
+                             first_index=32,
+                             last_index=63,
                              representative_coords=[0.25, 0.25, 0.25],
                              wyckoff="b",
                              site_symmetry="m-3m",

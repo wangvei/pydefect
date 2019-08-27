@@ -4,17 +4,18 @@ import json
 import os
 from collections import defaultdict
 from pathlib import Path
-from typing import Union, Tuple
+from typing import Union, Tuple, Optional
 
 import numpy as np
 from monty.json import MontyEncoder, MSONable
 from monty.serialization import loadfn
-from pydefect.core.config import DEFECT_SYMMETRY_TOLERANCE, ANGLE_TOL, \
-    CUTOFF_RADIUS
+from pydefect.core.config import (
+    DEFECT_SYMMETRY_TOLERANCE, ANGLE_TOL, CUTOFF_FACTOR)
 from pydefect.core.defect_entry import DefectEntry
 from pydefect.core.error_classes import NoConvergenceError, StructureError
 from pydefect.util.logger import get_logger
-from pydefect.util.structure_tools import get_displacements
+from pydefect.util.structure_tools import (
+    get_displacements, get_minimum_distance)
 from pydefect.util.tools import spin_key_to_str, str_key_to_spin, parse_file, \
     defaultdict_to_dict
 from pydefect.util.vasp_util import calc_participation_ratio, \
@@ -223,7 +224,7 @@ class SupercellCalcResults(MSONable):
                         contcar: str = None,
                         outcar: str = None,
                         procar: Union[str, bool] = False,
-                        cutoff: float = CUTOFF_RADIUS,
+                        cutoff: Optional[float] = None,
                         defect_symprec: float = DEFECT_SYMMETRY_TOLERANCE,
                         angle_tolerance: float = ANGLE_TOL):
         """ Constructs class object from vasp output files.
@@ -295,6 +296,10 @@ class SupercellCalcResults(MSONable):
         sga = SpacegroupAnalyzer(final_structure, defect_symprec,
                                  angle_tolerance)
         site_symmetry = sga.get_point_group_symbol()
+
+        if not cutoff:
+            cutoff = \
+                round(get_minimum_distance(final_structure) * CUTOFF_FACTOR, 2)
 
         total_energy = outcar.final_energy
         magnetization = 0.0 if outcar.total_mag is None else outcar.total_mag

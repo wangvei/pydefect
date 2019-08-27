@@ -181,7 +181,8 @@ class InterstitialSiteSet(MSONable):
             frac_coords (list):
                 Added fractional coords.
             cutoff (float):
-                Cutoff radius in which atoms are considered as neighbors.
+                Cutoff radius in which atoms are used to determine the
+                coordination distances.
             vicinage_radius (float):
                 Radius in which atoms are considered too close.
             symprec (float):
@@ -204,7 +205,6 @@ class InterstitialSiteSet(MSONable):
         sga = SpacegroupAnalyzer(saturated_structure, symprec, angle_tolerance)
         symmetry_dataset = sga.get_symmetry_dataset()
         num_symmop = len(sga.get_symmetry_operations())
-        print(num_symmop)
 
         for i, (coord, ai, inserted) \
                 in enumerate(zip(frac_coords, atom_indices, are_inserted)):

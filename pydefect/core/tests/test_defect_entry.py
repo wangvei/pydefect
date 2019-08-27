@@ -3,9 +3,9 @@ import tempfile
 import unittest
 
 import numpy as np
-from pydefect.core.config import CUTOFF_RADIUS
 from pydefect.core.defect_entry import DefectType, DefectEntry, divide_dirname
 from pydefect.util.testing import PydefectTest
+from pydefect.core.config import CUTOFF_FACTOR
 
 __author__ = "Yu Kumagai"
 __maintainer__ = "Yu Kumagai"
@@ -20,17 +20,19 @@ class DefectEntryTest(PydefectTest):
 
         name = "Va_O1"
         defect_type = DefectType.from_string("vacancy")
-        initial_structure = self.get_structure_by_name(name="MgO7atoms")
+        initial_structure = \
+            self.get_structure_by_name(name="MgO64atoms-Va_O_0-unrelaxed")
         perturbed_initial_structure = initial_structure.copy()
         removed_atoms = [{"element": "O",
-                          "index": 8,
-                          "coords": [0.25, 0.25, 0.25]}]
+                          "index": 64,
+                          "coords": [0.25, 0, 0]}]
         inserted_atoms = []
         changes_of_num_elements = {"O": -1}
         charge = 2
         initial_site_symmetry = "Oh"
         multiplicity = 4
         neighboring_sites = [0, 1]
+        cutoff = round(8.419456 / 4 * CUTOFF_FACTOR, 2)
         self._MgO_Va_O1_2 = \
             DefectEntry(name=name,
                         defect_type=defect_type,
@@ -41,7 +43,7 @@ class DefectEntryTest(PydefectTest):
                         changes_of_num_elements=changes_of_num_elements,
                         charge=charge,
                         initial_site_symmetry=initial_site_symmetry,
-                        cutoff=CUTOFF_RADIUS,
+                        cutoff=cutoff,
                         neighboring_sites=neighboring_sites,
                         multiplicity=multiplicity)
 
@@ -75,7 +77,7 @@ class DefectEntryTest(PydefectTest):
                         changes_of_num_elements=changes_of_num_elements,
                         charge=charge,
                         initial_site_symmetry=initial_site_symmetry,
-                        cutoff=CUTOFF_RADIUS,
+                        cutoff=cutoff,
                         neighboring_sites=neighboring_sites,
                         multiplicity=multiplicity)
 
@@ -121,11 +123,11 @@ class DefectEntryTest(PydefectTest):
     def test_atom_mapping_to_perfect(self):
         expected = [0, 1, 2, 3, 4, 5, 6, 7, 9, 10, 11, 12, 13, 14, 15]
         actual = self._MgO_Va_O1_2.atom_mapping_to_perfect
-        self.assertTrue(actual == expected)
+        self.assertEqual(expected, actual)
 
         expected = [0, 1, 2, 3, 4, 5, 6, 7, None, 10, 11, 12, 13, 14, 15]
         actual = self._MgO_complex.atom_mapping_to_perfect
-        self.assertTrue(actual == expected)
+        self.assertEqual(expected, actual)
 
     def test_defect_center(self):
         pos = [[0.25, 0.25, 0.25], [0.25, 0.25, -0.25], [0.25, 0.25, 0.25]]

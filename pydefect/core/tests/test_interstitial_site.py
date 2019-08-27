@@ -106,10 +106,10 @@ method: manual"""
         expected = self.interstitial_site_set.as_dict()
         self.assertEqual(expected, actual)
 
-    def test_add(self):
-        coords = [[0.175, 0.175, 0.175]]
-        self.interstitial_site_set.add_sites(frac_coords=coords)
-        print(self.interstitial_site_set.interstitial_sites)
+#    def test_add(self):
+#        coords = [[0.175, 0.175, 0.175]]
+#        self.interstitial_site_set.add_sites(frac_coords=coords, )
+#        print(self.interstitial_site_set.interstitial_sites)
 
     # def test_add_from_charge_density(self):
     #     chgcar_name = self.get_filename("core/CHGCAR-MgO8atoms")
