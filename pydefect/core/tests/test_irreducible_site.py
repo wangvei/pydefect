@@ -1,15 +1,13 @@
 # -*- coding: utf-8 -*-
 
-import os
-
 from pydefect.core.irreducible_site import IrreducibleSite
-from pydefect.util.testing import PydefectTest
+
 
 __author__ = "Yu Kumagai"
 __maintainer__ = "Yu Kumagai"
 
 
-class PriorInfoTest(PydefectTest):
+class IrreducibleSiteTest(PydefectTest):
 
     def setUp(self):
         irreducible_name = "O1"
@@ -33,8 +31,8 @@ class PriorInfoTest(PydefectTest):
     def test_dict(self):
         """ round trip test of to_dict and from_dict """
         d = self.mgo_o1.as_dict()
-        prior_info_from_dict = IrreducibleSite.from_dict(d)
-        self.assertTrue(d == prior_info_from_dict.as_dict())
+        irreducible_site_dict = IrreducibleSite.from_dict(d)
+        self.assertTrue(d == irreducible_site_dict.as_dict())
 
     def test_msonable(self):
         self.assertMSONable(self.mgo_o1)

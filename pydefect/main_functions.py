@@ -22,7 +22,7 @@ from pydefect.core.defect_entry import DefectEntry
 from pydefect.core.interstitial_site import (
     InterstitialSiteSet, interstitials_from_charge_density)
 from pydefect.core.complex_defects import ComplexDefects
-from pydefect.core.prior_info import PriorInfo
+from vise.input_set.prior_info import PriorInfo
 from pydefect.core.supercell_calc_results import SupercellCalcResults
 from pydefect.core.unitcell_calc_results import UnitcellCalcResults
 from pydefect.corrections.efnv_corrections import ExtendedFnvCorrection, Ewald

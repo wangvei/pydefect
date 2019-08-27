@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 
-import os
 import tempfile
 import unittest
 from collections import defaultdict
@@ -15,9 +14,6 @@ from pymatgen.util.testing import PymatgenTest
 
 __author__ = "Yu Kumagai"
 __maintainer__ = "Yu Kumagai"
-
-test_dir = os.path.join(os.path.dirname(__file__), "..", "..", "..",
-                        "test_files", "core")
 
 
 class DefaultdictToDictTest(PymatgenTest):
@@ -101,8 +97,4 @@ class SupercellDftResultsTest(PymatgenTest):
         actual = SupercellCalcResults.load_json(tmp_file.name)
         np.testing.assert_equal(actual.eigenvalues[Spin.up],
                                 self._MgO_Va_O1_2.eigenvalues[Spin.up])
-
-
-if __name__ == "__main__":
-    unittest.main()
 

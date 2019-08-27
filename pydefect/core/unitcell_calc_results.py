@@ -46,19 +46,28 @@ class UnitcellCalcResults(MSONable):
 
     def __repr__(self):
 
-        def to(s):
-            return str(s) if s else "None"
+        if self._band_edge:
+            band_edge = [round(i, 3) for i in self._band_edge]
+        else:
+            band_edge = [None, None]
 
-        band_edge = self._band_edge if self._band_edge else [None, None]
         is_total_dos = "Exists" if self._total_dos else "None"
-        outs = \
-            [f"vbm (eV): {to(band_edge[0])}",
-             f"cbm (eV): {to(band_edge[1])}",
-             f"static dielectric tensor: {to(self._static_dielectric_tensor)}",
-             f"ionic dielectric tensor: {to(self._ionic_dielectric_tensor)}",
-             f"total dielectric tensor: {to(self.total_dielectric_tensor)}",
-             f"volume (A^3): {to(self._volume)}",
-             f"Total DOS: {is_total_dos}"]
+
+        static_dielectric = "\n ".join([str([round(i, 2) for i in j])
+                                        for j in self.static_dielectric_tensor])
+        ionic_dielectric = "\n ".join([str([round(i, 2) for i in j])
+                                       for j in self.ionic_dielectric_tensor])
+
+        total_dielectric = "\n ".join([str([round(i, 2) for i in j])
+                                      for j in self.total_dielectric_tensor])
+
+        outs = [f"vbm (eV): {band_edge[0]}",
+                f"cbm (eV): {band_edge[1]}",
+                f"static dielectric tensor: \n {static_dielectric}",
+                f"ionic dielectric tensor: \n {ionic_dielectric}",
+                f"total dielectric tensor: \n {total_dielectric}",
+                f"volume (A^3): {round(self._volume, 2)}",
+                f"Total DOS: {is_total_dos}"]
 
         return "\n".join(outs)
 
