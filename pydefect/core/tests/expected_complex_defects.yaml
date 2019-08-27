@@ -1,9 +1,9 @@
 split:
-  removed_atom_indices: [4, 25]
+  removed_atom_indices: [9, 31]
   inserted_atoms:
-  - coords: [0.375, 0.5, 0.5]
+  - coords: [0.5, 0.5, 0.625]
     element: Cu
   point_group: mm2
-  multiplicity: 192
-  extreme_charge_state: 1
+  multiplicity: 96
+  extreme_charge_state: -1
   annotation: null

@@ -13,33 +13,39 @@ __maintainer__ = "Yu Kumagai"
 
 class ComplexDefectTest(PydefectTest):
     def setUp(self):
-        self.mgo = ComplexDefect(removed_atom_indices=[4, 25],
-                                 inserted_atoms=[{"element": "Cu",
-                                                  "coords": [0.375, 0.5, 0.5]}],
-                                 point_group="mm2",
-                                 multiplicity=96,
-                                 extreme_charge_state=3,
-                                 annotation="test")
+        # 0.375000 0.375000 0.625000 Cu+
+        # 0.625000 0.625000 0.625000 Cu+
+        self.cu2o = ComplexDefect(removed_atom_indices=[9, 31],
+                                  inserted_atoms=[
+                                      {"element": "Cu",
+                                       "coords": [0.5, 0.5, 0.625]}],
+                                  point_group="mm2",
+                                  multiplicity=96,
+                                  extreme_charge_state=-1,
+                                  annotation="test")
 
     def test_dict(self):
-        d = self.mgo.as_dict()
+        d = self.cu2o.as_dict()
         rounded_d = ComplexDefect.from_dict(d).as_dict()
         self.assertEqual(d, rounded_d)
+
+    def test_msonalbe(self):
+        self.assertMSONable(self.cu2o)
 
 
 class ComplexDefectsTest(PydefectTest):
     def setUp(self):
         self.structure = self.get_structure_by_name("Cu2O48atoms")
 
-        split = ComplexDefect(removed_atom_indices=[4, 25],
+        self.split = ComplexDefect(removed_atom_indices=[9, 31],
                               inserted_atoms=[{"element": "Cu",
-                                               "coords": [0.375, 0.5, 0.5]}],
+                                               "coords": [0.5, 0.5, 0.625]}],
                               point_group="mm2",
-                              multiplicity=192,
-                              extreme_charge_state=1)
+                              multiplicity=96,
+                              extreme_charge_state=-1)
 
         self.cu2o = \
-            ComplexDefects(self.structure, OrderedDict({"split": split}))
+            ComplexDefects(self.structure, OrderedDict({"split": self.split}))
 
     def test_dict(self):
         d = self.cu2o.as_dict()
@@ -64,12 +70,14 @@ class ComplexDefectsTest(PydefectTest):
         self.assertEqual(expected, actual)
 
     def test_add(self):
-        self.cu2o.add_defect(removed_atom_indices=[0, 32],
-                             inserted_atoms=[],
-                             name="divacancy",
-                             extreme_charge_state=1)
+        self.cu2o_added = ComplexDefects(structure=self.structure)
+        self.cu2o_added.add_defect(
+            removed_atom_indices=[9, 31],
+            inserted_atoms=[{"element": "Cu", "coords": [0.5, 0.5, 0.625]}],
+            name="split",
+            extreme_charge_state=-1)
 
-        print(self.cu2o.complex_defects["divacancy"])
+        self.assertEqual(self.cu2o.as_dict(), self.cu2o_added.as_dict())
 
 
 

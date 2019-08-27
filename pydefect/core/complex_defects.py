@@ -76,7 +76,7 @@ class ComplexDefect(MSONable):
 
 
 class ComplexDefects(MSONable):
-    """Holds a set of InterstitialSite objects. """
+    """Holds set of ComplexDefect and have method to add it."""
 
     def __init__(self,
                  structure: Structure,

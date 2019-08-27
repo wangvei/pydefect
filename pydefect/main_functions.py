@@ -307,7 +307,6 @@ def complex_defects(args):
     complex_defects_obj.add_defect(
         removed_atom_indices=args.removed_atom_indices,
         inserted_atoms=inserted_atoms,
-        supercell_multiplicity=defect_initial_setting.cell_multiplicity,
         name=args.name,
         extreme_charge_state=args.extreme_charge_state,
         annotation=args.annotation,
