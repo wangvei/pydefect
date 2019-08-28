@@ -24,8 +24,7 @@ from pydefect.util.structure_tools import (
 from pymatgen.core.periodic_table import Element
 from pymatgen.core.structure import Structure
 from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
-from vise.util.structure_handler import (
-    get_point_group_from_dataset)
+from vise.util.structure_handler import get_point_group_from_dataset
 
 __author__ = "Yu Kumagai"
 __maintainer__ = "Yu Kumagai"
@@ -656,36 +655,28 @@ class DefectInitialSetting(MSONable):
             complex_defect_names if complex_defect_names else list()
 
         # Here, the structure is sorted by elements.
-        s = structure.get_sorted_structure()
         sga = SpacegroupAnalyzer(structure, symprec, angle_tolerance)
         symmetrized_structure = sga.get_symmetrized_structure()
-        space_group_symbol = sga.get_space_group_symbol()
+        equiv_sites = symmetrized_structure.equivalent_sites
+        sym_dataset = sga.get_symmetry_dataset()
+        sorted_structure = \
+            Structure.from_sites(reduce(lambda a, b: a + b, equiv_sites))
 
-        host_element_set = s.symbol_set
+        host_element_set = structure.symbol_set
         element_set = host_element_set + tuple(dopants)
 
         electroneg = {e: get_electronegativity(e) for e in element_set}
-        oxidation_states = get_oxidation_states(dopants, oxidation_states, s)
-
-        symmetrized_structure.add_oxidation_state_by_element(oxidation_states)
+        oxidation_states = get_oxidation_states(dopants, oxidation_states,
+                                                structure)
 
         # num_irreducible_sites["Mg"] = 2 <-> Mg has 2 inequivalent sites
         num_irreducible_sites = defaultdict(int)
 
         if not cutoff:
-            cutoff = round(get_minimum_distance(s) * CUTOFF_FACTOR, 2)
+            cutoff = round(get_minimum_distance(structure) * CUTOFF_FACTOR, 2)
 
         # Set of IrreducibleSite class objects
         irreducible_sites = []
-
-        equiv_sites = symmetrized_structure.equivalent_sites
-        lattice = symmetrized_structure.lattice.matrix
-        sym_dataset = sga.get_symmetry_dataset()
-
-        # Once again we need to sort the structure by equivalent sites
-        sorted_structure = \
-            Structure.from_sites(reduce(lambda a, b: a + b, equiv_sites))
-
         # Initialize the last index, which must start from -1 to begin with 0.
         last_index = -1
         for i, equiv_site in enumerate(equiv_sites):
@@ -703,11 +694,8 @@ class DefectInitialSetting(MSONable):
             representative_coords = list(equiv_site[0].frac_coords)
             irreducible_name = element + str(num_irreducible_sites[element])
             wyckoff = sym_dataset["wyckoffs"][first_index]
+            site_symmetry = sym_dataset["site_symmetry_symbols"][i]
 
-            simplified_point_group = \
-                get_point_group_from_dataset(sym_dataset,
-                                             representative_coords,
-                                             lattice, symprec)[0]
             coordination_distances = \
                 get_coordination_distances(sorted_structure, first_index,
                                            cutoff)
@@ -718,7 +706,7 @@ class DefectInitialSetting(MSONable):
                                                      last_index,
                                                      representative_coords,
                                                      wyckoff,
-                                                     simplified_point_group,
+                                                     site_symmetry,
                                                      coordination_distances))
 
         # List of inserted and removed atoms, e.g., [["Mg, "O"], ...]
@@ -749,7 +737,7 @@ class DefectInitialSetting(MSONable):
                                    f"{elem} is not defined")
 
         return cls(structure=sorted_structure,
-                   space_group_symbol=space_group_symbol,
+                   space_group_symbol=sga.get_space_group_symbol(),
                    transformation_matrix=transformation_matrix,
                    cell_multiplicity=cell_multiplicity,
                    irreducible_sites=irreducible_sites,
