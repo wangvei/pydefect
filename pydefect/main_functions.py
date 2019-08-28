@@ -513,7 +513,7 @@ def efnv_correction(args):
                                defect_dft=defect_dft_data,
                                perfect_dft=perfect_dft_data,
                                unitcell_dft=unitcell_dft_data,
-                               ewald_json=args.ewald_json)
+                               ewald=args.ewald_json)
 
         c.plot_distance_vs_potential(join(directory, "potential.pdf"),
                                      args.y_range)

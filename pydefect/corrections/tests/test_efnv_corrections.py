@@ -1,13 +1,16 @@
-import unittest
 import os
 import tempfile
 import numpy as np
 from pydefect.util.testing import PydefectTest
 
-from pydefect.corrections.efnv_corrections import *
+from pydefect.corrections.efnv_corrections import (
+    calc_max_sphere_radius, create_lattice_set, calc_relative_potential,
+    Ewald, ExtendedFnvCorrection, point_charge_energy, calc_ewald_sum,
+    constants_for_anisotropic_ewald_sum)
 from pydefect.core.supercell_calc_results import SupercellCalcResults
 from pydefect.core.unitcell_calc_results import UnitcellCalcResults
 from pydefect.core.defect_entry import DefectEntry
+from pydefect.util.testing import PydefectTest
 
 __author__ = "Yu Kumagai"
 __maintainer__ = "Yu Kumagai"
@@ -100,15 +103,16 @@ class ExtendedFnvCorrectionTest(PydefectTest):
                         / "dielectric_constants")
         unitcell.set_static_dielectric_tensor_from_vasp(unitcell_dir)
         unitcell.set_ionic_dielectric_tensor_from_vasp(unitcell_dir)
+
         perfect_dir = \
             self.TEST_FILES_DIR / "core" / "MgO" / "defects" / "perfect"
         perfect = SupercellCalcResults.from_vasp_files(perfect_dir)
+
         structure = perfect.final_structure
         dielectric_tensor = unitcell.total_dielectric_tensor
+
         ewald = Ewald.from_optimization(structure, dielectric_tensor,
                                         prod_cutoff_fwhm=25)
-        tmp_file = tempfile.NamedTemporaryFile()
-        ewald.to_json_file(tmp_file.name)
 
         dirname = os.path.join("core", "MgO", "defects")
         defect_name = os.path.join(dirname, "Va_O1_2", "dft_results.json")
@@ -126,7 +130,7 @@ class ExtendedFnvCorrectionTest(PydefectTest):
                 defect_dft=defect,
                 perfect_dft=perfect,
                 unitcell_dft=unitcell,
-                ewald_json=tmp_file.name)
+                ewald=ewald)
 
     #        expected_vacancy_lattice_energy = -1.2670479
 

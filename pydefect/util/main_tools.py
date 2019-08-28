@@ -42,8 +42,7 @@ setting_keys = ["symprec",
                 "dos_dir",
                 "unitcell_json",
                 "perfect_json",
-                "chem_pot_yaml",
-                "competing_phases_incar_setting"]
+                "chem_pot_yaml"]
 
 
 def get_user_settings(yaml_filename: str = "pydefect.yaml") -> dict:

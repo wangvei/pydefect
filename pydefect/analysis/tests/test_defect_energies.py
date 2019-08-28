@@ -5,14 +5,13 @@ import tempfile
 import unittest
 
 from chempotdiag.chem_pot_diag import ChemPotDiag
-
-from pydefect.analysis.defect_energies import DefectEnergies
-from pydefect.util.tools import sanitize_keys_in_dict
 from pydefect.analysis.defect import Defect
-from pydefect.corrections.efnv_corrections import  ExtendedFnvCorrection
+from pydefect.analysis.defect_energies import DefectEnergies
+from pydefect.core.defect_entry import DefectEntry
 from pydefect.core.supercell_calc_results import SupercellCalcResults
 from pydefect.core.unitcell_calc_results import UnitcellCalcResults
-from pydefect.core.defect_entry import DefectEntry
+from pydefect.util.testing import PydefectTest
+from pydefect.util.tools import sanitize_keys_in_dict
 
 __author__ = "Yu Kumagai"
 __maintainer__ = "Yu Kumagai"
@@ -21,14 +20,14 @@ test_dir = os.path.join(os.path.dirname(__file__), "..", "..", "..",
                         "test_files", "core")
 
 
-class ConvertStrKeysTest(unittest.TestCase):
+class ConvertStrKeysTest(PydefectTest):
 
     d = {"Va_O1_0": {"0": {"null": 1.0}, "1": {"inward": 2.0}}}
     print(type(d["Va_O1_0"]))
     print(sanitize_keys_in_dict(d))
 
 
-class DefectEnergiesTest(unittest.TestCase):
+class DefectEnergiesTest(PydefectTest):
 
     def setUp(self):
         """ """

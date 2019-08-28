@@ -6,7 +6,7 @@ from functools import reduce
 from itertools import product, groupby
 from math import sqrt, pow, ceil
 from operator import itemgetter
-from typing import Optional
+from typing import Optional, Union
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -105,6 +105,7 @@ def calc_relative_potential(defect: SupercellCalcResults,
 
 
 class Ewald(MSONable):
+    """Container class for anisotropic Ewald sum."""
 
     def __init__(self,
                  lattice: Lattice,
@@ -201,7 +202,7 @@ class Ewald(MSONable):
             # in neighbor_lattices function.
 
             # Left term:
-            # max_int(Real) = 2 * x * Y  / l_r where x, Y, and l_r are ewald,
+            # max_int(Real) = 2 * x * Y  / l_r, where x, Y, and l_r are ewald,
             # prod_cutoff_fwhm, and axis length of real lattice, respectively.
 
             # Right term:
@@ -268,7 +269,10 @@ class Ewald(MSONable):
 
 
 class ExtendedFnvCorrection(Correction, MSONable):
+    """Calculate and manage the plot for the extended FNV corrections
 
+    See [Kumagai and Oba, PRB 89, 195205 (2014)] for details.
+    """
     method = "extended_FNV"
 
     def __init__(self,
@@ -349,6 +353,7 @@ class ExtendedFnvCorrection(Correction, MSONable):
 
     def plot_distance_vs_potential(self, file_name: str,
                                    yrange: Optional[list] = None) -> None:
+        """Plotter for the potential as a function of distance."""
         property_without_defect = list(zip(self.symbols_without_defect,
                                            self.distances_from_defect,
                                            self.difference_electrostatic_pot))
@@ -392,7 +397,7 @@ class ExtendedFnvCorrection(Correction, MSONable):
 
         plt.savefig(file_name, format="pdf")
 
-    def to_json_file(self, filename):
+    def to_json_file(self, filename: str) -> None:
         with open(filename, 'w') as fw:
             json.dump(self.as_dict(), fw, indent=2, cls=MontyEncoder)
 
@@ -406,7 +411,7 @@ class ExtendedFnvCorrection(Correction, MSONable):
                            defect_dft: SupercellCalcResults,
                            perfect_dft: SupercellCalcResults,
                            unitcell_dft: UnitcellCalcResults,
-                           ewald_json: Optional[str] = None,
+                           ewald: Union[str, Ewald] = None,
                            to_filename: str = "ewald.json"):
         """ Estimate correction energy for point defect formation energy.
 
@@ -417,16 +422,16 @@ class ExtendedFnvCorrection(Correction, MSONable):
             perfect_dft (SupercellCalcResults):
                 Calculated defect DFT results for perfect supercell.
             unitcell_dft (UnitcellCalcResults):
-            ewald_json (Ewald):
+            ewald (str / Ewald):
             to_filename (str):
         """
-        if ewald_json is None:
+        if isinstance(ewald, str):
+            ewald = Ewald.load_json(ewald)
+        elif ewald is None:
             ewald = \
                 Ewald.from_optimization(defect_dft.final_structure,
                                         unitcell_dft.total_dielectric_tensor)
             ewald.to_json_file(to_filename)
-        else:
-            ewald = Ewald.load_json(ewald_json)
 
         relative_potential = \
             calc_relative_potential(defect=defect_dft,
@@ -461,7 +466,7 @@ class ExtendedFnvCorrection(Correction, MSONable):
             del distances_from_defect[i]
 
         coeff, diff_pot, mod_ewald_param, root_det_epsilon = \
-            derive_constants(charge, ewald, volume)
+            constants_for_anisotropic_ewald_sum(charge, ewald, volume)
 
         # model potential and lattice energy
         model_pot = []
@@ -471,9 +476,13 @@ class ExtendedFnvCorrection(Correction, MSONable):
             # / \sqrt(det(\epsilon)) / \sqrt(R*\epsilon_inv*R) [1/A]
             shift = lattice.get_cartesian_coords(r - defect_coords)
 
-            real_part, reciprocal_part = calc_ewald_sum(
-                ewald, mod_ewald_param, root_det_epsilon, volume,
-                include_self=True, shift=shift)
+            real_part, reciprocal_part = \
+                calc_ewald_sum(ewald=ewald,
+                               mod_ewald_param=mod_ewald_param,
+                               root_det_epsilon=root_det_epsilon,
+                               volume=volume,
+                               include_self=True,
+                               shift=shift)
 
             model_pot.append((real_part + reciprocal_part + diff_pot) * coeff)
 
@@ -497,18 +506,19 @@ class ExtendedFnvCorrection(Correction, MSONable):
         ave_pot_diff = float(mean(pot_diff))
         alignment = -ave_pot_diff * charge
 
-        return cls(ewald_json, lattice.matrix, lattice_energy, ave_pot_diff,
+        return cls(ewald, lattice.matrix, lattice_energy, ave_pot_diff,
                    alignment, symbols_without_defect, distances_from_defect,
                    diff_potential, model_pot)
 
 
+# Need to be after Ewald class for annotation
 def point_charge_energy(charge: int, ewald: Ewald, volume: float) -> float:
 
     if charge == 0:
         return 0.0
 
     coeff, diff_pot, mod_ewald_param, root_det_epsilon = \
-        derive_constants(charge, ewald, volume)
+        constants_for_anisotropic_ewald_sum(charge, ewald, volume)
     # Real part: sum erfc(ewald * sqrt(R * epsilon_inv * R))
     #                    / sqrt(det(epsilon)) / sqrt(R * epsilon_inv * R) [1/A]
     real_part, reciprocal_part = \
@@ -551,8 +561,31 @@ def calc_ewald_sum(ewald: Ewald,
     return real_part, reciprocal_part
 
 
-def derive_constants(charge: int, ewald: Ewald, volume: float) -> tuple:
+def constants_for_anisotropic_ewald_sum(charge: int,
+                                        ewald: Ewald,
+                                        volume: float) -> tuple:
+    """Derive some constants used for anisotropic Ewald sum.
 
+    YK2014: Kumagai and Oba, PRB 89, 195205 (2014)
+    Note that in this program the formula written in YK2014 are divided by 4pi
+    to keep the SI unit.
+
+    Args:
+        charge (int): Point charge
+        ewald (Ewald): Ewald object with dielectric_tensor and Ewald parameter.
+        volume (float): Volume in [A^3]
+
+    Returns: Tuple of the following float values:
+        coeff:
+            Common coefficient in anisotropic Ewald sum.
+        diff_pot:
+            2nd term in Eq.(14) in YK2014, which comes from the potential
+            difference caused by the finite size gaussian charge.
+        mod_ewald_param:
+            Modified Ewald parameter which is the ita in the Eqs in YK2014.
+        root_det_epsilon:
+            Square root of determinant of dielectric tensor
+    """
     coeff = charge * elementary_charge * 1e10 / epsilon_0  # [V]
     cube_root_vol = pow(volume, 1 / 3)
     root_det_epsilon = sqrt(np.linalg.det(ewald.dielectric_tensor))

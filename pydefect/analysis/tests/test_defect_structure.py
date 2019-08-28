@@ -1,13 +1,13 @@
 # -*- coding: utf-8 -*-
 
 import os
-import unittest
 
-from pydefect.analysis.defect_structure import DefectStructure
-from pydefect.corrections.corrections import ExtendedFnvCorrection
-from pydefect.core.supercell_calc_results import SupercellCalcResults
-from pydefect.core.defect_entry import DefectEntry
 from pydefect.analysis.defect import Defect
+from pydefect.analysis.defect_structure import DefectStructure
+from pydefect.core.defect_entry import DefectEntry
+from pydefect.core.supercell_calc_results import SupercellCalcResults
+from pydefect.corrections.efnv_corrections import ExtendedFnvCorrection
+from pydefect.util.testing import PydefectTest
 
 __author__ = "Yu Kumagai"
 __maintainer__ = "Yu Kumagai"
@@ -16,7 +16,7 @@ test_dir = os.path.join(os.path.dirname(__file__), "..", "..", "..",
                         "test_files", "core")
 
 
-class DefectStructureTest(unittest.TestCase):
+class DefectStructureTest(PydefectTest):
 
     def setUp(self):
         """ """
@@ -60,5 +60,3 @@ class DefectStructureTest(unittest.TestCase):
 #        print(self.va_o_0.comparator(defect_local_structure=s))
 
 
-if __name__ == "__main__":
-    unittest.main()

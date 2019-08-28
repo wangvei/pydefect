@@ -1,13 +1,12 @@
 # -*- coding: utf-8 -*-
 
 import os
-from scipy.constants import physical_constants
 import tempfile
-
-from pymatgen.util.testing import PymatgenTest
 
 from pydefect.analysis.defect_carrier_concentration import *
 from pydefect.core.unitcell_calc_results import UnitcellCalcResults
+from pydefect.util.testing import PydefectTest
+from scipy.constants import physical_constants
 
 __author__ = "Yu Kumagai"
 __maintainer__ = "Yu Kumagai"
@@ -18,7 +17,7 @@ test_dir = os.path.join(os.path.dirname(__file__), "..", "..", "..",
 EV = physical_constants['Boltzmann constant in eV/K'][0]
 
 
-class AllCombinationTest(PymatgenTest):
+class AllCombinationTest(PydefectTest):
     def test(self):
         # a = {'Va_O1': {0: {None: {'energy': 1.362400134999998, 'convergence': True, 'is_shallow': False}}, 1: {None: {'energy': -4.2058905866258645, 'convergence': True, 'is_shallow': False}}, 2: {None: {'energy': -7.983747657760918, 'convergence': True, 'is_shallow': False}, 'inward': {'energy': -6.016447897493341, 'convergence': True, 'is_shallow': False}}}}
         # print(all_combination(a))
@@ -27,7 +26,7 @@ class AllCombinationTest(PymatgenTest):
         print(all_combination(b))
 
 
-class CalcCarrierConcentrationTest(PymatgenTest):
+class CalcCarrierConcentrationTest(PydefectTest):
     def setUp(self):
         # unitcell_file = os.path.join(test_dir, "MgO/defects/unitcell.json")
         # unitcell = UnitcellCalcResults.load_json(unitcell_file)

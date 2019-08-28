@@ -3,12 +3,12 @@
 import os
 import unittest
 
+from pydefect.analysis.defect import Defect
 from pydefect.analysis.defect_eigenvalues import DefectEigenvalue
-from pydefect.corrections.corrections import ExtendedFnvCorrection
+from pydefect.core.defect_entry import DefectEntry
 from pydefect.core.supercell_calc_results import SupercellCalcResults
 from pydefect.core.unitcell_calc_results import UnitcellCalcResults
-from pydefect.core.defect_entry import DefectEntry
-from pydefect.analysis.defect import Defect
+from pydefect.corrections.corrections import ExtendedFnvCorrection
 
 __author__ = "Yu Kumagai"
 __maintainer__ = "Yu Kumagai"
