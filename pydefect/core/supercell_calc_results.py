@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 
 import json
-import os
 from collections import defaultdict
 from pathlib import Path
 from typing import Union, Tuple, Optional
@@ -269,27 +268,21 @@ class SupercellCalcResults(MSONable):
         if vasprun.converged_ionic is False:
             logger.warning("Ionic step is not converged.")
 
-        eigenvalues = vasprun.eigenvalues
-        fermi_level = vasprun.efermi
-        kpoint_coords = vasprun.actual_kpoints
-        kpoint_weights = vasprun.actual_kpoints_weights
-
         if band_gap_properties(vasprun):
             vbm, cbm = (i["energy"] for i in band_gap_properties(vasprun)[1:3])
         else:
-            vbm = cbm = fermi_level
+            vbm = cbm = vasprun.efermi
 
         # outcar related
         outcar = parse_file(Outcar, Path(directory_path) / outcar)
-        total_energy = outcar.final_energy
         magnetization = outcar.total_mag if outcar.total_mag else 0.0
-        electrostatic_potential = outcar.electrostatic_potential
 
         # contcar related
         contcar = parse_file(Poscar.from_file, Path(directory_path) / contcar)
         final_structure = contcar.structure
         volume = contcar.structure.volume
-        sga = SpacegroupAnalyzer(final_structure, defect_symprec, angle_tolerance)
+        sga = SpacegroupAnalyzer(
+            final_structure, defect_symprec, angle_tolerance)
         site_symmetry = sga.get_point_group_symbol()
 
         if not cutoff:
@@ -310,11 +303,9 @@ class SupercellCalcResults(MSONable):
             for i, site in enumerate(final_structure):
                 # Calculate the distance between defect and site
                 d, _ = site.distance_and_image_from_frac_coords(defect_coords)
-                # Defect itself is not included to the neighboring sites as
-                # neighboring_sites property in DefectEntry.
+                # Defect itself is excluded from neighboring sites in Pydefect.
                 if 1e-5 < d < cutoff:
                     neighboring_sites.append(i)
-
             if not neighboring_sites:
                 raise StructureError(f"No neighboring site detected. Increase "
                                      f"cutoff radius from {cutoff}.")
@@ -336,21 +327,21 @@ class SupercellCalcResults(MSONable):
             hob_index = {Spin.up: up_index, Spin.down: down_index}
 
             band_edge_energies, orbital_character, participation_ratio = \
-                analyze_procar(hob_index, procar, eigenvalues, final_structure,
-                               neighboring_sites)
+                analyze_procar(hob_index, procar, vasprun.eigenvalues,
+                               final_structure, neighboring_sites)
 
         return cls(final_structure=final_structure,
                    site_symmetry=site_symmetry,
-                   total_energy=total_energy,
+                   total_energy=outcar.final_energy,
                    total_magnetization=magnetization,
-                   eigenvalues=eigenvalues,
-                   kpoint_coords=kpoint_coords,
-                   kpoint_weights=kpoint_weights,
-                   electrostatic_potential=electrostatic_potential,
+                   eigenvalues=vasprun.eigenvalues,
+                   kpoint_coords=vasprun.actual_kpoints,
+                   kpoint_weights = vasprun.actual_kpoints_weights,
+                   electrostatic_potential=outcar.electrostatic_potential,
                    vbm=vbm,
                    cbm=cbm,
                    volume=volume,
-                   fermi_level=fermi_level,
+                   fermi_level=vasprun.efermi,
                    is_converged=vasprun.converged_ionic,
                    defect_center=center,
                    defect_coords=defect_coords,

@@ -2600,7 +2600,7 @@
       ]
     }
   ],
-  "inserted_atoms": {},
+  "inserted_atoms": [],
   "changes_of_num_elements": {
     "O": -1
   },
@@ -2616,5 +2616,5 @@
     26
   ],
   "annotation": null,
-  "num_equiv_sites": 33
+  "multiplicity": 32
 }

@@ -318,14 +318,11 @@ class ExtendedFnvCorrection(Correction, MSONable):
         self.manual_correction_energy = manual_correction_energy
 
     def __repr__(self):
-        outs = ["Point-charge correction energy (eV): "
-                + str(self.point_charge_correction_energy),
-                "Alignment-like correction energy (eV): "
-                + str(self.alignment_correction_energy),
-                "Manually added correction energy (eV): "
-                + str(self.manual_correction_energy),
-                "Total correction energy (eV): " + str(self.correction_energy)]
-
+        outs = \
+            [f"Point-charge correction: {self.point_charge_correction_energy}",
+             f"Alignment-like correction: {self.alignment_correction_energy}",
+             f"Manually added correction: {self.manual_correction_energy}",
+             f"Total correction energy (eV): {self.correction_energy}"]
         return "\n".join(outs)
 
     @property
@@ -342,9 +339,9 @@ class ExtendedFnvCorrection(Correction, MSONable):
 
     @property
     def correction_energy(self) -> float:
-        return self.point_charge_correction_energy \
-               + self.alignment_correction_energy \
-               + self.manual_correction_energy
+        return (self.point_charge_correction_energy
+                + self.alignment_correction_energy
+                + self.manual_correction_energy)
 
     @property
     def max_sphere_radius(self) -> float:
@@ -355,9 +352,7 @@ class ExtendedFnvCorrection(Correction, MSONable):
         property_without_defect = list(zip(self.symbols_without_defect,
                                            self.distances_from_defect,
                                            self.difference_electrostatic_pot))
-
-        # E.g. points_dictionary =
-        #        {'Mg': [(3.67147, -0.7019), (2.25636, 0.2297), ..], 'O': [..]}
+        # E.g. points_dictionary = {'Mg': [(3.67147, -0.7019),  ..], 'O': [..]}
         points_dictionary = {}
         for element, properties in \
                 groupby(property_without_defect, key=itemgetter(0)):
