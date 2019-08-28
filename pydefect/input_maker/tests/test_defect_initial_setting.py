@@ -8,6 +8,7 @@ from pydefect.input_maker.defect_initial_setting import (
     dopant_info, get_distances_from_string, insert_atoms, select_defects,
     DefectInitialSetting)
 from pydefect.util.testing import PydefectTest
+from pymatgen.core.structure import Structure
 
 __author__ = "Yu Kumagai"
 __maintainer__ = "Yu Kumagai"
@@ -150,14 +151,13 @@ class SelectDefectsTest(PydefectTest):
 class DefectInitialSettingTest(PydefectTest):
 
     def setUp(self):
-        """
-        """
-        self.structure = self.get_structure_by_name("MgO64atoms")
+        """ MgO 64atoms"""
+        self.structure = Structure.from_file("DPOSCAR-defect_initial_setting")
         space_group_symbol = "Fm-3m"
         transformation_matrix = [2, 0, 0, 0, 2, 0, 0, 0, 2]
         cell_multiplicity = 32
-        coordination_distances_mg = {"O": [2.1] * 6}
-        coordination_distances_o = {"Mg": [2.1] * 6}
+        coordination_distances_mg = {"O": [2.12] * 6}
+        coordination_distances_o = {"Mg": [2.12] * 6}
         mg1 = IrreducibleSite(irreducible_name="Mg1",
                               element="Mg",
                               first_index=0,
@@ -175,15 +175,15 @@ class DefectInitialSettingTest(PydefectTest):
                              site_symmetry="m-3m",
                              coordination_distances=coordination_distances_o)
         irreducible_sites = [mg1, o1]
-        dopant_configs = [["Al", "Mg"], ["Al", "O"], ["N", "Mg"], ["N", "O"]]
-        antisite_configs = [["Mg", "O"], ["O", "Mg"]]
+        dopant_configs = [["Al", "Mg"], ["N", "O"]]
+        antisite_configs = []
         interstitial_sites = ["i1"]
-        complex_defect_names = []
+        complex_defect_names = ["divacancy"]
         included = ["Va_O1_-1", "Va_O1_-2"]
         excluded = ["Va_O1_1", "Va_O1_2"]
         displacement_distance = 0.15
-        cutoff = 2.0
-        symprec = 0.001
+        cutoff = 2.97
+        symprec = 0.01
         angle_tolerance = 5
         oxidation_states = {"Mg": 2, "O": -2, "Al": 3, "N": -3}
         electronegativity = {"Mg": 1.31, "O": 3.44, "Al": 1.61, "N": 3.04}
@@ -207,69 +207,76 @@ class DefectInitialSettingTest(PydefectTest):
             oxidation_states=oxidation_states,
             electronegativity=electronegativity)
 
-        d1 = {"name": "Va_O1",
-              "defect_type": DefectType.vacancy,
-              "initial_structure": self.structure,
-              "removed_atoms": [{"element": "O",
-                                 "index": 8,
-                                 "coords": [0.25, 0.25, 0.25]}],
-              "inserted_atoms": list(),
-              "changes_of_num_elements": {"O": -1},
-              "initial_site_symmetry": "m-3m",
-              "charges": 2,
-              "multiplicity": 64,
-              "center": [0, 0, 0]}
-        self.defect_set = [d1]
+        # d1 = {"name": "Va_O1",
+        #       "defect_type": DefectType.vacancy,
+        #       "initial_structure": self.structure,
+        #       "removed_atoms": [{"element": "O",
+        #                          "index": 8,
+        #                          "coords": [0.25, 0.25, 0.25]}],
+        #       "inserted_atoms": list(),
+        #       "changes_of_num_elements": {"O": -1},
+        #       "initial_site_symmetry": "m-3m",
+        #       "charges": 2,
+        #       "multiplicity": 64,
+        #       "center": [0, 0, 0]}
+        # self.defect_set = [d1]
 
     def test_dict(self):
-        # roundtrip: object -> dict -> object
-        mgo_dict = self.MgO.as_dict()
-        mgo_from_dict = DefectInitialSetting.from_dict(mgo_dict)
+        expected = self.MgO.as_dict()
+        actual = DefectInitialSetting.from_dict(expected).as_dict()
         # Note: irreducible_sites usually return pointers, so __eq__ is
         # overloaded in DefectInitialSetting.
-        print(mgo_from_dict.as_dict())
-        print(self.MgO.as_dict())
-        self.assertTrue(mgo_from_dict.as_dict() == self.MgO.as_dict())
-        self.MgO.to()
+        self.assertEqual(expected, actual)
+#        self.MgO.to()
 
     def test_to_json_file(self):
-        # round trip test
+        expected = self.MgO.as_dict()
         with tempfile.NamedTemporaryFile() as fp:
             tmp_json = fp.name
             self.MgO.to_json_file(tmp_json)
-            mgo_from_json = DefectInitialSetting.load_json(tmp_json)
-            self.assertTrue(mgo_from_json.as_dict() == self.MgO.as_dict())
+            actual = DefectInitialSetting.load_json(tmp_json).as_dict()
+            self.assertEqual(expected, actual)
 
     def test_msonalbe(self):
         self.assertMSONable(self.MgO)
 
-    # def test_from_defect_in(self):
-    #     mgo_from_defect_in = \
-    #         DefectInitialSetting.from_defect_in(
-    #             poscar=os.path.join(test_dir, "POSCAR-MgO64atoms"),
-    #             defect_in_file=os.path.join(test_dir, "defect.in.example"))
+    def test_from_defect_in(self):
+        actual = DefectInitialSetting.from_defect_in(
+            poscar="DPOSCAR-defect_initial_setting",
+            defect_in_file="defect_unittest.in")
 
-        # self.assertTrue(mgo_from_defect_in == self.MgO)
+        actual = actual.as_dict()
+
+        for key, expected in self.MgO.as_dict().items():
+            print(key)
+            if key == "structure":
+                continue
+            self.assertEqual(expected, actual[key])
 
     def test_from_basic_settings(self):
-        mgo_from_basic_settings = \
-            DefectInitialSetting.from_basic_settings(
-                structure=self.structure,
-                transformation_matrix=[2, 2, 2],
-                cell_multiplicity=32,
-                dopants=["Al", "N"],
-                is_antisite=True,
-                interstitial_sites=["i1"],
-                complex_defect_names=None,
-                en_diff=4.0,
-                included=["Va_O1_-1", "Va_O1_-2"],
-                excluded=["Va_O1_1", "Va_O1_2"],
-                displacement_distance=0.15,
-                cutoff=2.0,
-                symprec=0.001)
+        actual = DefectInitialSetting.from_basic_settings(
+            structure=self.structure,
+            transformation_matrix=[2, 0, 0, 0, 2, 0, 0, 0, 2],
+            cell_multiplicity=32,
+            dopants=["Al", "N"],
+            is_antisite=True,
+            interstitial_sites=["i1"],
+            complex_defect_names=["divacancy"],
+            en_diff=1.0,
+            included=["Va_O1_-1", "Va_O1_-2"],
+            excluded=["Va_O1_1", "Va_O1_2"],
+            displacement_distance=0.15,
+            symprec=0.01)
 
-        print(mgo_from_basic_settings.interstitials["i1"])
-#        self.assertTrue(mgo_from_basic_settings == self.MgO)
+        actual.to(defect_in_file="defect_unittest.in",
+                  poscar_file="DPOSCAR-defect_initial_setting")
+        actual = actual.as_dict()
+
+        for key, expected in self.MgO.as_dict().items():
+            print(key)
+            if key == "structure":
+                continue
+            self.assertEqual(expected, actual[key])
 
     def test_make_defect_set(self):
         # Sequence of expected is changed for easy view. Thus, sort is needed

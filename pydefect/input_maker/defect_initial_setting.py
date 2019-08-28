@@ -458,14 +458,14 @@ class DefectInitialSetting(MSONable):
         """
         structure = Structure.from_file(poscar)
         space_group_symbol = None
-        irreducible_sites = list()
-        antisite_configs = list()
-        interstitial_site_names = list()
+        irreducible_sites = []
+        antisite_configs = []
+        interstitial_site_names = []
         included = None
         excluded = None
-        electronegativity = dict()
-        oxidation_states = dict()
-        dopant_configs = list()
+        electronegativity = {}
+        oxidation_states = {}
+        dopant_configs = []
         displacement_distance = None
         cutoff = None
         symprec = None
@@ -618,7 +618,7 @@ class DefectInitialSetting(MSONable):
             structure (Structure/IStructure):
                 Structure used for supercell defect calculations
             transformation_matrix (list):
-                Diagonal component of transformation matrix.
+                Matrix used for expanding the unitcell.
             cell_multiplicity (int):
                 How much is the supercell larger than the *primitive* cell.
             oxidation_states (dict):
@@ -676,7 +676,7 @@ class DefectInitialSetting(MSONable):
             cutoff = round(get_minimum_distance(s) * CUTOFF_FACTOR, 2)
 
         # Set of IrreducibleSite class objects
-        irreducible_sites = list()
+        irreducible_sites = []
 
         equiv_sites = symmetrized_structure.equivalent_sites
         lattice = symmetrized_structure.lattice.matrix
@@ -722,7 +722,7 @@ class DefectInitialSetting(MSONable):
                                                      coordination_distances))
 
         # List of inserted and removed atoms, e.g., [["Mg, "O"], ...]
-        antisite_configs = list()
+        antisite_configs = []
         if is_antisite is True:
             for elem1, elem2 in permutations(host_element_set, 2):
                 if elem1 == elem2:
@@ -735,7 +735,7 @@ class DefectInitialSetting(MSONable):
                                    f"{elem2} is not defined")
 
         # List of inserted and removed atoms, e.g., [["Al", "Mg"], ...]
-        dopant_configs = list()
+        dopant_configs = []
         for dopant in dopants:
             if dopant in host_element_set:
                 logger.warning(f"Dopant {dopant} constitutes host.")
@@ -1034,14 +1034,11 @@ class DefectInitialSetting(MSONable):
 
         lines.append(f"Substituted defects: {substituted}")
         lines.append("")
-
         lines.append(f"Maximum Displacement: {self.displacement_distance}")
         lines.append("")
-
         lines.append(f"Exceptionally included: {' '.join(self.included)}")
         lines.append(f"Exceptionally excluded: {' '.join(self.excluded)}")
         lines.append("")
-
         lines.append(f"Cutoff region of neighboring atoms: {self.cutoff}")
         lines.append(f"Symprec: {self.symprec}")
         lines.append(f"Angle tolerance: {self.angle_tolerance}")
