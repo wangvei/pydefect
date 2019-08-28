@@ -1,36 +1,80 @@
 # -*- coding: utf-8 -*-
-
+from copy import deepcopy
 import tempfile
-import unittest
-from collections import defaultdict
 
 import numpy as np
 from pydefect.core.defect_entry import DefectEntry
-from pydefect.core.supercell_calc_results \
-    import SupercellCalcResults
-from pydefect.util.tools import defaultdict_to_dict
+from pydefect.core.supercell_calc_results import (
+    analyze_procar, SupercellCalcResults)
+from pymatgen.io.vasp.outputs import Outcar, Vasprun, Procar
 from pymatgen.electronic_structure.core import Spin
-from pymatgen.util.testing import PymatgenTest
+from pydefect.util.testing import PydefectTest
+from pydefect.util.tools import all_combination
 
 __author__ = "Yu Kumagai"
 __maintainer__ = "Yu Kumagai"
 
 
-class DefaultdictToDictTest(PymatgenTest):
+class AnalyzeProcarTest(PydefectTest):
+    def setUp(self) -> None:
+        """ Va_O in the 2+ charge state in 64-atom supercells"""
+        hob_index = {Spin.up: 124, Spin.down: 124}
+        procar = self.get_object_by_name(
+            Procar, ["defects", "MgO", "Va_O1_2", "PROCAR"])
+        vasprun = self.get_object_by_name(
+            Vasprun, ["defects", "MgO", "Va_O1_2", "vasprun.xml"])
+        eigenvalues = vasprun.eigenvalues
+        structure = self.get_structure_by_name("MgO64atoms-Va_O1_2")
+        neighboring_sites = [0, 4, 16, 17, 24, 26]
+
+        (self.band_edge_energies, self.orbital_character,
+         self.participation_ratio) \
+            = analyze_procar(hob_index=hob_index,
+                             procar=procar,
+                             eigenvalues=eigenvalues,
+                             structure=structure,
+                             neighboring_sites=neighboring_sites)
+
+    def test_band_edge_energies(self):
+        expected = {Spin.up: {'hob': {'top': 5.5148, 'bottom': 5.5148},
+                              'lub': {'top': 8.6662, 'bottom': 8.6662}},
+                    Spin.down: {'hob': {'top': 5.5148, 'bottom': 5.5148},
+                                'lub': {'top': 8.6662, 'bottom': 8.6662}}}
+        self.assertEqual(expected, self.band_edge_energies)
+
+    def test_orbital_character(self):
+        expected = {Spin.up: {'hob': {'top': {'Mg': {'s': 0.018, 'p': 0.036,
+                                                     'd': 0.018, 'f': 0.0},
+                                              'O': {'s': 0.018, 'p': 0.216,
+                                                    'd': 0.0, 'f': 0.0}},
+                                      'bottom': {'Mg': {'s': 0.018, 'p': 0.036,
+                                                        'd': 0.018, 'f': 0.0},
+                                                 'O': {'s': 0.018, 'p': 0.216,
+                                                       'd': 0.0, 'f': 0.0}}},
+                              'lub': {'top': {'Mg': {'s': 0.174, 'p': 0.006,
+                                                     'd': 0.0, 'f': 0.0},
+                                              'O': {'s': 0.199, 'p': 0.114,
+                                                    'd': 0.0, 'f': 0.0}},
+                                      'bottom': {'Mg': {'s': 0.174, 'p': 0.006,
+                                                        'd': 0.0, 'f': 0.0},
+                                                 'O': {'s': 0.199, 'p': 0.114,
+                                                       'd': 0.0, 'f': 0.0}}}}}
+        expected[Spin.down] = deepcopy(expected[Spin.up])
+        for k1, k2, k3, k4, k5, v in all_combination(expected):
+            self.assertAlmostEqual(
+                v, self.orbital_character[k1][k2][k3][k4][k5], 3)
+
+    def test_participation_ratio(self):
+        expected = {Spin.up: {'hob': 0.235294, 'lub': 0.060852},
+                    Spin.down: {'hob': 0.235294, 'lub': 0.060852}}
+        for k1, k2, v in all_combination(expected):
+            self.assertAlmostEqual(v, self.participation_ratio[k1][k2], 5)
+
+
+class SupercellDftResultsTest(PydefectTest):
+
     def setUp(self):
-        """ """
-        self.d = defaultdict(lambda: defaultdict(dict))
-        self.d[1][2][4] = 10
-
-    def test(self):
-        print(self.d)
-        print(defaultdict_to_dict(self.d))
-
-
-class SupercellDftResultsTest(PymatgenTest):
-
-    def setUp(self):
-        """ """
+        """ Va_O in the 2+ charge state in 64-atom supercells"""
         # self._defect_entry_perfect = \
         #     DefectEntry.load_json(os.path.join(
         #         test_dir, "MgO/defects/perfect", "defect_entry.json"))

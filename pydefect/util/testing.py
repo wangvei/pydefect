@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 from pathlib import Path
-from typing import Callable
+from typing import Callable, Union
 
 from pymatgen.core.structure import Structure
 from pymatgen.util.testing import PymatgenTest
@@ -20,9 +20,15 @@ class PydefectTest(PymatgenTest):
         return Structure.from_file(filename)
 
     @classmethod
-    def get_object_by_name(cls, method: Callable, name: str):
+    def get_object_by_name(cls, method: Callable, name: Union[list, str]):
         """ return cls by passing classmethod returning cls """
-        filename = cls.TEST_FILES_DIR / name
+        if isinstance(name, str):
+            name = [name]
+
+        filename = cls.TEST_FILES_DIR
+        for n in name:
+            filename = filename / n
+
         return method(filename)
 
     @classmethod

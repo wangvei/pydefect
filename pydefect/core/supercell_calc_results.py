@@ -37,7 +37,7 @@ def analyze_procar(hob_index: dict,
                    procar: Procar,
                    eigenvalues: dict,
                    structure: Structure,
-                   neighboring_sites: list = None) -> Tuple[dict, dict, dict]:
+                   neighboring_sites: list) -> Tuple[dict, dict, dict]:
     """ Analyze Procar to investigate defect properties
 
     Args:
@@ -53,6 +53,8 @@ def analyze_procar(hob_index: dict,
         neighboring_sites:
             Atomic site indices neighboring a defect.
     Return:
+        Tuple of the following dict.
+
         band_edge_energies (dict):
             Averaged band energy over k-space as function of spin and band_edge
         orbital_character (dict):
@@ -74,8 +76,10 @@ def analyze_procar(hob_index: dict,
         # index i is used to increment band index from hob to lub
         for i, band_edge in enumerate(["hob", "lub"]):
 
+            # The band index of "lub" is incremented from "hob" by 1.
             band_index = hob_index[spin] + i
 
+            # participation_ratio is not calculated for perfect supercell.
             if neighboring_sites:
                 participation_ratio[spin][band_edge] = \
                     calc_participation_ratio(
@@ -83,22 +87,25 @@ def analyze_procar(hob_index: dict,
 
             top_eigenvalue = np.amax(eigenvalues[spin][:, band_index, 0])
             band_edge_energies[spin][band_edge]["top"] = top_eigenvalue
-            top_k_index = int(np.where(eigenvalues[spin][:, band_index, 0]
-                                       == top_eigenvalue)[0][0])
+            top_k_index = int(np.where(
+                eigenvalues[spin][:, band_index, 0] == top_eigenvalue)[0][0])
 
             bottom_eigenvalue = np.amin(eigenvalues[spin][:, band_index, 0])
             band_edge_energies[spin][band_edge]["bottom"] = bottom_eigenvalue
-            bottom_k_index = int(np.where(eigenvalues[spin][:, band_index, 0]
-                                          == bottom_eigenvalue)[0][0])
+            bottom_k_index = int(np.where(
+                eigenvalues[spin][:, band_index, 0] == bottom_eigenvalue)[0][0])
 
             for energy_position, k_index \
                     in zip(["top", "bottom"], [top_k_index, bottom_k_index]):
 
                 orbital_character[spin][band_edge][energy_position] = \
-                    calc_orbital_character(
-                        procar, structure, spin, band_index,
-                        kpoint_index=k_index)
+                    calc_orbital_character(procar=procar,
+                                           structure=structure,
+                                           spin=spin,
+                                           band_index=band_index,
+                                           kpoint_index=k_index)
 
+    # participation_ratio is None for perfect supercell.
     if participation_ratio:
         participation_ratio = defaultdict_to_dict(participation_ratio)
     else:
@@ -220,10 +227,10 @@ class SupercellCalcResults(MSONable):
     def from_vasp_files(cls,
                         directory_path: str,
                         defect_entry: DefectEntry = None,
-                        vasprun: str = None,
-                        contcar: str = None,
-                        outcar: str = None,
-                        procar: Union[str, bool] = False,
+                        vasprun: str = "vasprun.xml",
+                        contcar: str = "CONTCAR",
+                        outcar: str = "OUTCAR",
+                        procar: Optional[str] = "PROCAR",
                         cutoff: Optional[float] = None,
                         defect_symprec: float = DEFECT_SYMMETRY_TOLERANCE,
                         angle_tolerance: float = ANGLE_TOL):
@@ -231,16 +238,19 @@ class SupercellCalcResults(MSONable):
 
         Never analyze the data here, but in Defect.from_object classmethod.
 
+        Do not change "defect_symprec" to "symprec" as the attribute defaults
+        are used in main.py
+
         Args:
             directory_path (str):
                 path to the directory storing calc results.
-            defect_entry (DefectEntry):
             vasprun (str):
                 Name of the vasprun.xml file.
             contcar (str):
                 Name of the converged CONTCAR file.
             outcar (str):
                 Name of the OUTCAR file.
+            defect_entry (DefectEntry):
             procar (str):
                 Name of the PROCAR file.
                 If True, parse the PROCAR file but file name is determined from
@@ -252,76 +262,54 @@ class SupercellCalcResults(MSONable):
             angle_tolerance (float):
                 Angle precision used for symmetry analysis.
         """
-        p = Path(directory_path)
-
-        # get the names of the latest files in the directory_path
-        if vasprun:
-            vasprun = Path(directory_path) / vasprun
-        else:
-            vasprun = str(max(p.glob("*vasprun*"), key=os.path.getctime))
-
-        if contcar:
-            contcar = Path(directory_path) / contcar
-        else:
-            poscar_files = list(p.glob("*CONTCAR*")) + list(p.glob("*POSCAR*"))
-            contcar = str(max(poscar_files, key=os.path.getctime))
-
-        if outcar:
-            outcar = Path(directory_path) / outcar
-        else:
-            outcar = str(max(p.glob("*OUTCAR*"), key=os.path.getctime))
-
-        vasprun = parse_file(Vasprun, vasprun)
-        contcar = parse_file(Poscar.from_file, contcar)
-        outcar = parse_file(Outcar, outcar)
+        # vasprun related
+        vasprun = parse_file(Vasprun, Path(directory_path) / vasprun)
+        if vasprun.converged_electronic is False:
+            raise NoConvergenceError("Electronic step is not converged.")
+        if vasprun.converged_ionic is False:
+            logger.warning("Ionic step is not converged.")
 
         eigenvalues = vasprun.eigenvalues
         fermi_level = vasprun.efermi
+        kpoint_coords = vasprun.actual_kpoints
+        kpoint_weights = vasprun.actual_kpoints_weights
 
         if band_gap_properties(vasprun):
             vbm, cbm = (i["energy"] for i in band_gap_properties(vasprun)[1:3])
         else:
             vbm = cbm = fermi_level
 
-        if vasprun.converged_electronic is False:
-            raise NoConvergenceError("Electronic step is not converged.")
-        if vasprun.converged_ionic is False:
-            logger.warning("Ionic step is not converged.")
+        # outcar related
+        outcar = parse_file(Outcar, Path(directory_path) / outcar)
+        total_energy = outcar.final_energy
+        magnetization = outcar.total_mag if outcar.total_mag else 0.0
+        electrostatic_potential = outcar.electrostatic_potential
 
-        kpoint_coords = vasprun.actual_kpoints
-        kpoint_weights = vasprun.actual_kpoints_weights
-
+        # contcar related
+        contcar = parse_file(Poscar.from_file, Path(directory_path) / contcar)
         final_structure = contcar.structure
         volume = contcar.structure.volume
-        sga = SpacegroupAnalyzer(final_structure, defect_symprec,
-                                 angle_tolerance)
+        sga = SpacegroupAnalyzer(final_structure, defect_symprec, angle_tolerance)
         site_symmetry = sga.get_point_group_symbol()
 
         if not cutoff:
-            cutoff = \
-                round(get_minimum_distance(final_structure) * CUTOFF_FACTOR, 2)
+            minimum_distance = get_minimum_distance(final_structure)
+            cutoff = round(minimum_distance * CUTOFF_FACTOR, 2)
 
-        total_energy = outcar.final_energy
-        magnetization = 0.0 if outcar.total_mag is None else outcar.total_mag
-        electrostatic_potential = outcar.electrostatic_potential
-
-        # defect_entry is not provided for perfect supercell.
+        # If defect_entry is None, system is regarded as perfect supercell.
         if not defect_entry:
-            defect_center = neighboring_sites = defect_coords = displacements \
-                = None
+            center = neighboring_sites = defect_coords = displacements = None
         else:
             if defect_entry.defect_type.is_defect_center_atom:
-                defect_center = defect_entry.inserted_atoms[0]["index"]
-                defect_coords = \
-                    list(final_structure[defect_center].frac_coords)
+                center = defect_entry.inserted_atoms[0]["index"]
+                defect_coords = list(final_structure[center].frac_coords)
             else:
-                defect_center = defect_coords \
-                    = defect_entry.defect_center_coords
+                center = defect_coords = defect_entry.defect_center_coords
 
             neighboring_sites = []
             for i, site in enumerate(final_structure):
                 # Calculate the distance between defect and site
-                d = site.distance_and_image_from_frac_coords(defect_coords)[0]
+                d, _ = site.distance_and_image_from_frac_coords(defect_coords)
                 # Defect itself is not included to the neighboring sites as
                 # neighboring_sites property in DefectEntry.
                 if 1e-5 < d < cutoff:
@@ -333,16 +321,13 @@ class SupercellCalcResults(MSONable):
 
             displacements = get_displacements(final_structure,
                                               defect_entry.initial_structure,
-                                              defect_center,
+                                              center,
                                               defect_entry.anchor_atom_index)
-
+        # procar related
         if not procar:
             band_edge_energies = orbital_character = participation_ratio = None
         else:
-            if procar is True:
-                procar = str(max(p.glob("*PROCAR*"), key=os.path.getctime))
-            procar = parse_file(Procar, procar)
-
+            procar = parse_file(Procar, Path(directory_path) / procar)
             # The k-point indices at the band edges in defect calculations.
             # hob (lub) = highest (lowest) (un)occupied state
             # The small number (0.1) must be added to avoid magnetization = 0.0
@@ -367,7 +352,7 @@ class SupercellCalcResults(MSONable):
                    volume=volume,
                    fermi_level=fermi_level,
                    is_converged=vasprun.converged_ionic,
-                   defect_center=defect_center,
+                   defect_center=center,
                    defect_coords=defect_coords,
                    displacements=displacements,
                    neighboring_sites_after_relax=neighboring_sites,

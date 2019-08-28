@@ -427,10 +427,10 @@ def supercell_calc_results(args):
                         directory_path=d,
                         vasprun=args.vasprun,
                         contcar=args.contcar,
-                        procar=True,
+                        procar=args.procar,
                         outcar=args.outcar)
                 except IOError:
-                    raise IOError("Parsing data in perfect failed")
+                    raise IOError("Parsing data in perfect failed.")
             else:
                 try:
                     de = DefectEntry.load_json(join(d, args.defect_entry_name))
@@ -441,7 +441,7 @@ def supercell_calc_results(args):
                             vasprun=args.vasprun,
                             contcar=args.contcar,
                             outcar=args.outcar,
-                            procar=True,
+                            procar=args.procar,
                             defect_entry=de,
                             defect_symprec=args.symprec,
                             angle_tolerance=args.angle_tolerance)

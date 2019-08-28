@@ -610,6 +610,7 @@ def main():
                     ["vasprun",
                      "contcar",
                      "outcar",
+                     "procar",
                      "defect_symprec",
                      "angle_tolerance"])
 
@@ -625,6 +626,8 @@ def main():
         "-c", dest="contcar", default=sr_defaults["contcar"], type=str)
     parser_supercell_results.add_argument(
         "-o", dest="outcar", default=sr_defaults["outcar"], type=str)
+    parser_supercell_results.add_argument(
+        "-p", dest="procar", default=sr_defaults["procar"], type=str)
     parser_supercell_results.add_argument(
         "-s", dest="not_check_shallow", action="store_false",
         help="Not check whether the defects are shallow.")

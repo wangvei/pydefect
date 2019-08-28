@@ -299,6 +299,7 @@ class Defect(MSONable):
         initial_structure = d["initial_structure"]
         perturbed_initial_structure = d["perturbed_initial_structure"]
         final_structure = d["final_structure"]
+
         if isinstance(initial_structure, dict):
             initial_structure = Structure.from_dict(initial_structure)
         if isinstance(perturbed_initial_structure, dict):
