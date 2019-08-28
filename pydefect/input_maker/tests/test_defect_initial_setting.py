@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import tempfile
+from copy import deepcopy
 
 from pydefect.core.defect_entry import DefectType
 from pydefect.core.irreducible_site import IrreducibleSite
@@ -9,6 +10,7 @@ from pydefect.input_maker.defect_initial_setting import (
     DefectInitialSetting)
 from pydefect.util.testing import PydefectTest
 from pymatgen.core.structure import Structure
+from pydefect.core.defect_name import DefectName
 
 __author__ = "Yu Kumagai"
 __maintainer__ = "Yu Kumagai"
@@ -207,20 +209,6 @@ class DefectInitialSettingTest(PydefectTest):
             oxidation_states=oxidation_states,
             electronegativity=electronegativity)
 
-        # d1 = {"name": "Va_O1",
-        #       "defect_type": DefectType.vacancy,
-        #       "initial_structure": self.structure,
-        #       "removed_atoms": [{"element": "O",
-        #                          "index": 8,
-        #                          "coords": [0.25, 0.25, 0.25]}],
-        #       "inserted_atoms": list(),
-        #       "changes_of_num_elements": {"O": -1},
-        #       "initial_site_symmetry": "m-3m",
-        #       "charges": 2,
-        #       "multiplicity": 64,
-        #       "center": [0, 0, 0]}
-        # self.defect_set = [d1]
-
     def test_dict(self):
         expected = self.MgO.as_dict()
         actual = DefectInitialSetting.from_dict(expected).as_dict()
@@ -245,10 +233,11 @@ class DefectInitialSettingTest(PydefectTest):
             poscar="DPOSCAR-defect_initial_setting",
             defect_in_file="defect_unittest.in")
 
+        self.assertEqual(self.MgO.structure.lattice, actual.structure.lattice)
+
         actual = actual.as_dict()
 
         for key, expected in self.MgO.as_dict().items():
-            print(key)
             if key == "structure":
                 continue
             self.assertEqual(expected, actual[key])
@@ -270,6 +259,8 @@ class DefectInitialSettingTest(PydefectTest):
 
         actual.to(defect_in_file="defect_unittest.in",
                   poscar_file="DPOSCAR-defect_initial_setting")
+        self.assertEqual(self.MgO.structure, actual.structure)
+
         actual = actual.as_dict()
 
         for key, expected in self.MgO.as_dict().items():
@@ -278,22 +269,63 @@ class DefectInitialSettingTest(PydefectTest):
                 continue
             self.assertEqual(expected, actual[key])
 
-    def test_make_defect_set(self):
-        # Sequence of expected is changed for easy view. Thus, sort is needed
-        # # for comparison.
-        self.MgO.make_defect_set()
-        print(self.MgO.defect_entries)
-        # expected = \
-        #     ['Va_Mg1_-2', 'Va_Mg1_-1', 'Va_Mg1_0', 'Va_O1_2', 'Mg_i1_0',
-        #      'Mg_i1_1', 'Mg_i1_2', 'O_i1_-2', 'O_i1_-1', 'O_i1_0', 'N_i1_-3',
-        #      'N_i1_-2', 'N_i1_-1', 'N_i1_0', 'N_i1_1', 'Al_i1_-1', 'Al_i1_0',
-        #      'Al_i1_1', 'Al_i1_2', 'Al_i1_3', 'Mg_O1_0', 'Mg_O1_1', 'Mg_O1_2',
-        #      'Mg_O1_3', 'Mg_O1_4', 'O_Mg1_-4', 'O_Mg1_-3', 'O_Mg1_-2',
-        #      'O_Mg1_-1', 'O_Mg1_0', 'Al_Mg1_-1', 'Al_Mg1_0', 'Al_Mg1_1',
-        #      'Al_O1_-1', 'Al_O1_0', 'Al_O1_1', 'Al_O1_2', 'Al_O1_3', 'Al_O1_4',
-        #      'Al_O1_5', 'N_Mg1_-5', 'N_Mg1_-4', 'N_Mg1_-3', 'N_Mg1_-2',
-        #      'N_Mg1_-1', 'N_Mg1_0', 'N_Mg1_1', 'N_O1_-1', 'N_O1_0', 'N_O1_1']
-        #
-#        actual = [str(i) for i in self.MgO.make_defect_set()]
-        # self.assertEqual(sorted(actual), sorted(expected))
+    def test_make_all_defect_set(self):
+        mgo_all = deepcopy(self.MgO)
+        mgo_all.make_defect_set()
+
+        # vacancies: 3 + 3 = 6
+        # dopants: 3 + 3 = 6
+        # interstitials: 3(Mg) + 3(O) + 5(Al) + 5(N) = 16
+        # divacancies: 3
+        self.assertEqual(31, len(mgo_all.defect_entries))
+
+    def test_make_defect_set_keywords(self):
+        mgo_interstitial = deepcopy(self.MgO)
+        mgo_interstitial.make_defect_set(keywords=["i1"])
+        actual = {str(DefectName(n.name, n.charge))
+                  for n in mgo_interstitial.defect_entries}
+        expected = {'Mg_i1_0', 'Mg_i1_1', 'Mg_i1_2', 'O_i1_0', 'O_i1_-2',
+                    'O_i1_-1', 'Al_i1_0', 'Al_i1_1', 'Al_i1_2', 'Al_i1_3',
+                    'Al_i1_-1', 'N_i1_0', 'N_i1_1', 'N_i1_-1', 'N_i1_-3',
+                    'N_i1_-2'}
+        self.assertEqual(expected, actual)
+
+    def test_make_specified_defect_set(self):
+        mgo_specified = deepcopy(self.MgO)
+        mgo_specified.make_defect_set(
+            specified_defects=["Al_Mg1_5", "N_O1_2"])
+        actual = {str(DefectName(n.name, n.charge))
+                  for n in mgo_specified.defect_entries}
+        expected = {"Al_Mg1_5", "N_O1_2"}
+        self.assertEqual(expected, actual)
+
+        actual = mgo_specified.defect_entries[0].as_dict()
+
+        structure = Structure.from_file("DPOSCAR-defect_initial_setting")
+        structure.replace(0, "Al")
+        expected = {"name": "Al_Mg1",
+                    "defect_type": str(DefectType.substituted),
+                    "initial_structure": structure,
+                    "perturbed_initial_structure": structure,
+                    "removed_atoms": [{"element": "Mg",
+                                       "index": 0,
+                                       "coords": [0.0, 0.0, 0.0]}],
+                    "inserted_atoms": [{"element": "Al",
+                                        "index": 0,
+                                        "coords": [0.0, 0.0, 0.0]}],
+                    "changes_of_num_elements": {"Al": 1, "Mg": -1},
+                    "charge": 5,
+                    "initial_site_symmetry": "m-3m",
+                    "cutoff": 2.97,
+                    "neighboring_sites": [40, 44, 48, 50, 56, 57],
+                    "annotation": None,
+                    "multiplicity": 32}
+
+#        self.assertEqual(expected, actual)
+        for key, value in expected.items():
+            if key == "perturbed_initial_structure":
+                continue
+            print(key)
+            self.assertEqual(value, actual[key])
+
 
