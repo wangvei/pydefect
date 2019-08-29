@@ -2,7 +2,7 @@ i1:
   representative_coords: [0.125, 0.125, 0.125]
   wyckoff: c
   site_symmetry: -43m
-  symmetry_multiplicity: 24
+  multiplicity: 64
   coordination_distances:
     Mg: [1.82, 1.82, 1.82, 1.82]
     O: [1.82, 1.82, 1.82, 1.82]

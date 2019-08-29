@@ -2600,7 +2600,7 @@
       ]
     }
   ],
-  "inserted_atoms": [],
+  "inserted_atoms": {},
   "changes_of_num_elements": {
     "O": -1
   },
