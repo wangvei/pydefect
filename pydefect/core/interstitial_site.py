@@ -226,8 +226,8 @@ class InterstitialSiteSet(MSONable):
             site_symmetry = symmetry_dataset["site_symmetry_symbols"][ai]
             wyckoff = symmetry_dataset["wyckoffs"][ai]
             # multiplicity is reduced by the number of symmetry operation
-            multiplicity = int(num_symmop
-                               / num_symmetry_operation(site_symmetry))
+            multiplicity = round(int(num_symmop
+                                 / num_symmetry_operation(site_symmetry)))
             # Calculate the coordination_distances.
             # Note that saturated_structure includes other interstitial sites.
             defect_str = self.structure.copy()

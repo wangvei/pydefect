@@ -179,8 +179,9 @@ class Supercells:
 
         for i in range(int(max_num_atoms / len(primitive_cell))):
             isotropy, angle = calc_isotropy(self.unitcell, trans_mat)
-            multiplicity = int(unitcell_mul * round(np.linalg.det(trans_mat)))
-            num_atoms = int(multiplicity * len(primitive_cell))
+            multiplicity = int(round(unitcell_mul *
+                                     round(np.linalg.det(trans_mat))))
+            num_atoms = multiplicity * len(primitive_cell)
             if num_atoms > max_num_atoms:
                 break
 

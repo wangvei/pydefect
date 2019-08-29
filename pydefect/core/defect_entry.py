@@ -162,17 +162,17 @@ class DefectEntry(MSONable):
     def __repr__(self):
         annotation = "" if self.annotation is None else self.annotation
 
-        outs = [f"name: {self.name}",
+        outs = [f"perturbed structure: {self.perturbed_initial_structure}",
+                "",
+                f"name: {self.name}",
                 f"defect type: {self.defect_type}",
                 f"charge: {self.charge}",
                 f"annotation: {annotation}",
-                f"perturbed structure: {self.perturbed_initial_structure}",
-                "",
                 f"initial site symmetry: {self.initial_site_symmetry}",
                 f"removed_atoms: {self.removed_atoms}",
                 f"inserted atoms: {self.inserted_atoms}",
                 f"changes of num element: {self.changes_of_num_elements}",
-                f"cut off radius: {self.cutoff}",
+                f"cutoff radius: {self.cutoff}",
                 f"neighboring sites: {self.neighboring_sites}",
                 f"multiplicity: {self.multiplicity}"]
         return "\n".join(outs)

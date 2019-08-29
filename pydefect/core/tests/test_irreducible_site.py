@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from pydefect.core.irreducible_site import IrreducibleSite
-
+from pydefect.util.testing import PydefectTest
 
 __author__ = "Yu Kumagai"
 __maintainer__ = "Yu Kumagai"
