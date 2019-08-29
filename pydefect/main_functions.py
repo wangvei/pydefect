@@ -17,7 +17,8 @@ from pydefect.analysis.defect import Defect
 from pydefect.analysis.defect_carrier_concentration import DefectConcentration
 from pydefect.analysis.defect_eigenvalues import DefectEigenvalue
 from pydefect.analysis.defect_energies import DefectEnergies
-from pydefect.analysis.defect_structure import DefectStructure
+from pydefect.analysis.defect_structure import (
+    DefectStructure, defect_structure_matcher)
 from pydefect.core.defect_entry import DefectEntry
 from pydefect.core.interstitial_site import (
     InterstitialSiteSet, interstitials_from_charge_density)
@@ -674,17 +675,23 @@ def vasp_parchg_set(args):
 def local_structure(args):
     defects_dirs = args.defect_dirs if args.defect_dirs else glob('*[0-9]/')
 
+    d_list = []
     for d in defects_dirs:
         filename = join(d, args.defect)
         logger.info(f"parsing directory {d}...")
         try:
             defect = Defect.load_json(filename)
+            d_list.append(defect)
         except FileNotFoundError:
             logger.warning(f"Parsing {filename} failed.")
             continue
 
         defect_structure = DefectStructure.from_defect(defect)
         print(defect_structure.show_displacements(all_atoms=args.show_all))
+
+    if args.compare_structure:
+        print("-" * 30)
+        print(defect_structure_matcher(d_list))
 
 
 def concentration(args):

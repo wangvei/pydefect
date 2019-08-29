@@ -1,12 +1,14 @@
 # -*- coding: utf-8 -*-
 
 from copy import deepcopy
-from typing import Union
-
+from typing import Union, List
+from collections import defaultdict
+from itertools import groupby
 from monty.json import MSONable
 from pydefect.analysis.defect import Defect
 from pydefect.util.logger import get_logger
 from pymatgen.core.structure import Structure
+from pymatgen.analysis.structure_matcher import StructureMatcher
 
 __author__ = "Yu Kumagai"
 __maintainer__ = "Yu Kumagai"
@@ -28,6 +30,7 @@ class DefectStructure(MSONable):
 
     def __init__(self,
                  name: str,
+                 charge: int,
                  final_volume: float,
                  initial_structure: Structure,
                  perturbed_initial_structure: Structure,
@@ -89,6 +92,7 @@ class DefectStructure(MSONable):
 
         """
         self.name = name
+        self.charge = charge
         self.final_volume = final_volume
 
         self.initial_structure = deepcopy(initial_structure)
@@ -116,6 +120,7 @@ class DefectStructure(MSONable):
     def from_defect(cls, defect: Defect):
         """ Retrieve from Defect class object"""
         return cls(name=defect.name,
+                   charge=defect.charge,
                    final_volume=defect.final_volume,
                    initial_structure=defect.initial_structure,
                    perturbed_initial_structure=
@@ -127,10 +132,6 @@ class DefectStructure(MSONable):
                    defect_center=defect.defect_center,
                    defect_center_coords=defect.defect_center_coords,
                    neighboring_sites=defect.neighboring_sites)
-
-    def __repr__(self):
-        outs = ["DefectStructure Summary"]
-        return " ".join(outs)
 
     def show_displacements(self, all_atoms: bool = False) -> str:
         is_defect_center_atom = isinstance(self.defect_center, int)
@@ -175,9 +176,50 @@ class DefectStructure(MSONable):
         return "\n".join(lines)
 
     def comparator(self,
-                   defect_local_structure: Structure,
-                   ltol: float,
-                   stol: float) -> bool:
-        return self.final_local_structure.matches(
-            other=defect_local_structure, ltol=ltol, stol=stol,
-            primitive_cell=False, scale=False)
+                   defect_structure,
+                   stol: float = 0.03,
+                   **kwargs) -> bool:
+
+        compared_structure = defect_structure.final_local_structure
+        return self.final_local_structure.matches(other=compared_structure,
+                                                  stol=stol,
+                                                  primitive_cell=False,
+                                                  scale=False,
+                                                  **kwargs)
+
+
+def defect_structure_matcher(d_list: List[DefectStructure],
+                             stol: float = 0.03) -> dict:
+    """ A list of DefectStructure is grouped by structural equality.
+
+    Args:
+        d_list ([DefectStructure]): List of DefectStructure to be grouped
+        stol: See docstrings of StructureMatcher in
+              pymatgen.analysis.structure_matcher.
+    Returns:
+        A list of lists of matched structures
+        Assumption: if s1 == s2 but s1 != s3, than s2 and s3 will be put
+        in different groups without comparison.
+    """
+    sm = StructureMatcher(stol=stol, primitive_cell=False, scale=False)
+
+    group = {}
+    # Pre-grouped by name
+    for k, g in groupby(d_list, key=lambda n: n.name):
+        unmatched = list(g)
+        group[k] = []
+        while len(unmatched) > 0:
+            d = unmatched.pop(0)
+            matches = [d.charge]
+            ref = d.final_structure
+            inds = filter(lambda i: sm.fit(ref, unmatched[i].final_structure),
+                          list(range(len(unmatched))))
+            # filter returns generator, so needs to change to list
+            inds = list(inds)
+            matches.extend([unmatched[i].charge for i in inds])
+            unmatched = [unmatched[i] for i in range(len(unmatched))
+                         if i not in inds]
+            group[k].append(matches)
+
+    return group
+

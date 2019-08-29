@@ -128,10 +128,6 @@ class ExtendedFnvCorrectionTest(PydefectTest):
         defect_entry = self.get_object_by_name(
             DefectEntry.load_json, filename)
 
-        filename = ["defects", "MgO", "perfect", "dft_results.json"]
-        perfect = self.get_object_by_name(
-            SupercellCalcResults.load_json, filename)
-
         self.correction = \
             ExtendedFnvCorrection.compute_correction(
                 defect_entry=defect_entry,

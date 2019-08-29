@@ -4,7 +4,7 @@ import json
 from collections import defaultdict
 from copy import copy
 from itertools import combinations
-from typing import List
+from typing import List, Tuple
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -205,7 +205,7 @@ class DefectEnergies(MSONable):
     def u(self,
           name: str,
           charges: list,
-          annotations: list = None):
+          annotations: list = None) -> Tuple[float, list]:
         """ Return the U value among three sequential charge states.
 
         Args:

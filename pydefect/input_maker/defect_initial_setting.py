@@ -24,7 +24,6 @@ from pydefect.util.structure_tools import (
 from pymatgen.core.periodic_table import Element
 from pymatgen.core.structure import Structure
 from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
-from vise.util.structure_handler import get_point_group_from_dataset
 
 __author__ = "Yu Kumagai"
 __maintainer__ = "Yu Kumagai"

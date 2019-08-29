@@ -58,7 +58,7 @@ def diagnose_band_edges(participation_ratio: dict,
                         band_edge_energies: dict,
                         supercell_vbm: float,
                         supercell_cbm: float,
-                        different_criterion: float = 0.12,
+                        similarity_criterion: float = 0.12,
                         localized_criterion: float = 0.4,
                         near_edge_energy_criterion: float = 0.3):
     """ Diagnose the band edge states in supercell with a defect.
@@ -82,7 +82,7 @@ def diagnose_band_edges(participation_ratio: dict,
             VBM in the perfect supercell.
         supercell_cbm (float):
             CBM in the perfect supercell.
-        different_criterion:
+        similarity_criterion:
             Criterion to judge if the eigenstate is different from a host state
         localized_criterion (float):
             Criterion to judge the orbital is localized if the participation
@@ -120,8 +120,8 @@ def diagnose_band_edges(participation_ratio: dict,
         # 2. Participation rations are small enough.
         # 3. Band-edge energies should be close to the host ones.
         # Note that the participation ratio depends on the supercell size.
-        if (vbm_difference < different_criterion
-                and cbm_difference < different_criterion
+        if (vbm_difference < similarity_criterion
+                and cbm_difference < similarity_criterion
                 and participation_ratio[spin]["hob"] < localized_criterion
                 and participation_ratio[spin]["lub"] < localized_criterion
                 and abs(band_edge_energies[spin]["lub"]["bottom"]
@@ -137,16 +137,16 @@ def diagnose_band_edges(participation_ratio: dict,
 
         # To determine the difference of perturbed host state (phs),
         # the criterion is doubled from that of regular band edge.
-        elif (donor_phs_difference < different_criterion * 2
-                and participation_ratio[spin]["hob"] < localized_criterion
-                and abs(band_edge_energies[spin]["hob"]["bottom"]
-                        - supercell_cbm) < near_edge_energy_criterion):
+        elif (donor_phs_difference < similarity_criterion * 2
+              and participation_ratio[spin]["hob"] < localized_criterion
+              and abs(band_edge_energies[spin]["hob"]["bottom"]
+                      - supercell_cbm) < near_edge_energy_criterion):
             band_edges[spin] = BandEdgeState.donor_phs
 
-        elif (acceptor_phs_difference < different_criterion * 2
-                and participation_ratio[spin]["lub"] < localized_criterion
-                and abs(band_edge_energies[spin]["lub"]["top"] -
-                        supercell_vbm) < near_edge_energy_criterion):
+        elif (acceptor_phs_difference < similarity_criterion * 2
+              and participation_ratio[spin]["lub"] < localized_criterion
+              and abs(band_edge_energies[spin]["lub"]["top"]
+                      - supercell_vbm) < near_edge_energy_criterion):
             band_edges[spin] = BandEdgeState.acceptor_phs
 
         else:
@@ -209,6 +209,7 @@ class Defect(MSONable):
         # symmetries
         self.initial_symmetry = initial_symmetry
         self.final_symmetry = final_symmetry
+        # multiplicity
         self.initial_multiplicity = initial_multiplicity
         self.final_multiplicity = final_multiplicity
         # magnetization
@@ -395,10 +396,10 @@ class Defect(MSONable):
         for s, v in self.band_edge_states.items():
             band_edges.extend([s.name.upper(), "->", str(v).rjust(17)])
 
-        outs = [f" conv. : {self.is_converged}",
-                f"  mag. : {self.magnetization:>7}",
-                f"  sym. : {self.final_symmetry:>4}",
-                f"  band edge : {'  '.join(band_edges)}"]
+        outs = [f"  Convergence : {self.is_converged}",
+                f"       Magmom : {self.magnetization:>7}",
+                f"  Point group : {self.final_symmetry:>4}",
+                f"    Band edge : {'  '.join(band_edges)}"]
 
         return " ".join(outs)
 

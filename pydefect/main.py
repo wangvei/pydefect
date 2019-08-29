@@ -907,6 +907,8 @@ def main():
     parser_local_structure.add_argument(
         "--show_all", dest="show_all", action="store_true")
     parser_local_structure.add_argument(
+        "--cs", dest="compare_structure", action="store_true")
+    parser_local_structure.add_argument(
         "--defect_dirs", dest="defect_dirs", type=str, default=None, nargs="+",
         help="Directory names for the defect supercell result."
              "defect_entry.json, dft_results.json, and correction.json files "
