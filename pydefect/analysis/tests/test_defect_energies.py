@@ -1,8 +1,6 @@
 # -*- coding: utf-8 -*-
 
-import os
 import tempfile
-import unittest
 
 from chempotdiag.chem_pot_diag import ChemPotDiag
 from pydefect.analysis.defect import Defect
@@ -16,39 +14,35 @@ from pydefect.util.tools import sanitize_keys_in_dict
 __author__ = "Yu Kumagai"
 __maintainer__ = "Yu Kumagai"
 
-test_dir = os.path.join(os.path.dirname(__file__), "..", "..", "..",
-                        "test_files", "core")
-
 
 class ConvertStrKeysTest(PydefectTest):
-
-    d = {"Va_O1_0": {"0": {"null": 1.0}, "1": {"inward": 2.0}}}
-    print(type(d["Va_O1_0"]))
-    print(sanitize_keys_in_dict(d))
+    def setUp(self):
+        d = {"Va_O1_0": {"0": {"null": 1.0}, "1": {"inward": 2.0}}}
+        print(type(d["Va_O1_0"]))
+        print(sanitize_keys_in_dict(d))
 
 
 class DefectEnergiesTest(PydefectTest):
 
     def setUp(self):
         """ """
-        unitcell_file = os.path.join(test_dir, "MgO/defects/unitcell.json")
-        unitcell = UnitcellCalcResults.load_json(unitcell_file)
-        perfect_file = os.path.join(test_dir,
-                                    "MgO/defects/perfect/dft_results.json")
-        perfect = SupercellCalcResults.load_json(perfect_file)
+        filename = (self.TEST_FILES_DIR / "defects" / "MgO" / "unitcell.json")
+        unitcell = UnitcellCalcResults.load_json(filename)
 
-        defect_dirs = ["Mg_O1_0", "Mg_O1_1", "Mg_O1_2", "Mg_O1_3", "Mg_O1_4",
-                       "Mg_i1_0", "Mg_i1_1", "Mg_i1_2", "Va_O1_2_inward", "Va_O1_1", "Va_O1_2",
-                       "Va_O1_2"]
+        filename = ["defects", "MgO", "perfect", "dft_results.json"]
+        perfect = self.get_object_by_name(
+            SupercellCalcResults.load_json, filename)
+
+        defect_dirs = ["Va_O1_0", "Va_O1_1", "Va_O1_2", "Va_Mg1_-2"]
         defects = []
         for dd in defect_dirs:
-            file = os.path.join(test_dir, "MgO", "defects", dd, "defect.json")
-            defects.append(Defect.load_json(file))
+            filename = ["defects", "MgO", dd, "defect.json"]
+            defects.append(self.get_object_by_name(Defect.load_json, filename))
 
         # temporary insert values
-        chem_pot = ChemPotDiag.load_vertices_yaml(
-            os.path.join(test_dir, "MgO/vertices_MgO.yaml"))
-
+        filename = ["defects", "MgO", "vertices_MgO.yaml"]
+        chem_pot = self.get_object_by_name(
+            ChemPotDiag.load_vertices_yaml, filename)
         chem_pot_label = "A"
 
         self.defect_energies = \
@@ -58,6 +52,9 @@ class DefectEnergiesTest(PydefectTest):
                                         chem_pot=chem_pot,
                                         chem_pot_label=chem_pot_label,
                                         system="MgO")
+
+    def test_msonable(self):
+        self.assertMSONable(self.defect_energies)
 
     def test_print(self):
         print(self.defect_energies)
@@ -80,15 +77,10 @@ class DefectEnergiesTest(PydefectTest):
         self.assertEqual(defect_entry_from_json.as_dict(),
                          self.defect_energies.as_dict())
 
-    # def test_multiplicity(self):
-    #     actual = self.energies.multiplicity["Va_O1"][2][0]
-    #     expected = 8
-    #     self.assertEqual(actual, expected)
-
     def test_U(self):
         actual = self.defect_energies.u(name="Va_O1", charges=[0, 1, 2])[0]
-        expected = 1.82926181856907
-        self.assertAlmostEqual(actual, expected)
+        expected = 1.072359471189877
+        self.assertAlmostEqual(expected, actual, 7)
 
     def test_calc_transition_levels(self):
         dp = self.defect_energies
@@ -100,8 +92,4 @@ class DefectEnergiesTest(PydefectTest):
                              show_all_energies=True)
         plt.show()
 #        plt.savefig(fname="energy.eps")
-
-
-if __name__ == "__main__":
-    unittest.main()
 

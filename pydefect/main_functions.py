@@ -687,10 +687,11 @@ def local_structure(args):
             continue
 
         defect_structure = DefectStructure.from_defect(defect)
+        print("-" * 80)
         print(defect_structure.show_displacements(all_atoms=args.show_all))
 
     if args.compare_structure:
-        print("-" * 30)
+        print("-" * 80)
         print(defect_structure_matcher(d_list))
 
 

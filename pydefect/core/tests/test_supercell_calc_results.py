@@ -9,7 +9,7 @@ from pydefect.core.supercell_calc_results import (
 from pymatgen.io.vasp.outputs import Vasprun, Procar
 from pymatgen.electronic_structure.core import Spin
 from pydefect.util.testing import PydefectTest
-from pydefect.util.tools import all_combination
+from pydefect.util.tools import flatten_dict
 
 __author__ = "Yu Kumagai"
 __maintainer__ = "Yu Kumagai"
@@ -63,14 +63,14 @@ class AnalyzeProcarTest(PydefectTest):
                                           'O': {'s': 0.199, 'p': 0.114,
                                                 'd': 0.0,   'f': 0.0}}}}}
         expected[Spin.down] = deepcopy(expected[Spin.up])
-        for k1, k2, k3, k4, k5, v in all_combination(expected):
+        for k1, k2, k3, k4, k5, v in flatten_dict(expected):
             self.assertAlmostEqual(
                 v, self.orbital_character[k1][k2][k3][k4][k5], 3)
 
     def test_participation_ratio(self):
         expected = {  Spin.up: {'hob': 0.235294, 'lub': 0.060852},
                     Spin.down: {'hob': 0.235294, 'lub': 0.060852}}
-        for k1, k2, v in all_combination(expected):
+        for k1, k2, v in flatten_dict(expected):
             self.assertAlmostEqual(v, self.participation_ratio[k1][k2], 5)
 
 

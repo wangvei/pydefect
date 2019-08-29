@@ -141,15 +141,17 @@ def sanitize_keys_in_dict(d: dict) -> dict:
         return new_d
 
 
-def all_combination(d: dict) -> list:
+def flatten_dict(d: dict, depth: int = None) -> list:
     """ Flatten keys and values in dic
 
     d[a][b][c] = x -> [a, b, c, x]
     """
     flattened_list = list()
     for key, value in d.items():
-        if isinstance(value, dict):
-            flattened_list.extend([[key] + v for v in all_combination(value)])
+        if isinstance(value, dict) and depth != 1:
+            depth = depth - 1 if depth else None
+            flattened_list.extend(
+                [[key] + v for v in flatten_dict(value, depth)])
         else:
             flattened_list.append([key, value])
 

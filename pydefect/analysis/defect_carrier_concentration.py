@@ -2,6 +2,7 @@
 
 import json
 from collections import defaultdict
+from copy import deepcopy
 from typing import Optional, Tuple
 
 import numpy as np
@@ -15,8 +16,7 @@ from pydefect.core.unitcell_calc_results import UnitcellCalcResults
 from pydefect.util.distribution_function \
     import maxwell_boltzmann_distribution, fermi_dirac_distribution
 from pydefect.util.logger import get_logger
-from pydefect.util.tools import sanitize_keys_in_dict, defaultdict_to_dict, \
-    all_combination
+from pydefect.util.tools import sanitize_keys_in_dict, flatten_dict
 
 __author__ = "Yu Kumagai"
 __maintainer__ = "Yu Kumagai"
@@ -94,9 +94,7 @@ def electron_concentration(temperature: float,
     return electron * energy_interval / (volume / 10 ** 24)
 
 
-def calc_concentration(energies: Optional[dict],
-                       multiplicity: Optional[dict],
-                       magnetization: Optional[dict],
+def calc_concentration(defect_energies: Optional[dict],
                        temperature: float,
                        e_f: float,
                        vbm: float,
@@ -110,7 +108,7 @@ def calc_concentration(energies: Optional[dict],
     concentration is fixed.
 
     Args:
-        energies (dict):
+        defect_energies (dict):
             Defect formation energies. energies[name][charge][annotation]
         multiplicity (dict):
             Multiplicity in the supercell. It depends on the number of sites
@@ -148,17 +146,15 @@ def calc_concentration(energies: Optional[dict],
         {None: electron_concentration(temperature, e_f, total_dos, cbm,
                                       volume)}
 
-    if energies is None:
+    if defect_energies is None:
         return dict(concentrations)
 
-    for name in energies:
+    for name in defect_energies:
         concentration_by_name = defaultdict(dict)
-        for charge, annotation, de in all_combination(energies[name]):
-            mul = multiplicity[name][charge][annotation]
-            mag = magnetization[name][charge][annotation]
+        for charge, annotation, de in flatten_dict(defect_energies[name]):
 
-            num_mag_conf = abs(mag) + 1
-            degree_of_freedom = mul * num_mag_conf
+            num_mag_conf = abs(de.magnetization) + 1
+            degree_of_freedom = de.multiplicity * num_mag_conf
 
             energy = de + e_f * charge
             # volume unit conversion from [A^3] to [cm^3]
@@ -175,7 +171,7 @@ def calc_concentration(energies: Optional[dict],
             factor = (reference_total_concentration / total_concentration)
 
             for charge, annotation, _ \
-                    in all_combination(concentration_by_name):
+                    in flatten_dict(concentration_by_name):
                 concentration_by_name[charge][annotation] *= factor
 
         concentrations[name] = concentration_by_name
@@ -183,9 +179,7 @@ def calc_concentration(energies: Optional[dict],
     return dict(concentrations)
 
 
-def calc_equilibrium_concentration(energies: dict,
-                                   multiplicity: dict,
-                                   magnetization: dict,
+def calc_equilibrium_concentration(defect_energies: dict,
                                    temperature: float,
                                    vbm: float,
                                    cbm: float,
@@ -244,9 +238,7 @@ def calc_equilibrium_concentration(energies: dict,
     for iteration in range(max_iteration):
         defect_concentration = \
             calc_concentration(
-                energies=energies,
-                multiplicity=multiplicity,
-                magnetization=magnetization,
+                defect_energies=defect_energies,
                 temperature=temperature,
                 e_f=e_f,
                 vbm=vbm,
@@ -261,19 +253,18 @@ def calc_equilibrium_concentration(energies: dict,
                  for e in defect_concentration[d][c].values()])
 
         if verbose:
-            logger.info("- {}th iteration ----".format(iteration))
-            logger.info("Fermi level: {:.2f} eV.".format(e_f))
+            logger.info(f"- {iteration}th iteration ----")
+            logger.info(f"Fermi level: {e_f:.2f} eV.")
 
             for name in defect_concentration:
                 for charge in defect_concentration[name]:
                     for annotation in defect_concentration[name][charge]:
                         concentration = \
                             defect_concentration[name][charge][annotation]
-                        logger.info("{:>8}  {:2d}  {:>6}:   {:.1e} cm-3.".
-                                    format(name, charge, str(annotation),
-                                           concentration))
+                        logger.info(f"{name:>8}  {charge:2d}  {annotation:>6}:"
+                                    f"   {concentration:.1e} cm-3.")
 
-            logger.info("Charge sum: {:.1e} cm-3.".format(total_charge))
+            logger.info(f"Charge sum: {total_charge:.1e} cm-3.")
 
         interval *= interval_decay_parameter
         e_f = e_f + np.sign(total_charge) * interval
@@ -294,9 +285,7 @@ class DefectConcentration(MSONable):
     """ A class related to a set of carrier and defect concentration """
 
     def __init__(self,
-                 energies: dict,
-                 multiplicity: dict,
-                 magnetization: dict,
+                 defect_energies: dict,
                  volume: float,
                  vbm: float,
                  cbm: float,
@@ -312,7 +301,7 @@ class DefectConcentration(MSONable):
                  quenched_carrier_concentrations: list = None):
         """
         Args:
-            energies (dict):
+            defect_energies (dict):
                 DefectEnergy as a function of name, charge, and annotation.
                 energies[name][charge][annotation] = DefectEnergy object
             multiplicity (dict):
@@ -362,9 +351,7 @@ class DefectConcentration(MSONable):
                 * Carrier electron: concentrations[Fermi index]["e"][-1][None]
                 * Carrier hole: concentrations[Fermi index]["p"][1][None]
         """
-        self.energies = energies
-        self.multiplicity = multiplicity
-        self.magnetization = magnetization
+        self.defect_energies = defect_energies
         self.volume = volume
         self.vbm = vbm
         self.cbm = cbm
@@ -410,50 +397,37 @@ class DefectConcentration(MSONable):
             fractional_criterion (float):
                 The criterion to determine if magnetization is fractional.
         """
-        energies = defaultdict(lambda: defaultdict(dict))
-        multiplicity = defaultdict(lambda: defaultdict(dict))
-        magnetization = defaultdict(lambda: defaultdict(dict))
+        screened_defect_energies = deepcopy(defect_energies.defect_energies)
 
-        for name, charge, annotation, mag \
-                in all_combination(defect_energies.magnetization):
-            defect_energy = \
-                defect_energies.defect_energies[name][charge][annotation]
+        for name, charge, annotation, defect_energy \
+                in flatten_dict(defect_energies.defect_energies):
             n = DefectName(name, charge, annotation)
 
             if n.is_name_matched(filtering_words) is False:
                 logger.info(f"{n} is excluded, so omitted.")
-                continue
-            elif exclude_shallow_defects and defect_energy["is_shallow"]:
+                screened_defect_energies[name][charge].pop(annotation)
+            elif exclude_shallow_defects and defect_energy.shallow:
                 logger.info(f"{n} is shallow, so omitted.")
-                continue
-            elif exclude_unconverged_defects and \
-                    defect_energy["convergence"] is False:
+                screened_defect_energies[name][charge].pop(annotation)
+            elif exclude_unconverged_defects and not defect_energy.convergence:
                 logger.info(f"{n} is unconverged, so omitted.")
-                continue
+                screened_defect_energies[name][charge].pop(annotation)
 
-            e = defect_energy["energy"]
-            mul = defect_energies.multiplicity[name][charge][annotation]
-
+            mag = defect_energy.magnetization
             if abs(mag - round(mag)) > fractional_criterion:
                 logger.warning(f"The total_magnetization of {name} in {charge} "
                                f"is {mag}, and not integer")
                 if fractional_magnetization_to_one:
                     logger.warning(f"The magnetization of {name} in {charge} "
                                    f"is set to one")
-                    mag = 1.0
-
-            energies[name][charge][annotation] = e
-            multiplicity[name][charge][annotation] = mul
-            magnetization[name][charge][annotation] = round(mag)
+                screened_defect_energies[name][charge][annotation].magnetization = 1.0
 
         volume = unitcell.volume  # [A^3]
         total_dos = unitcell.total_dos
         vbm = defect_energies.vbm
         cbm = defect_energies.cbm
 
-        return cls(energies=defaultdict_to_dict(energies),
-                   multiplicity=defaultdict_to_dict(multiplicity),
-                   magnetization=defaultdict_to_dict(magnetization),
+        return cls(defect_energies=screened_defect_energies,
                    volume=volume,
                    vbm=vbm,
                    cbm=cbm,
@@ -462,9 +436,7 @@ class DefectConcentration(MSONable):
     @classmethod
     def from_dict(cls, d):
         """ Construct a class object from a dictionary. """
-        energies = sanitize_keys_in_dict(d["energies"])
-        multiplicity = sanitize_keys_in_dict(d["multiplicity"])
-        magnetization = sanitize_keys_in_dict(d["magnetization"])
+        defect_energies = sanitize_keys_in_dict(d["defect_energies"])
         equilibrium_concentration = \
             sanitize_keys_in_dict(d["equilibrium_concentration"])
         quenched_equilibrium_concentration = \
@@ -483,9 +455,7 @@ class DefectConcentration(MSONable):
         else:
             quenched_carrier_concentrations = None
 
-        return cls(energies=energies,
-                   multiplicity=multiplicity,
-                   magnetization=magnetization,
+        return cls(defect_energies=defect_energies,
                    volume=d["volume"],
                    vbm=d["vbm"],
                    cbm=d["cbm"],
@@ -576,9 +546,7 @@ class DefectConcentration(MSONable):
         for e_f in self.fermi_mesh:
             self.concentrations.append(
                 calc_concentration(
-                    energies=self.energies,
-                    multiplicity=self.multiplicity,
-                    magnetization=self.magnetization,
+                    defect_energies=self.defect_energies,
                     temperature=self.temperature,
                     e_f=e_f,
                     vbm=self.vbm,
@@ -591,9 +559,7 @@ class DefectConcentration(MSONable):
             for e_f in self.fermi_mesh:
                 self.quenched_carrier_concentrations.append(
                     calc_concentration(
-                        energies=None,
-                        multiplicity=None,
-                        magnetization=None,
+                        defect_energies=None,
                         temperature=self.temperature,
                         e_f=e_f,
                         vbm=self.vbm,

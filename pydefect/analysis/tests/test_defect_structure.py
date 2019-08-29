@@ -1,13 +1,8 @@
 # -*- coding: utf-8 -*-
 
-import os
-
 from pydefect.analysis.defect import Defect
 from pydefect.analysis.defect_structure import (
     DefectStructure, defect_structure_matcher)
-from pydefect.core.defect_entry import DefectEntry
-from pydefect.core.supercell_calc_results import SupercellCalcResults
-from pydefect.corrections.efnv_corrections import ExtendedFnvCorrection
 from pydefect.util.testing import PydefectTest
 
 __author__ = "Yu Kumagai"

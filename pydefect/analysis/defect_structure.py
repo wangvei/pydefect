@@ -1,14 +1,14 @@
 # -*- coding: utf-8 -*-
 
 from copy import deepcopy
-from typing import Union, List
-from collections import defaultdict
 from itertools import groupby
+from typing import Union, List
+
 from monty.json import MSONable
 from pydefect.analysis.defect import Defect
 from pydefect.util.logger import get_logger
-from pymatgen.core.structure import Structure
 from pymatgen.analysis.structure_matcher import StructureMatcher
+from pymatgen.core.structure import Structure
 
 __author__ = "Yu Kumagai"
 __maintainer__ = "Yu Kumagai"
@@ -205,9 +205,9 @@ def defect_structure_matcher(d_list: List[DefectStructure],
 
     group = {}
     # Pre-grouped by name
-    for k, g in groupby(d_list, key=lambda n: n.name):
+    for name, g in groupby(d_list, key=lambda n: n.name):
         unmatched = list(g)
-        group[k] = []
+        group[name] = []
         while len(unmatched) > 0:
             d = unmatched.pop(0)
             matches = [d.charge]
@@ -219,7 +219,7 @@ def defect_structure_matcher(d_list: List[DefectStructure],
             matches.extend([unmatched[i].charge for i in inds])
             unmatched = [unmatched[i] for i in range(len(unmatched))
                          if i not in inds]
-            group[k].append(matches)
+            group[name].append(matches)
 
     return group
 

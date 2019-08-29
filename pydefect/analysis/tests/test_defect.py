@@ -5,7 +5,7 @@ from pydefect.analysis.defect import (
 from pydefect.core.defect_entry import DefectEntry
 from pydefect.core.supercell_calc_results import SupercellCalcResults
 from pydefect.corrections.efnv_corrections import (
-    Ewald, ExtendedFnvCorrection)
+    ExtendedFnvCorrection)
 from pydefect.util.testing import PydefectTest
 
 __author__ = "Yu Kumagai"

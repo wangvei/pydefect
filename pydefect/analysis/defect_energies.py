@@ -4,7 +4,8 @@ import json
 from collections import defaultdict
 from copy import copy
 from itertools import combinations
-from typing import List, Tuple
+from itertools import groupby
+from typing import List, Tuple, Dict
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -16,7 +17,7 @@ from pydefect.core.supercell_calc_results import SupercellCalcResults
 from pydefect.core.unitcell_calc_results import UnitcellCalcResults
 from pydefect.util.logger import get_logger
 from pydefect.util.tools import (
-    sanitize_keys_in_dict, defaultdict_to_dict, all_combination)
+    sanitize_keys_in_dict, defaultdict_to_dict, flatten_dict)
 
 __author__ = "Yu Kumagai"
 __maintainer__ = "Yu Kumagai"
@@ -24,11 +25,24 @@ __maintainer__ = "Yu Kumagai"
 logger = get_logger(__name__)
 
 
+class DefectEnergy(MSONable):
+    def __init__(self,
+                 defect_energy: float,
+                 multiplicity: int,
+                 magnetization: float,
+                 convergence: bool,
+                 shallow: bool):
+
+        self.defect_energy = defect_energy
+        self.multiplicity = multiplicity
+        self.magnetization = magnetization
+        self.convergence = convergence
+        self.shallow = shallow
+
+
 class DefectEnergies(MSONable):
     def __init__(self,
-                 defect_energies: dict,
-                 multiplicity: dict,
-                 magnetization: dict,
+                 defect_energies: Dict[str, Dict[int, Dict[str, DefectEnergy]]],
                  vbm: float,
                  cbm: float,
                  supercell_vbm: float,
@@ -59,8 +73,6 @@ class DefectEnergies(MSONable):
                 Title of the system.
         """
         self.defect_energies = defect_energies
-        self.multiplicity = multiplicity
-        self.magnetization = magnetization
         self.vbm = vbm
         self.cbm = cbm
         self.supercell_vbm = supercell_vbm
@@ -107,68 +119,53 @@ class DefectEnergies(MSONable):
         relative_chem_pots, standard_e = chem_pot
         relative_chem_pot = relative_chem_pots[chem_pot_label]
 
-        defect_energies = defaultdict(lambda: defaultdict(dict))
-        multiplicity = defaultdict(lambda: defaultdict(dict))
-        magnetization = defaultdict(lambda: defaultdict(dict))
+        defect_energies = \
+            defaultdict(lambda: defaultdict(lambda: defaultdict(DefectEnergy)))
 
-        for d in defects:
-            # Calculate defect formation energies at the vbm
-            element_interchange_energy = 0
-            for elem, natom_change in d.changes_of_num_elements.items():
-                element_interchange_energy -= \
-                    natom_change * \
-                    (relative_chem_pot.elem_coords[elem] + standard_e[elem])
+        for name, g in groupby(defects, key=lambda n: n.name):
+            for d in g:
+                # Calculate defect formation energies at the vbm
+                atom_exchange_energy = 0
+                for el, diff in d.changes_of_num_elements.items():
+                    relative_e = relative_chem_pot.elem_coords[el]
+                    standard = standard_e[el]
+                    atom_exchange_energy -= diff * (relative_e + standard)
 
-            energy = (d.relative_total_energy + d.correction_energy +
-                      element_interchange_energy)
+                energy = (d.relative_total_energy + d.correction_energy +
+                          atom_exchange_energy)
 
-            e = {"energy": energy, "convergence": d.is_converged,
-                 "is_shallow": d.is_shallow}
+                defect_name = DefectName(d.name, d.charge, d.annotation)
+                if d.final_multiplicity.is_integer():
+                    multiplicity = int(d.final_multiplicity)
+                else:
+                    logger.warning(
+                        f"Multiplicity of {defect_name} is invalid."
+                        f"initial sym: {d.initial_symmetry}, "
+                        f"final sym: {d.final_symmetry}.")
+                    multiplicity = d.final_multiplicity
 
-            if not d.final_multiplicity.is_integer():
-                logger.warning(
-                    f"Multiplicity of {d.name} charge {d.charge} is invalid."
-                    f"initial sym: {d.initial_symmetry}, final sym: "
-                    f"{d.final_symmetry}.")
+                if not d.magnetization.is_integer() and not d.is_shallow:
+                    logger.warning(
+                        f"{defect_name} is not shallow but with "
+                        f"fractional magnetization: {d.magnetization}")
 
-            if not d.magnetization.is_integer() and not d.is_shallow:
-                logger.warning(
-                    f"{d.name} in charge {d.charge} is not shallow but with "
-                    f"fractional magnetization: {d.magnetization}")
+                defect_energy = DefectEnergy(defect_energy=energy,
+                                             multiplicity=multiplicity,
+                                             magnetization=d.magnetization,
+                                             convergence=d.is_converged,
+                                             shallow=d.is_shallow)
 
-            defect_energies[d.name][d.charge][d.annotation] = e
-            multiplicity[d.name][d.charge][d.annotation] = d.final_multiplicity
-            magnetization[d.name][d.charge][d.annotation] = d.magnetization
+                defect_energies[name][d.charge][d.annotation] = defect_energy
 
-        return cls(defect_energies=defaultdict_to_dict(defect_energies),
-                   multiplicity=defaultdict_to_dict(multiplicity),
-                   magnetization=defaultdict_to_dict(magnetization),
-                   vbm=vbm,
-                   cbm=cbm,
-                   supercell_vbm=supercell_vbm,
-                   supercell_cbm=supercell_cbm,
-                   title=title)
+        defect_energies = defaultdict_to_dict(defect_energies)
 
-    def as_dict(self):
-        d = {"@module":         self.__class__.__module__,
-             "@class":          self.__class__.__name__,
-             "defect_energies": self.defect_energies,
-             "multiplicity":    self.multiplicity,
-             "magnetization":   self.magnetization,
-             "vbm":             self.vbm,
-             "cbm":             self.cbm,
-             "supercell_vbm":   self.supercell_vbm,
-             "supercell_cbm":   self.supercell_cbm,
-             "title":           self.title}
-
-        return d
+        return cls(defect_energies, vbm, cbm, supercell_vbm, supercell_cbm,
+                   title)
 
     @classmethod
     def from_dict(cls, d):
         """ Construct a class object from a dictionary. """
         return cls(defect_energies=sanitize_keys_in_dict(d["defect_energies"]),
-                   multiplicity=sanitize_keys_in_dict(d["multiplicity"]),
-                   magnetization=sanitize_keys_in_dict(d["magnetization"]),
                    vbm=d["vbm"],
                    cbm=d["cbm"],
                    supercell_vbm=d["supercell_vbm"],
@@ -186,18 +183,16 @@ class DefectEnergies(MSONable):
     def __repr__(self):
         outs = []
         for name, charge, annotation, defect_energy \
-                in all_combination(self.defect_energies):
-            multiplicity = self.multiplicity[name][charge][annotation]
-            magnetization = self.magnetization[name][charge][annotation]
+                in flatten_dict(self.defect_energies):
             outs.extend(
                 [f"name: {name}:",
                  f"charge: {charge}",
-                 f"Annotation: {e}",
-                 f"Energy @ef=0 (eV): {round(defect_energy['energy'], 4)}",
-                 f"Convergence: {defect_energy['convergence']}",
-                 f"Is shallow: {defect_energy['is_shallow']}",
-                 f"multiplicity: {multiplicity}",
-                 f"magnetization: {magnetization}"])
+                 f"Annotation: {annotation}",
+                 f"Energy @ef=0 (eV): {round(defect_energy.defect_energy, 4)}",
+                 f"Convergence: {defect_energy.convergence}",
+                 f"Is shallow: {defect_energy.shallow}",
+                 f"multiplicity: {defect_energy.multiplicity}",
+                 f"magnetization: {defect_energy.magnetization}"])
             outs.append("")
 
         return "\n".join(outs)
@@ -235,15 +230,15 @@ class DefectEnergies(MSONable):
                 try:
                     annotation, min_e = \
                         min(self.defect_energies[name][c].items(),
-                            key=lambda z: z[1].energy)
+                            key=lambda z: z[1].defect_energy)
                 except KeyError:
-                    print("Charge {} does not exist for {}.".format(c, name))
+                    print(f"Charge {c} does not exist for {name}.")
                     raise
-                energies.append(min_e["energy"])
+                energies.append(min_e.defect_energy)
                 annotations.append(annotation)
         else:
             for c, a in zip(charges, annotations):
-                energies.append(self.defect_energies[name][c][a]["energy"])
+                energies.append(self.defect_energies[name][c][a].defect_energy)
 
         return energies[0] + energies[2] - 2 * energies[1], annotations
 
@@ -308,8 +303,8 @@ class DefectEnergies(MSONable):
                         in copy(energy_by_annotation).items():
 
                     n = DefectName(name, charge, annotation)
-                    is_shallow = defect_energy["is_shallow"]
-                    convergence = defect_energy["convergence"]
+                    is_shallow = defect_energy.shallow
+                    convergence = defect_energy.convergence
 
                     if n.is_name_matched(filtering_words) is False:
                         logger.info(f"{n} filtered out, so omitted.")
@@ -325,8 +320,9 @@ class DefectEnergies(MSONable):
                 if energy_by_annotation:
                     annotation, min_defect_energy = \
                         min(energy_by_annotation.items(),
-                            key=lambda z: z[1]["energy"])
-                    lowest_energies[name][charge] = min_defect_energy["energy"]
+                            key=lambda z: z[1].defect_energy)
+                    lowest_energies[name][charge] = \
+                        min_defect_energy.defect_energy
                     lowest_energy_annotations[name][charge] = annotation
 
             # Store cross point coord and its relevant two charge states.

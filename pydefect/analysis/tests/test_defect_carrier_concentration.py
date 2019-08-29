@@ -23,7 +23,7 @@ class AllCombinationTest(PydefectTest):
         # print(all_combination(a))
         b = {0: {None: {'energy': 1.362400134999998, 'convergence': True, 'is_shallow': False}}, 1: {None: {'energy': -4.2058905866258645, 'convergence': True, 'is_shallow': False}}, 2: {None: {'energy': -7.983747657760918, 'convergence': True, 'is_shallow': False}, 'inward': {'energy': -6.016447897493341, 'convergence': True, 'is_shallow': False}}}
         # print(all_combination(a))
-        print(all_combination(b))
+        print(flatten_dict(b))
 
 
 class CalcCarrierConcentrationTest(PydefectTest):
@@ -110,7 +110,7 @@ class CalcConcentrationTest(PymatgenTest):
 
     def test(self):
         concentration = \
-            calc_concentration(energies=self.defect_energies,
+            calc_concentration(defect_energies=self.defect_energies,
                                temperature=self.temperature,
                                e_f=4,
                                vbm=self.vbm,
@@ -141,7 +141,7 @@ class CalcConcentrationTest(PymatgenTest):
         #        self.energies["Va_Mg1"][0] = {None: 4.0}
 
         concentration = \
-            calc_concentration(energies=self.defect_energies,
+            calc_concentration(defect_energies=self.defect_energies,
                                temperature=self.temperature,
                                e_f=4,
                                vbm=self.vbm,
