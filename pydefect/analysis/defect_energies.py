@@ -17,7 +17,7 @@ from pydefect.core.supercell_calc_results import SupercellCalcResults
 from pydefect.core.unitcell_calc_results import UnitcellCalcResults
 from pydefect.util.logger import get_logger
 from pydefect.util.tools import (
-    sanitize_keys_in_dict, defaultdict_to_dict, flatten_dict)
+    construct_obj_in_dict, sanitize_keys_in_dict, defaultdict_to_dict, flatten_dict)
 
 __author__ = "Yu Kumagai"
 __maintainer__ = "Yu Kumagai"
@@ -165,7 +165,14 @@ class DefectEnergies(MSONable):
     @classmethod
     def from_dict(cls, d):
         """ Construct a class object from a dictionary. """
-        return cls(defect_energies=sanitize_keys_in_dict(d["defect_energies"]),
+
+        defect_energies = sanitize_keys_in_dict(d["defect_energies"])
+        print(defect_energies)
+        defect_energies = construct_obj_in_dict(defect_energies, DefectEnergy)
+        print(defect_energies)
+#        for d in defect_energies:
+
+        return cls(defect_energies=defect_energies,
                    vbm=d["vbm"],
                    cbm=d["cbm"],
                    supercell_vbm=d["supercell_vbm"],

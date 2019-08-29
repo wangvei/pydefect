@@ -141,6 +141,25 @@ def sanitize_keys_in_dict(d: dict) -> dict:
         return new_d
 
 
+def construct_obj_in_dict(d: dict, cls: Callable) -> dict:
+    """ Recursively sanitize keys in dict from str to int, float and None.
+    Args
+        d (dict):
+            d[name][charge][annotation]
+    """
+    from copy import deepcopy
+    if not isinstance(d, dict):
+        return d
+    else:
+        new_d = deepcopy(d)
+        for key, value in d.items():
+            if value.get("@class", "") == cls.__name__:
+                new_d[key] = cls.from_dict(value)
+            else:
+                new_d[key] = construct_obj_in_dict(value, cls)
+        return new_d
+
+
 def flatten_dict(d: dict, depth: int = None) -> list:
     """ Flatten keys and values in dic
 

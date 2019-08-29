@@ -70,7 +70,7 @@ class CalcCarrierConcentrationTest(PydefectTest):
         self.assertAlmostEqual(actual / expected, 1, places=6)
 
 
-class CalcConcentrationTest(PymatgenTest):
+class CalcConcentrationTest(PydefectTest):
     def setUp(self):
         self.defect_energies = defaultdict(dict)
         self.defect_energies["Va_O1"][0] = {None: 4.0}
@@ -116,8 +116,6 @@ class CalcConcentrationTest(PymatgenTest):
                                vbm=self.vbm,
                                cbm=self.cbm,
                                total_dos=self.total_dos,
-                               multiplicity=self.multiplicity,
-                               magnetization=self.magnetization,
                                volume=self.volume)
 
         va_o1_2_expected = np.exp(-9 / (10000 * 8.6173303e-05)) * 2 * 2
@@ -147,8 +145,6 @@ class CalcConcentrationTest(PymatgenTest):
                                vbm=self.vbm,
                                cbm=self.cbm,
                                total_dos=self.total_dos,
-                               multiplicity=self.multiplicity,
-                               magnetization=self.magnetization,
                                volume=self.volume,
                                ref_concentration=ref)
 
@@ -157,20 +153,18 @@ class CalcConcentrationTest(PymatgenTest):
 
     def test2(self):
         equiv_concentration = \
-            calc_equilibrium_concentration(energies=self.defect_energies,
+            calc_equilibrium_concentration(defect_energies=self.defect_energies,
                                            temperature=self.temperature,
                                            vbm=self.vbm,
                                            cbm=self.cbm,
                                            total_dos=self.total_dos,
-                                           multiplicity=self.multiplicity,
-                                           magnetization=self.magnetization,
                                            volume=self.volume,
                                            verbose=True)
 
         print(equiv_concentration[1])
 
 
-class DefectConcentrationTest(PymatgenTest):
+class DefectConcentrationTest(PydefectTest):
 
     def setUp(self):
         """ """

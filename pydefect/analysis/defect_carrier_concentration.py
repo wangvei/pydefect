@@ -2,8 +2,8 @@
 
 import json
 from collections import defaultdict
-from copy import deepcopy
 from typing import Optional, Tuple
+from copy import deepcopy
 
 import numpy as np
 from matplotlib import pyplot as plt
@@ -16,7 +16,7 @@ from pydefect.core.unitcell_calc_results import UnitcellCalcResults
 from pydefect.util.distribution_function \
     import maxwell_boltzmann_distribution, fermi_dirac_distribution
 from pydefect.util.logger import get_logger
-from pydefect.util.tools import sanitize_keys_in_dict, flatten_dict
+from pydefect.util.tools import flatten_dict, defaultdict_to_dict
 
 __author__ = "Yu Kumagai"
 __maintainer__ = "Yu Kumagai"
@@ -156,7 +156,7 @@ def calc_concentration(defect_energies: Optional[dict],
             num_mag_conf = abs(de.magnetization) + 1
             degree_of_freedom = de.multiplicity * num_mag_conf
 
-            energy = de + e_f * charge
+            energy = de.defect_energy + e_f * charge
             # volume unit conversion from [A^3] to [cm^3]
             c = (maxwell_boltzmann_distribution(energy, temperature)
                  * degree_of_freedom / (volume / 10 ** 24))
@@ -176,7 +176,7 @@ def calc_concentration(defect_energies: Optional[dict],
 
         concentrations[name] = concentration_by_name
 
-    return dict(concentrations)
+    return defaultdict_to_dict(concentrations)
 
 
 def calc_equilibrium_concentration(defect_energies: dict,
@@ -197,7 +197,7 @@ def calc_equilibrium_concentration(defect_energies: dict,
     same name is kept fixed.
 
     Args:
-        energies (dict):
+        defect_energies (dict):
             Defect formation energies. energies[name][charge]
         temperature (float):
             Temperature in K.
@@ -398,7 +398,7 @@ class DefectConcentration(MSONable):
                 The criterion to determine if magnetization is fractional.
         """
         screened_defect_energies = deepcopy(defect_energies.defect_energies)
-
+        print(defect_energies.defect_energies)
         for name, charge, annotation, defect_energy \
                 in flatten_dict(defect_energies.defect_energies):
             n = DefectName(name, charge, annotation)
@@ -433,52 +433,52 @@ class DefectConcentration(MSONable):
                    cbm=cbm,
                    total_dos=total_dos)
 
-    @classmethod
-    def from_dict(cls, d):
-        """ Construct a class object from a dictionary. """
-        defect_energies = sanitize_keys_in_dict(d["defect_energies"])
-        equilibrium_concentration = \
-            sanitize_keys_in_dict(d["equilibrium_concentration"])
-        quenched_equilibrium_concentration = \
-            sanitize_keys_in_dict(d["quenched_equilibrium_concentration"])
+    # @classmethod
+    # def from_dict(cls, d):
+    #     """ Construct a class object from a dictionary. """
+    #     defect_energies = sanitize_keys_in_dict(d["defect_energies"])
+    #     equilibrium_concentration = \
+    #         sanitize_keys_in_dict(d["equilibrium_concentration"])
+    #     quenched_equilibrium_concentration = \
+    #         sanitize_keys_in_dict(d["quenched_equilibrium_concentration"])
 
-        if d["concentrations"] is not None:
-            concentrations = \
-                [sanitize_keys_in_dict(d) for d in d["concentrations"]]
-        else:
-            concentrations = None
+        # if d["concentrations"] is not None:
+        #     concentrations = \
+        #         [sanitize_keys_in_dict(d) for d in d["concentrations"]]
+        # else:
+        #     concentrations = None
 
-        if d["quenched_carrier_concentrations"] is not None:
-            quenched_carrier_concentrations = \
-                [sanitize_keys_in_dict(d)
-                 for d in d["quenched_carrier_concentrations"]]
-        else:
-            quenched_carrier_concentrations = None
+        # if d["quenched_carrier_concentrations"] is not None:
+        #     quenched_carrier_concentrations = \
+        #         [sanitize_keys_in_dict(d)
+        #          for d in d["quenched_carrier_concentrations"]]
+        # else:
+        #     quenched_carrier_concentrations = None
 
-        return cls(defect_energies=defect_energies,
-                   volume=d["volume"],
-                   vbm=d["vbm"],
-                   cbm=d["cbm"],
-                   total_dos=d["total_dos"],
-                   temperature=d["temperature"],
-                   fermi_mesh=d["fermi_mesh"],
-                   concentrations=concentrations,
-                   equilibrium_ef=d["equilibrium_ef"],
-                   equilibrium_concentration=equilibrium_concentration,
-                   quenched_temperature=d["quenched_temperature"],
-                   quenched_ef=d["quenched_ef"],
-                   quenched_equilibrium_concentration=
-                   quenched_equilibrium_concentration,
-                   quenched_carrier_concentrations=
-                   quenched_carrier_concentrations)
+        # return cls(defect_energies=defect_energies,
+        #            volume=d["volume"],
+        #            vbm=d["vbm"],
+        #            cbm=d["cbm"],
+        #            total_dos=d["total_dos"],
+        #            temperature=d["temperature"],
+        #            fermi_mesh=d["fermi_mesh"],
+        #            concentrations=concentrations,
+        #            equilibrium_ef=d["equilibrium_ef"],
+        #            equilibrium_concentration=equilibrium_concentration,
+        #            quenched_temperature=d["quenched_temperature"],
+        #            quenched_ef=d["quenched_ef"],
+        #            quenched_equilibrium_concentration=
+        #            quenched_equilibrium_concentration,
+        #            quenched_carrier_concentrations=
+        #            quenched_carrier_concentrations)
 
-    def to_json_file(self, filename="defect_concentrations.json"):
-        with open(filename, 'w') as fw:
-            json.dump(self.as_dict(), fw, indent=2, cls=MontyEncoder)
+    # def to_json_file(self, filename="defect_concentrations.json"):
+    #     with open(filename, 'w') as fw:
+    #         json.dump(self.as_dict(), fw, indent=2, cls=MontyEncoder)
 
-    @classmethod
-    def load_json(cls, filename):
-        return loadfn(filename)
+    # @classmethod
+    # def load_json(cls, filename):
+    #     return loadfn(filename)
 
     def __repr__(self):
 
@@ -587,9 +587,7 @@ class DefectConcentration(MSONable):
 
         self.equilibrium_ef, self.equilibrium_concentration = \
             calc_equilibrium_concentration(
-                energies=self.energies,
-                multiplicity=self.multiplicity,
-                magnetization=self.magnetization,
+                defect_energies=self.defect_energies,
                 temperature=self.temperature,
                 vbm=self.vbm,
                 cbm=self.cbm,
@@ -618,9 +616,7 @@ class DefectConcentration(MSONable):
 
         self.quenched_ef, self.quenched_equilibrium_concentration = \
             calc_equilibrium_concentration(
-                energies=self.energies,
-                multiplicity=self.multiplicity,
-                magnetization=self.magnetization,
+                defect_energies=self.defect_energies,
                 temperature=self.quenched_temperature,
                 vbm=self.vbm,
                 cbm=self.cbm,
