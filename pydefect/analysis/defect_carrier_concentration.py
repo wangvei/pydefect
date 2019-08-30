@@ -50,12 +50,14 @@ def hole_concentration(temperature: float,
             Note that the total dos near the band edges is not so accurate
             compared to band structure, so threshold is needed.
     """
-    energy_interval \
-        = (total_dos[1][-1] - total_dos[1][0]) / (len(total_dos[1]) - 1)
+    doses, energies = total_dos
+    energy_range = energies[-1] - energies[0]
+    num_intervals = len(energies) - 1
+    energy_interval = energy_range / num_intervals
+
     # Note that e_f and e are opposite for holes.
-    hole = sum(fermi_dirac_distribution(e_f, e, temperature) * td
-               for td, e in zip(total_dos[0], total_dos[1])
-               if e <= vbm + threshold)
+    hole = sum(fermi_dirac_distribution(e_f, e, temperature) * dos
+               for dos, e in zip(doses, energies) if e <= vbm + threshold)
 
     return hole * energy_interval / (volume / 10 ** 24)
 
@@ -85,11 +87,14 @@ def electron_concentration(temperature: float,
             Note that the total dos near the band edges is not so accurate
             compared to band structure, so threshold is needed.
     """
-    energy_interval = \
-        (total_dos[1][-1] - total_dos[1][0]) / (len(total_dos[1]) - 1)
-    electron = sum(fermi_dirac_distribution(energy, e_f, temperature) * dos
-                   for dos, energy in zip(total_dos[0], total_dos[1])
-                   if energy >= cbm - threshold)
+    doses, energies = total_dos
+
+    energy_range = energies[-1] - energies[0]
+    num_intervals = len(energies) - 1
+    energy_interval = energy_range / num_intervals
+
+    electron = sum(fermi_dirac_distribution(e, e_f, temperature) * dos
+                   for dos, e in zip(doses, energies) if e >= cbm - threshold)
 
     return electron * energy_interval / (volume / 10 ** 24)
 
@@ -133,13 +138,12 @@ def calc_concentration(defect_energies: Optional[dict],
         Note that "p" and "n" are special and mean the carrier hole and
         electron concentration in cm-3.
     """
-    concentrations = defaultdict(dict)
+    concentrations = defaultdict(lambda: defaultdict(dict))
 
     concentrations["p"][1] = \
         {None: hole_concentration(temperature, e_f, total_dos, vbm, volume)}
     concentrations["n"][-1] = \
-        {None: electron_concentration(temperature, e_f, total_dos, cbm,
-                                      volume)}
+        {None: electron_concentration(temperature, e_f, total_dos, cbm, volume)}
 
     if defect_energies is None:
         return dict(concentrations)
@@ -238,9 +242,9 @@ def calc_equilibrium_concentration(defect_energies: dict,
                                ref_concentration=ref_concentration)
 
         total_charge = \
-            sum([e * c for d in defect_concentration
-                 for c in defect_concentration[d]
-                 for e in defect_concentration[d][c].values()])
+            sum([energy * charge for name in defect_concentration
+                 for charge in defect_concentration[name]
+                 for energy in defect_concentration[name][charge].values()])
 
         if verbose:
             logger.info(f"- {iteration}th iteration ----")
@@ -380,41 +384,37 @@ class DefectConcentration(MSONable):
             fractional_criterion (float):
                 The criterion to determine if magnetization is fractional.
         """
-        screened_defect_energies = deepcopy(defect_energies.defect_energies)
-        print(defect_energies.defect_energies)
+        energies = deepcopy(defect_energies.defect_energies)
+
         for name, charge, annotation, defect_energy \
                 in flatten_dict(defect_energies.defect_energies):
             n = DefectName(name, charge, annotation)
 
             if n.is_name_matched(filtering_words) is False:
                 logger.info(f"{n} is excluded, so omitted.")
-                screened_defect_energies[name][charge].pop(annotation)
+                energies[name][charge].pop(annotation)
+
             elif exclude_shallow_defects and defect_energy.shallow:
                 logger.info(f"{n} is shallow, so omitted.")
-                screened_defect_energies[name][charge].pop(annotation)
+                energies[name][charge].pop(annotation)
+
             elif exclude_unconverged_defects and not defect_energy.convergence:
                 logger.info(f"{n} is unconverged, so omitted.")
-                screened_defect_energies[name][charge].pop(annotation)
+                energies[name][charge].pop(annotation)
 
             mag = defect_energy.magnetization
             if abs(mag - round(mag)) > fractional_criterion:
-                logger.warning(f"The total_magnetization of {name} in {charge} "
+                logger.warning(f"The total_magnetization of {n} "
                                f"is {mag}, and not integer")
                 if fractional_magnetization_to_one:
-                    logger.warning(f"The magnetization of {name} in {charge} "
-                                   f"is set to one")
-                screened_defect_energies[name][charge][annotation].magnetization = 1.0
+                    logger.warning(f"The magnetization of {n} is set to 1.")
+                    energies[name][charge][annotation].magnetization = 1.0
 
-        volume = unitcell.volume  # [A^3]
-        total_dos = unitcell.total_dos
-        vbm = defect_energies.vbm
-        cbm = defect_energies.cbm
-
-        return cls(defect_energies=screened_defect_energies,
-                   volume=volume,
-                   vbm=vbm,
-                   cbm=cbm,
-                   total_dos=total_dos)
+        return cls(defect_energies=energies,
+                   volume=unitcell.volume,  # [A^3]
+                   vbm=defect_energies.vbm,
+                   cbm=defect_energies.cbm,
+                   total_dos=unitcell.total_dos)
 
     # @classmethod
     # def from_dict(cls, d):
@@ -517,38 +517,36 @@ class DefectConcentration(MSONable):
             num_mesh (float):
                 Number of mesh for Fermi level including boundary.
         """
-        fermi_range = fermi_range if fermi_range else [self.vbm, self.cbm]
+        fermi_range = fermi_range or [self.vbm, self.cbm]
         self.fermi_mesh = np.linspace(fermi_range[0], fermi_range[1], num_mesh)
 
         if temperature:
             self.temperature = temperature
-        elif self.temperature is None:
+        else:
             raise ValueError("Temperature is not defined.")
 
         self.concentrations = []
         for e_f in self.fermi_mesh:
             self.concentrations.append(
-                calc_concentration(
-                    defect_energies=self.defect_energies,
-                    temperature=self.temperature,
-                    e_f=e_f,
-                    vbm=self.vbm,
-                    cbm=self.cbm,
-                    total_dos=self.total_dos,
-                    volume=self.volume))
+                calc_concentration(defect_energies=self.defect_energies,
+                                   temperature=self.temperature,
+                                   e_f=e_f,
+                                   vbm=self.vbm,
+                                   cbm=self.cbm,
+                                   total_dos=self.total_dos,
+                                   volume=self.volume))
 
         if self.quenched_temperature:
             self.quenched_carrier_concentrations = []
             for e_f in self.fermi_mesh:
                 self.quenched_carrier_concentrations.append(
-                    calc_concentration(
-                        defect_energies=None,
-                        temperature=self.temperature,
-                        e_f=e_f,
-                        vbm=self.vbm,
-                        cbm=self.cbm,
-                        total_dos=self.total_dos,
-                        volume=self.volume))
+                    calc_concentration(defect_energies=None,
+                                       temperature=self.temperature,
+                                       e_f=e_f,
+                                       vbm=self.vbm,
+                                       cbm=self.cbm,
+                                       total_dos=self.total_dos,
+                                       volume=self.volume))
 
     def calc_equilibrium_concentration(self,
                                        temperature: Optional[float] = None,
@@ -569,14 +567,13 @@ class DefectConcentration(MSONable):
             raise ValueError("Temperature is not defined.")
 
         self.equilibrium_ef, self.equilibrium_concentration = \
-            calc_equilibrium_concentration(
-                defect_energies=self.defect_energies,
-                temperature=self.temperature,
-                vbm=self.vbm,
-                cbm=self.cbm,
-                total_dos=self.total_dos,
-                volume=self.volume,
-                verbose=verbose)
+            calc_equilibrium_concentration(defect_energies=self.defect_energies,
+                                           temperature=self.temperature,
+                                           vbm=self.vbm,
+                                           cbm=self.cbm,
+                                           total_dos=self.total_dos,
+                                           volume=self.volume,
+                                           verbose=verbose)
 
     def calc_quenched_equilibrium_concentration(self,
                                                 temperature: float = 298,
@@ -632,9 +629,7 @@ class DefectConcentration(MSONable):
             raise ValueError("The defect and carrier concentrations need to "
                              "be calculated before their plot.")
 
-        if title is None:
-            title = "Temperature:" + str(self.temperature) + " K"
-
+        title = title or f"Temperature: {self.temperature}  K"
         plt.title(title)
 
         ax.set_xlabel("Fermi level (eV)")
@@ -659,39 +654,35 @@ class DefectConcentration(MSONable):
             vbm = 0.0
             cbm = self.cbm - self.vbm
             fermi_mesh = [f - self.vbm for f in self.fermi_mesh]
-            equilibrium_ef = self.equilibrium_ef - self.vbm
+            equilib_ef = self.equilibrium_ef - self.vbm
             quenched_ef = self.quenched_ef - self.vbm
         else:
             vbm = self.vbm
             cbm = self.cbm
             fermi_mesh = self.fermi_mesh
-            equilibrium_ef = self.equilibrium_ef
+            equilib_ef = self.equilibrium_ef
             quenched_ef = self.quenched_ef
 
         plt.axvline(x=vbm, linewidth=1.0, linestyle='dashed')
         plt.axvline(x=cbm, linewidth=1.0, linestyle='dashed')
 
-        holes_1 = [v["p"][1][None] for v in self.concentrations]
-        electrons_1 = [v["n"][-1][None] for v in self.concentrations]
-        holes_2 = \
-            [v["p"][1][None] for v in self.quenched_carrier_concentrations]
-        electrons_2 = \
-            [v["n"][-1][None] for v in self.quenched_carrier_concentrations]
+        hole1 = [v["p"][1][None] for v in self.concentrations]
+        elec1 = [v["n"][-1][None] for v in self.concentrations]
+        hole2 = [v["p"][1][None] for v in self.quenched_carrier_concentrations]
+        elec2 = [v["n"][-1][None] for v in self.quenched_carrier_concentrations]
 
-        ax.plot(fermi_mesh, holes_1, '-', color="blue", label="p")
-        ax.plot(fermi_mesh, electrons_1, '-', color="red", label="n")
-        ax.plot(fermi_mesh, holes_2, '--', color="blue", label="p")
-        ax.plot(fermi_mesh, electrons_2, '--', color="red", label="n")
+        ax.plot(fermi_mesh, hole1, '-', color="blue", label="p")
+        ax.plot(fermi_mesh, elec1, '-', color="red", label="n")
+        ax.plot(fermi_mesh, hole2, '--', color="blue", label="p")
+        ax.plot(fermi_mesh, elec2, '--', color="red", label="n")
 
-        plt.axvline(x=equilibrium_ef, linewidth=1.0, linestyle=':', color='g')
+        plt.axvline(x=equilib_ef, linewidth=1.0, linestyle=':', color='g')
         plt.axvline(x=quenched_ef, linewidth=1.0, linestyle=':', color='g')
 
         ax.annotate(f"{round(self.temperature, 1)} K",
-                    (equilibrium_ef, ylim[1]), fontsize=10, ha='center',
-                    color='g')
+                    (equilib_ef, ylim[1]), fontsize=10, ha='center', color='g')
         ax.annotate(f"{round(self.quenched_temperature, 1)} K",
-                    (quenched_ef, ylim[1]), fontsize=10, ha='center',
-                    color='g')
+                    (quenched_ef, ylim[1]), fontsize=10, ha='center', color='g')
 
         # plt.arrow(x=equilibrium_ef, y=ylim[1] / 2,
         #           dx=quenched_ef - equilibrium_ef, dy=0,
