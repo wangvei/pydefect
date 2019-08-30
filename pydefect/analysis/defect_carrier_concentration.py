@@ -110,11 +110,6 @@ def calc_concentration(defect_energies: Optional[dict],
     Args:
         defect_energies (dict):
             Defect formation energies. energies[name][charge][annotation]
-        multiplicity (dict):
-            Multiplicity in the supercell. It depends on the number of sites
-            in the supercell and the site symmetry.
-        magnetization (dict):
-            Magnetization in mu_B. magnetization[name][charge]
         temperature (float):
             Temperature in K.
         e_f (float):
@@ -208,10 +203,6 @@ def calc_equilibrium_concentration(defect_energies: dict,
         total_dos (2xN numpy array):
             Total density of states.
             total_dos[[energy1, dos1], [energy2, dos2],...]
-        multiplicity (dict):
-            Multiplicity in the supercell. It depends on the site symmetry.
-        magnetization (dict):
-            Magnetization in mu_B. total_magnetization[defect][charge]
         volume (float):
             Volume in A-3.
         ref_concentration (dict):
@@ -304,13 +295,6 @@ class DefectConcentration(MSONable):
             defect_energies (dict):
                 DefectEnergy as a function of name, charge, and annotation.
                 energies[name][charge][annotation] = DefectEnergy object
-            multiplicity (dict):
-                Spatial multiplicity as a function of name, charge,
-                and annotation.
-                multiplicity[name][charge][annotation] = int
-            magnetization (dict):
-                Magnetization as a function of name, charge, and annotation.
-                magnetization[name][charge][annotation] = float
             volume (float):
                 Volume in A^3.
             vbm (float):

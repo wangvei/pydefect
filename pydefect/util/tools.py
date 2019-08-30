@@ -142,7 +142,7 @@ def sanitize_keys_in_dict(d: dict) -> dict:
 
 
 def construct_obj_in_dict(d: dict, cls: Callable) -> dict:
-    """ Recursively sanitize keys in dict from str to int, float and None.
+    """
     Args
         d (dict):
             d[name][charge][annotation]

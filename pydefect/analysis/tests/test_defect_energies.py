@@ -78,7 +78,7 @@ class DefectEnergiesTest(PydefectTest):
                          self.defect_energies.as_dict())
 
     def test_U(self):
-        actual = self.defect_energies.u(name="Va_O1", charges=[0, 1, 2])[0]
+        actual, _ = self.defect_energies.u(name="Va_O1", charges=[0, 1, 2])
         expected = 1.072359471189877
         self.assertAlmostEqual(expected, actual, 7)
 

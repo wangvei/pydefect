@@ -32,7 +32,20 @@ class DefectEnergy(MSONable):
                  magnetization: float,
                  convergence: bool,
                  shallow: bool):
+        """
 
+        Args:
+            defect_energy (float):
+                Defect formation energy at Ef = 0.
+            multiplicity (dict):
+                Spatial multiplicity.
+            magnetization (dict):
+                Total magnetization in mu..
+            convergence (bool):
+                Ionic convergence.
+            shallow (bool):
+                Whether it is shallow or not.
+        """
         self.defect_energy = defect_energy
         self.multiplicity = multiplicity
         self.magnetization = magnetization
@@ -54,13 +67,6 @@ class DefectEnergies(MSONable):
             defect_energies (dict):
                 DefectEnergy as a function of name, charge, and annotation.
                 energies[name][charge][annotation] = DefectEnergy object
-            multiplicity (dict):
-                Spatial multiplicity as a function of name, charge,
-                and annotation.
-                multiplicity[name][charge][annotation] = int
-            magnetization (dict):
-                Magnetization as a function of name, charge, and annotation.
-                magnetization[name][charge][annotation] = float
             vbm (float):
                 Valence band maximum in the unitcell in the absolute scale.
             cbm (float):
@@ -88,6 +94,7 @@ class DefectEnergies(MSONable):
                      chem_pot_label: str,
                      system: str = None):
         """ Calculates defect formation energies from several objects.
+
         All the energies are calculated at 0 eV in the absolute scale.
 
         Args:
@@ -106,19 +113,17 @@ class DefectEnergies(MSONable):
             system (str):
                 System name used for the title.
         """
-        # Note: vbm, cbm, perfect_vbm, perfect_cbm are in absolute energy.
+        # Note: vbm, cbm, perfect_vbm, perfect_cbm are in absolute scale.
         vbm, cbm = unitcell.band_edge
-        supercell_vbm = perfect.vbm
-        supercell_cbm = perfect.cbm
 
-        if system is None:
-            system = str(perfect.final_structure.composition)
+        system = system if system else str(perfect.final_structure.composition)
         title = system + " condition " + chem_pot_label
 
         # Chemical potentials
         relative_chem_pots, standard_e = chem_pot
         relative_chem_pot = relative_chem_pots[chem_pot_label]
 
+        # defect_energies[name][charge][annotation] = DefectEnergy
         defect_energies = \
             defaultdict(lambda: defaultdict(lambda: defaultdict(DefectEnergy)))
 
@@ -159,18 +164,16 @@ class DefectEnergies(MSONable):
 
         defect_energies = defaultdict_to_dict(defect_energies)
 
-        return cls(defect_energies, vbm, cbm, supercell_vbm, supercell_cbm,
-                   title)
+        return cls(defect_energies=defect_energies, vbm=vbm, cbm=cbm,
+                   supercell_vbm=perfect.vbm, supercell_cbm=perfect.cbm,
+                   title=title)
 
     @classmethod
     def from_dict(cls, d):
         """ Construct a class object from a dictionary. """
 
         defect_energies = sanitize_keys_in_dict(d["defect_energies"])
-        print(defect_energies)
         defect_energies = construct_obj_in_dict(defect_energies, DefectEnergy)
-        print(defect_energies)
-#        for d in defect_energies:
 
         return cls(defect_energies=defect_energies,
                    vbm=d["vbm"],
@@ -342,9 +345,8 @@ class DefectEnergies(MSONable):
                 y = (c1 * e2 - c2 * e1) / (c1 - c2)
 
                 # The lowest energy among all the charge states to be compared.
-                compared_energy = \
-                    min([energy + c * x
-                         for c, energy in lowest_energies[name].items()])
+                compared_energy = min([energy + c * x for c, energy
+                                       in lowest_energies[name].items()])
 
                 if y < compared_energy + 1e-5:
                     cross_points_with_charges.append([[x, y], [c1, c2]])
@@ -356,6 +358,12 @@ class DefectEnergies(MSONable):
 
         x_min, x_max = x_range if x_range else (0, self.band_gap)
         y_min, y_max = float("inf"), -float("inf")
+
+        def min_e_at_ef(ec, ef):
+            # calculate each energy at the given Fermi level ef.
+            d = {c: e + c * ef for c, e in ec.items()}
+            # return the charge with the lowest energy, and its energy value
+            return min(d.items(), key=lambda x: x[1])
 
         # Note: len(self.energies) <= len(transition_levels)
         for i, (name, tl) in enumerate(transition_levels.items()):
@@ -404,7 +412,6 @@ class DefectEnergies(MSONable):
             line.set_label(name)
 
             # margin_x and _y determine the positions of the transition levels.
-#            margin_x = (x_max - x_min) * 0.015
             margin_y = (y_max - y_min) * 0.1
 
             if show_transition_levels:
@@ -490,7 +497,7 @@ class DefectEnergies(MSONable):
                               length_includes_head=True,
                               color='green')
 
-        # Shrink current axis by 20%
+        # Shrink current axis
         box = ax.get_position()
         ax.set_position([box.x0, box.y0, box.width * 0.9, box.height * 0.9])
         ax.legend(bbox_to_anchor=(1, 0.5), loc='center left')
@@ -498,9 +505,3 @@ class DefectEnergies(MSONable):
 
         return plt
 
-
-def min_e_at_ef(ec, ef):
-    # calculate each energy at the given Fermi level ef.
-    d = {c: e + c * ef for c, e in ec.items()}
-    # return the charge with the lowest energy, and its energy value
-    return min(d.items(), key=lambda x: x[1])

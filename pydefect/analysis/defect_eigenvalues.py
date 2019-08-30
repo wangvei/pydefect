@@ -23,6 +23,7 @@ class DefectEigenvalue(MSONable):
     def __init__(self,
                  name: str,
                  charge: int,
+                 annotation: str,
                  kpoint_coords: list,
                  eigenvalues: np.array,
                  supercell_vbm: float,
@@ -40,6 +41,8 @@ class DefectEigenvalue(MSONable):
                 Name of a defect
             charge (int):
                 Defect charge.
+            annotation (str):
+                Annotation
             kpoint_coords (list):
                 List of k-point coordinates
             eigenvalues (N_spin x N_kpoint x N_band np.array):
@@ -70,6 +73,7 @@ class DefectEigenvalue(MSONable):
         """
         self.name = name
         self.charge = charge
+        self.annotation = annotation
         self.kpoint_coords = kpoint_coords
         self.eigenvalues = eigenvalues
         self.supercell_vbm = supercell_vbm
@@ -98,6 +102,7 @@ class DefectEigenvalue(MSONable):
         # Note: vbm, cbm, perfect_vbm, perfect_cbm are in absolute energy.
         return cls(name=defect.name,
                    charge=defect.charge,
+                   annotation=defect.annotation,
                    kpoint_coords=defect.kpoint_coords,
                    eigenvalues=defect.eigenvalues,
                    supercell_vbm=defect.supercell_vbm,
@@ -126,7 +131,8 @@ class DefectEigenvalue(MSONable):
         fig, axs = plt.subplots(nrows=1, ncols=num_figure, sharey='all')
         fig.subplots_adjust(wspace=0)
 
-        title = title if title else "_".join([self.name, str(self.charge)])
+        title = title if title else \
+            "_".join([self.name, str(self.charge), self.annotation])
         fig.suptitle(title, fontsize=12)
         plt.title(title, fontsize=15)
 
@@ -135,7 +141,7 @@ class DefectEigenvalue(MSONable):
         if y_range is None:
             y_range = [self.supercell_vbm - 3, self.supercell_cbm + 3]
 
-        k_index = self.add_eigenvalues_to_plot(axs)
+        last_k_index = self.add_eigenvalues_to_plot(axs)
 
         x_labels = ["\n".join([str(i) for i in k]) for k in self.kpoint_coords]
 
@@ -143,33 +149,28 @@ class DefectEigenvalue(MSONable):
             # show band-edge states
             axs[i].set_title(f"{s.name.upper()}: {self.band_edge_states[s]}")
             axs[i].set_ylim(y_range[0], y_range[1])
-            axs[i].set_xlim(-1, k_index + 1)
+            axs[i].set_xlim(-1, last_k_index + 1)
 
             axs[i].get_xaxis().set_tick_params(direction='out')
             axs[i].xaxis.set_ticks_position('bottom')
-            axs[i].set_xticks(np.arange(0, k_index + 1))
+            axs[i].set_xticks(np.arange(0, last_k_index + 1))
 
             axs[i].set_xticklabels(x_labels)
 
-            axs[i].axhline(y=self.supercell_vbm, linewidth=0.7,
-                           linestyle="-", color='r')
-            axs[i].axhline(y=self.supercell_cbm, linewidth=0.7,
-                           linestyle="-", color='r')
+            axs[i].axhline(y=self.supercell_vbm, linewidth=0.7, linestyle="-",
+                           color='r')
+            axs[i].axhline(y=self.supercell_cbm, linewidth=0.7, linestyle="-",
+                           color='r')
             axs[i].axhline(y=self.fermi_level, linewidth=1, linestyle="--",
                            color='g')
-            if self.vbm:
-                axs[i].axhline(y=self.vbm, linewidth=0.7, linestyle="-",
-                               color='b')
-            if self.cbm:
-                axs[i].axhline(y=self.cbm, linewidth=0.7, linestyle="-",
-                               color='b')
+            axs[i].axhline(y=self.vbm, linewidth=0.7, linestyle="-", color='b')
+            axs[i].axhline(y=self.cbm, linewidth=0.7, linestyle="-", color='b')
 
+        xy = [last_k_index + 1, self.fermi_level - 0.2]
         axs[num_figure - 1].annotate("Fermi\nlevel", fontsize=8, color='g',
-                                     xy=(k_index + 1, self.fermi_level - 0.2))
-        if self.vbm:
-            axs[0].annotate("vbm", xy=(-1, self.vbm), fontsize=8, color='b')
-        if self.cbm:
-            axs[0].annotate("cbm", xy=(-1, self.cbm), fontsize=8, color='b')
+                                     xy=xy)
+        axs[0].annotate("vbm", xy=(-1, self.vbm), fontsize=8, color='b')
+        axs[0].annotate("cbm", xy=(-1, self.cbm), fontsize=8, color='b')
 
         plt.savefig(filename) if filename else plt.show()
 
@@ -214,5 +215,3 @@ class DefectEigenvalue(MSONable):
         with open(filename, 'w') as fw:
             json.dump(self.as_dict(), fw, indent=2, cls=MontyEncoder)
 
-    def __repr__(self):
-        pass
