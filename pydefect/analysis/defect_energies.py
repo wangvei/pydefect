@@ -118,8 +118,8 @@ class DefectEnergies(MSONable):
         # Note: vbm, cbm, perfect_vbm, perfect_cbm are in absolute scale.
         vbm, cbm = unitcell.band_edge
 
-        system = system or str(perfect.final_structure.composition)
-        title = system + " condition " + chem_pot_label
+        system = system or perfect.final_structure.composition.reduced_formula
+        title = f"{system} at condition {chem_pot_label}"
 
         # Chemical potentials
         relative_chem_pots, standard_e = chem_pot

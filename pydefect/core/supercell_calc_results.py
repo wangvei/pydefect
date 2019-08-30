@@ -14,7 +14,7 @@ from pydefect.core.defect_entry import DefectEntry
 from pydefect.core.error_classes import NoConvergenceError, StructureError
 from pydefect.util.logger import get_logger
 from pydefect.util.structure_tools import (
-    get_displacements, get_minimum_distance)
+    get_displacements, get_min_distance)
 from pydefect.util.tools import spin_key_to_str, str_key_to_spin, parse_file, \
     defaultdict_to_dict
 from pydefect.util.vasp_util import calc_participation_ratio, \
@@ -67,9 +67,10 @@ def analyze_procar(hob_index: dict,
            band_edge.
     """
 
-    band_edge_energies = defaultdict(lambda: defaultdict(dict))
-    participation_ratio = defaultdict(dict)
-    orbital_character = defaultdict(lambda: defaultdict(dict))
+    edge_energies = defaultdict(lambda: defaultdict(lambda: defaultdict(float)))
+    participation_ratio = defaultdict(lambda: defaultdict(float))
+    orbital_character = \
+        defaultdict(lambda: defaultdict(lambda: defaultdict(dict)))
 
     for spin in eigenvalues.keys():
         # index i is used to increment band index from hob to lub
@@ -85,12 +86,12 @@ def analyze_procar(hob_index: dict,
                         procar, spin, band_index, neighboring_sites)
 
             top_eigenvalue = np.amax(eigenvalues[spin][:, band_index, 0])
-            band_edge_energies[spin][band_edge]["top"] = top_eigenvalue
+            edge_energies[spin][band_edge]["top"] = top_eigenvalue
             top_k_index = int(np.where(
                 eigenvalues[spin][:, band_index, 0] == top_eigenvalue)[0][0])
 
             bottom_eigenvalue = np.amin(eigenvalues[spin][:, band_index, 0])
-            band_edge_energies[spin][band_edge]["bottom"] = bottom_eigenvalue
+            edge_energies[spin][band_edge]["bottom"] = bottom_eigenvalue
             bottom_k_index = int(np.where(
                 eigenvalues[spin][:, band_index, 0] == bottom_eigenvalue)[0][0])
 
@@ -110,9 +111,9 @@ def analyze_procar(hob_index: dict,
     else:
         participation_ratio = None
     orbital_character = defaultdict_to_dict(orbital_character)
-    band_edge_energies = defaultdict_to_dict(band_edge_energies)
+    edge_energies = defaultdict_to_dict(edge_energies)
 
-    return band_edge_energies, orbital_character, participation_ratio
+    return edge_energies, orbital_character, participation_ratio
 
 
 class SupercellCalcResults(MSONable):
@@ -285,9 +286,8 @@ class SupercellCalcResults(MSONable):
             final_structure, defect_symprec, angle_tolerance)
         site_symmetry = sga.get_point_group_symbol()
 
-        if not cutoff:
-            minimum_distance = get_minimum_distance(final_structure)
-            cutoff = round(minimum_distance * CUTOFF_FACTOR, 2)
+        cutoff = cutoff or round(get_min_distance(final_structure)
+                                 * CUTOFF_FACTOR, 2)
 
         # If defect_entry is None, system is regarded as perfect supercell.
         if not defect_entry:
@@ -336,7 +336,7 @@ class SupercellCalcResults(MSONable):
                    total_magnetization=magnetization,
                    eigenvalues=vasprun.eigenvalues,
                    kpoint_coords=vasprun.actual_kpoints,
-                   kpoint_weights = vasprun.actual_kpoints_weights,
+                   kpoint_weights=vasprun.actual_kpoints_weights,
                    electrostatic_potential=outcar.electrostatic_potential,
                    vbm=vbm,
                    cbm=cbm,

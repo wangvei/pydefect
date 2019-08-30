@@ -17,7 +17,7 @@ from pymatgen.core.periodic_table import DummySpecie
 from pymatgen.core.structure import Structure
 from pymatgen.io.vasp.outputs import Chgcar
 from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
-from pydefect.util.structure_tools import get_minimum_distance
+from pydefect.util.structure_tools import get_min_distance
 
 __author__ = "Yu Kumagai"
 __maintainer__ = "Yu Kumagai"
@@ -204,9 +204,8 @@ class InterstitialSiteSet(MSONable):
                 symprec=symprec,
                 angle_tolerance=angle_tolerance)
 
-        if not cutoff:
-            cutoff = \
-                round(get_minimum_distance(self.structure) * CUTOFF_FACTOR, 2)
+        cutoff = cutoff or round(get_min_distance(self.structure)
+                                 * CUTOFF_FACTOR, 2)
 
         sga = SpacegroupAnalyzer(saturated_structure, symprec, angle_tolerance)
         symmetry_dataset = sga.get_symmetry_dataset()

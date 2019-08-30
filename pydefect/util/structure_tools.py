@@ -65,7 +65,7 @@ def perturb_neighboring_atoms(structure: Structure,
     return perturbed_structure, sites
 
 
-def get_minimum_distance(structure: Structure) -> float:
+def get_min_distance(structure: Structure) -> float:
     """Return the minimum distance in the inter-atomic distances
 
     Args:

@@ -13,7 +13,7 @@ from pydefect.core.error_classes import StructureError
 from pydefect.util.logger import get_logger
 from pydefect.util.structure_tools import (
     num_equivalent_clusters, defect_center_from_coords, distance_list,
-    get_minimum_distance)
+    get_min_distance)
 from pydefect.util.tools import is_str_digit
 from pydefect.util.vasp_util import element_diff_from_structures
 from pymatgen.core.structure import Structure
@@ -266,7 +266,7 @@ class DefectEntry(MSONable):
         element_diff = element_diff_from_structures(
             defect_structure, perfect_structure)
 
-        cutoff = cutoff or round(get_minimum_distance(perfect_structure)
+        cutoff = cutoff or round(get_min_distance(perfect_structure)
                                  * CUTOFF_FACTOR, 2)
 
         if not defect_name:

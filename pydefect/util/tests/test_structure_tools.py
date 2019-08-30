@@ -2,7 +2,7 @@
 
 import numpy as np
 from pydefect.util.structure_tools import (
-    perturb_neighboring_atoms, get_minimum_distance, get_displacements,
+    perturb_neighboring_atoms, get_min_distance, get_displacements,
     defect_center_from_coords, distance_list,
     create_saturated_interstitial_structure, get_neighboring_atom_indices,
     num_equivalent_clusters, first_appearing_index, get_coordination_distances)
@@ -57,7 +57,7 @@ class GetMinimumDistanceTest(PydefectTest):
         self.structure = self.get_structure_by_name("KZn4P3")
 
     def test_minimum_distance(self):
-        actual = get_minimum_distance(self.structure)
+        actual = get_min_distance(self.structure)
         expected = 2.31035
         self.assertAlmostEqual(expected, actual, 5)
 
