@@ -555,10 +555,11 @@ def defects(args):
                 logger.warning(f"An error {e} is caught.")
             continue
 
-        logger.info("parsing directory {}...".format(d))
+        logger.info(f"parsing directory {d}...")
         files = [args.defect_entry, args.dft_results, args.correction]
         classes = [DefectEntry, SupercellCalcResults, ExtendedFnvCorrection]
-        input_objects = generate_objects_from_json_files(d, files, classes, raise_error=False)
+        input_objects = generate_objects_from_json_files(d, files, classes,
+                                                         raise_error=False)
 
         if input_objects:
             defect = Defect.from_objects(defect_entry=input_objects[0],

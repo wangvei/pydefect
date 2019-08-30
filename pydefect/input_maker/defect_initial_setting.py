@@ -249,9 +249,9 @@ def select_defects(defect_set: Dict[str, dict],
            e.g.  {"Va_Mg1": {"charges": {0, 1, 2}},
                   "Va_O1": {"charges": {0}},..}
     """
-    included = included if included else list()
-    excluded = excluded if excluded else list()
-    specified_defects = specified_defects if specified_defects else list()
+    included = included or []
+    excluded = excluded or []
+    specified_defects = specified_defects or []
 
     for name, defect in defect_set.items():
         if specified_defects:
@@ -590,7 +590,7 @@ class DefectInitialSetting(MSONable):
 
     @property
     def are_atoms_perturbed(self) -> bool:
-        return False if self.cutoff < 1e-6 else True
+        return self.cutoff > 1e-5
 
     @classmethod
     def from_basic_settings(cls,

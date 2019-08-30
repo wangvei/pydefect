@@ -187,7 +187,7 @@ class Ewald(MSONable):
                 slower.
 
         Returns:
-            Optimized ewald_param (float).
+            Optimized Ewald parameter (float).
         """
         root_det_dielectric = sqrt(np.linalg.det(dielectric_tensor))
         real_lattice_matrix = structure.lattice.matrix
@@ -243,7 +243,7 @@ class Ewald(MSONable):
             raise ValueError("The initial ewald param may not be adequate.")
 
     def reciprocal_lattice_set(self) -> np.ndarray:
-        """ """
+        """Return reciprocal lattice set."""
         # remove [0, 0, 0] G vector.
         lattices = np.array(self.reciprocal_neighbor_lattices)
         # Note: numpy.delete returns new object.
@@ -252,7 +252,7 @@ class Ewald(MSONable):
     def real_lattice_set(self,
                          include_self: bool = True,
                          shift: np.array = np.zeros(3)) -> np.ndarray:
-        """
+        """Return real lattice set.
         Args:
              include_self (bool):
                 Whether to include the central lattice point itself.
@@ -417,13 +417,17 @@ class ExtendedFnvCorrection(Correction, MSONable):
 
         Args:
             defect_entry (DefectEntry):
+                DefectEntry object of the considering defect.
             defect_dft (SupercellCalcResults):
-                Calculated defect DFT results.
+                Calculated defect DFT results of the considering defect.
             perfect_dft (SupercellCalcResults):
                 Calculated defect DFT results for perfect supercell.
             unitcell_dft (UnitcellCalcResults):
+                UnitcellCalcResults object of the considering host.
             ewald (str / Ewald):
+                Ewald object or ewald.json filename.
             to_filename (str):
+                Filename to jump json data.
         """
         if isinstance(ewald, str):
             ewald = Ewald.load_json(ewald)
@@ -433,10 +437,9 @@ class ExtendedFnvCorrection(Correction, MSONable):
                                         unitcell_dft.total_dielectric_tensor)
             ewald.to_json_file(to_filename)
 
-        relative_potential = \
-            calc_relative_potential(defect=defect_dft,
-                                    perfect=perfect_dft,
-                                    defect_entry=defect_entry)
+        relative_potential = calc_relative_potential(defect=defect_dft,
+                                                     perfect=perfect_dft,
+                                                     defect_entry=defect_entry)
 
         # not None is a must as 0 is also judged as False.
         diff_potential = [-ep for ep in relative_potential if ep is not None]
@@ -513,7 +516,7 @@ class ExtendedFnvCorrection(Correction, MSONable):
 
 # Need to be after Ewald class for annotation
 def point_charge_energy(charge: int, ewald: Ewald, volume: float) -> float:
-
+    """Return point-charge energy under periodic boundary condition."""
     if charge == 0:
         return 0.0
 
@@ -538,6 +541,7 @@ def calc_ewald_sum(ewald: Ewald,
                    volume: float,
                    include_self: bool = False,
                    shift: np.ndarray = np.array([0, 0, 0])) -> tuple:
+    """Return real and reciprocal Ewald summations at given parameters"""
 
     epsilon_inv = np.linalg.inv(ewald.dielectric_tensor)
     real_sum = 0

@@ -93,6 +93,8 @@ def get_user_settings(yaml_filename: str = "pydefect.yaml") -> dict:
 def get_default_args(function: Callable) -> dict:
     """Get the default values of the arguments in the method/function.
 
+    inspect._empty means no default.
+
     Args:
         function (Callable):
             Method or function. when class is inserted, cls.__init__ is called.

@@ -6,6 +6,7 @@ from copy import copy
 from itertools import combinations
 from itertools import groupby
 from typing import List, Tuple, Dict
+from operator import itemgetter, attrgetter
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -128,7 +129,7 @@ class DefectEnergies(MSONable):
         defect_energies = \
             defaultdict(lambda: defaultdict(lambda: defaultdict(DefectEnergy)))
 
-        for name, g in groupby(defects, key=lambda n: n.name):
+        for name, g in groupby(defects, key=attrgetter("name")):
             for d in g:
                 # Calculate defect formation energies at the vbm
                 atom_exchange_energy = 0
@@ -362,7 +363,7 @@ class DefectEnergies(MSONable):
             # calculate each energy at the given Fermi level ef.
             d = {c: e + c * ef for c, e in ec.items()}
             # return the charge with the lowest energy, and its energy value
-            return min(d.items(), key=lambda x: x[1])
+            return min(d.items(), key=itemgetter(1))
 
         # Note: len(self.energies) <= len(transition_levels)
         for i, (name, tl) in enumerate(transition_levels.items()):
@@ -390,7 +391,7 @@ class DefectEnergies(MSONable):
                 if x_min < cp[0] - self.vbm < x_max:
                     cross_points.append([cp[0] - self.vbm, cp[1]])
                     # need to sort the charge.
-                    charge_set.add(sorted(charges, key=lambda z: z)[1])
+                    charge_set.add(sorted(charges)[1])
                     y_min, y_max = min([cp[1], y_min]), max([cp[1], y_max])
                     ax.scatter(cp[0] - self.vbm, cp[1], marker='o',
                                color=color[i])
