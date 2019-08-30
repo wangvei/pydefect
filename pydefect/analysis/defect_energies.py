@@ -18,6 +18,7 @@ from pydefect.core.unitcell_calc_results import UnitcellCalcResults
 from pydefect.util.logger import get_logger
 from pydefect.util.tools import (
     construct_obj_in_dict, sanitize_keys_in_dict, defaultdict_to_dict, flatten_dict)
+from pydefect.core.config import COLOR
 
 __author__ = "Yu Kumagai"
 __maintainer__ = "Yu Kumagai"
@@ -116,7 +117,7 @@ class DefectEnergies(MSONable):
         # Note: vbm, cbm, perfect_vbm, perfect_cbm are in absolute scale.
         vbm, cbm = unitcell.band_edge
 
-        system = system if system else str(perfect.final_structure.composition)
+        system = system or str(perfect.final_structure.composition)
         title = system + " condition " + chem_pot_label
 
         # Chemical potentials
@@ -294,9 +295,7 @@ class DefectEnergies(MSONable):
         fig, ax = plt.subplots()
         plt.title(self.title, fontsize=15)
 
-        if color is None:
-            from pydefect.core.config import COLOR
-            color = COLOR
+        color = color or COLOR
 
         ax.set_xlabel("Fermi level (eV)", fontsize=15)
         ax.set_ylabel("Formation energy (eV)", fontsize=15)

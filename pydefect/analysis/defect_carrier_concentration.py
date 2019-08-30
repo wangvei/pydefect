@@ -228,15 +228,14 @@ def calc_equilibrium_concentration(defect_energies: dict,
     interval = (cbm - vbm) / 2
     for iteration in range(max_iteration):
         defect_concentration = \
-            calc_concentration(
-                defect_energies=defect_energies,
-                temperature=temperature,
-                e_f=e_f,
-                vbm=vbm,
-                cbm=cbm,
-                total_dos=total_dos,
-                volume=volume,
-                ref_concentration=ref_concentration)
+            calc_concentration(defect_energies=defect_energies,
+                               temperature=temperature,
+                               e_f=e_f,
+                               vbm=vbm,
+                               cbm=cbm,
+                               total_dos=total_dos,
+                               volume=volume,
+                               ref_concentration=ref_concentration)
 
         total_charge = \
             sum([e * c for d in defect_concentration

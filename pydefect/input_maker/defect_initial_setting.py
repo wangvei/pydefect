@@ -648,10 +648,9 @@ class DefectInitialSetting(MSONable):
                 Names of complex defects written in complex_defect.yaml file.
 
         """
-        dopants = dopants if dopants else list()
-        interstitial_sites = interstitial_sites if interstitial_sites else "all"
-        complex_defect_names = \
-            complex_defect_names if complex_defect_names else list()
+        dopants = dopants or []
+        interstitial_sites = interstitial_sites or "all"
+        complex_defect_names = complex_defect_names or []
 
         # Here, the structure is sorted by elements.
         sga = SpacegroupAnalyzer(structure, symprec, angle_tolerance)

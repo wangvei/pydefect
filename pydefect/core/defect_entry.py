@@ -266,9 +266,8 @@ class DefectEntry(MSONable):
         element_diff = element_diff_from_structures(
             defect_structure, perfect_structure)
 
-        if not cutoff:
-            cutoff = round(
-                get_minimum_distance(perfect_structure) * CUTOFF_FACTOR, 2)
+        cutoff = cutoff or round(get_minimum_distance(perfect_structure)
+                                 * CUTOFF_FACTOR, 2)
 
         if not defect_name:
             _, defect_name = os.path.split(os.getcwd())

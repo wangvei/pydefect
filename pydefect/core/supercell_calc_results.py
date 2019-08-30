@@ -275,7 +275,7 @@ class SupercellCalcResults(MSONable):
 
         # outcar related
         outcar = parse_file(Outcar, Path(directory_path) / outcar)
-        magnetization = outcar.total_mag if outcar.total_mag else 0.0
+        magnetization = outcar.total_mag or 0.0
 
         # contcar related
         contcar = parse_file(Poscar.from_file, Path(directory_path) / contcar)
