@@ -585,7 +585,7 @@ def plot_energy(args):
         defect_list = []
         for d in defects_dirs:
             filename = join(d, args.defect)
-            logger.info("parsing directory {}...".format(d))
+            logger.info(f"parsing directory {d}...")
             try:
                 defect_list.append(Defect.load_json(filename))
             except FileNotFoundError:

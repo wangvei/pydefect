@@ -19,7 +19,7 @@ from pydefect.core.unitcell_calc_results import UnitcellCalcResults
 from pydefect.util.logger import get_logger
 from pydefect.util.tools import (
     construct_obj_in_dict, sanitize_keys_in_dict, defaultdict_to_dict,
-    flatten_dict, mod_defaultdict)
+    flatten_dict)
 from pydefect.core.config import COLOR
 
 __author__ = "Yu Kumagai"

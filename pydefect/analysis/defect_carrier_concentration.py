@@ -387,29 +387,18 @@ class DefectConcentration(MSONable):
         """
         energies = deepcopy(defect_energies.defect_energies)
 
-        for name, charge, annotation, defect_energy \
+        for name, charge, defect_energy \
                 in flatten_dict(defect_energies.defect_energies):
-            n = DefectName(name, charge, annotation)
-
-            if n.is_name_matched(filtering_words) is False:
-                logger.info(f"{n} is excluded, so omitted.")
-                energies[name][charge].pop(annotation)
-
-            elif exclude_shallow_defects and defect_energy.shallow:
-                logger.info(f"{n} is shallow, so omitted.")
-                energies[name][charge].pop(annotation)
-
-            elif exclude_unconverged_defects and not defect_energy.convergence:
-                logger.info(f"{n} is unconverged, so omitted.")
-                energies[name][charge].pop(annotation)
-
+            n = DefectName(name, charge, defect_energy.annotation)
             mag = defect_energy.magnetization
+
             if abs(mag - round(mag)) > fractional_criterion:
                 logger.warning(f"The total_magnetization of {n} "
                                f"is {mag}, and not integer")
+
                 if fractional_magnetization_to_one:
                     logger.warning(f"The magnetization of {n} is set to 1.")
-                    energies[name][charge][annotation].magnetization = 1.0
+                    energies[name][charge].magnetization = 1.0
 
         return cls(defect_energies=energies,
                    volume=unitcell.volume,  # [A^3]
