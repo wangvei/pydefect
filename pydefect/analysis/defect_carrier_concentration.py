@@ -16,7 +16,8 @@ from pydefect.core.unitcell_calc_results import UnitcellCalcResults
 from pydefect.util.distribution_function \
     import maxwell_boltzmann_distribution, fermi_dirac_distribution
 from pydefect.util.logger import get_logger
-from pydefect.util.tools import flatten_dict, defaultdict_to_dict
+from pydefect.util.tools import (
+    flatten_dict, defaultdict_to_dict, mod_defaultdict)
 
 __author__ = "Yu Kumagai"
 __maintainer__ = "Yu Kumagai"
@@ -138,7 +139,7 @@ def calc_concentration(defect_energies: Optional[dict],
         Note that "p" and "n" are special and mean the carrier hole and
         electron concentration in cm-3.
     """
-    concentrations = defaultdict(lambda: defaultdict(dict))
+    concentrations = mod_defaultdict(depth=2)
 
     concentrations["p"][1] = \
         {None: hole_concentration(temperature, e_f, total_dos, vbm, volume)}

@@ -1,6 +1,8 @@
+# -*- coding: utf-8 -*-
 from collections import defaultdict
 from typing import Optional, Callable, Union
 from xml.etree.ElementTree import ParseError
+from copy import deepcopy
 
 import numpy as np
 from pydefect.util.logger import get_logger
@@ -147,7 +149,6 @@ def construct_obj_in_dict(d: dict, cls: Callable) -> dict:
         d (dict):
             d[name][charge][annotation]
     """
-    from copy import deepcopy
     if not isinstance(d, dict):
         return d
     else:
@@ -175,3 +176,11 @@ def flatten_dict(d: dict, depth: int = None) -> list:
             flattened_list.append([key, value])
 
     return flattened_list
+
+
+def mod_defaultdict(depth: int) -> Optional[defaultdict]:
+    if depth == 0:
+        return None
+    else:
+        return defaultdict(lambda: mod_defaultdict(depth - 1))
+

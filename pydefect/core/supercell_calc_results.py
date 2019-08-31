@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 
 import json
-from collections import defaultdict
 from pathlib import Path
 from typing import Union, Tuple, Optional
 
@@ -15,10 +14,11 @@ from pydefect.core.error_classes import NoConvergenceError, StructureError
 from pydefect.util.logger import get_logger
 from pydefect.util.structure_tools import (
     get_displacements, get_min_distance)
-from pydefect.util.tools import spin_key_to_str, str_key_to_spin, parse_file, \
-    defaultdict_to_dict
-from pydefect.util.vasp_util import calc_participation_ratio, \
-    calc_orbital_character
+from pydefect.util.tools import (
+    spin_key_to_str, str_key_to_spin, parse_file, defaultdict_to_dict,
+    mod_defaultdict)
+from pydefect.util.vasp_util import (
+    calc_participation_ratio, calc_orbital_character)
 from pymatgen.core import Structure
 from pymatgen.electronic_structure.core import Spin
 from pymatgen.io.vasp.inputs import Poscar
@@ -67,10 +67,9 @@ def analyze_procar(hob_index: dict,
            band_edge.
     """
 
-    edge_energies = defaultdict(lambda: defaultdict(lambda: defaultdict(float)))
-    participation_ratio = defaultdict(lambda: defaultdict(float))
-    orbital_character = \
-        defaultdict(lambda: defaultdict(lambda: defaultdict(dict)))
+    edge_energies = mod_defaultdict(depth=3)
+    participation_ratio = mod_defaultdict(depth=2)
+    orbital_character = mod_defaultdict(depth=3)
 
     for spin in eigenvalues.keys():
         # index i is used to increment band index from hob to lub

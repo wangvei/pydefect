@@ -18,7 +18,8 @@ from pydefect.core.supercell_calc_results import SupercellCalcResults
 from pydefect.core.unitcell_calc_results import UnitcellCalcResults
 from pydefect.util.logger import get_logger
 from pydefect.util.tools import (
-    construct_obj_in_dict, sanitize_keys_in_dict, defaultdict_to_dict, flatten_dict)
+    construct_obj_in_dict, sanitize_keys_in_dict, defaultdict_to_dict,
+    flatten_dict, mod_defaultdict)
 from pydefect.core.config import COLOR
 
 __author__ = "Yu Kumagai"
@@ -126,8 +127,7 @@ class DefectEnergies(MSONable):
         relative_chem_pot = relative_chem_pots[chem_pot_label]
 
         # defect_energies[name][charge][annotation] = DefectEnergy
-        defect_energies = \
-            defaultdict(lambda: defaultdict(lambda: defaultdict(DefectEnergy)))
+        defect_energies = mod_defaultdict(depth=3)
 
         for name, g in groupby(defects, key=attrgetter("name")):
             for d in g:

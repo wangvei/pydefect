@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
 from collections import defaultdict
 
-from pydefect.util.tools import defaultdict_to_dict, flatten_dict
+from pydefect.util.tools import (
+    defaultdict_to_dict, flatten_dict, mod_defaultdict)
 from pydefect.util.testing import PydefectTest
 
 __author__ = "Yu Kumagai"
@@ -31,3 +32,9 @@ class AllCombinationTest(PydefectTest):
         self.assertEqual([['a', 'b', 'c', 1]], flatten_dict(self.d))
 
 
+class DefaultDictTest(PydefectTest):
+    def test(self):
+        d = mod_defaultdict(depth=2)
+        self.assertEqual(d[0][0], None)
+        with self.assertRaises(TypeError):
+            d[0][0][0]
