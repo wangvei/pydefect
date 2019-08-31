@@ -15,6 +15,7 @@ from pydefect.util.tools import spin_key_to_str, str_key_to_spin
 from pydefect.util.vasp_util import calc_orbital_difference
 from pymatgen.core.structure import Structure
 from pymatgen.electronic_structure.core import Spin
+from pydefect.core.defect_name import DefectName
 
 __author__ = "Yu Kumagai"
 __maintainer__ = "Yu Kumagai"
@@ -191,6 +192,7 @@ class Defect(MSONable):
         self.name = name
         self.charge = charge
         self.annotation = annotation
+
         self.is_converged = is_converged
         # energies
         self.relative_total_energy = relative_total_energy
@@ -213,6 +215,9 @@ class Defect(MSONable):
         self.initial_multiplicity = initial_multiplicity
         self.final_multiplicity = final_multiplicity
         # magnetization
+        if not magnetization.is_integer():
+            logger.warning(
+                f"{n} has fractional magnetization: {d.magnetization}")
         self.magnetization = magnetization
         # kpoint
         self.kpoint_coords = kpoint_coords
@@ -244,6 +249,14 @@ class Defect(MSONable):
         initial_multiplicity = defect_entry.multiplicity
         final_multiplicity = \
             initial_multiplicity * initial_nsymop / final_nsymop
+
+        if not final_multiplicity.is_integer():
+            n = DefectName(
+                defect_entry.name, defect_entry.charge, defect_entry.annotation)
+            raise ValueError(
+                f"Multiplicity of {n} is invalid. "
+                f"initial symmetry: {defect_entry.initial_site_symmetry}, "
+                f"final symmetry: {dft_results.site_symmetry}.")
 
         magnetization = round(dft_results.total_magnetization, 2)
 

@@ -31,6 +31,7 @@ logger = get_logger(__name__)
 class DefectEnergy(MSONable):
     def __init__(self,
                  defect_energy: float,
+                 annotation: str,
                  multiplicity: int,
                  magnetization: float,
                  convergence: bool,
@@ -40,6 +41,8 @@ class DefectEnergy(MSONable):
         Args:
             defect_energy (float):
                 Defect formation energy at Ef = 0.
+            annotation (str):
+                Defect annotation
             multiplicity (dict):
                 Spatial multiplicity.
             magnetization (dict):
@@ -50,6 +53,7 @@ class DefectEnergy(MSONable):
                 Whether it is shallow or not.
         """
         self.defect_energy = defect_energy
+        self.annotation = annotation
         self.multiplicity = multiplicity
         self.magnetization = magnetization
         self.convergence = convergence
@@ -58,7 +62,8 @@ class DefectEnergy(MSONable):
 
 class DefectEnergies(MSONable):
     def __init__(self,
-                 defect_energies: Dict[str, Dict[int, Dict[str, DefectEnergy]]],
+                 defect_energies: Dict[str, Dict[int, DefectEnergy]],
+                 transition_levels: Dict[str, Dict[str, list]],
                  vbm: float,
                  cbm: float,
                  supercell_vbm: float,
@@ -82,6 +87,7 @@ class DefectEnergies(MSONable):
                 Title of the system.
         """
         self.defect_energies = defect_energies
+        self.transition_levels = transition_levels
         self.vbm = vbm
         self.cbm = cbm
         self.supercell_vbm = supercell_vbm
@@ -95,6 +101,9 @@ class DefectEnergies(MSONable):
                      defects: List[Defect],
                      chem_pot: tuple,
                      chem_pot_label: str,
+                     filtering_words: list = None,
+                     exclude_unconverged_defects: bool = True,
+                     exclude_shallow_defects: bool = True,
                      system: str = None):
         """ Calculates defect formation energies from several objects.
 
@@ -113,6 +122,12 @@ class DefectEnergies(MSONable):
                 Return of ChemPotDiag.load_vertices_yaml method
             chem_pot_label (str):
                 Equilibrium point specified in ChemPot.
+            filtering_words (list):
+                List of words used for filtering the defects
+            exclude_unconverged_defects (bool):
+                Whether to exclude the unconverged defects from the plot.
+            exclude_shallow_defects (bool):
+                Whether to exclude the shallow defects from the plot.
             system (str):
                 System name used for the title.
         """
@@ -126,48 +141,77 @@ class DefectEnergies(MSONable):
         relative_chem_pots, standard_e = chem_pot
         relative_chem_pot = relative_chem_pots[chem_pot_label]
 
-        # defect_energies[name][charge][annotation] = DefectEnergy
-        defect_energies = mod_defaultdict(depth=3)
+        # defect_energies[name][charge] = DefectEnergy
+        defect_energies = {}
+        transition_levels = {}
 
-        for name, g in groupby(defects, key=attrgetter("name")):
-            for d in g:
-                # Calculate defect formation energies at the vbm
-                atom_exchange_energy = 0
-                for el, diff in d.changes_of_num_elements.items():
+        for name, g_name in groupby(defects, key=attrgetter("name")):
+            energy_by_c = {}
+            for charge, g_charge in groupby(g_name, key=attrgetter("charge")):
+                energy_by_annotation = {}
+                for i, d in enumerate(list(g_charge)):
+                    n = DefectName(name, charge, d.annotation)
+
+                    if n.is_name_matched(filtering_words) is False:
+                        logger.info(f"{n} filtered out, so omitted.")
+                        continue
+                    elif exclude_shallow_defects and d.is_shallow:
+                        logger.info(f"{n} is shallow, so omitted.")
+                        continue
+                    elif exclude_unconverged_defects and not d.is_converged:
+                        logger.info(f"{n} unconverged, so omitted.")
+                        continue
+
+                    energy_by_annotation[d] = \
+                        d.relative_total_energy + d.correction_energy
+
+                if not energy_by_annotation:
+                    continue
+
+                # get the lowest energy and its annotation
+                defect, defect_energy = \
+                    min(energy_by_annotation.items(), key=itemgetter(1))
+
+                for el, diff in defect.changes_of_num_elements.items():
                     relative_e = relative_chem_pot.elem_coords[el]
                     standard = standard_e[el]
-                    atom_exchange_energy -= diff * (relative_e + standard)
+                    defect_energy -= diff * (relative_e + standard)
 
-                energy = (d.relative_total_energy + d.correction_energy +
-                          atom_exchange_energy)
+                energy_by_c[charge] = \
+                    DefectEnergy(defect_energy=defect_energy,
+                                 annotation=defect.annotation,
+                                 multiplicity=defect.final_multiplicity,
+                                 magnetization=defect.magnetization,
+                                 convergence=defect.is_converged,
+                                 shallow=defect.is_shallow)
 
-                defect_name = DefectName(d.name, d.charge, d.annotation)
-                if d.final_multiplicity.is_integer():
-                    multiplicity = int(d.final_multiplicity)
-                else:
-                    logger.warning(
-                        f"Multiplicity of {defect_name} is invalid."
-                        f"initial sym: {d.initial_symmetry}, "
-                        f"final sym: {d.final_symmetry}.")
-                    multiplicity = d.final_multiplicity
+            cross_points_with_charges = []
+            for (c1, e1), (c2, e2) in combinations(energy_by_c.items(), r=2):
+                # The cross point between two charge states.
+                x = - (e1.defect_energy - e2.defect_energy) / (c1 - c2)
+                y = (c1 * e2.defect_energy - c2 * e1.defect_energy) / (c1 - c2)
 
-                if not d.magnetization.is_integer() and not d.is_shallow:
-                    logger.warning(
-                        f"{defect_name} is not shallow but with "
-                        f"fractional magnetization: {d.magnetization}")
+                # The lowest energy among all the charge states to be compared.
+                compared_energy = min([e.defect_energy + c * x
+                                       for c, e in energy_by_c.items()])
 
-                defect_energy = DefectEnergy(defect_energy=energy,
-                                             multiplicity=multiplicity,
-                                             magnetization=d.magnetization,
-                                             convergence=d.is_converged,
-                                             shallow=d.is_shallow)
+                if y < compared_energy + 1e-5:
+                    cross_points_with_charges.append([[x, y], [c1, c2]])
 
-                defect_energies[name][d.charge][d.annotation] = defect_energy
+            # need to sort the points along x-axis.
+            cpwc = sorted(cross_points_with_charges, key=lambda z: z[0][0])
+            transition_levels[name] = {"cross_points": [i[0] for i in cpwc],
+                                       "charges": [i[1] for i in cpwc]}
+            defect_energies[name] = energy_by_c
 
         defect_energies = defaultdict_to_dict(defect_energies)
 
-        return cls(defect_energies=defect_energies, vbm=vbm, cbm=cbm,
-                   supercell_vbm=perfect.vbm, supercell_cbm=perfect.cbm,
+        return cls(defect_energies=defect_energies,
+                   transition_levels=transition_levels,
+                   vbm=vbm,
+                   cbm=cbm,
+                   supercell_vbm=perfect.vbm,
+                   supercell_cbm=perfect.cbm,
                    title=title)
 
     @classmethod
@@ -178,6 +222,7 @@ class DefectEnergies(MSONable):
         defect_energies = construct_obj_in_dict(defect_energies, DefectEnergy)
 
         return cls(defect_energies=defect_energies,
+                   transition_levels=d["transition_levels"],
                    vbm=d["vbm"],
                    cbm=d["cbm"],
                    supercell_vbm=d["supercell_vbm"],
@@ -194,13 +239,16 @@ class DefectEnergies(MSONable):
 
     def __repr__(self):
         outs = []
-        for name, charge, annotation, defect_energy \
-                in flatten_dict(self.defect_energies):
+        for name, charge, defect_energy in flatten_dict(self.defect_energies):
+
+            energy_vbm = defect_energy.defect_energy + charge * self.vbm
+            energy_cbm = defect_energy.defect_energy + charge * self.cbm
             outs.extend(
                 [f"name: {name}:",
                  f"charge: {charge}",
-                 f"Annotation: {annotation}",
-                 f"Energy @ef=0 (eV): {round(defect_energy.defect_energy, 4)}",
+                 f"Annotation: {defect_energy.annotation}",
+                 f"Energy @ vbm (eV): {round(energy_vbm, 4)}",
+                 f"Energy @ cbm (eV): {round(energy_cbm, 4)}",
                  f"Convergence: {defect_energy.convergence}",
                  f"Is shallow: {defect_energy.shallow}",
                  f"multiplicity: {defect_energy.multiplicity}",
@@ -209,10 +257,7 @@ class DefectEnergies(MSONable):
 
         return "\n".join(outs)
 
-    def u(self,
-          name: str,
-          charges: list,
-          annotations: list = None) -> Tuple[float, list]:
+    def u(self, name: str, charges: list) -> Tuple[float, list]:
         """ Return the U value among three sequential charge states.
 
         Args:
@@ -220,8 +265,6 @@ class DefectEnergies(MSONable):
                 Name of the defect.
             charges (list):
                 1x3 list comprising three charge states.
-            annotations (list)
-                Assign specific annotations
         Return:
             U value.
         """
@@ -235,35 +278,21 @@ class DefectEnergies(MSONable):
                               .format(*charges))
 
         energies = []
-        if annotations is None:
-            # annotations with lowest energies at given charge states
-            annotations = []
-            for c in charges:
-                try:
-                    annotation, min_e = \
-                        min(self.defect_energies[name][c].items(),
-                            key=lambda z: z[1].defect_energy)
-                except KeyError:
-                    print(f"Charge {c} does not exist for {name}.")
-                    raise
-                energies.append(min_e.defect_energy)
-                annotations.append(annotation)
-        else:
-            for c, a in zip(charges, annotations):
-                energies.append(self.defect_energies[name][c][a].defect_energy)
+        names = []
+        for charge in charges:
+            defect = self.defect_energies[name][charge]
+            energies.append(defect.defect_energy)
+            names.append(str(DefectName(name, charge, defect.annotation)))
 
-        return energies[0] + energies[2] - 2 * energies[1], annotations
+        return energies[0] + energies[2] - 2 * energies[1], names
 
     @property
     def band_gap(self):
         return self.cbm - self.vbm
 
     def plot_energy(self,
-                    filtering_words: list = None,
                     x_range: list = None,
                     y_range: list = None,
-                    exclude_unconverged_defects: bool = True,
-                    exclude_shallow_defects: bool = True,
                     fermi_levels: list = None,
                     show_transition_levels: bool = False,
                     show_all_energies: bool = False,
@@ -271,16 +300,10 @@ class DefectEnergies(MSONable):
         """ Plots defect formation energies as a function of the Fermi level.
 
         Args:
-            filtering_words (list):
-                List of words used for filtering the defects
             x_range (list):
                 1x2 list for determining x range.
             y_range (list):
                 1x2 list for determining y range.
-            exclude_unconverged_defects (bool):
-                Whether to exclude the unconverged defects from the plot.
-            exclude_shallow_defects (bool):
-                Whether to exclude the shallow defects from the plot.
             fermi_levels (list):
                 Ghe Fermi level(s) (E_f) to be shown in the plot.
                 The structure must be as follows.
@@ -301,75 +324,18 @@ class DefectEnergies(MSONable):
         ax.set_xlabel("Fermi level (eV)", fontsize=15)
         ax.set_ylabel("Formation energy (eV)", fontsize=15)
 
-        # e_of_c is energy as a function of charge and annotation.
-        # e_of_c[charge][annotation] = DefectEnergy object
-        transition_levels = {}
-        lowest_energies = defaultdict(dict)
-        lowest_energy_annotations = defaultdict(dict)
-
-        for name, energy_by_charge in self.defect_energies.items():
-            for charge, energy_by_annotation in copy(energy_by_charge).items():
-                for annotation, defect_energy \
-                        in copy(energy_by_annotation).items():
-
-                    n = DefectName(name, charge, annotation)
-                    is_shallow = defect_energy.shallow
-                    convergence = defect_energy.convergence
-
-                    if n.is_name_matched(filtering_words) is False:
-                        logger.info(f"{n} filtered out, so omitted.")
-                    elif exclude_shallow_defects and is_shallow:
-                        logger.info(f"{n} is shallow, so omitted.")
-                    elif exclude_unconverged_defects and convergence is False:
-                        logger.info(f"{n} unconverged, so omitted.")
-                    else:
-                        continue
-                    energy_by_annotation.pop(annotation)
-
-                # Store lowest energy and its annotation wrt name and charge.
-                if energy_by_annotation:
-                    annotation, min_defect_energy = \
-                        min(energy_by_annotation.items(),
-                            key=lambda z: z[1].defect_energy)
-                    lowest_energies[name][charge] = \
-                        min_defect_energy.defect_energy
-                    lowest_energy_annotations[name][charge] = annotation
-
-            # Store cross point coord and its relevant two charge states.
-            cross_points_with_charges = []
-
-            for (c1, e1), (c2, e2) \
-                    in combinations(lowest_energies[name].items(), r=2):
-                # The cross point between two charge states.
-                x = - (e1 - e2) / (c1 - c2)
-                y = (c1 * e2 - c2 * e1) / (c1 - c2)
-
-                # The lowest energy among all the charge states to be compared.
-                compared_energy = min([energy + c * x for c, energy
-                                       in lowest_energies[name].items()])
-
-                if y < compared_energy + 1e-5:
-                    cross_points_with_charges.append([[x, y], [c1, c2]])
-
-            # need to sort the points along x-axis.
-            cpwc = sorted(cross_points_with_charges, key=lambda z: z[0][0])
-            transition_levels[name] = {"cross_points": [i[0] for i in cpwc],
-                                       "charges": [i[1] for i in cpwc]}
-
         x_min, x_max = x_range if x_range else (0, self.band_gap)
         y_min, y_max = float("inf"), -float("inf")
 
-        def min_e_at_ef(ec, ef):
+        def min_e_at_ef(ec: Dict[int, DefectEnergy], ef):
             # calculate each energy at the given Fermi level ef.
-            d = {c: e + c * ef for c, e in ec.items()}
+            d = {c: e.defect_energy + c * ef for c, e in ec.items()}
             # return the charge with the lowest energy, and its energy value
             return min(d.items(), key=itemgetter(1))
 
         # Note: len(self.energies) <= len(transition_levels)
-        for i, (name, tl) in enumerate(transition_levels.items()):
+        for i, (name, tl) in enumerate(self.transition_levels.items()):
             # lowest_energies[name] is {} when all results are omitted above.
-            if not lowest_energies[name]:
-                continue
             line_type = '-' if i < 5 else '--' if i < 10 else '-.'
             # ---------- Calculate cross points including edges ---------------
             cross_points = []
@@ -377,7 +343,7 @@ class DefectEnergies(MSONable):
 
             # keep x_min -> transition levels -> x_max for connecting points.
             # Add the plot point at x_min
-            charge, y = min_e_at_ef(lowest_energies[name], x_min + self.vbm)
+            charge, y = min_e_at_ef(self.defect_energies[name], x_min + self.vbm)
             cross_points.append([x_min, y])
             # Adding charge is a must for plot
             charge_set.add(charge)
@@ -397,7 +363,7 @@ class DefectEnergies(MSONable):
                                color=color[i])
 
             # Add the plot point at x_max
-            charge, y = min_e_at_ef(lowest_energies[name], x_max + self.vbm)
+            charge, y = min_e_at_ef(self.defect_energies[name], x_max + self.vbm)
             cross_points.append([x_max, y])
             charge_set.add(charge)
             y_min, y_max = min([y, y_min]), max([y, y_max])
@@ -418,7 +384,7 @@ class DefectEnergies(MSONable):
                 for cp in cross_points:
                     if x_min + 1e-4 < cp[0] < x_max - 1e-4 is False:
                         continue
-                    s = str(round(cp[0], 2)) + ", " + str(round(cp[1], 2))
+                    s = f"{round(cp[0], 2)}, {round(cp[1], 2)}"
                     pos_x = cp[0]
                     pos_y = cp[1] - margin_y
                     ax.annotate(s, (pos_x, pos_y), color=color[i], fontsize=10)
@@ -432,7 +398,7 @@ class DefectEnergies(MSONable):
 
             for j, (x, y) in enumerate(charge_pos):
                 charge = sorted_charge_set[j]
-                annotation = lowest_energy_annotations[name][charge]
+                annotation = self.defect_energies[name][charge].annotation
                 chg = f"{charge}: {annotation}" if annotation else str(charge)
 
                 ax.annotate(
@@ -440,9 +406,9 @@ class DefectEnergies(MSONable):
                     bbox=dict(facecolor='white', edgecolor=color[i], pad=1))
 
             if show_all_energies:
-                for c, e in lowest_energies[name].items():
-                    y1 = e + c * (x_min + self.vbm)
-                    y2 = e + c * (x_max + self.vbm)
+                for c, e in self.defect_energies[name].items():
+                    y1 = e.defect_energy + c * (x_min + self.vbm)
+                    y2 = e.defect_energy + c * (x_max + self.vbm)
                     ax.plot([x_min, x_max], [y1, y2], line_type, linewidth=0.3,
                             color=color[i])
 
