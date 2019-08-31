@@ -6,6 +6,7 @@ import numpy as np
 from monty.json import MSONable, MontyEncoder
 from monty.serialization import loadfn
 from pydefect.core.defect_entry import DefectEntry
+from pydefect.core.defect_name import DefectName
 from pydefect.core.supercell_calc_results import SupercellCalcResults
 from pydefect.corrections.corrections import Correction
 from pydefect.database.num_symmetry_operation \
@@ -15,7 +16,6 @@ from pydefect.util.tools import spin_key_to_str, str_key_to_spin
 from pydefect.util.vasp_util import calc_orbital_difference
 from pymatgen.core.structure import Structure
 from pymatgen.electronic_structure.core import Spin
-from pydefect.core.defect_name import DefectName
 
 __author__ = "Yu Kumagai"
 __maintainer__ = "Yu Kumagai"
@@ -215,9 +215,6 @@ class Defect(MSONable):
         self.initial_multiplicity = initial_multiplicity
         self.final_multiplicity = final_multiplicity
         # magnetization
-        if not magnetization.is_integer():
-            logger.warning(
-                f"{n} has fractional magnetization: {d.magnetization}")
         self.magnetization = magnetization
         # kpoint
         self.kpoint_coords = kpoint_coords
@@ -409,10 +406,10 @@ class Defect(MSONable):
         for s, v in self.band_edge_states.items():
             band_edges.extend([s.name.upper(), "->", str(v).rjust(17)])
 
-        outs = [f"  Convergence : {self.is_converged}",
-                f"       Magmom : {self.magnetization:>7}",
-                f"  Point group : {self.final_symmetry:>4}",
-                f"    Band edge : {'  '.join(band_edges)}"]
+        outs = [f" Convergence: {self.is_converged}",
+                f" Magmom: {self.magnetization:>7}",
+                f" Point group: {self.final_symmetry:>4}",
+                f" Band edge: {'  '.join(band_edges)}"]
 
         return " ".join(outs)
 

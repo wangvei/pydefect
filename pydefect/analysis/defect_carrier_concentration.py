@@ -1,14 +1,12 @@
 # -*- coding: utf-8 -*-
 
-import json
 from collections import defaultdict
-from typing import Optional, Tuple
 from copy import deepcopy
+from typing import Optional, Tuple
 
 import numpy as np
 from matplotlib import pyplot as plt
-from monty.json import MontyEncoder, MSONable
-from monty.serialization import loadfn
+from monty.json import MSONable
 from pydefect.analysis.defect_energies import DefectEnergies
 from pydefect.core.defect_name import DefectName
 from pydefect.core.error_classes import NoConvergenceError

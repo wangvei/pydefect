@@ -83,8 +83,7 @@ class DefectEigenvalue(MSONable):
         self.vbm = vbm
         self.cbm = cbm
         self.orbital_character = orbital_character
-        self.eigenvalue_correction = \
-            dict(eigenvalue_correction) if eigenvalue_correction else None
+        self.eigenvalue_correction = eigenvalue_correction
         self.band_edge_states = band_edge_states
 
     @classmethod
@@ -131,8 +130,7 @@ class DefectEigenvalue(MSONable):
         fig, axs = plt.subplots(nrows=1, ncols=num_figure, sharey='all')
         fig.subplots_adjust(wspace=0)
 
-        title = title if title else \
-            "_".join([self.name, str(self.charge), self.annotation])
+        title = title or "_".join([self.name, str(self.charge), self.annotation])
         fig.suptitle(title, fontsize=12)
         plt.title(title, fontsize=15)
 

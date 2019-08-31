@@ -1,18 +1,17 @@
 # -*- coding: utf-8 -*-
 
 import json
-from collections import defaultdict
-from copy import copy
 from itertools import combinations
 from itertools import groupby
-from typing import List, Tuple, Dict
 from operator import itemgetter, attrgetter
+from typing import List, Tuple, Dict
 
 import matplotlib.pyplot as plt
 import numpy as np
 from monty.json import MontyEncoder, MSONable
 from monty.serialization import loadfn
 from pydefect.analysis.defect import Defect
+from pydefect.core.config import COLOR
 from pydefect.core.defect_name import DefectName
 from pydefect.core.supercell_calc_results import SupercellCalcResults
 from pydefect.core.unitcell_calc_results import UnitcellCalcResults
@@ -20,7 +19,6 @@ from pydefect.util.logger import get_logger
 from pydefect.util.tools import (
     construct_obj_in_dict, sanitize_keys_in_dict, defaultdict_to_dict,
     flatten_dict)
-from pydefect.core.config import COLOR
 
 __author__ = "Yu Kumagai"
 __maintainer__ = "Yu Kumagai"
@@ -149,7 +147,8 @@ class DefectEnergies(MSONable):
             energy_by_c = {}
             for charge, g_charge in groupby(g_name, key=attrgetter("charge")):
                 energy_by_annotation = {}
-                for i, d in enumerate(list(g_charge)):
+
+                for d in g_charge:
                     n = DefectName(name, charge, d.annotation)
 
                     if n.is_name_matched(filtering_words) is False:
