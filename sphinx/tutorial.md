@@ -185,57 +185,64 @@ Since the total dos is so long, we show only whether it is set or not.
 ### 4. Calculation of competing phases
 When a defect is introduced, atoms are exchanged with the hypothetical atomic reservoirs within the thermodynamics framework.
 In order to calculate a free energy of defect formation that is approximated with the defect formation energy in most cases,
-we need to set chemical potentials of exchanged atoms accompanied with creating defects.
+we need to determine chemical potentials of exchanged atoms accompanied with creating defects.
 Usually, we consider the chemical potentials at the condition where competing phases coexist with the host material,
 which are determined from the chemical potential diagram.
 
-First, we create directories in `competing_phases/` for competing phases including VASP input sets in each directory.
+For this purpose, we create directories in `competing_phases/` for competing phases including VASP input sets in each directory.
 Using the `chempotdiag` library developed and managed by Akira Takahashi, 
 we can retrieve POSCARs of the stable or slightly unstable competing phases from [the Materials Project (MP)](https://materialsproject.org).
 For this purpose, one needs [the API keys](https://materialsproject.org/open) of the MP as mentioned above.
-Here, as an example, we obtain the competing materials with BaSnO of which energy above hull is less than 0.5 meV/atom using 
+Here, as an example, we obtain the competing materials with MgO of which energy above hull is less than 0.5 meV/atom using 
 ```
-python ~/my_bin/phos_pbesol/obadb/obadb/analyzer/chempotdiag/main.py cpd -m -el Mg O -ch 0.0
+python ~/my_bin/phos_pbesol/obadb/obadb/analyzer/chempotdiag/main.py cpd -m -el Mg O -ch 0.5
 ```
 Particular molecules, namely O<sub>2</sub>, N<sub>2</sub>, F<sub>2</sub>, H<sub>2</sub>O, N<sub>2</sub>, NH<sub>3</sub>, NO<sub>2</sub>, P<sub>2</sub>, and P<sub>4</sub>, 
-are not retrieved from MP but created by `chempotdiag` itself since these molecules have been calculated as solids in MP.
+are not retrieved from MP but created by `chempotdiag` itself since these molecules have been calculated as solids in MP, which could be inadequate for competing phases for defect calculations.
 
-The bulk structure, namely BaSnO<sub>3</sub> in this example, has already been calculated, so we do not have to iterate the same calculations.
-Therefore, we simply remove `Mg1O1_mp-126` and make a symbolic link by `ln -s ../unitcell/structure_opt MgO`.
-At this point, you can find these directories (at 2019/8/28),
+The bulk structure, namely MgO in this example, has already been calculated, so we do not have to iterate the same calculations, 
+but make a symbolic link by `ln -s ../unitcell/structure_opt MgO` after removing `Mg1O1_mp-126/`.
+At this point, you can find these directories under 2019/8/28),
 ```
 Mg4O8_mp-2589/  Mg9_mp-1094122/  MgO@  O2molecule_pydefect/
 ```
 
 We then generate `INCAR`, `POTCAR`, `KPOINTS` files for other competing solids or molecules.
-In order to compare the total energies, we need to use the same cutoff energy, `ENCUT`, increased to 1.3 times of max `ENMAX` between the constituent POTCARs.
-In case of MgO, `ENMAX` of Mg and O are 200.000 and 400.0, so we need to set `ENCUT = 520`, using the `vasp_oba_set` sub-command
+In order to compare the total energies, we need to use the same cutoff energy, `ENCUT`, which is increased to 1.3 times of max `ENMAX` between the constituent POTCARs.
+In case of MgO, `ENMAX` of Mg and O are 200.0 and 400.0, so we need to set `ENCUT = 520`, using the `vasp_oba_set` sub-command
 ```
-python ~/my_bin/pydefect/pydefect/main.py vos -t structure_opt -x pbesol -is ENCUT 520 --dirs *_*/
+python ~/my_bin/pydefect/pydefect/main.py vos -t structure_opt -is ENCUT 520 --dirs *_mp*/
 ```
 
 <p>Note, if competing phases are gases, we need to change `ISIF` to 2 so as not to relax the lattice constants (see [vasp manual](https://cms.mpi.univie.ac.at/wiki/index.php/ISIF)), 
-and `KPOINTS` requires only the &Gamma; point sampling.</p>
+and `KPOINTS` to the &Gamma; point sampling.</p>
 
 In such case, type as follows,
 ```
-python ~/my_bin/pydefect/pydefect/main.py vos -t structure_opt -x pbesol -is ENCUT 520 ISIF 2 -vos_kw is_cluster True --dirs O2molecule_pydefect
+python ~/my_bin/pydefect/pydefect/main.py vos -t structure_opt -is ENCUT 520 ISIF 2 -vos_kw is_cluster True --dirs O2molecule_pydefect
 ```
-where O2molecule_pydefect is a directory for the O2 molecule model. 
+where O2molecule_pydefect is a directory for the O<sub>2</sub> molecule model. 
 
-After finishing the vasp calculations, we generate the chemical potential diagram with
+After finishing the vasp calculations, we can generate the chemical potential diagram with
+```
+python ~/my_bin/phos_pbesol/obadb/obadb/analyzer/chempotdiag/main.py cpd -v */ -c MgO -y -s cpd.pdf
+```
+If you rename the CONTCAR and OUTCAR files to e.g., POSCAR-finish and OUTCAR-finish, type
 ```
 python ~/my_bin/phos_pbesol/obadb/obadb/analyzer/chempotdiag/main.py cpd -v */ -p POSCAR-finish -o OUTCAR-finish -c MgO -y -s cpd.pdf
 ```
-Note that for gas phases there are some parameters of the partial pressure and temperature to determine the chemical potentials (read help for more details).
-With this command, we depict the Mg-O chemical potential diagram saved as `cpd.pdf` which looks like
+See help of `chempotdiag` for more other options.
+Especially, there are some parameters of the partial pressure and temperature for gas phases to determine the chemical potentials.
+With this command, we depict the Mg-O chemical potential diagram that is saved as `cpd.pdf` which looks like
 
 ![](cpd_MgO.png)
 
+<!--
 In ternary case, it looks like
 ![](cpd_BaSnO3.png)
+-->
 
-Values at the vertices at the BaSnO<sub>3</sub> region written in `vertices_BaSnO3.yaml` as shown
+Values at the vertices at the MgO region written in `vertices_MgO.yaml` are shown as follows.
 ```
 A: {Mg: 0.0, O: -5.910971904865118}
 B: {Mg: -5.847874231666665, O: -0.06309767319845339}
@@ -252,7 +259,7 @@ So far, we have finished the calculations of the unit cell and competing phases,
 Let's create `defect/` directory and copy unitcell `POSCAR` file from *e.g.* `unitcell/dos/` to `defect/`
 
 Firstly, we need to determine the shape and size of the supercell.
-pydefect recommends a nearly isotropic supercell composed of moderate number of atoms.
+pydefect recommends a nearly isotropic (and sometimes cubic-like) supercell composed of moderate number of atoms.
 For this purpose, use the `recommend_supercell` (=`rs`) sub-command,
 ```
 python ~/my_bin/pydefect/pydefect/main.py rs
@@ -267,7 +274,12 @@ It is also possible to change the lattice angle of the supercell from those of t
 but not a good idea for point-defect calculations.
 For example, we can make a supercell in which a-, b-, and c-axes are mutually orthogonal.
 However, its lattice breaks the original hexagonal symmetry, which reduces the accuracy of the point-defect calculations.
+Furthermore, it prevents determination of point group of defects.
 
+When the Bravais lattice is rhombohedral, the lattice angle could be too small or too large (e.g., 20 or 160 degrees).
+In such case, a simple supercell expansion is not adequate as the defects do not arrange evenly in the real space.
+Therefore, pydefect expand the cell in a very specific way.
+Details are written elsewhere.
 
 ### 6. Construction of defect initial setting
 We then create the initial setting file for point defects with the `initial_setting` (=`is`) sub-command.
@@ -280,39 +292,31 @@ If one follows this tutorial, `DPOSCAR` should be the same as `SPOSCAR`, while i
 
 An example of `defect.in` looks as follows:
 ```
-  Space group: Pm-3m
+  Space group: Fm-3m
 
-Transformation matrix:  3  3  3
-Cell multiplicity: 27
+Transformation matrix: 2 0 0 0 2 0 0 0 2
+Cell multiplicity: 32
 
-   Irreducible element: Ba1
+   Irreducible element: Mg1
         Wyckoff letter: a
          Site symmetry: m-3m
-          Coordination: O2-: 2.9 2.9 2.9 2.9 2.9 2.9 2.9 2.9 2.9 2.9 2.9 2.9 
-      Equivalent atoms: 1..27
-Fractional coordinates: 0.1666670  0.1666670  0.1666670
-     Electronegativity: 0.89
+          Coordination: O: 2.1 2.1 2.1 2.1 2.1 2.1
+      Equivalent atoms: 0..31
+Fractional coordinates: 0.0000000  0.0000000  0.0000000
+     Electronegativity: 1.31
        Oxidation state: 2
 
-   Irreducible element: Sn1
+   Irreducible element: O1
         Wyckoff letter: b
          Site symmetry: m-3m
-          Coordination: O2-: 2.05 2.05 2.05 2.05 2.05 2.05 
-      Equivalent atoms: 28..54
-Fractional coordinates: 0.0000000  0.0000000  0.0000000
-     Electronegativity: 1.96
-       Oxidation state: 4
-       
-   Irreducible element: O1
-        Wyckoff letter: c
-         Site symmetry: 4/mmm
-          Coordination: Ba2+: 2.9 2.9 2.9 2.9 Sn4+: 2.05 2.05 O2-: 2.9 2.9 2.9 2.9 2.9 2.9 2.9 2.9 
-      Equivalent atoms: 55..135
-Fractional coordinates: 0.0000000  0.1666670  0.0000000
+          Coordination: Mg: 2.1 2.1 2.1 2.1 2.1 2.1
+      Equivalent atoms: 32..63
+Fractional coordinates: 0.2500000  0.0000000  0.0000000
      Electronegativity: 3.44
        Oxidation state: -2
 
-Interstitials: 
+Interstitials: all
+Complex defects: 
 Antisite defects: 
 
 Substituted defects: 
@@ -322,12 +326,12 @@ Maximum Displacement: 0.2
 Exceptionally included: 
 Exceptionally excluded: 
 
-Cutoff region of neighboring atoms: 3.0
+Cutoff region of neighboring atoms: 2.95
 Symprec: 0.01
 Angle tolerance: 5
 ```
-The `Coordination` is shown when the interatom distance is less than 1.3 times the sum of the ionic radii 
-(if ionic radii are absent, atomic radii multiplied by 1.2 are used, instead).
+The `Coordination` is shown for the atoms whose distances from the defect are less than 1.4 times of the minimum inter-atom distance in the perfect cell.
+This parameter is also controlled with the `pydefect.yaml` file.
 
 If we want to add dopants *a posteriori*, we can type as follows.
 ```
@@ -343,53 +347,45 @@ Electronegativity: 0.93
 
 By inserting this with an editor to `defect.in` and modify `Substituted defects` as follows
 ```
-  Space group: Pm-3m
+  Space group: Fm-3m
 
-Transformation matrix:  3  3  3
-Cell multiplicity: 27
+Transformation matrix: 2 0 0 0 2 0 0 0 2
+Cell multiplicity: 32
 
-   Irreducible element: Ba1
+   Irreducible element: Mg1
         Wyckoff letter: a
          Site symmetry: m-3m
-          Coordination: O2-: 2.9 2.9 2.9 2.9 2.9 2.9 2.9 2.9 2.9 2.9 2.9 2.9 
-      Equivalent atoms: 1..27
-Fractional coordinates: 0.1666670  0.1666670  0.1666670
-     Electronegativity: 0.89
+          Coordination: O: 2.1 2.1 2.1 2.1 2.1 2.1
+      Equivalent atoms: 0..31
+Fractional coordinates: 0.0000000  0.0000000  0.0000000
+     Electronegativity: 1.31
        Oxidation state: 2
 
-   Irreducible element: Sn1
+   Irreducible element: O1
         Wyckoff letter: b
          Site symmetry: m-3m
-          Coordination: O2-: 2.05 2.05 2.05 2.05 2.05 2.05 
-      Equivalent atoms: 28..54
-Fractional coordinates: 0.0000000  0.0000000  0.0000000
-     Electronegativity: 1.96
-       Oxidation state: 4
-
-   Irreducible element: O1
-        Wyckoff letter: c
-         Site symmetry: 4/mmm
-          Coordination: Ba2+: 2.9 2.9 2.9 2.9 Sn4+: 2.05 2.05 O2-: 2.9 2.9 2.9 2.9 2.9 2.9 2.9 2.9 
-      Equivalent atoms: 55..135
-Fractional coordinates: 0.0000000  0.1666670  0.0000000
+          Coordination: Mg: 2.1 2.1 2.1 2.1 2.1 2.1
+      Equivalent atoms: 32..63
+Fractional coordinates: 0.2500000  0.0000000  0.0000000
      Electronegativity: 3.44
        Oxidation state: -2
-
-Interstitials: 
-Antisite defects: 
 
    Dopant element: Na
 Electronegativity: 0.93
   Oxidation state: 1
 
-Substituted defects: Na_Ba
+Interstitials: all
+Complex defects: 
+Antisite defects: 
+
+Substituted defects: Na_Mg1 
 
 Maximum Displacement: 0.2
 
 Exceptionally included: 
 Exceptionally excluded: 
 
-Cutoff region of neighboring atoms: 3.0
+Cutoff region of neighboring atoms: 2.95
 Symprec: 0.01
 Angle tolerance: 5
 ```
@@ -412,74 +408,103 @@ There are so many tips related to `defect.in`.
    Then, `Maximum Displacement` is simply set to 0.
 
 ### 7. Decision of interstitial sites
-In addition to vacancies and antisites, one may want to add the interstitials.
+In addition to vacancies and antisites, one may want to take into account the interstitials.
 For this purpose, we need to determine the interstitial sites.
 Most people determine them by seeing the host crystal structures, 
 while there are a couple of procedures that recommend the interstitial sites.
 However, it is not an easy task to speculate the most likely interstitial sites because they also depend on the substituted element in general.
 For instance, when positively charged cations with closed shells are substituted (e.g., Mg<sup>2+</sup>, Al<sup>3+</sup>), 
-the largest vacant space should be most likely interstitial sites. 
+the largest vacant space should be most likely interstitial sites, as they tend not to make bonding with other atoms. 
 On the other hand, in case of a proton (H<sup>+</sup>), 
-it tends to locate near O<sup>2-</sup> or N<sup>3-</sup> to form the strong O-H or N-H bonding.
-Furthermore, a hydride ion (H<sup>-</sup>) should prefer to locate at very much different places. 
+it prefers to locate near O<sup>2-</sup> or N<sup>3-</sup> to form the strong O-H or N-H bonding.
+Conversely, a hydride ion (H<sup>-</sup>) should prefer to locate at very much different places. 
 Therefore, we need to be careful when determining the interstitial sites.
 
-To add the interstitial site at e.g., 0.375 0.375 0.375, we use the `interstitial` (=`i`) sub-command like
+`pydefect` implements a recommendation of the interstitial sites using the unitcell charge density
+using the `ChargeDensityAnalyzer` class implemented in `pymatgen`.
+To use this, we need to generate `CHGCAR` based on the `UPOSCAR` file.
+(Of course, if you already have `CHGCAR` at the unitcell calculations, you can use it, but be sure the structure is the same as `UPOSCAR`.)
+For this purpose, make `chgcar/` and copy UPOSCAR to `chgcar/POSCAR` and type
 ```
-python ~/my_bin/pydefect/pydefect/main.py i -c 0.375 0.375 0.375
+python ~/my_bin/pydefect/pydefect/main.py vos -t structure_opt -is LCHARG True LWAVE False -vos_kw standardize_structure False
+```
+Then, type
+```
+python ~/my_bin/pydefect/pydefect/main.py i --chgcar CHGCAR
+```
+With this, one can obtain the following output.    
+```
+      a     b     c  Charge Density
+0  0.25  0.75  0.75        5.209053
+1  0.25  0.75  0.25        5.209053
+2  0.25  0.25  0.75        5.209053
+3  0.25  0.25  0.25        5.209053
+4  0.75  0.75  0.75        5.209053
+5  0.75  0.75  0.25        5.209053
+6  0.75  0.25  0.75        5.209053
+7  0.75  0.25  0.25        5.209053
+
+++ Inequivalent indices and site symmetries ++
+0 -43m
+```
+
+
+
+To add the interstitial site at e.g., 0.25  0.25  0.25, we use the `interstitial` (=`i`) sub-command like
+```
+python ~/my_bin/pydefect/pydefect/main.py i -c 0.25 0.25 0.25
 ```
 
 `interstitials.yaml` is then generated, which show information related to the interstitial sites.
 ```
 i1:
-  representative_coords: [0.375, 0.375, 0.375]
-  wyckoff: a
+  representative_coords: [0.125, 0.125, 0.125]
+  wyckoff: c
   site_symmetry: -43m
-  symmetry_multiplicity: 64
+  multiplicity: 64
   coordination_distances:
-    Mg: [1.84, 1.84, 1.84, 1.84]
-    O: [1.84, 1.84, 1.84, 1.84, 3.52, 3.52, 3.52, 3.52, 3.52, 3.52, 3.52, 3.52, 3.52,
-      3.52, 3.52, 3.52]
+    Mg: [1.82, 1.82, 1.82, 1.82]
+    O: [1.82, 1.82, 1.82, 1.82]
   method: manual
 ```
-If we want to add another site at e.g. 0.375 0.375 0.5, interstitials.yaml is updated as follows:
+If we want to add another site at e.g. 0.25 0.25 0, interstitials.yaml is updated as follows:
 ```
 i1:
-  representative_coords: [0.375, 0.375, 0.375]
-  wyckoff: a
+  representative_coords: [0.125, 0.125, 0.125]
+  wyckoff: c
   site_symmetry: -43m
-  symmetry_multiplicity: 64
+  multiplicity: 64
   coordination_distances:
-    Mg: [1.84, 1.84, 1.84, 1.84]
-    O: [1.84, 1.84, 1.84, 1.84, 3.52, 3.52, 3.52, 3.52, 3.52, 3.52, 3.52, 3.52, 3.52,
-      3.52, 3.52, 3.52]
+    Mg: [1.82, 1.82, 1.82, 1.82]
+    O: [1.82, 1.82, 1.82, 1.82]
   method: manual
 i2:
-  representative_coords: [0.375, 0.375, 0.5]
+  representative_coords: [0.125, 0.125, 0.0]
   wyckoff: c
-  site_symmetry: mmm
-  symmetry_multiplicity: 192
+  site_symmetry: -43m
+  multiplicity: 64
   coordination_distances:
-    Mg: [1.5, 1.5, 2.6, 2.6, 2.6, 2.6]
-    O: [1.5, 1.5, 2.6, 2.6, 2.6, 2.6, 3.36, 3.36, 3.36, 3.36]
+    Mg: [1.49, 1.49, 2.58, 2.58, 2.58, 2.58]
+    O: [1.49, 1.49, 2.58, 2.58, 2.58, 2.58]
   method: manual
 ```
 
 When we try to add the site that is very close to the constituent atoms or other interstitial sites,
-you will get the error message as 
+you will get the warning message as 
 ```
-Inserted position is too close to another interstitial site.
-The distance is 0.042 A.
+2019-08-31 17:16:08,029 WARNING pydefect.util.structure_tools Inserted position is too close to X0+.
+  The distance is 0.210 A.
 ```
-However, if we really want to add the site even in such cases, we can do it by adding `--force_add` option.
+where X0+ means another interstitial site,
+but be careful the site is anyway added.
 
 Once we generate the interstitial.yaml, we also need to modify the `Interstitials` in `defect.in` file
 ```
-Interstitials: i1
+Interstitials: i1 i2
 ```
 Or we can type the `is` sub-command again as follows.
 ```
-python ~/my_bin/pydefect/pydefect/main.py is --interstitial_sites i1 i2
+python ~/my_bin/pydefect/pydefect/main.py is --interstitial_sites i1 i2 --dopants Na
 ```
 
 ### 8. Creation of defect calculation directories
@@ -488,11 +513,7 @@ We next create directories for point-defect calculations by the `defect_vasp_oba
 python ~/my_bin/pydefect/pydefect/main.py dvos
 ```
 
-With this command, these directories are created.
-```
-perfect, Na_Ba1_-1, Na_Ba1_0, Na_Ba1_1, Va_Ba1_-2, Va_Ba1_-1, Va_Ba1_0, 
-Va_O1_0, Va_O1_1, Va_O1_2, Va_Sn1_0, Va_Sn1_-1, Va_Sn1_-2, Va_Sn1_-3, Va_Sn1_-4
-```
+With this command, a lot of directories are created, including `perfect`.
 
 If you want to calculate only oxygen vacancies, you can restrict the calculated defects with `-kw` option and a python regular expression,
 ```
@@ -526,6 +547,9 @@ python ~/my_bin/pydefect/pydefect/main.py dvos -d Va_O1_-1
 ```
 With this command, `Va_O1_-1/` is created.
 
+### Creation of complex defect directories
+TBA
+<!--
 We often want to calculate complex defects, peculiar defects such as DX centers, defects with different initial structures, and in such cases, need to construct `POSCAR`s by hand.
 However, pydefect can generate `defect_entry.json` by parsing the `POSCAR` and `INCAR` files for the defect.
 When `defect_entry.json` is generated, the directory name is parsed.
@@ -555,9 +579,10 @@ python ~/my_bin/pydefect/pydefect/main.py de --make_defect_entry
 to generate `defect_entry.json`.
 
 <p> We also recommend the users to use &Gamma; version of vasp if the k-point sampling is only &Gamma; point for very large supercells.</p>
+-->
 
 ### 9. Generation of supercell information related to point-defect calculations
-After (partly) finishing the vasp calculations, we next parse the calculation results and generate the `dft_results.json` 
+After (partly) finishing the vasp calculations, we next generate the `dft_results.json` 
 that contains the first-principles calculation results related to the defect properties.
 
 By using the `supercell_results` (=`sr`) sub-command like,
@@ -572,27 +597,7 @@ python ~/my_bin/pydefect/pydefect/main.py sr --dirs Va_O1_0
 
 Here, the name of `perfect/` has special meaning, so users **must** use this name for the supercells without defects.
 
-Some calculations might not be finished properly or still ongoing.
-To see whether the calculations are properly finished, one can use the `diagnose` (=`d`) sub-command
-```
-python ~/my_bin/pydefect/pydefect/main.py d
-```
-which shows like
-```
-  Va_Ba1_-1/  convergence : F    band edge : UP  :    No in-gap state  DOWN  :       Acceptor PHS
-  Va_Ba1_-2/  convergence : T    band edge : UP  :    No in-gap state  DOWN  :    No in-gap state
-   Va_Ba1_0/  No supercell results file.
-    Va_O1_0/  convergence : T    band edge : UP  :    Localized state  DOWN  :    Localized state
-    Va_O1_1/  convergence : T    band edge : UP  :    Localized state  DOWN  :    Localized state
-    Va_O1_2/  convergence : T    band edge : UP  :    Localized state  DOWN  :    Localized state
-  Va_Sn1_-1/  convergence : T    band edge : UP  :    No in-gap state  DOWN  :    Localized state
-  Va_Sn1_-2/  convergence : T    band edge : UP  :    Localized state  DOWN  :    Localized state
-  Va_Sn1_-3/  convergence : T    band edge : UP  :    Localized state  DOWN  :    Localized state
-  Va_Sn1_-4/  convergence : T    band edge : UP  :    Localized state  DOWN  :    Localized state
-   Va_Sn1_0/  convergence : T    band edge : UP  :    No in-gap state  DOWN  :    Localized state
-```
-If the convergences at the electronic and/or ionic step are not attained, convergence is shown as `F`.
-Net to the convergence, we can see band edge information at the spin up (UP) and down (DOWN) channels, which will be explained later.
+
 
 ### 10. Corrections of defect formation energies in finite-size supercells 
 When supercell method is adopted, obtained total energies for **charged defects** are not properly estimated due to interaction between a defect, its images, and background charge. 
@@ -618,6 +623,34 @@ and their differences at each atomic site as shown below.
 The width and height of the horizontal line indicate the averaged region and ∆VPC, q/b|far, respectively. 
 When performing the corrections, I strongly recommend you to check all the potential.eps files of your calculated defects so as to reduce careless mistakes as much as possible.
 
+### 11. Check defect eigenvalues
+Then, we need to generate `defect.json` files in all the defect directories.
+For this purpose, type,
+```
+python ~/my_bin/pydefect/pydefect/main.py d 
+```
+
+Some calculations might not be finished properly or still ongoing.
+To see whether the calculations are properly finished, one can use the `diagnose` (=`d`) option
+```
+python ~/my_bin/pydefect/pydefect/main.py d -d
+```
+which shows like
+```
+  Va_Ba1_-1/  convergence : F    band edge : UP  :    No in-gap state  DOWN  :       Acceptor PHS
+  Va_Ba1_-2/  convergence : T    band edge : UP  :    No in-gap state  DOWN  :    No in-gap state
+   Va_Ba1_0/  No supercell results file.
+    Va_O1_0/  convergence : T    band edge : UP  :    Localized state  DOWN  :    Localized state
+    Va_O1_1/  convergence : T    band edge : UP  :    Localized state  DOWN  :    Localized state
+    Va_O1_2/  convergence : T    band edge : UP  :    Localized state  DOWN  :    Localized state
+  Va_Sn1_-1/  convergence : T    band edge : UP  :    No in-gap state  DOWN  :    Localized state
+  Va_Sn1_-2/  convergence : T    band edge : UP  :    Localized state  DOWN  :    Localized state
+  Va_Sn1_-3/  convergence : T    band edge : UP  :    Localized state  DOWN  :    Localized state
+  Va_Sn1_-4/  convergence : T    band edge : UP  :    Localized state  DOWN  :    Localized state
+   Va_Sn1_0/  convergence : T    band edge : UP  :    No in-gap state  DOWN  :    Localized state
+```
+If the convergences at the electronic and/or ionic step are not attained, convergence is shown as `F`.
+Net to the convergence, we can see band edge information at the spin up (UP) and down (DOWN) channels, which will be explained later.
 
 ### 11. Check defect eigenvalues
 Generally, point defects are divided into three types.
