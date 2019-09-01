@@ -3,6 +3,7 @@
 from copy import deepcopy
 from itertools import groupby
 from typing import Union, List
+from operator import attrgetter
 
 from monty.json import MSONable
 from pydefect.analysis.defect import Defect
@@ -205,7 +206,8 @@ def defect_structure_matcher(d_list: List[DefectStructure],
 
     group = {}
     # Pre-grouped by name
-    for name, g in groupby(d_list, key=lambda n: n.name):
+    d_list.sort(key=attrgetter("name"))
+    for name, g in groupby(d_list, key=attrgetter("name")):
         unmatched = list(g)
         group[name] = []
         while len(unmatched) > 0:

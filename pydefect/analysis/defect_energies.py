@@ -143,8 +143,10 @@ class DefectEnergies(MSONable):
         defect_energies = {}
         transition_levels = {}
 
+        defects.sort(key=attrgetter("name"))
         for name, g_name in groupby(defects, key=attrgetter("name")):
             energy_by_c = {}
+            g_name = sorted(list(g_name), key=attrgetter("charge"))
             for charge, g_charge in groupby(g_name, key=attrgetter("charge")):
                 energy_by_annotation = {}
 

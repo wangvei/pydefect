@@ -57,8 +57,8 @@ def diagnose_band_edges(participation_ratio: dict,
                         orbital_character: dict,
                         perfect_orbital_character: dict,
                         band_edge_energies: dict,
-                        supercell_vbm: float,
-                        supercell_cbm: float,
+                        perfect_supercell_vbm: float,
+                        perfect_supercell_cbm: float,
                         similarity_criterion: float = 0.12,
                         phs_similarity_criterion: float = 0.2,
                         localized_criterion: float = 0.5,
@@ -80,9 +80,9 @@ def diagnose_band_edges(participation_ratio: dict,
             Averaged band energy over k-space as function of spin and band_edge
             keys: [spin][band_edge]
             values (float): eigenvalue in absolute scale.
-        supercell_vbm (float):
+        perfect_supercell_vbm (float):
             VBM in the perfect supercell.
-        supercell_cbm (float):
+        perfect_supercell_cbm (float):
             CBM in the perfect supercell.
         similarity_criterion:
             Criterion to judge if the eigenstate is different from a host state
@@ -129,9 +129,9 @@ def diagnose_band_edges(participation_ratio: dict,
                 and participation_ratio[spin]["hob"] < localized_criterion
                 and participation_ratio[spin]["lub"] < localized_criterion
                 and abs(band_edge_energies[spin]["lub"]["bottom"]
-                        - supercell_cbm) < near_edge_energy_criterion
+                        - perfect_supercell_cbm) < near_edge_energy_criterion
                 and abs(band_edge_energies[spin]["hob"]["top"]
-                        - supercell_vbm) < near_edge_energy_criterion):
+                        - perfect_supercell_vbm) < near_edge_energy_criterion):
             band_edges[spin] = BandEdgeState.no_in_gap
 
         # When the highest-occupied band (=hob) is a perturbed host state,
@@ -143,16 +143,16 @@ def diagnose_band_edges(participation_ratio: dict,
         # the criterion is doubled from that of regular band edge.
         elif (donor_phs_difference < phs_similarity_criterion
               and participation_ratio[spin]["hob"] < localized_criterion
-              and supercell_cbm - band_edge_energies[spin]["hob"]["bottom"]
+              and perfect_supercell_cbm - band_edge_energies[spin]["hob"]["bottom"]
               < near_edge_energy_criterion) or \
-                (band_edge_energies[spin]["hob"]["bottom"] - supercell_cbm > 0):
+                (band_edge_energies[spin]["hob"]["bottom"] - perfect_supercell_cbm > 0):
             band_edges[spin] = BandEdgeState.donor_phs
 
         elif (acceptor_phs_difference < phs_similarity_criterion
               and participation_ratio[spin]["lub"] < localized_criterion
-              and band_edge_energies[spin]["lub"]["top"] - supercell_vbm
+              and band_edge_energies[spin]["lub"]["top"] - perfect_supercell_vbm
               < near_edge_energy_criterion) or \
-                (band_edge_energies[spin]["lub"]["top"] - supercell_vbm < 0):
+                (band_edge_energies[spin]["lub"]["top"] - perfect_supercell_vbm < 0):
             band_edges[spin] = BandEdgeState.acceptor_phs
 
         else:

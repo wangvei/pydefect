@@ -601,6 +601,7 @@ def plot_energy(args):
                                         perfect=perfect,
                                         defects=defect_list,
                                         chem_pot=chem_pot,
+                                        filtering_words=args.filtering,
                                         chem_pot_label=args.chem_pot_label,
                                         system=args.name)
 
@@ -625,8 +626,12 @@ def plot_energy(args):
     # else:
 #        defect_concentration = None
 
-    plt = defect_energies.plot_energy(filtering_words=args.filtering,
-                                      x_range=args.x_range,
+    # plt = defect_energies.plot_energy(filtering_words=args.filtering,
+    #                                   x_range=args.x_range,
+    #                                   y_range=args.y_range,
+    #                                   show_transition_levels=args.show_tl,
+    #                                   show_all_energies=args.show_all)
+    plt = defect_energies.plot_energy(x_range=args.x_range,
                                       y_range=args.y_range,
                                       show_transition_levels=args.show_tl,
                                       show_all_energies=args.show_all)
