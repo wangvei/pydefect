@@ -2,7 +2,7 @@
 
 from collections import OrderedDict
 from copy import deepcopy
-from typing import Union, Optional
+from typing import Union, Optional, Dict, List
 
 import yaml
 from monty.json import MSONable
@@ -124,16 +124,16 @@ class InterstitialSiteSet(MSONable):
 
         return d
 
-    def as_dict(self):
+    def as_dict(self) -> Dict[str, dict]:
         return {"interstitial_site_set": self.site_set_as_dict(),
                 "structure":          self.structure.as_dict()}
 
-    def site_set_to_yaml_file(self, yaml_filename="interstitials.yaml"):
+    def site_set_to_yaml_file(self, yaml_filename="interstitials.yaml") -> None:
         with open(yaml_filename, "w") as f:
             f.write(yaml.dump(self.site_set_as_dict()))
 
     @property
-    def coords(self):
+    def coords(self) -> List[list]:
         """Return list of fractional coordinates of interstitial sites"""
         return \
             [v.representative_coords for v in self.interstitial_sites.values()]

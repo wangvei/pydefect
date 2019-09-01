@@ -2,6 +2,7 @@
 
 import json
 from pathlib import Path
+from pprint import pformat
 from typing import Union, Tuple, Optional
 
 import numpy as np
@@ -36,7 +37,7 @@ def analyze_procar(hob_index: dict,
                    procar: Procar,
                    eigenvalues: dict,
                    structure: Structure,
-                   neighboring_sites: list) -> Tuple[dict, dict, dict]:
+                   neighboring_sites: list) -> Tuple[dict, dict, dict, dict]:
     """ Analyze Procar to investigate defect properties
 
     Args:
@@ -68,8 +69,9 @@ def analyze_procar(hob_index: dict,
     """
 
     edge_energies = mod_defaultdict(depth=3)
-    participation_ratio = mod_defaultdict(depth=2)
     orbital_character = mod_defaultdict(depth=3)
+    orbital_character_indices = mod_defaultdict(depth=3)
+    participation_ratio = mod_defaultdict(depth=2)
 
     for spin in eigenvalues.keys():
         # index i is used to increment band index from hob to lub
@@ -97,6 +99,9 @@ def analyze_procar(hob_index: dict,
             for energy_position, k_index \
                     in zip(["top", "bottom"], [top_k_index, bottom_k_index]):
 
+                orbital_character_indices[spin][band_edge][energy_position] = \
+                    {"band_index": band_index, "k_index": k_index}
+
                 orbital_character[spin][band_edge][energy_position] = \
                     calc_orbital_character(procar=procar,
                                            structure=structure,
@@ -110,9 +115,11 @@ def analyze_procar(hob_index: dict,
     else:
         participation_ratio = None
     orbital_character = defaultdict_to_dict(orbital_character)
+    orbital_character_indices = defaultdict_to_dict(orbital_character_indices)
     edge_energies = defaultdict_to_dict(edge_energies)
 
-    return edge_energies, orbital_character, participation_ratio
+    return (edge_energies, orbital_character, orbital_character_indices,
+            participation_ratio)
 
 
 class SupercellCalcResults(MSONable):
@@ -138,6 +145,7 @@ class SupercellCalcResults(MSONable):
                  neighboring_sites_after_relax: list,
                  band_edge_energies: dict = None,
                  orbital_character: dict = None,
+                 orbital_character_indices: dict = None,
                  participation_ratio: dict = None):
         """
         None is set for some properties of perfect supercell.
@@ -184,6 +192,7 @@ class SupercellCalcResults(MSONable):
                 in the final structure.
             band_edge_energies (dict):
             orbital_character (dict):
+            orbital_character_indices (dict):
             participation_ratio (dict):
                 See analyze_procar function for details
         """
@@ -206,19 +215,21 @@ class SupercellCalcResults(MSONable):
         self.neighboring_sites_after_relax = neighboring_sites_after_relax
         self.band_edge_energies = band_edge_energies
         self.orbital_character = orbital_character
+        self.orbital_character_indices = orbital_character_indices
         self.participation_ratio = participation_ratio
 
     def __repr__(self):
         outs = [f"total energy (eV): {self.total_energy}",
                 f"total total_magnetization (mu_B): {self.total_magnetization}",
-                f"electrostatic potential: {self.electrostatic_potential}",
                 f"vbm: {self.vbm}",
                 f"cbm: {self.cbm}",
-                f"final structure: {self.final_structure}", "",
                 f"site_symmetry: {self.site_symmetry}",
                 f"volume: {self.volume}",
                 f"Fermi level (eV): {self.fermi_level}",
-                f"Orbital character (eV): {self.orbital_character}"]
+                f"Orbital character indices:",
+                pformat(self.orbital_character_indices),
+                f"Orbital character :",
+                pformat(self.orbital_character)]
 
         return "\n".join(outs)
 
@@ -315,7 +326,8 @@ class SupercellCalcResults(MSONable):
                                               defect_entry.anchor_atom_index)
         # procar related
         if not procar:
-            band_edge_energies = orbital_character = participation_ratio = None
+            band_edge_energies = orbital_character = \
+                orbital_character_indices = participation_ratio = None
         else:
             procar = parse_file(Procar, Path(directory_path) / procar)
             # The k-point indices at the band edges in defect calculations.
@@ -325,7 +337,8 @@ class SupercellCalcResults(MSONable):
             down_index = round((outcar.nelect - (magnetization + 0.1)) / 2) - 1
             hob_index = {Spin.up: up_index, Spin.down: down_index}
 
-            band_edge_energies, orbital_character, participation_ratio = \
+            (band_edge_energies, orbital_character, orbital_character_indices,
+             participation_ratio) = \
                 analyze_procar(hob_index, procar, vasprun.eigenvalues,
                                final_structure, neighboring_sites)
 
@@ -348,6 +361,7 @@ class SupercellCalcResults(MSONable):
                    neighboring_sites_after_relax=neighboring_sites,
                    band_edge_energies=band_edge_energies,
                    orbital_character=orbital_character,
+                   orbital_character_indices=orbital_character_indices,
                    participation_ratio=participation_ratio)
 
     @classmethod

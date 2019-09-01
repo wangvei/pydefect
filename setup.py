@@ -30,7 +30,7 @@ setup(
         "License :: OSI Approved :: MIT License",
     ],
     install_requires=['numpy', 'pymatgen', 'monty', 'matplotlib', 'argcomplete',
-                      'seekpath', 'spglib', 'scipy', 'ase', 'tqdm', 'yaml'],
+                      'seekpath', 'spglib', 'scipy', 'ase', 'tqdm', 'pyyaml'],
     cmdclass = cmdclass,
     ext_modules=ext_modules,
 )

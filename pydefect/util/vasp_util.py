@@ -127,11 +127,13 @@ def calc_orbital_character(procar: Procar,
     for element in structure.symbol_set:
         # get list of index
         indices = structure.indices_from_symbol(element)
-        orbital_components[element] = {"s": projection_sum(indices, 0, 0),
-                                       "p": projection_sum(indices, 1, 3),
-                                       "d": projection_sum(indices, 4, 8)}
+        orbital_components[element] = \
+            {"s": round(projection_sum(indices, 0, 0), 3),
+             "p": round(projection_sum(indices, 1, 3), 3),
+             "d": round(projection_sum(indices, 4, 8), 3)}
         try:
-            orbital_components[element]["f"] = projection_sum(indices, 9, 16)
+            orbital_components[element]["f"] = \
+                round(projection_sum(indices, 9, 16), 3)
         except KeyError:
             pass
 

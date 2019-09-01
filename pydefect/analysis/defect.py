@@ -60,7 +60,8 @@ def diagnose_band_edges(participation_ratio: dict,
                         supercell_vbm: float,
                         supercell_cbm: float,
                         similarity_criterion: float = 0.12,
-                        localized_criterion: float = 0.4,
+                        phs_similarity_criterion: float = 0.2,
+                        localized_criterion: float = 0.5,
                         near_edge_energy_criterion: float = 0.3):
     """ Diagnose the band edge states in supercell with a defect.
 
@@ -85,6 +86,8 @@ def diagnose_band_edges(participation_ratio: dict,
             CBM in the perfect supercell.
         similarity_criterion:
             Criterion to judge if the eigenstate is different from a host state
+        phs_similarity_criterion:
+            Criterion to judge if the system shows the phs.
         localized_criterion (float):
             Criterion to judge the orbital is localized if the participation
             ratio is larger than this value.
@@ -134,20 +137,22 @@ def diagnose_band_edges(participation_ratio: dict,
         # When the highest-occupied band (=hob) is a perturbed host state,
         # 1. Bottom of hob is similar to the cbm in perfect.
         # 2. Participation rations are small enough.
-        # 3. Energy of bottom of hob is close to the supercell cbm.
+        # 3. Energy of bottom of hob is close to or higher than supercell cbm.
 
         # To determine the difference of perturbed host state (phs),
         # the criterion is doubled from that of regular band edge.
-        elif (donor_phs_difference < similarity_criterion * 2
+        elif (donor_phs_difference < phs_similarity_criterion
               and participation_ratio[spin]["hob"] < localized_criterion
-              and abs(band_edge_energies[spin]["hob"]["bottom"]
-                      - supercell_cbm) < near_edge_energy_criterion):
+              and supercell_cbm - band_edge_energies[spin]["hob"]["bottom"]
+              < near_edge_energy_criterion) or \
+                (band_edge_energies[spin]["hob"]["bottom"] - supercell_cbm > 0):
             band_edges[spin] = BandEdgeState.donor_phs
 
-        elif (acceptor_phs_difference < similarity_criterion * 2
+        elif (acceptor_phs_difference < phs_similarity_criterion
               and participation_ratio[spin]["lub"] < localized_criterion
-              and abs(band_edge_energies[spin]["lub"]["top"]
-                      - supercell_vbm) < near_edge_energy_criterion):
+              and band_edge_energies[spin]["lub"]["top"] - supercell_vbm
+              < near_edge_energy_criterion) or \
+                (band_edge_energies[spin]["lub"]["top"] - supercell_vbm < 0):
             band_edges[spin] = BandEdgeState.acceptor_phs
 
         else:
@@ -262,7 +267,8 @@ class Defect(MSONable):
                                 dft_results.orbital_character,
                                 perfect_dft_results.orbital_character,
                                 dft_results.band_edge_energies,
-                                dft_results.vbm, dft_results.cbm)
+                                perfect_dft_results.vbm,
+                                perfect_dft_results.cbm)
 
         if correction:
             correction_energy = correction.correction_energy

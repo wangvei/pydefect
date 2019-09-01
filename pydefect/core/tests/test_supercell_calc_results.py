@@ -30,7 +30,7 @@ class AnalyzeProcarTest(PydefectTest):
         neighboring_sites = [0, 4, 16, 17, 24, 26]
 
         (self.band_edge_energies, self.orbital_character,
-         self.participation_ratio) \
+         self.orbital_character_indices, self.participation_ratio) \
             = analyze_procar(hob_index=hob_index,
                              procar=procar,
                              eigenvalues=eigenvalues,

@@ -390,6 +390,15 @@ Symprec: 0.01
 Angle tolerance: 5
 ```
 
+Some people might also wonder why we need two supercells, namely SPOSCAR and DPOSCAR.
+The difference between these two could only be the sequence of the irreducible sites.
+In DPOSCAR file, the irreducible sites are sequentially sorted such that the defect.in file becomes more concise.      
+This is also useful when the supercell is prepared by another way.
+However, the user must insert the following line to the first header line of `SPOSCAR`.
+```
+trans_mat: 2 0 0 0 2 0 0 0 2, multi: 32, isotropy: 0.0
+```
+
 There are so many tips related to `defect.in`.
 1. The antisites and substituted defects are determined from the difference of the electronegativity. 
    Although default is 1.0 <span>&#8491;</span>, you can change it using `-e` option to e.g., 1.5.
@@ -406,6 +415,7 @@ There are so many tips related to `defect.in`.
 
 3. By default, positions of atoms neighboring a defect are perturbed such that the symmetry is lowered, but it is unwanted in some cases.
    Then, `Maximum Displacement` is simply set to 0.
+
 
 ### 7. Decision of interstitial sites
 In addition to vacancies and antisites, one may want to take into account the interstitials.

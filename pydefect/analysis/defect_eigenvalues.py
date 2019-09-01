@@ -10,6 +10,7 @@ from monty.json import MSONable, MontyEncoder
 from pydefect.analysis.defect import Defect
 from pydefect.core.unitcell_calc_results import UnitcellCalcResults
 from pydefect.util.logger import get_logger
+from pydefect.core.defect_name import DefectName
 
 __author__ = "Yu Kumagai"
 __maintainer__ = "Yu Kumagai"
@@ -130,7 +131,7 @@ class DefectEigenvalue(MSONable):
         fig, axs = plt.subplots(nrows=1, ncols=num_figure, sharey='all')
         fig.subplots_adjust(wspace=0)
 
-        title = title or "_".join([self.name, str(self.charge), self.annotation])
+        title = title or DefectName(self.name, self.charge, self.annotation)
         fig.suptitle(title, fontsize=12)
         plt.title(title, fontsize=15)
 
