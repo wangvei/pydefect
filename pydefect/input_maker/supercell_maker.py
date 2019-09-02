@@ -12,6 +12,7 @@ from pymatgen.core.structure import Structure
 from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
 from vise.util.structure_handler import (
     find_spglib_standard_conventional, find_spglib_standard_primitive)
+from pydefect.database.symmetry import tm_from_primitive_to_standard
 
 __author__ = "Yu Kumagai"
 __maintainer__ = "Yu Kumagai"
@@ -55,9 +56,9 @@ class Supercell:
 
         Args:
             structure (Structure):
-                Original structure to be expanded.
+                Primitive ell structure to be expanded.
             trans_mat (3x3 np.array, 3 np.array or a scalar):
-                The matrix to be used for expanding the unitcell.
+                The matrix to be used for expanding the primitive cell.
             multiplicity (int):
                 The size multiplicity of structure wrt the primitive cell.
         """
@@ -149,38 +150,30 @@ class Supercells:
         """
         primitive_cell, _ = \
             find_spglib_standard_primitive(structure, symprec, angle_tolerance)
+        if max_num_atoms < len(primitive_cell):
+            raise CellSizeError("Number of atoms in unitcell is too large.")
+
+        self.unitcell = primitive_cell.get_sorted_structure()
         sga = SpacegroupAnalyzer(structure, symprec, angle_tolerance)
         symmetry_dataset = sga.get_symmetry_dataset()
         logger.info(f"Space group: {symmetry_dataset['international']}")
 
         if conventional_base:
-            unitcell = find_spglib_standard_conventional(structure,
-                                                         symprec,
-                                                         angle_tolerance)
+            centering = symmetry_dataset["international"][0]
+            based_trans_mat = tm_from_primitive_to_standard(centering)
             rhombohedral = False
-            self.conventional_base = True
         else:
-            unitcell = primitive_cell
+            based_trans_mat = np.identity(3, dtype="int8")
             rhombohedral = sga.get_lattice_type() == "rhombohedral"
-            self.conventional_base = False
-
-        self.unitcell = unitcell.get_sorted_structure()
-        unitcell_mul = int(len(self.unitcell) / len(primitive_cell))
-
-        if max_num_atoms < len(primitive_cell):
-            raise CellSizeError("Number of atoms in unitcell is too large.")
 
         self.supercells = []
-        # Only rhombohedral primitive is not an identical matrix.
-        based_trans_mat = np.identity(3, dtype="int8")
-        # Normal incremented matrix one by one
+        # Isotropically incremented matrix one by one
         incremented_mat = np.identity(3, dtype="int8")
-        trans_mat = np.identity(3, dtype="int8")
+        trans_mat = based_trans_mat
 
         for i in range(int(max_num_atoms / len(primitive_cell))):
             isotropy, angle = calc_isotropy(self.unitcell, trans_mat)
-            multiplicity = int(round(unitcell_mul *
-                                     round(np.linalg.det(trans_mat))))
+            multiplicity = round(np.linalg.det(trans_mat))
             num_atoms = multiplicity * len(primitive_cell)
             if num_atoms > max_num_atoms:
                 break

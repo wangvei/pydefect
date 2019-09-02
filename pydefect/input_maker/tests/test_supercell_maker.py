@@ -72,6 +72,35 @@ class SupercellTest(PydefectTest):
             0.500000 1.000000 1.000000 O""", fmt="poscar")
         self.assertEqual(expected, actual)
 
+    def test_recommended_supercell_conv(self):
+        supercells_mgo = Supercells(self.mgo_struct,
+                                    conventional_base=True,
+                                    max_num_atoms=500,
+                                    min_num_atoms=1,
+                                    criterion=1.1)
+        supercell_mgo = supercells_mgo.sorted_supercells_by_num_atoms[0]
+        actual = supercell_mgo.structure
+        supercell_mgo.to_poscar("POSCAR-MgO")
+#        unitcell = supercells_mgo.unitcell
+        expected = IStructure.from_str(
+            """trans_mat: -1 1 1 1 -1 1 1 1 -1, multi: 4.0, isotropy: 0.0
+            1.0
+            4.246894 0.000000 0.000000
+            0.000000 4.246894 0.000000
+            0.000000 0.000000 4.246894
+            Mg O
+            4 4
+            direct
+            0.000000 0.000000 0.000000 Mg
+            0.500000 0.500000 0.000000 Mg
+            0.500000 0.000000 0.500000 Mg
+            0.000000 0.500000 0.500000 Mg
+            0.500000 0.500000 0.500000 O
+            1.000000 1.000000 0.500000 O
+            1.000000 0.500000 1.000000 O
+            0.500000 1.000000 1.000000 O""", fmt="poscar")
+        self.assertEqual(expected, actual)
+
     def test_recommended_supercell(self):
         supercells_mgo = Supercells(self.mgo_struct,
                                     conventional_base=False,
