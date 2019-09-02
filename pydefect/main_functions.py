@@ -173,6 +173,8 @@ def recommend_supercell(args):
             logger.warning("The unitcell is different from the input, so "
                            "generate UPOSCAR.")
             supercells.to_uposcar(uposcar_filename=args.uposcar)
+        else:
+            logger.info("Input structure is the primitive cell.")
 
         if not args.set:
             if args.most_isotropic:
