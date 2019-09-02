@@ -54,7 +54,9 @@ class BandEdgeState(Enum):
         return self in [BandEdgeState.acceptor_phs, BandEdgeState.donor_phs]
 
 
-def too_close_atom_pairs(structure: Structure, radius: float = 1.5) -> bool:
+def too_close_atom_pairs(structure: Structure,
+                         radius: float = 1.5,
+                         too_close_criterion_factor: float = 0.7) -> bool:
     """Check whether too close atomic pairs exist in the structure or not."""
 
     distances = structure.get_all_neighbors(radius)
@@ -66,7 +68,7 @@ def too_close_atom_pairs(structure: Structure, radius: float = 1.5) -> bool:
             elem2 = periodic_site.species_string
             frac2 = periodic_site.frac_coords
             rcore_sum = rcore[elem1] + rcore[elem2]
-            if dist < rcore_sum * 0.7:
+            if dist < rcore_sum * too_close_criterion_factor:
                 logger.warning(
                     f"Element {elem1} at {frac1} & Element {elem2} at {frac2} "
                     f"are too close with distance {round(dist, 4)}.")
