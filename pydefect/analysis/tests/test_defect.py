@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from pydefect.analysis.defect import (
-    BandEdgeState, Defect)
+    BandEdgeState, too_close_atom_pairs, Defect)
 from pydefect.core.defect_entry import DefectEntry
 from pydefect.core.supercell_calc_results import SupercellCalcResults
 from pydefect.corrections.efnv_corrections import (
@@ -10,6 +10,16 @@ from pydefect.util.testing import PydefectTest
 
 __author__ = "Yu Kumagai"
 __maintainer__ = "Yu Kumagai"
+
+
+class TooCloseAtomPairsTest(PydefectTest):
+    def setUp(self) -> None:
+        self.kzn4p3_struct = self.get_structure_by_name("KZn4P3")
+        self.kzn4p3_struct.append("H", coords=[0.48, 0.48, 0.48],
+                                  coords_are_cartesian=False)
+
+    def test(self):
+        self.assertTrue(too_close_atom_pairs(self.kzn4p3_struct))
 
 
 class BandEdgeStateTest(PydefectTest):

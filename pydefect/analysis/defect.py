@@ -7,9 +7,11 @@ from monty.json import MSONable, MontyEncoder
 from monty.serialization import loadfn
 from pydefect.core.defect_entry import DefectEntry
 from pydefect.core.defect_name import DefectName
+from pydefect.core.error_classes import StructureError
 from pydefect.core.supercell_calc_results import SupercellCalcResults
 from pydefect.corrections.corrections import Correction
 from pydefect.database.symmetry import num_symmetry_operation as nsymop
+from pydefect.database.atom import rcore
 from pydefect.util.logger import get_logger
 from pydefect.util.tools import spin_key_to_str, str_key_to_spin
 from pydefect.util.vasp_util import calc_orbital_difference
@@ -50,6 +52,27 @@ class BandEdgeState(Enum):
     @property
     def is_shallow(self):
         return self in [BandEdgeState.acceptor_phs, BandEdgeState.donor_phs]
+
+
+def too_close_atom_pairs(structure: Structure, radius: float = 1.5) -> bool:
+    """Check whether too close atomic pairs exist in the structure or not."""
+
+    distances = structure.get_all_neighbors(radius)
+    for i, dist in enumerate(distances):
+        for j in dist:
+            periodic_site, dist = j
+            elem1 = structure[i].species_string
+            frac1 = structure[i].frac_coords
+            elem2 = periodic_site.species_string
+            frac2 = periodic_site.frac_coords
+            rcore_sum = rcore[elem1] + rcore[elem2]
+            if dist < rcore_sum * 0.7:
+                logger.warning(
+                    f"Element {elem1} at {frac1} & Element {elem2} at {frac2} "
+                    f"are too close with distance {round(dist, 4)}.")
+
+                return True
+    return False
 
 
 def diagnose_band_edges(participation_ratio: dict,
@@ -235,7 +258,8 @@ class Defect(MSONable):
                      defect_entry: DefectEntry,
                      dft_results: SupercellCalcResults,
                      perfect_dft_results: SupercellCalcResults,
-                     correction: Correction = None):
+                     correction: Correction = None,
+                     check_structure: bool = True):
         """ Gather and generate full defect information related to analysis.
 
         While SupercellCalcResults class only collect the data from the
@@ -260,6 +284,10 @@ class Defect(MSONable):
                 f"final symmetry: {dft_results.site_symmetry}.")
 
         magnetization = round(dft_results.total_magnetization, 2)
+
+        if check_structure:
+            if too_close_atom_pairs(dft_results.final_structure):
+                raise StructureError
 
         band_edge_states = \
             diagnose_band_edges(dft_results.participation_ratio,
