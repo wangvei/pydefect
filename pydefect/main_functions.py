@@ -443,6 +443,7 @@ def supercell_calc_results(args):
                             contcar=args.contcar,
                             outcar=args.outcar,
                             procar=args.procar,
+                            cutoff=args.cutoff,
                             defect_entry=de,
                             defect_symprec=args.symprec,
                             angle_tolerance=args.angle_tolerance)

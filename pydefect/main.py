@@ -606,11 +606,13 @@ def main():
         aliases=['sr'])
 
     sr_defaults = get_default_args(SupercellCalcResults.from_vasp_files)
+    sr_defaults = get_default_args(SupercellCalcResults.from_vasp_files)
     simple_override(sr_defaults,
                     ["vasprun",
                      "contcar",
                      "outcar",
                      "procar",
+                     "cutoff",
                      "defect_symprec",
                      "angle_tolerance"])
 
@@ -636,6 +638,9 @@ def main():
     parser_supercell_results.add_argument(
         "--json", dest="json", type=str, default="dft_results.json",
         help="dft_results.json type file name.")
+    parser_supercell_results.add_argument(
+        "--cutoff", dest="cutoff", type=float, default=sr_defaults["cutoff"],
+        help="Cutoff radius [A].")
     parser_supercell_results.add_argument(
         "--defect_symprec", dest="symprec", type=float,
         default=sr_defaults["defect_symprec"],
