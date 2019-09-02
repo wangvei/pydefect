@@ -7,7 +7,7 @@ from typing import Union, Optional, Dict, List
 import yaml
 from monty.json import MSONable
 from pydefect.core.config import SYMMETRY_TOLERANCE, ANGLE_TOL, CUTOFF_FACTOR
-from pydefect.database.num_symmetry_operation import num_symmetry_operation
+from pydefect.database.symmetry import num_symmetry_operation
 from pydefect.util.logger import get_logger
 from pydefect.util.structure_tools import (
     create_saturated_interstitial_structure)

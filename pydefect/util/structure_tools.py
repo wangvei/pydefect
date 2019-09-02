@@ -5,7 +5,7 @@ from typing import Union, List, Tuple
 import numpy as np
 from pydefect.core.config import SYMMETRY_TOLERANCE, ANGLE_TOL
 from pydefect.core.error_classes import StructureError
-from pydefect.database.num_symmetry_operation import num_symmetry_operation
+from pydefect.database.symmetry import num_symmetry_operation
 from pydefect.util.logger import get_logger
 from pydefect.util.math import normalized_random_3d_vector, random_vector
 from pymatgen.core.periodic_table import DummySpecie, Element
