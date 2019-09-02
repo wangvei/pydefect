@@ -162,9 +162,11 @@ class Supercells:
             centering = symmetry_dataset["international"][0]
             based_trans_mat = tm_from_primitive_to_standard(centering)
             rhombohedral = False
+            self.conventional_base = True
         else:
             based_trans_mat = np.identity(3, dtype="int8")
             rhombohedral = sga.get_lattice_type() == "rhombohedral"
+            self.conventional_base = False
 
         self.supercells = []
         # Isotropically incremented matrix one by one
