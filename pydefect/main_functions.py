@@ -182,7 +182,7 @@ def recommend_supercell(args):
             else:
                 supercell = supercells.smallest_supercell
 
-            supercell.to(args.sposcar, args.uposcar)
+            supercell.to(args.sposcar)
         else:
             logger.info(f"Number of supercells: {len(supercells.supercells)}")
 

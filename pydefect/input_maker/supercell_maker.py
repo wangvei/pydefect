@@ -94,7 +94,7 @@ class Supercell:
         self.comment = f"trans_mat: {trans_mat_str}, multi: {multiplicity}, " \
                        f"isotropy: {self.isotropy[0]}\n"
 
-    def to(self, poscar_filename: str, uposcar_filename: str) -> None:
+    def to(self, poscar_filename: str) -> None:
         self.to_poscar(poscar_filename)
 
     def to_poscar(self, poscar_filename: str) -> None:
