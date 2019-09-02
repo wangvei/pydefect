@@ -168,6 +168,12 @@ def recommend_supercell(args):
     if not supercells.supercells:
         logger.warning("No supercell satisfies the criterion.")
     else:
+        unitcell = supercells.unitcell
+        if unitcell != structure:
+            logger.warning("The unitcell is different from the input, so "
+                           "generate UPOSCAR.")
+            supercells.to_uposcar(uposcar_filename=args.uposcar)
+
         if not args.set:
             if args.most_isotropic:
                 supercell = supercells.most_isotropic_supercell
@@ -193,8 +199,6 @@ def recommend_supercell(args):
                 name = f"{args.sposcar}_{prefix + mat}_{supercell.num_atoms}_" \
                        f"{supercell.isotropy[0]}"
                 supercell.to_poscar(poscar_filename=name)
-
-            supercells.supercells[0].to_uposcar(uposcar_filename=args.uposcar)
 
 
 def initial_setting(args):

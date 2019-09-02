@@ -84,7 +84,6 @@ class Supercell:
             raise ValueError(f"Translation matrix: {trans_mat} is not proper. "
                              f"1, 3, or 9 components are accepted.")
 
-        self.base_structure = structure
         s = structure * trans_mat
         self.structure = s.get_sorted_structure()
         self.trans_mat = trans_mat
@@ -97,7 +96,6 @@ class Supercell:
 
     def to(self, poscar_filename: str, uposcar_filename: str) -> None:
         self.to_poscar(poscar_filename)
-        self.to_uposcar(uposcar_filename)
 
     def to_poscar(self, poscar_filename: str) -> None:
         poscar_str = self.structure.to(fmt="poscar").splitlines(True)
@@ -106,9 +104,6 @@ class Supercell:
         with open(poscar_filename, 'w') as fw:
             for line in poscar_str:
                 fw.write(line)
-
-    def to_uposcar(self, uposcar_filename: str) -> None:
-        self.base_structure.to(filename=uposcar_filename)
 
 
 class Supercells:
@@ -229,4 +224,7 @@ class Supercells:
     @property
     def most_isotropic_supercell(self) -> Supercell:
         return self.sorted_supercells_by_isotropy[0]
+
+    def to_uposcar(self, uposcar_filename: str) -> None:
+        self.unitcell.to(filename=uposcar_filename)
 
