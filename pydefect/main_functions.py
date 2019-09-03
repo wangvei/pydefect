@@ -216,7 +216,8 @@ def initial_setting(args):
                 prefix = "c" if supercells.conventional_base else "p"
                 isotropy, _ = supercell.isotropy
                 if np.count_nonzero(supercell.trans_mat) == 3:
-                    mat = [str(supercell.trans_mat[i][i]) for i in range(3)]
+                    mat = "x".join(
+                        [str(supercell.trans_mat[i][i]) for i in range(3)])
                     name = f"{prefix + mat}_{supercell.num_atoms}_{isotropy}"
                 else:
                     name = f"{prefix}_{supercell.num_atoms}_{isotropy}"
