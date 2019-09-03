@@ -35,15 +35,15 @@ def calc_isotropy(structure: Structure,
            from the averaged lattice constant
            np.sum(np.abs(abc - average_abc) / average_abc) / 3
         alpha (float):
-            Angle alpha of lattice in degree.
+            Average of lattice angle in degree.
     """
     new_structure = structure * trans_mat
-    alpha = round(new_structure.lattice.alpha, 2)
+    angle = sum(new_structure.lattice.angles) / 3
     super_abc = new_structure.lattice.abc
     average_abc = np.mean(super_abc)
 
     isotropy = np.sum(np.abs(super_abc - average_abc) / average_abc) / 3
-    return round(isotropy, 4), alpha
+    return round(isotropy, 4), angle
 
 
 class Supercell:
