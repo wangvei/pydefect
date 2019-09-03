@@ -72,6 +72,12 @@ class SupercellTest(PydefectTest):
             0.500000 1.000000 1.000000 O""", fmt="poscar")
         self.assertEqual(expected, actual)
 
+
+class SupercellsTest(PydefectTest):
+    def setUp(self):
+        self.mgo_struct = self.get_structure_by_name("MgO")
+        self.kzn4p3_struct = self.get_structure_by_name("KZn4P3")
+
     def test_recommended_supercell_conv(self):
         supercells_mgo = Supercells(self.mgo_struct,
                                     conventional_base=True,
