@@ -82,7 +82,7 @@ def get_user_settings(yaml_filename: str = "pydefect.yaml") -> dict:
     # Add full path
     for k, v in user_settings.items():
         if k not in setting_keys:
-            raise ValueError(f"Keys in pydefect.yaml is invalid."
+            raise ValueError(f"Key in pydefect.yaml {k} is invalid."
                              f"The candidate keys are {setting_keys}")
         if isinstance(v, str) and re.match(r'\S*/\S*', v):
             user_settings[k] = str(config_path / v)
