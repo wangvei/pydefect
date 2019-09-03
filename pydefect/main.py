@@ -13,7 +13,7 @@ from pydefect.input_maker.supercell_maker import Supercells
 from pydefect.core.config import (
     SYMMETRY_TOLERANCE, ANGLE_TOL, PERFECT_KPT_DENSITY, DEFECT_KPT_DENSITY)
 from pydefect.main_functions import (
-    recommend_supercell, initial_setting, interstitial, complex_defects,
+    initial_setting, interstitial, complex_defects,
     defect_vasp_oba_set, defect_entry, supercell_calc_results,
     unitcell_calc_results, efnv_correction, vasp_oba_set, defects, plot_energy,
     parse_eigenvalues, vasp_parchg_set, local_structure, concentration)
@@ -229,83 +229,17 @@ def main():
 
     parser_unitcell_results.set_defaults(func=unitcell_calc_results)
 
-    # -- recommend_supercell --------------------------------------------------
-    parser_recommend_supercell = subparsers.add_parser(
-        name="recommend_supercell",
-        description="Tools for recommendation of an optimal supercell(s) for "
-                    "defect calculations",
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-        aliases=['rs'])
-
-    rs_defaults = get_default_args(Supercells)
-    simple_override(rs_defaults, ["symprec", "angle_tolerance"])
-
-    parser_recommend_supercell.add_argument(
-        "-p", dest="poscar", type=str, default="POSCAR",
-        help="Input poscar file name.")
-    parser_recommend_supercell.add_argument(
-        "-s", dest="sposcar", type=str, default="SPOSCAR",
-        help="Generated supercell poscar file name.")
-    parser_recommend_supercell.add_argument(
-        "-u", dest="uposcar", type=str, default="UPOSCAR",
-        help="Conventional or primitive unit cell poscar file name. The cell "
-             "multiplicity and interstitial recommendation based on charge "
-             "density is based on this ")
-    parser_recommend_supercell.add_argument(
-        "--matrix", dest="matrix", type=int,
-        help="Generate the supercell based on the Transformation matrix."
-             "1, 3, or 9 components are accepted..")
-    parser_recommend_supercell.add_argument(
-        "-c", "--criterion", dest="isotropy_criterion", type=float,
-        default=rs_defaults["criterion"],
-        help="Criterion used for screening candidate supercells.")
-    parser_recommend_supercell.add_argument(
-        "--min_num_atoms", dest="min_num_atoms", type=int,
-        default=rs_defaults["min_num_atoms"],
-        help="Minimum number of atoms in the candidate supercells")
-    parser_recommend_supercell.add_argument(
-        "--max_num_atoms", dest="max_num_atoms", type=int,
-        default=rs_defaults["max_num_atoms"],
-        help="Maximum number of atoms in the candidate supercells")
-    parser_recommend_supercell.add_argument(
-        "-pr", "--primitive", dest="primitive", action="store_true",
-        help="Set when the supercell is expanded based on the primitive cell."
-             "When the conventional and primitive unit cells are the same,"
-             "this flag has no meaning.")
-    parser_recommend_supercell.add_argument(
-        "-i", "--most_isotropic", dest="most_isotropic", action="store_true",
-        help="Generate the supercell with the smallest isotropy instead of the "
-             "smallest supercell.")
-    parser_recommend_supercell.add_argument(
-        "--rhombohedral_angle", dest="rhombohedral_angle", type=float,
-        default=rs_defaults["rhombohedral_angle"],
-        help="Only the supercells with rhombohedral_angle <= lattice angle <= "
-             "180 - rhombohedral_angle are returned. ")
-    parser_recommend_supercell.add_argument(
-        "--symprec", dest="symprec", type=float,
-        default=rs_defaults["symprec"],
-        help="Set length precision used for symmetry analysis [A].")
-    parser_recommend_supercell.add_argument(
-        "--angle_tolerance", dest="angle_tolerance", type=float,
-        default=rs_defaults["angle_tolerance"],
-        help="Set angle precision used for symmetry analysis.")
-    parser_recommend_supercell.add_argument(
-        "-set", dest="set", action="store_true",
-        help="Output all the supercells satisfying the criterion.")
-
-    del rs_defaults
-
-    parser_recommend_supercell.set_defaults(func=recommend_supercell)
-
     # -- initial_setting ------------------------------------------------------
     parser_initial = subparsers.add_parser(
         name="initial_setting",
-        description="Tools for configuring initial settings for a standard set "
+        description="Tools for recommending an optimal supercell(s) and "
+                    "configuring initial settings for a standard set "
                     "of point-defect calculations.",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
         aliases=['is'])
 
     is_defaults = get_default_args(DefectInitialSetting.from_basic_settings)
+    is_defaults.update(get_default_args(Supercells))
     simple_override(is_defaults,
                     ["symprec",
                      "angle_tolerance",
@@ -313,9 +247,53 @@ def main():
                      "displacement_distance"])
 
     parser_initial.add_argument(
-        "-s", dest="sposcar", default="SPOSCAR", type=str,
-        help="POSCAR-type file name for the supercell. DPOSCAR will be "
-             "returned, which has the same size but different atom sequence.")
+        "--cutoff", dest="cutoff", type=float,
+        default=is_defaults["cutoff"],
+        help="Set the cutoff radius [A] in which atoms are displaced.")
+    parser_initial.add_argument(
+        "--symprec", dest="symprec", type=float,
+        default=is_defaults["symprec"],
+        help="Set length precision used for symmetry analysis [A].")
+
+    # supercell
+    parser_initial.add_argument(
+        "-p", dest="poscar", type=str, default="POSCAR",
+        help="Input poscar file name.")
+    parser_initial.add_argument(
+        "--matrix", dest="matrix", type=int,
+        help="Generate the supercell based on the Transformation matrix."
+             "1, 3, or 9 components are accepted..")
+    parser_initial.add_argument(
+        "-c", "--criterion", dest="isotropy_criterion", type=float,
+        default=is_defaults["criterion"],
+        help="Criterion used for screening candidate supercells.")
+    parser_initial.add_argument(
+        "--min_num_atoms", dest="min_num_atoms", type=int,
+        default=is_defaults["min_num_atoms"],
+        help="Minimum number of atoms in the candidate supercells")
+    parser_initial.add_argument(
+        "--max_num_atoms", dest="max_num_atoms", type=int,
+        default=is_defaults["max_num_atoms"],
+        help="Maximum number of atoms in the candidate supercells")
+    parser_initial.add_argument(
+        "-pr", "--primitive", dest="primitive", action="store_true",
+        help="Set when the supercell is expanded based on the primitive cell."
+             "When the conventional and primitive unit cells are the same,"
+             "this flag has no meaning.")
+    parser_initial.add_argument(
+        "-i", "--most_isotropic", dest="most_isotropic", action="store_true",
+        help="Generate the supercell with the smallest isotropy instead of the "
+             "smallest supercell.")
+
+    # defect.in
+    parser_initial.add_argument(
+        "--rhombohedral_angle", dest="rhombohedral_angle", type=float,
+        default=is_defaults["rhombohedral_angle"],
+        help="Only the supercells with rhombohedral_angle <= lattice angle <= "
+             "180 - rhombohedral_angle are returned. ")
+    parser_initial.add_argument(
+        "-set", dest="set", action="store_true",
+        help="Output all the supercells satisfying the criterion.")
     parser_initial.add_argument(
         "-d", "--dopants", dest="dopants", nargs="+", type=str,
         default=is_defaults["dopants"],
@@ -340,14 +318,6 @@ def main():
         default=is_defaults["displacement_distance"],
         help="Displacement distance. 0 means that random displacement is not "
              "considered.")
-    parser_initial.add_argument(
-        "--cutoff", dest="cutoff", type=float,
-        default=is_defaults["cutoff"],
-        help="Set the cutoff radius [A] in which atoms are displaced.")
-    parser_initial.add_argument(
-        "--symprec", dest="symprec", type=float,
-        default=is_defaults["symprec"],
-        help="Set length precision used for symmetry analysis [A].")
     parser_initial.add_argument(
         "--angle_tolerance", dest="angle_tolerance", type=float,
         default=is_defaults["angle_tolerance"],

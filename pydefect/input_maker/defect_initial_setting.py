@@ -360,7 +360,14 @@ class DefectInitialSetting(MSONable):
 
         self.structure = structure
         self.space_group_symbol = space_group_symbol
-        self.transformation_matrix = transformation_matrix
+        if len(transformation_matrix) == 9:
+            self.transformation_matrix = transformation_matrix
+        elif len(transformation_matrix) == 3:
+            self.transformation_matrix = sum(transformation_matrix, [])
+        else:
+            raise ValueError(f"transformation matrix {transformation_matrix} "
+                             f"is invalid.")
+
         self.cell_multiplicity = cell_multiplicity
         self.irreducible_sites = irreducible_sites[:]
         self.dopant_configs = dopant_configs[:]

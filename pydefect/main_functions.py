@@ -154,7 +154,11 @@ def unitcell_calc_results(args):
     dft_results.to_json_file(args.json_file)
 
 
-def recommend_supercell(args):
+def initial_setting(args):
+    if args.print_dopant:
+        print(dopant_info(args.print_dopant))
+        return
+
     structure = Structure.from_file(args.poscar)
     is_conventional_base = not args.primitive
 
@@ -167,14 +171,26 @@ def recommend_supercell(args):
                             symprec=args.symprec,
                             angle_tolerance=args.angle_tolerance)
 
+    kwargs = {"dopants": args.dopants,
+              "is_antisite": args.is_antisite,
+              "en_diff": args.en_diff,
+              "included": args.included,
+              "excluded": args.excluded,
+              "displacement_distance": args.displacement_distance,
+              "cutoff": args.cutoff,
+              "symprec": args.symprec,
+              "angle_tolerance": args.angle_tolerance,
+              "interstitial_sites": args.interstitials,
+              "complex_defect_names": args.complex_defect_names}
+
     if not supercells.supercells:
         logger.warning("No supercell satisfies the criterion.")
     else:
         unitcell = supercells.unitcell
         if unitcell != structure:
-            logger.warning("The unitcell is different from the input, so "
-                           "generate UPOSCAR.")
-            supercells.to_uposcar(uposcar_filename=args.uposcar)
+            logger.warning(
+                "The unitcell is different from input, so generate UPOSCAR.")
+            supercells.to_uposcar(uposcar_filename="UPOSCAR")
         else:
             logger.info("Input structure is the primitive cell.")
 
@@ -184,58 +200,36 @@ def recommend_supercell(args):
             else:
                 supercell = supercells.smallest_supercell
 
-            supercell.to(args.sposcar)
+            supercell.to("DPOSCAR")
+            defect_setting = \
+                DefectInitialSetting.from_basic_settings(
+                    structure=supercell.structure,
+                    transformation_matrix=supercell.trans_mat.tolist(),
+                    cell_multiplicity=supercell.multiplicity, **kwargs)
+            defect_setting.to()
+
         else:
             logger.info(f"Number of supercells: {len(supercells.supercells)}")
 
             for supercell in supercells.supercells:
                 # Suffix "c" means conventional cell, while "p" primitive cell.
                 prefix = "c" if supercells.conventional_base else "p"
+                isotropy, _ = supercell.isotropy
                 if np.count_nonzero(supercell.trans_mat) == 3:
                     mat = [str(supercell.trans_mat[i][i]) for i in range(3)]
+                    name = f"{prefix + mat}_{supercell.num_atoms}_{isotropy}"
                 else:
-                    def mod_str(num):
-                        return "".join([n if n != "-" else "m" for n in num])
+                    name = f"{prefix}_{supercell.num_atoms}_{isotropy}"
 
-                    mat = "x".join([mod_str(j)
-                                    for i in supercell.trans_mat for j in i])
-
-                name = f"{args.sposcar}_{prefix + mat}_{supercell.num_atoms}_" \
-                       f"{supercell.isotropy[0]}"
-                supercell.to_poscar(poscar_filename=name)
-
-
-def initial_setting(args):
-    if args.print_dopant:
-        print(dopant_info(args.print_dopant))
-    else:
-        structure = Structure.from_file(args.sposcar)
-        # transformation_matrix and cell_multiplicity are parsed from POSCAR
-        with open(args.sposcar) as f:
-            first_line = f.readline()
-            transformation_matrix = \
-                [int(x) for x in first_line.split(":")[1].split(",")[0].split()]
-            cell_multiplicity = \
-                int(first_line.split(":")[2].split(",")[0].split()[0])
-
-        defect_setting = \
-            DefectInitialSetting.from_basic_settings(
-                structure=structure,
-                transformation_matrix=transformation_matrix,
-                cell_multiplicity=cell_multiplicity,
-                dopants=args.dopants,
-                is_antisite=args.is_antisite,
-                en_diff=args.en_diff,
-                included=args.included,
-                excluded=args.excluded,
-                displacement_distance=args.displacement_distance,
-                cutoff=args.cutoff,
-                symprec=args.symprec,
-                angle_tolerance=args.angle_tolerance,
-                interstitial_sites=args.interstitials,
-                complex_defect_names=args.complex_defect_names)
-
-        defect_setting.to()
+                os.mkdir(name)
+                p = Path(name)
+                supercell.to_poscar(poscar_filename=p / "DPOSCAR")
+                defect_setting = \
+                    DefectInitialSetting.from_basic_settings(
+                        structure=supercell.structure,
+                        transformation_matrix=supercell.trans_mat.tolist(),
+                        cell_multiplicity=supercell.multiplicity, **kwargs)
+                defect_setting.to(p / "defect.in")
 
 
 def interstitial(args):
