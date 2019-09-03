@@ -5,14 +5,22 @@ from monty.json import MSONable, MontyEncoder
 from monty.serialization import loadfn
 
 
-class Correction(ABC):
+class Correction(ABC, MSONable):
     @property
     @abstractmethod
     def correction_energy(self):
         pass
 
+    def to_json_file(self, filename: str) -> None:
+        with open(filename, 'w') as fw:
+            json.dump(self.as_dict(), fw, indent=2, cls=MontyEncoder)
 
-class ManualCorrection(Correction, MSONable):
+    @classmethod
+    def load_json(cls, filename):
+        return loadfn(filename)
+
+
+class ManualCorrection(Correction):
 
     method = "manual_correction"
 
@@ -30,10 +38,3 @@ class ManualCorrection(Correction, MSONable):
     def correction_energy(self) -> float:
         return self._manual_correction_energy
 
-    def to_json_file(self, filename: str) -> None:
-        with open(filename, 'w') as fw:
-            json.dump(self.as_dict(), fw, indent=2, cls=MontyEncoder)
-
-    @classmethod
-    def load_json(cls, filename):
-        return loadfn(filename)

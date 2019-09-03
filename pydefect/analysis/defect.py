@@ -57,7 +57,12 @@ class BandEdgeState(Enum):
 def too_close_atom_pairs(structure: Structure,
                          radius: float = 1.5,
                          too_close_criterion_factor: float = 0.7) -> bool:
-    """Check whether too close atomic pairs exist in the structure or not."""
+    """Check whether too close atomic pairs exist in the structure or not.
+
+    Raise a ValueError if the number of atoms in structure is 1.
+
+
+    """
 
     distances = structure.get_all_neighbors(radius)
     for i, dist in enumerate(distances):

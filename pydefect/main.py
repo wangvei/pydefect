@@ -252,6 +252,10 @@ def main():
              "multiplicity and interstitial recommendation based on charge "
              "density is based on this ")
     parser_recommend_supercell.add_argument(
+        "--matrix", dest="matrix", type=int,
+        help="Generate the supercell based on the Transformation matrix."
+             "1, 3, or 9 components are accepted..")
+    parser_recommend_supercell.add_argument(
         "-c", "--criterion", dest="isotropy_criterion", type=float,
         default=rs_defaults["criterion"],
         help="Criterion used for screening candidate supercells.")

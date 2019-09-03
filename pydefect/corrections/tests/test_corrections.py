@@ -6,7 +6,7 @@ __author__ = "Yu Kumagai"
 __maintainer__ = "Yu Kumagai"
 
 
-class NoCorrectionTest(PydefectTest):
+class ManualCorrectionTest(PydefectTest):
     def setUp(self):
         self._correction = ManualCorrection(manual_correction_energy=1.5)
 

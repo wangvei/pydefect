@@ -68,6 +68,10 @@ def perturb_neighboring_atoms(structure: Structure,
 def get_min_distance(structure: Structure) -> float:
     """Return the minimum distance in the inter-atomic distances
 
+    Calculate the minimum distance from the pair distances between an atom and
+    another atom in the structure, and it does not include the distance between
+    an atom and its image.
+
     Args:
         structure (Structure): Input structure:
 

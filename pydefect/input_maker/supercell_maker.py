@@ -2,7 +2,7 @@
 
 from collections import Iterable
 from copy import deepcopy
-from typing import Union
+from typing import Union, Optional
 
 import numpy as np
 from pydefect.core.config import SYMMETRY_TOLERANCE, ANGLE_TOL
@@ -10,8 +10,7 @@ from pydefect.core.error_classes import CellSizeError
 from pydefect.util.logger import get_logger
 from pymatgen.core.structure import Structure
 from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
-from vise.util.structure_handler import (
-    find_spglib_standard_conventional, find_spglib_standard_primitive)
+from vise.util.structure_handler import find_spglib_standard_primitive
 from pydefect.database.symmetry import tm_from_primitive_to_standard
 
 __author__ = "Yu Kumagai"
@@ -51,7 +50,7 @@ class Supercell:
     def __init__(self,
                  structure: Structure,
                  trans_mat: Union[int, np.array],
-                 multiplicity: int):
+                 multiplicity: Optional[int] = None):
         """ Supercell class constructed based on a given multiplicity.
 
         Args:
@@ -81,17 +80,18 @@ class Supercell:
                 trans_mat = np.array(trans_mat)
                 trans_mat_str = ' '.join([str(int(i)) for i in trans_mat])
         else:
-            raise ValueError(f"Translation matrix: {trans_mat} is not proper. "
-                             f"1, 3, or 9 components are accepted.")
+            raise ValueError(f"Transformation matrix {trans_mat} is not proper."
+                             f"Only 1, 3, or 9 components are accepted.")
 
         s = structure * trans_mat
         self.structure = s.get_sorted_structure()
         self.trans_mat = trans_mat
-        self.multiplicity = multiplicity
+        self.multiplicity = multiplicity or int(round(np.linalg.det(trans_mat)))
         self.isotropy = calc_isotropy(structure, trans_mat)
         self.num_atoms = self.structure.num_sites
 
-        self.comment = f"trans_mat: {trans_mat_str}, multi: {multiplicity}, " \
+        self.comment = f"trans_mat: {trans_mat_str}, " \
+                       f"multi: {self.multiplicity}, " \
                        f"isotropy: {self.isotropy[0]}\n"
 
     def to(self, poscar_filename: str) -> None:

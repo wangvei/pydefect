@@ -24,13 +24,14 @@ from pydefect.core.interstitial_site import (
     InterstitialSiteSet, interstitials_from_charge_density)
 from pydefect.core.complex_defects import ComplexDefects
 from vise.input_set.prior_info import PriorInfo
+from pydefect.core.error_classes import StructureError
 from pydefect.core.supercell_calc_results import SupercellCalcResults
 from pydefect.core.unitcell_calc_results import UnitcellCalcResults
 from pydefect.corrections.efnv_corrections import ExtendedFnvCorrection, Ewald
 from pydefect.corrections.corrections import ManualCorrection
 from pydefect.input_maker.defect_initial_setting import (
     dopant_info, DefectInitialSetting)
-from pydefect.input_maker.supercell_maker import Supercells
+from pydefect.input_maker.supercell_maker import Supercell, Supercells
 from pydefect.util.logger import get_logger
 from pydefect.util.main_tools import (
     list2dict, generate_objects_from_json_files, potcar_str2dict)
@@ -156,6 +157,7 @@ def unitcell_calc_results(args):
 def recommend_supercell(args):
     structure = Structure.from_file(args.poscar)
     is_conventional_base = not args.primitive
+
     supercells = Supercells(structure=structure,
                             conventional_base=is_conventional_base,
                             max_num_atoms=args.max_num_atoms,
@@ -569,11 +571,15 @@ def defects(args):
                                                          raise_error=False)
 
         if input_objects:
-            defect = Defect.from_objects(defect_entry=input_objects[0],
-                                         dft_results=input_objects[1],
-                                         perfect_dft_results=perfect,
-                                         correction=input_objects[2])
-            defect.to_json_file(filename)
+            try:
+                defect = Defect.from_objects(defect_entry=input_objects[0],
+                                             dft_results=input_objects[1],
+                                             perfect_dft_results=perfect,
+                                             correction=input_objects[2])
+                defect.to_json_file(filename)
+            except StructureError:
+                logger.warning(f"defect.json is not generated in {d}.")
+
         else:
             logger.warning(f"Generating {filename} failed.")
             continue

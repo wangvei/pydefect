@@ -397,14 +397,6 @@ class ExtendedFnvCorrection(Correction, MSONable):
 
         plt.savefig(file_name, format="pdf")
 
-    def to_json_file(self, filename: str) -> None:
-        with open(filename, 'w') as fw:
-            json.dump(self.as_dict(), fw, indent=2, cls=MontyEncoder)
-
-    @classmethod
-    def load_json(cls, filename):
-        return loadfn(filename)
-
     @classmethod
     def compute_correction(cls,
                            defect_entry: DefectEntry,
