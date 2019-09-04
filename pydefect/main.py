@@ -260,7 +260,7 @@ def main():
         "-p", dest="poscar", type=str, default="POSCAR",
         help="Input poscar file name.")
     parser_initial.add_argument(
-        "--matrix", dest="matrix", type=int,
+        "--matrix", dest="matrix", type=int, nargs="+", default=None,
         help="Generate the supercell based on the Transformation matrix."
              "1, 3, or 9 components are accepted..")
     parser_initial.add_argument(

@@ -162,15 +162,6 @@ def initial_setting(args):
     structure = Structure.from_file(args.poscar)
     is_conventional_base = not args.primitive
 
-    supercells = Supercells(structure=structure,
-                            conventional_base=is_conventional_base,
-                            max_num_atoms=args.max_num_atoms,
-                            min_num_atoms=args.min_num_atoms,
-                            criterion=args.isotropy_criterion,
-                            rhombohedral_angle=args.rhombohedral_angle,
-                            symprec=args.symprec,
-                            angle_tolerance=args.angle_tolerance)
-
     kwargs = {"dopants": args.dopants,
               "is_antisite": args.is_antisite,
               "en_diff": args.en_diff,
@@ -183,54 +174,80 @@ def initial_setting(args):
               "interstitial_sites": args.interstitials,
               "complex_defect_names": args.complex_defect_names}
 
+    if args.matrix:
+        supercell = Supercell(structure=structure,
+                              trans_mat=args.matrix,
+                              check_unitcell=True,
+                              symprec=args.symprec,
+                              angle_tolerance=args.angle_tolerance)
+        supercell.to(poscar="DPOSCAR", uposcar="UPOSCAR")
+
+        defect_setting = \
+            DefectInitialSetting.from_basic_settings(
+                structure=supercell.structure,
+                transformation_matrix=supercell.trans_mat.tolist(),
+                cell_multiplicity=supercell.multiplicity, **kwargs)
+        defect_setting.to()
+        return
+
+    supercells = Supercells(structure=structure,
+                            conventional_base=is_conventional_base,
+                            max_num_atoms=args.max_num_atoms,
+                            min_num_atoms=args.min_num_atoms,
+                            criterion=args.isotropy_criterion,
+                            rhombohedral_angle=args.rhombohedral_angle,
+                            symprec=args.symprec,
+                            angle_tolerance=args.angle_tolerance)
+
     if not supercells.supercells:
         logger.warning("No supercell satisfies the criterion.")
+        return False
+
+    unitcell = supercells.unitcell
+    if unitcell != structure:
+        logger.warning(
+            "The unitcell is different from input, so generate UPOSCAR.")
+        supercells.to_uposcar(uposcar_filename="UPOSCAR")
     else:
-        unitcell = supercells.unitcell
-        if unitcell != structure:
-            logger.warning(
-                "The unitcell is different from input, so generate UPOSCAR.")
-            supercells.to_uposcar(uposcar_filename="UPOSCAR")
+        logger.info("Input structure is the primitive cell.")
+
+    if not args.set:
+        if args.most_isotropic:
+            supercell = supercells.most_isotropic_supercell
         else:
-            logger.info("Input structure is the primitive cell.")
+            supercell = supercells.smallest_supercell
 
-        if not args.set:
-            if args.most_isotropic:
-                supercell = supercells.most_isotropic_supercell
+        supercell.to("DPOSCAR")
+        defect_setting = \
+            DefectInitialSetting.from_basic_settings(
+                structure=supercell.structure,
+                transformation_matrix=supercell.trans_mat.tolist(),
+                cell_multiplicity=supercell.multiplicity, **kwargs)
+        defect_setting.to()
+
+    else:
+        logger.info(f"Number of supercells: {len(supercells.supercells)}")
+
+        for supercell in supercells.supercells:
+            # Suffix "c" means conventional cell, while "p" primitive cell.
+            prefix = "c" if supercells.conventional_base else "p"
+            isotropy, _ = supercell.isotropy
+            if np.count_nonzero(supercell.trans_mat) == 3:
+                mat = "x".join(
+                    [str(supercell.trans_mat[i][i]) for i in range(3)])
+                name = f"{prefix + mat}_{supercell.num_atoms}_{isotropy}"
             else:
-                supercell = supercells.smallest_supercell
+                name = f"{prefix}_{supercell.num_atoms}_{isotropy}"
 
-            supercell.to("DPOSCAR")
+            os.mkdir(name)
+            p = Path(name)
+            supercell.to_poscar(poscar_filename=p / "DPOSCAR")
             defect_setting = \
                 DefectInitialSetting.from_basic_settings(
                     structure=supercell.structure,
                     transformation_matrix=supercell.trans_mat.tolist(),
                     cell_multiplicity=supercell.multiplicity, **kwargs)
-            defect_setting.to()
-
-        else:
-            logger.info(f"Number of supercells: {len(supercells.supercells)}")
-
-            for supercell in supercells.supercells:
-                # Suffix "c" means conventional cell, while "p" primitive cell.
-                prefix = "c" if supercells.conventional_base else "p"
-                isotropy, _ = supercell.isotropy
-                if np.count_nonzero(supercell.trans_mat) == 3:
-                    mat = "x".join(
-                        [str(supercell.trans_mat[i][i]) for i in range(3)])
-                    name = f"{prefix + mat}_{supercell.num_atoms}_{isotropy}"
-                else:
-                    name = f"{prefix}_{supercell.num_atoms}_{isotropy}"
-
-                os.mkdir(name)
-                p = Path(name)
-                supercell.to_poscar(poscar_filename=p / "DPOSCAR")
-                defect_setting = \
-                    DefectInitialSetting.from_basic_settings(
-                        structure=supercell.structure,
-                        transformation_matrix=supercell.trans_mat.tolist(),
-                        cell_multiplicity=supercell.multiplicity, **kwargs)
-                defect_setting.to(p / "defect.in")
+            defect_setting.to(p / "defect.in")
 
 
 def interstitial(args):

@@ -2,7 +2,7 @@
 
 from collections import Iterable
 from copy import deepcopy
-from typing import Union, Optional
+from typing import Union, Optional, List
 
 import numpy as np
 from pydefect.core.config import SYMMETRY_TOLERANCE, ANGLE_TOL
@@ -10,8 +10,11 @@ from pydefect.core.error_classes import CellSizeError
 from pydefect.util.logger import get_logger
 from pymatgen.core.structure import Structure
 from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
-from vise.util.structure_handler import find_spglib_standard_primitive
 from pydefect.database.symmetry import tm_from_primitive_to_standard
+
+from vise.util.structure_handler import (
+    find_spglib_standard_primitive, get_symmetry_dataset,
+    spglib_cell_to_structure)
 
 __author__ = "Yu Kumagai"
 __maintainer__ = "Yu Kumagai"
@@ -46,42 +49,71 @@ def calc_isotropy(structure: Structure,
     return round(isotropy, 4), angle
 
 
+def sanitize_matrix(matrix: list) -> np.ndarray:
+    """Sanitize the matrix component to 3x3 matrix
+
+    Args:
+        matrix (list or np.array):
+           The matrix to be used for expanding the structure.
+
+    Return:
+        np.ndarray (3x3)
+    """
+    if len(matrix) == 1:
+        sanitized_matrix = np.eye(3, dtype=int)
+        for i in range(3):
+            sanitized_matrix[i, i] = matrix[0]
+    elif len(matrix) == 9:
+        sanitized_matrix = np.reshape(matrix, (3, 3), dtype=int)
+    elif len(matrix) == 3:
+        if isinstance(matrix[0], Iterable) and len(matrix[0]) == 3:
+            sanitized_matrix = np.array(matrix, dtype=int)
+        else:
+            sanitized_matrix = np.eye(3, dtype=int)
+            for i in range(3):
+                sanitized_matrix[i, i] = matrix[i]
+    else:
+        raise ValueError(f"Transformation matrix {matrix} is not proper."
+                         f"Only 1, 3, or 9 components are accepted.")
+
+    return sanitized_matrix
+
+
 class Supercell:
     def __init__(self,
                  structure: Structure,
-                 trans_mat: Union[int, np.array],
-                 multiplicity: Optional[int] = None):
+                 trans_mat: Union[int, np.array, List[List]],
+                 multiplicity: Optional[int] = None,
+                 check_unitcell: bool = False,
+                 symprec: float = SYMMETRY_TOLERANCE,
+                 angle_tolerance: float = ANGLE_TOL):
         """ Supercell class constructed based on a given multiplicity.
 
         Args:
             structure (Structure):
                 Primitive ell structure to be expanded.
             trans_mat (3x3 np.array, 3 np.array or a scalar):
-                The matrix to be used for expanding the primitive cell.
+                The matrix to be used for expanding the structure.
             multiplicity (int):
                 The size multiplicity of structure wrt the primitive cell.
         """
-        if isinstance(trans_mat, Iterable):
-            trans_mat = list(trans_mat)
-        else:
-            trans_mat = [trans_mat]
+        trans_mat = sanitize_matrix(trans_mat)
 
-        if len(trans_mat) == 1:
-            trans_mat_str = str(trans_mat)
-        elif len(trans_mat) == 9:
-            trans_mat_str = ' '.join([str(i) for i in trans_mat])
-            trans_mat = np.reshape(trans_mat, (3, 3))
-        elif len(trans_mat) == 3:
-            if isinstance(trans_mat[0], Iterable) and len(trans_mat[0]) == 3:
-                trans_mat = np.array(trans_mat)
-                trans_mat_str = \
-                    ' '.join([str(int(i)) for i in trans_mat.flatten()])
-            else:
-                trans_mat = np.array(trans_mat)
-                trans_mat_str = ' '.join([str(int(i)) for i in trans_mat])
-        else:
-            raise ValueError(f"Transformation matrix {trans_mat} is not proper."
-                             f"Only 1, 3, or 9 components are accepted.")
+        self.is_structure_changed = False
+        if check_unitcell:
+            primitive, self.is_structure_changed = \
+                find_spglib_standard_primitive(structure, symprec,
+                                               angle_tolerance)
+            if self.is_structure_changed:
+                logger.warning(f"Structure is change to primitive cell.")
+                sym_dataset = get_symmetry_dataset(structure, symprec,
+                                                   angle_tolerance)
+                trans_mat = sym_dataset["transformation_matrix"] * trans_mat
+                origin_shift = sym_dataset["origin_shift"]
+                if np.linalg.norm(origin_shift) > 1e-5:
+                    logger.warning(f"Origin is shifted by {origin_shift}.")
+
+            structure = primitive
 
         s = structure * trans_mat
         self.structure = s.get_sorted_structure()
@@ -90,20 +122,18 @@ class Supercell:
         self.isotropy = calc_isotropy(structure, trans_mat)
         self.num_atoms = self.structure.num_sites
 
-        self.comment = f"trans_mat: {trans_mat_str}, " \
-                       f"multi: {self.multiplicity}, " \
-                       f"isotropy: {self.isotropy[0]}\n"
+    def to(self, poscar: str, uposcar: Optional[str] = "UPOSCAR") -> None:
+        self.structure.to(poscar)
+        if self.is_structure_changed:
+            self.structure.to(uposcar)
 
-    def to(self, poscar_filename: str) -> None:
-        self.to_poscar(poscar_filename)
+    # def to_poscar(self, poscar_filename: str) -> None:
+    #     poscar_str = self.structure.to(fmt="poscar").splitlines(True)
+    #     poscar_str[0] = self.comment
 
-    def to_poscar(self, poscar_filename: str) -> None:
-        poscar_str = self.structure.to(fmt="poscar").splitlines(True)
-        poscar_str[0] = self.comment
-
-        with open(poscar_filename, 'w') as fw:
-            for line in poscar_str:
-                fw.write(line)
+        # with open(poscar_filename, 'w') as fw:
+        #     for line in poscar_str:
+        #         fw.write(line)
 
 
 class Supercells:

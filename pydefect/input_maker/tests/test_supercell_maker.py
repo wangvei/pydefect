@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 import numpy as np
 from pydefect.input_maker.supercell_maker import (
-    Supercell, Supercells, calc_isotropy)
+    Supercell, Supercells, calc_isotropy, sanitize_matrix)
 from pydefect.util.testing import PydefectTest
 from pymatgen.core import IStructure, Lattice
 
@@ -23,9 +23,46 @@ class CalcIsotropyTest(PydefectTest):
         self.assertEqual(expected, actual)
 
 
+class SanitizeMatrixTest(PydefectTest):
+    def setUp(self) -> None:
+        self.matrix1 = [2]
+        self.matrix2 = [2, 3, 4]
+        self.matrix3 = [[2, 3, 4], [3, 6, 7], [4, 7, 5]]
+        self.matrix4 = [2, 3, 4, 3, 6, 7, 4, 7, 5]
+
+    def test_len1(self):
+        expected = np.array([[2, 0, 0],
+                             [0, 2, 0],
+                             [0, 0, 2]])
+        actual = sanitize_matrix(self.matrix1)
+        self.assertArrayAlmostEqual(expected, actual, 7)
+
+    def test_len2(self):
+        expected = np.array([[2, 0, 0],
+                             [0, 3, 0],
+                             [0, 0, 4]])
+        actual = sanitize_matrix(self.matrix2)
+        self.assertArrayAlmostEqual(expected, actual, 7)
+
+    def test_len3(self):
+        expected = np.array([[2, 3, 4],
+                             [3, 6, 7],
+                             [4, 7, 5]])
+        actual = sanitize_matrix(self.matrix3)
+        self.assertArrayAlmostEqual(expected, actual, 7)
+
+    def test_len4(self):
+        expected = np.array([[2, 3, 4],
+                             [3, 6, 7],
+                             [4, 7, 5]])
+        actual = sanitize_matrix(self.matrix4)
+        self.assertArrayAlmostEqual(expected, actual, 7)
+
+
 class SupercellTest(PydefectTest):
     def setUp(self):
         self.mgo_struct = self.get_structure_by_name("MgO")
+        self.mgo64_struct = self.get_structure_by_name("MgO64atoms")
         self.kzn4p3_struct = self.get_structure_by_name("KZn4P3")
 
     def test_init1(self):
@@ -71,6 +108,12 @@ class SupercellTest(PydefectTest):
             1.000000 0.500000 1.000000 O
             0.500000 1.000000 1.000000 O""", fmt="poscar")
         self.assertEqual(expected, actual)
+
+    def test_supercell_input(self):
+        multi = [2, 1, 1]
+        actual = Supercell(structure=self.mgo64_struct,
+                           trans_mat=multi,
+                           check_unitcell=True).structure
 
 
 class SupercellsTest(PydefectTest):
