@@ -13,8 +13,7 @@ from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
 from pydefect.database.symmetry import tm_from_primitive_to_standard
 
 from vise.util.structure_handler import (
-    find_spglib_standard_primitive, get_symmetry_dataset,
-    spglib_cell_to_structure)
+    find_spglib_standard_primitive, get_symmetry_dataset)
 
 __author__ = "Yu Kumagai"
 __maintainer__ = "Yu Kumagai"

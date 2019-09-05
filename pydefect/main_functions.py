@@ -742,7 +742,7 @@ def concentration(args):
         verbose=args.verbose)
 
     print(defect_concentration)
-    defect_concentration.calc_concentrations()
+    defect_concentration.calc_concentrations(args.temperature)
     plt = defect_concentration.plot_carrier_concentrations()
     plt.show()
 

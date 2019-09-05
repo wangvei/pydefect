@@ -113,7 +113,7 @@ def calc_concentration(defect_energies: Optional[dict],
 
     Args:
         defect_energies (dict):
-            Defect formation energies. energies[name][charge][annotation]
+            Defect formation energies. energies[name][charge]
         temperature (float):
             Temperature in K.
         e_f (float):
@@ -149,7 +149,7 @@ def calc_concentration(defect_energies: Optional[dict],
 
     for name in defect_energies:
         concentration_by_name = defaultdict(dict)
-        for charge, annotation, de in flatten_dict(defect_energies[name]):
+        for charge, de in flatten_dict(defect_energies[name]):
 
             num_mag_conf = abs(de.magnetization) + 1
             degree_of_freedom = de.multiplicity * num_mag_conf
@@ -159,7 +159,7 @@ def calc_concentration(defect_energies: Optional[dict],
             c = (maxwell_boltzmann_distribution(energy, temperature)
                  * degree_of_freedom / (volume / 10 ** 24))
 
-            concentration_by_name[charge] = {annotation: c}
+            concentration_by_name[charge] = {de.annotation: c}
 
         if ref_concentration:
             reference_total_concentration = \
@@ -360,9 +360,6 @@ class DefectConcentration(MSONable):
     def from_calc_results(cls,
                           defect_energies: DefectEnergies,
                           unitcell: UnitcellCalcResults,
-                          filtering_words: list = None,
-                          exclude_unconverged_defects: bool = True,
-                          exclude_shallow_defects: bool = True,
                           fractional_magnetization_to_one: bool = False,
                           fractional_criterion: float = 0.1):
         """ Prepare object from DefectEnergies and UnitcellCalcResults objects
@@ -372,12 +369,6 @@ class DefectConcentration(MSONable):
                 DefectEnergies object used for calculating concentration.
             unitcell (UnitcellCalcResults):
                 UnitcellDftResults object for volume and total_dos
-            filtering_words (list):
-                List of words used for filtering the defects
-            exclude_unconverged_defects (bool)
-                Whether to exclude the shallow defects from the plot.
-            exclude_shallow_defects (bool)
-                Whether to exclude the shallow defects from the plot.
             fractional_magnetization_to_one (bool)
                 Whether to set the fractional magnetization to 1.
             fractional_criterion (float):
@@ -492,7 +483,7 @@ class DefectConcentration(MSONable):
         return "\n".join(outs)
 
     def calc_concentrations(self,
-                            temperature: float = None,
+                            temperature: float,
                             fermi_range: list = None,
                             num_mesh: int = 100) -> None:
         """ Calculates defect formation energies from some files.

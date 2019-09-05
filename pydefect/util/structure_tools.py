@@ -7,7 +7,7 @@ from pydefect.core.config import SYMMETRY_TOLERANCE, ANGLE_TOL
 from pydefect.core.error_classes import StructureError
 from pydefect.database.symmetry import num_symmetry_operation
 from pydefect.util.logger import get_logger
-from pydefect.util.math import normalized_random_3d_vector, random_vector
+from pydefect.util.math import normalized_random_3d_vector
 from pymatgen.core.periodic_table import DummySpecie, Element
 from pymatgen.core.structure import Structure
 from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
@@ -56,7 +56,7 @@ def perturb_neighboring_atoms(structure: Structure,
         if i[2] in inserted_atom_indices:
             continue
         # Since translate_sites accepts only one vector, iterate this.
-        vector = random_vector(normalized_random_3d_vector(), distance)
+        vector = normalized_random_3d_vector() * distance * np.random.random()
         site_index = i[2]
         sites.append(site_index)
         perturbed_structure.translate_sites(

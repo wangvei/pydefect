@@ -72,7 +72,7 @@ class DefectEnergies(MSONable):
         Args:
             defect_energies (dict):
                 DefectEnergy as a function of name, charge, and annotation.
-                energies[name][charge][annotation] = DefectEnergy object
+                energies[name][charge] = DefectEnergy object
             vbm (float):
                 Valence band maximum in the unitcell in the absolute scale.
             cbm (float):
@@ -297,7 +297,8 @@ class DefectEnergies(MSONable):
                     fermi_levels: list = None,
                     show_transition_levels: bool = False,
                     show_all_energies: bool = False,
-                    color: list = None):
+                    color: list = None,
+                    compile: bool = False):
         """ Plots defect formation energies as a function of the Fermi level.
 
         Args:
@@ -317,7 +318,10 @@ class DefectEnergies(MSONable):
             color (list)
                 User favorite color scheme.
         """
-        fig, ax = plt.subplots()
+        if compile:
+            fig, (ax, ax2) = plt.subplots(2, sharex=True)
+        else:
+            fig, ax = plt.subplots()
         plt.title(self.title, fontsize=15)
 
         color = color or COLOR
@@ -330,7 +334,7 @@ class DefectEnergies(MSONable):
 
         def min_e_at_ef(ec: Dict[int, DefectEnergy], ef):
             # calculate each energy at the given Fermi level ef.
-            d = {c: e.defect_energy + c * ef for c, e in ec.items()}
+            d = {cc: ee.defect_energy + c * ef for cc, ee in ec.items()}
             # return the charge with the lowest energy, and its energy value
             return min(d.items(), key=itemgetter(1))
 
@@ -470,5 +474,7 @@ class DefectEnergies(MSONable):
         ax.legend(bbox_to_anchor=(1, 0.5), loc='center left')
         #        fig.subplots_adjust(right=0.75)
 
-        return plt
-
+        if compile:
+            return plt, ax2
+        else:
+            return plt
