@@ -334,7 +334,7 @@ class DefectEnergies(MSONable):
 
         def min_e_at_ef(ec: Dict[int, DefectEnergy], ef):
             # calculate each energy at the given Fermi level ef.
-            d = {cc: ee.defect_energy + c * ef for cc, ee in ec.items()}
+            d = {cc: ee.defect_energy + cc * ef for cc, ee in ec.items()}
             # return the charge with the lowest energy, and its energy value
             return min(d.items(), key=itemgetter(1))
 
