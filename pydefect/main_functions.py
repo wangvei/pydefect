@@ -358,6 +358,8 @@ def defect_vasp_oba_set(args):
 
     flags = list(signature(ObaSet.make_input).parameters.keys())
     kwargs.update(list2dict(args.vos_kwargs, flags))
+    flags = list(chain.from_iterable(incar_flags.values()))
+    user_incar_settings = list2dict(args.incar_setting, flags)
 
     def make_dir(name, obrs):
         """Helper function"""
@@ -379,8 +381,10 @@ def defect_vasp_oba_set(args):
         keywords=args.keywords, specified_defects=args.specified_defects)
 
     if not args.specified_defects:
+        perfect_incar_setting = deepcopy(user_incar_settings)
+        perfect_incar_setting.update({"ISPIN": 1})
         oba_set = ObaSet.make_input(structure=defect_initial_setting.structure,
-                                    user_incar_settings={"ISPIN": 1},
+                                    user_incar_settings=perfect_incar_setting,
                                     **kwargs)
 
         make_dir("perfect", oba_set)
@@ -391,6 +395,7 @@ def defect_vasp_oba_set(args):
 
         oba_set = ObaSet.make_input(structure=de.perturbed_initial_structure,
                                     charge=de.charge,
+                                    user_incar_settings=user_incar_settings,
                                     **kwargs)
 
         make_dir(defect_name, oba_set)

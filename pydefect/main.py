@@ -500,6 +500,11 @@ def main():
         default=dvos_defaults["dvos_kwargs"], nargs="+",
         help="Keywords for vasp_oba_set.")
     parser_defect_vasp_set.add_argument(
+        "-is", "--incar_setting", dest="incar_setting", type=str, nargs="+",
+        default=dvos_defaults["defect_incar_setting"],
+        help="user_incar_setting in make_input classmethod of ObaSet in vise. "
+             "See document in vise for details.")
+    parser_defect_vasp_set.add_argument(
         "-d", dest="specified_defects", type=str, default=None, nargs="+",
         help="Particularly specified defect names to be added.")
     parser_defect_vasp_set.add_argument(
