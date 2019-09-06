@@ -1338,7 +1338,8 @@
         "label": "O",
         "properties": {}
       }
-    ]
+    ],
+    "@version": "2019.8.23"
   },
   "perturbed_initial_structure": {
     "@module": "pymatgen.core.structure",
@@ -2671,7 +2672,8 @@
         "label": "O",
         "properties": {}
       }
-    ]
+    ],
+    "@version": "2019.8.23"
   },
   "final_structure": {
     "@module": "pymatgen.core.structure",
@@ -4394,7 +4396,8 @@
           ]
         }
       }
-    ]
+    ],
+    "@version": "2019.8.23"
   },
   "final_volume": 596.8319925503824,
   "defect_center": 32,
