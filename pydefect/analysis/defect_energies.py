@@ -186,6 +186,9 @@ class DefectEnergies(MSONable):
                                  convergence=defect.is_converged,
                                  shallow=defect.is_shallow)
 
+            if not energy_by_c:
+                continue
+
             cross_points_with_charges = []
             for (c1, e1), (c2, e2) in combinations(energy_by_c.items(), r=2):
                 # The cross point between two charge states.
@@ -204,6 +207,9 @@ class DefectEnergies(MSONable):
             transition_levels[name] = {"cross_points": [i[0] for i in cpwc],
                                        "charges": [i[1] for i in cpwc]}
             defect_energies[name] = energy_by_c
+
+        if not defect_energies:
+            raise ValueError("No energy data for plot.")
 
         defect_energies = defaultdict_to_dict(defect_energies)
 

@@ -27,10 +27,10 @@ class DefectEnergiesTest(PydefectTest):
     def setUp(self):
         """ """
         filename = (self.TEST_FILES_DIR / "defects" / "MgO" / "unitcell.json")
-        unitcell = UnitcellCalcResults.load_json(filename)
+        self.unitcell = UnitcellCalcResults.load_json(filename)
 
         filename = ["defects", "MgO", "perfect", "dft_results.json"]
-        perfect = self.get_object_by_name(
+        self.perfect = self.get_object_by_name(
             SupercellCalcResults.load_json, filename)
 
         defect_dirs = ["Va_O1_0", "Va_O1_1", "Va_O1_2", "Va_Mg1_-2"]
@@ -41,17 +41,29 @@ class DefectEnergiesTest(PydefectTest):
 
         # temporary insert values
         filename = ["defects", "MgO", "vertices_MgO.yaml"]
-        chem_pot = self.get_object_by_name(
+        self.chem_pot = self.get_object_by_name(
             ChemPotDiag.load_vertices_yaml, filename)
-        chem_pot_label = "A"
+        self.chem_pot_label = "A"
 
         self.defect_energies = \
-            DefectEnergies.from_objects(unitcell=unitcell,
-                                        perfect=perfect,
+            DefectEnergies.from_objects(unitcell=self.unitcell,
+                                        perfect=self.perfect,
                                         defects=defects,
-                                        chem_pot=chem_pot,
-                                        chem_pot_label=chem_pot_label,
+                                        chem_pot=self.chem_pot,
+                                        chem_pot_label=self.chem_pot_label,
                                         system="MgO")
+
+    def test_no_data(self):
+        filename = ["defects", "MgO", "Va_Mg1_0", "defect.json"]
+        defects = [self.get_object_by_name(Defect.load_json, filename)]
+
+        with self.assertRaises(ValueError):
+            DefectEnergies.from_objects(unitcell=self.unitcell,
+                                    perfect=self.perfect,
+                                    defects=defects,
+                                    chem_pot=self.chem_pot,
+                                    chem_pot_label=self.chem_pot_label,
+                                    system="MgO")
 
     def test_msonable(self):
         self.assertMSONable(self.defect_energies)
