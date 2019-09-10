@@ -12,7 +12,7 @@ from pathlib import Path
 import numpy as np
 from chempotdiag.chem_pot_diag import ChemPotDiag
 from vise.input_set.incar import incar_flags
-from vise.input_set.input_set import ObaSet
+from vise.input_set.input_set import InputSet
 from pydefect.analysis.defect import Defect
 from pydefect.analysis.defect_carrier_concentration import DefectConcentration
 from pydefect.analysis.defect_eigenvalues import DefectEigenvalue
@@ -34,7 +34,8 @@ from pydefect.input_maker.defect_initial_setting import (
 from pydefect.input_maker.supercell_maker import Supercell, Supercells
 from pydefect.util.logger import get_logger
 from pydefect.util.main_tools import (
-    list2dict, generate_objects_from_json_files, potcar_str2dict)
+    generate_objects_from_json_files)
+from vise.util.main_tools import potcar_str2dict, list2dict
 from pymatgen import Structure, Spin
 from pymatgen.core.periodic_table import Element
 
@@ -42,61 +43,6 @@ __author__ = "Yu Kumagai"
 __maintainer__ = "Yu Kumagai"
 
 logger = get_logger(__name__)
-
-
-def vasp_oba_set(args):
-
-    flags = [str(s) for s in list(Element)]
-    ldauu = list2dict(args.ldauu, flags)
-    ldaul = list2dict(args.ldaul, flags)
-    potcar_set = potcar_str2dict(args.potcar_set)
-    base_kwargs = {"task":                  args.task,
-                   "xc":                    args.xc,
-                   "kpt_density":           args.kpt_density,
-                   "standardize_structure": args.standardize,
-                   "ldauu": ldauu,
-                   "ldaul": ldaul}
-
-    flags = list(chain.from_iterable(incar_flags.values()))
-    base_user_incar_settings = list2dict(args.incar_setting, flags)
-
-    flags = list(signature(ObaSet.make_input).parameters.keys())
-    base_kwargs.update(list2dict(args.vos_kwargs, flags))
-
-    original_dir = os.getcwd()
-    dirs = args.dirs if args.dirs else ["."]
-
-    for d in dirs:
-        os.chdir(os.path.join(original_dir, d))
-        logger.info("Constructing vasp set in {}".format(d))
-        user_incar_settings = deepcopy(base_user_incar_settings)
-        kwargs = deepcopy(base_kwargs)
-
-        if args.prior_info:
-            if os.path.exists("prior_info.json"):
-                prior_info = PriorInfo.load_json("prior_info.json")
-                kwargs["band_gap"] = prior_info["band_gap"]
-                kwargs["is_magnetization"] = True \
-                    if abs(prior_info["total_magnetization"]) > 0.1 else False
-
-        if args.prev_dir:
-            files = {"CHGCAR": "C", "WAVECAR": "M", "WAVEDER": "M"}
-            oba_set = ObaSet.from_prev_calc(args.prev_dir,
-                                            charge=args.charge,
-                                            copied_file_names=files, **kwargs)
-        else:
-            s = Structure.from_file(args.poscar)
-            oba_set = \
-                ObaSet.make_input(structure=s,
-                                  charge=args.charge,
-                                  user_incar_settings=user_incar_settings,
-                                  weak_incar_settings={"LWAVE": args.wavecar},
-                                  override_potcar_set=potcar_set,
-                                  **kwargs)
-
-        oba_set.write_input(".")
-
-    os.chdir(original_dir)
 
 
 def unitcell_calc_results(args):

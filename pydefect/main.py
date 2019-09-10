@@ -22,7 +22,7 @@ from pydefect.util.main_tools import (
     get_user_settings, get_default_args, dict2list)
 from pydefect.corrections.efnv_corrections import Ewald
 
-__author__ = "Yu Kumagai, Akira Takahashi"
+__author__ = "Yu Kumagai"
 __maintainer__ = "Yu Kumagai"
 
 logger = get_logger(__name__)
@@ -61,96 +61,6 @@ def main():
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
     subparsers = parser.add_subparsers()
-
-    # -- vasp_oba_set ---------------------------------------------------------
-    parser_vasp_oba_set = subparsers.add_parser(
-        name="vasp_oba_set",
-        description="Tools for constructing vasp input set with oba_set",
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-        aliases=['vos'])
-
-    # all the defaults must be declared here.
-    vos_defaults = {"vos_kwargs": {"symprec": SYMMETRY_TOLERANCE,
-                                   "angle_tolerance": ANGLE_TOL},
-                    "xc":         "pbesol",
-                    "kpt_density": PERFECT_KPT_DENSITY,
-                    "perfect_incar_setting": None,
-                    "potcar_set": None,
-                    "ldauu":      None,
-                    "ldaul":      None}
-
-    simple_override(vos_defaults,
-                    ["xc",
-                     "kpt_density",
-                     "perfect_incar_setting",
-                     "potcar_set",
-                     "ldauu",
-                     "ldaul"])
-
-    vos_defaults["vos_kwargs"].update(
-        user_settings.get("perfect_vos_kwargs", {}))
-    simple_override(vos_defaults["vos_kwargs"], ["symprec", "angle_tolerance"])
-    vos_defaults["vos_kwargs"] = dict2list(vos_defaults["vos_kwargs"])
-
-    # write use potcar setting
-    parser_vasp_oba_set.add_argument(
-        "-p", "--poscar", dest="poscar", default="POSCAR", type=str,
-        help="POSCAR-type file name.")
-    parser_vasp_oba_set.add_argument(
-        "--potcar", dest="potcar_set", default=vos_defaults["potcar_set"],
-        type=str, nargs="+",
-        help="User specifying POTCAR set. E.g., Mg_pv O_h")
-    parser_vasp_oba_set.add_argument(
-        "-x", "--xc", dest="xc", default=vos_defaults["xc"], type=str,
-        help="Exchange-correlation (XC) interaction treatment.")
-    parser_vasp_oba_set.add_argument(
-        "-t", "--task", dest="task", default="structure_opt", type=str,
-        help="The task name. See document of vise.")
-    parser_vasp_oba_set.add_argument(
-        "-k", "--kpt_density", dest="kpt_density",
-        default=vos_defaults["kpt_density"], type=float,
-        help="K-point density in Angstrom along each direction .")
-    parser_vasp_oba_set.add_argument(
-        "-s", "--standardize", dest="standardize", action="store_false",
-        help="Store if one doesn't want the cell to be transformed to a "
-             "primitive cell.")
-    parser_vasp_oba_set.add_argument(
-        "-d", "--prev_dir", dest="prev_dir", type=str,
-        help="Inherit input files from the previous directory.")
-    parser_vasp_oba_set.add_argument(
-        "-c", "--charge", dest="charge", type=int, default=0,
-        help="Supercell charge state.")
-    parser_vasp_oba_set.add_argument(
-        "-vos_kw", "--vos_kwargs", dest="vos_kwargs", type=str, nargs="+",
-        default=vos_defaults["vos_kwargs"],
-        help="Keyword arguments in make_input classmethod of ObaSet in vise. "
-             "See document in vise for details.")
-    parser_vasp_oba_set.add_argument(
-        "-is", "--incar_setting", dest="incar_setting", type=str, nargs="+",
-        default=vos_defaults["perfect_incar_setting"],
-        help="user_incar_setting in make_input classmethod of ObaSet in vise. "
-             "See document in vise for details.")
-    parser_vasp_oba_set.add_argument(
-        "--dirs", dest="dirs", nargs="+", type=str,
-        help="Make vasp set for the directories in the same condition."
-             "In pydefect, it is used especially for competing phases.")
-    parser_vasp_oba_set.add_argument(
-        "-pi", "-prior_info", dest="prior_info", action="store_true",
-        help="Set if prior_info.json is read for competing phase calculations.")
-    parser_vasp_oba_set.add_argument(
-        "-nw", "--no_wavecar", dest="wavecar", action="store_false",
-        help="Set if one doesn't want to generate WAVECAR file.")
-    parser_vasp_oba_set.add_argument(
-        "-ldauu", dest="ldauu", type=dict, default=vos_defaults["ldauu"],
-        nargs="+", help=".")
-    parser_vasp_oba_set.add_argument(
-        "-ldaul", dest="ldaul", type=str, default=vos_defaults["ldaul"],
-        nargs="+", help=".")
-
-    # delete the default dict to avoid bugs.
-    del vos_defaults
-
-    parser_vasp_oba_set.set_defaults(func=vasp_oba_set)
 
     # -- unitcell_calc_results ------------------------------------------------
     parser_unitcell_results = subparsers.add_parser(

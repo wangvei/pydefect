@@ -4,8 +4,9 @@ from pathlib import Path
 from pydefect.core.defect_entry import DefectEntry
 from pydefect.corrections.efnv_corrections import ExtendedFnvCorrection
 from pydefect.util.main_tools import (
-    get_user_settings, get_default_args, potcar_str2dict, dict2list, list2dict,
+    get_user_settings, get_default_args, dict2list,
     generate_objects_from_json_files)
+from vise.util.main_tools import potcar_str2dict, list2dict
 from pydefect.util.testing import PydefectTest
 
 __author__ = "Yu Kumagai"
