@@ -61,6 +61,7 @@ def too_close_atom_pairs(structure: Structure,
 
     Raise a ValueError if the number of atoms in structure is 1.
 
+    Args:
 
     """
 

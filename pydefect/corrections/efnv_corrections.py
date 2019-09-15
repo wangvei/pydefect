@@ -6,7 +6,7 @@ from functools import reduce
 from itertools import product, groupby
 from math import sqrt, pow, ceil
 from operator import itemgetter
-from typing import Optional, Union
+from typing import Optional, Union, Tuple
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -532,7 +532,8 @@ def calc_ewald_sum(ewald: Ewald,
                    root_det_epsilon: np.ndarray,
                    volume: float,
                    include_self: bool = False,
-                   shift: np.ndarray = np.array([0, 0, 0])) -> tuple:
+                   shift: np.ndarray = np.array([0, 0, 0])
+                   ) -> Tuple[float, float]:
     """Return real and reciprocal Ewald summations at given parameters"""
 
     epsilon_inv = np.linalg.inv(ewald.dielectric_tensor)
@@ -557,9 +558,9 @@ def calc_ewald_sum(ewald: Ewald,
     return real_part, reciprocal_part
 
 
-def constants_for_anisotropic_ewald_sum(charge: int,
-                                        ewald: Ewald,
-                                        volume: float) -> tuple:
+def constants_for_anisotropic_ewald_sum(
+        charge: int, ewald: Ewald, volume: float) -> Tuple[float, float,
+                                                           float, np.ndarray]:
     """Derive some constants used for anisotropic Ewald sum.
 
     YK2014: Kumagai and Oba, PRB 89, 195205 (2014)

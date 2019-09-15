@@ -434,13 +434,14 @@ class DefectInitialSetting(MSONable):
 
     # see history at 2019/8/2 if from_dict and as_dict need to be recovered.
     @classmethod
-    def load_json(cls, filename: str):
+    def load_json(cls, filename: str) -> "DefectInitialSetting":
         return loadfn(filename)
 
     @classmethod
     def from_defect_in(cls,
                        poscar: str = "DPOSCAR",
-                       defect_in_file: str = "defect.in"):
+                       defect_in_file: str = "defect.in"
+                       ) -> "DefectInitialSetting":
         """ Class object construction with defect.in file.
 
         Currently, the file format of defect.in is not flexible, so be careful
@@ -649,7 +650,8 @@ class DefectInitialSetting(MSONable):
                             symprec: float = SYMMETRY_TOLERANCE,
                             angle_tolerance: float = ANGLE_TOL,
                             interstitial_sites: list = None,
-                            complex_defect_names: list = None):
+                            complex_defect_names: list = None
+                            ) -> "DefectInitialSetting":
         """ Generates object with some default settings.
 
         Args:
@@ -853,7 +855,8 @@ class DefectInitialSetting(MSONable):
 
         return defect_set
 
-    def _inserted_set(self, inserted_elements: List[str]) -> dict:
+    def _inserted_set(self, inserted_elements: Union[List[str], Tuple[str]]
+                      ) -> dict:
         """Interstitials. """
         defect_set = {}
         for interstitial_name, i in self.interstitials.items():
@@ -929,7 +932,7 @@ class DefectInitialSetting(MSONable):
 
     def make_defect_set(self,
                         keywords: Optional[list] = None,
-                        specified_defects: Optional[list] = None):
+                        specified_defects: Optional[list] = None) -> None:
         """ Return defect name list based on DefectInitialSetting object. """
         defects = {}
         # vacancies
@@ -984,7 +987,7 @@ class DefectInitialSetting(MSONable):
                                 neighboring_sites=neighboring_sites,
                                 **defect))
 
-    def _write_defect_in(self, defect_in_file: str = "defect.in"):
+    def _write_defect_in(self, defect_in_file: str = "defect.in") -> None:
         """ Helper method to write down defect.in file.
 
         Args:

@@ -13,7 +13,7 @@ from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
 from pydefect.database.symmetry import tm_from_primitive_to_standard
 
 from vise.util.structure_handler import (
-    find_spglib_standard_primitive, get_symmetry_dataset)
+    find_spglib_primitive, get_symmetry_dataset)
 
 __author__ = "Yu Kumagai"
 __maintainer__ = "Yu Kumagai"
@@ -101,8 +101,7 @@ class Supercell:
         self.is_structure_changed = False
         if check_unitcell:
             primitive, self.is_structure_changed = \
-                find_spglib_standard_primitive(structure, symprec,
-                                               angle_tolerance)
+                find_spglib_primitive(structure, symprec, angle_tolerance)
             if self.is_structure_changed:
                 logger.warning(f"Structure is change to primitive cell.")
                 sym_dataset = get_symmetry_dataset(structure, symprec,
@@ -173,7 +172,7 @@ class Supercells:
                 Angle tolerance for symmetry analysis in degree
         """
         primitive_cell, _ = \
-            find_spglib_standard_primitive(structure, symprec, angle_tolerance)
+            find_spglib_primitive(structure, symprec, angle_tolerance)
         if max_num_atoms < len(primitive_cell):
             raise CellSizeError("Number of atoms in unitcell is too large.")
 

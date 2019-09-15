@@ -52,6 +52,7 @@ def analyze_procar(hob_index: dict,
             Structure used for extracting symbol_set
         neighboring_sites:
             Atomic site indices neighboring a defect.
+
     Return:
         Tuple of the following dict.
 
@@ -109,11 +110,10 @@ def analyze_procar(hob_index: dict,
                                            band_index=band_index,
                                            kpoint_index=k_index)
 
-    # participation_ratio is None for perfect supercell.
-    if participation_ratio:
-        participation_ratio = defaultdict_to_dict(participation_ratio)
-    else:
-        participation_ratio = None
+    # participation_ratio must be None for perfect supercell.
+    participation_ratio = defaultdict_to_dict(participation_ratio) \
+        if participation_ratio else None
+
     orbital_character = defaultdict_to_dict(orbital_character)
     orbital_character_indices = defaultdict_to_dict(orbital_character_indices)
     edge_energies = defaultdict_to_dict(edge_energies)
@@ -296,8 +296,8 @@ class SupercellCalcResults(MSONable):
             final_structure, defect_symprec, angle_tolerance)
         site_symmetry = sga.get_point_group_symbol()
 
-        cutoff = cutoff or round(get_min_distance(final_structure)
-                                 * CUTOFF_FACTOR, 2)
+        cutoff = (cutoff or
+                  round(get_min_distance(final_structure) * CUTOFF_FACTOR, 2))
 
         # If defect_entry is None, system is regarded as perfect supercell.
         if not defect_entry:
