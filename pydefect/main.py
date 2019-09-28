@@ -10,12 +10,11 @@ from pydefect.core.supercell_calc_results import SupercellCalcResults
 from pydefect.core.complex_defects import ComplexDefects
 from pydefect.input_maker.defect_initial_setting import DefectInitialSetting
 from pydefect.input_maker.supercell_maker import Supercells
-from pydefect.core.config import (
-    SYMMETRY_TOLERANCE, ANGLE_TOL, PERFECT_KPT_DENSITY, DEFECT_KPT_DENSITY)
+from pydefect.core.config import DEFECT_KPT_DENSITY
 from pydefect.main_functions import (
     initial_setting, interstitial, complex_defects,
     defect_vasp_oba_set, defect_entry, supercell_calc_results,
-    unitcell_calc_results, efnv_correction, vasp_oba_set, defects, plot_energy,
+    unitcell_calc_results, efnv_correction, defects, plot_energy,
     parse_eigenvalues, vasp_parchg_set, local_structure, concentration)
 from pydefect.util.logger import get_logger
 from pydefect.util.main_tools import (

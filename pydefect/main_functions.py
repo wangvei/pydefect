@@ -12,7 +12,7 @@ from pathlib import Path
 import numpy as np
 from chempotdiag.chem_pot_diag import ChemPotDiag
 from vise.input_set.incar import incar_flags
-from vise.input_set.input_set import InputSet
+from vise.input_set.input_set import ViseInputSet
 from pydefect.analysis.defect import Defect
 from pydefect.analysis.defect_carrier_concentration import DefectConcentration
 from pydefect.analysis.defect_eigenvalues import DefectEigenvalue
@@ -23,7 +23,7 @@ from pydefect.core.defect_entry import DefectEntry
 from pydefect.core.interstitial_site import (
     InterstitialSiteSet, interstitials_from_charge_density)
 from pydefect.core.complex_defects import ComplexDefects
-from vise.input_set.prior_info import PriorInfo
+
 from pydefect.core.error_classes import StructureError
 from pydefect.core.supercell_calc_results import SupercellCalcResults
 from pydefect.core.unitcell_calc_results import UnitcellCalcResults
@@ -267,9 +267,9 @@ def complex_defects(args):
         coords = [inserted_coords[3 * i + j] for j in range(3)]
         inserted_atoms.append({"element": e, "coords": coords})
 
-    defect_initial_setting = \
-        DefectInitialSetting.from_defect_in(poscar=args.dposcar,
-                                            defect_in_file=args.defect_in)
+    # defect_initial_setting = \
+    #     DefectInitialSetting.from_defect_in(poscar=args.dposcar,
+    #                                         defect_in_file=args.defect_in)
 
     complex_defects_obj.add_defect(
         removed_atom_indices=args.removed_atom_indices,
@@ -296,13 +296,13 @@ def defect_vasp_oba_set(args):
         "override_potcar_set": potcar_set,
         "sort_structure": False,
         "weak_incar_settings": {"LWAVE": args.wavecar},
-        "kpt_mode": "manual",
+        "kpt_mode": "manual_set",
         "kpt_density": args.kpt_density,
         "only_even": False,
         "ldauu": ldauu,
         "ldaul": ldaul}
 
-    flags = list(signature(ObaSet.make_input).parameters.keys())
+    flags = list(signature(ViseInputSet.make_input).parameters.keys())
     kwargs.update(list2dict(args.vos_kwargs, flags))
     flags = list(chain.from_iterable(incar_flags.values()))
     user_incar_settings = list2dict(args.incar_setting, flags)
@@ -329,9 +329,10 @@ def defect_vasp_oba_set(args):
     if not args.specified_defects:
         perfect_incar_setting = deepcopy(user_incar_settings)
         perfect_incar_setting.update({"ISPIN": 1})
-        oba_set = ObaSet.make_input(structure=defect_initial_setting.structure,
-                                    user_incar_settings=perfect_incar_setting,
-                                    **kwargs)
+        oba_set = ViseInputSet.make_input(
+            structure=defect_initial_setting.structure,
+            user_incar_settings=perfect_incar_setting,
+            **kwargs)
 
         make_dir("perfect", oba_set)
 
@@ -339,10 +340,11 @@ def defect_vasp_oba_set(args):
         defect_name = "_".join([de.name, str(de.charge)])
         json_file_name = os.path.join(defect_name, "defect_entry.json")
 
-        oba_set = ObaSet.make_input(structure=de.perturbed_initial_structure,
-                                    charge=de.charge,
-                                    user_incar_settings=user_incar_settings,
-                                    **kwargs)
+        oba_set = ViseInputSet.make_input(
+            structure=de.perturbed_initial_structure,
+            charge=de.charge,
+            user_incar_settings=user_incar_settings,
+            **kwargs)
 
         make_dir(defect_name, oba_set)
         de.to_json_file(json_file_name)
@@ -640,16 +642,14 @@ def vasp_parchg_set(args):
     if args.kpoint_indices:
         user_incar_settings["KPUSE"] = args.kpoint_indices
 
-    oba_set = ObaSet.from_prev_calc(dirname=args.read_dir,
-                                    parse_calc_results=False,
-                                    parse_magnetization=False,
-                                    standardize_structure=False,
-                                    sort_structure=False,
-                                    parse_potcar=True,
-                                    parse_incar=True,
-                                    parse_kpoints=True,
-                                    copied_file_names={"WAVECAR": "L"},
-                                    user_incar_settings=user_incar_settings)
+    oba_set = ViseInputSet.from_prev_calc(
+        dirname=args.read_dir,
+        parse_calc_results=False,
+        parse_incar=True,
+        sort_structure=False,
+        standardize_structure=False,
+        files_to_transfer={"WAVECAR": "L"},
+        user_incar_settings=user_incar_settings)
 
     oba_set.write_input(args.write_dir)
 
