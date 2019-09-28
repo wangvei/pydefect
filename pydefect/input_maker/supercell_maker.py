@@ -63,7 +63,7 @@ def sanitize_matrix(matrix: list) -> np.ndarray:
         for i in range(3):
             sanitized_matrix[i, i] = matrix[0]
     elif len(matrix) == 9:
-        sanitized_matrix = np.reshape(matrix, (3, 3), dtype=int)
+        sanitized_matrix = np.reshape(matrix, (3, 3))
     elif len(matrix) == 3:
         if isinstance(matrix[0], Iterable) and len(matrix[0]) == 3:
             sanitized_matrix = np.array(matrix, dtype=int)

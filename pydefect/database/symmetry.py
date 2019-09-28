@@ -63,9 +63,12 @@ def tm_from_standard_to_primitive(centering):
                            [-1/2,  1/2,    0],
                            [   0,    0,    1]])
     elif centering == "R":
-        matrix = np.array([[ 2/3, -1/3, -1/3],
-                           [ 1/3,  1/3, -2/3],
-                           [ 1/3,  1/3,  1/3]])
+        matrix = np.array([[ 2/3,  1/3,  1/3],
+                           [-1/3,  1/3,  1/3],
+                           [-1/3, -2/3,  1/3]])
+#        matrix = np.array([[ 2/3, -1/3, -1/3],
+#                           [ 1/3,  1/3, -2/3],
+#                           [ 1/3,  1/3,  1/3]])
     elif centering == "I":
         matrix = np.array([[-1/2,  1/2,  1/2],
                            [ 1/2, -1/2,  1/2],
