@@ -18,7 +18,8 @@ from pydefect.main_functions import (
     parse_eigenvalues, vasp_parchg_set, local_structure, concentration)
 from pydefect.util.logger import get_logger
 from pydefect.util.main_tools import (
-    get_user_settings, get_default_args, dict2list)
+    get_default_args)
+from vise.util.main_tools import get_user_settings, dict2list
 from pydefect.corrections.efnv_corrections import Ewald
 
 __author__ = "Yu Kumagai"
@@ -31,11 +32,39 @@ __date__ = 'will be inserted'
 
 
 def main():
+    setting_keys = ["symprec",
+                    "defect_symprec",
+                    "angle_tolerance",
+                    "kpt_density",
+                    "defect_kpt_density",
+                    "defect_incar_setting",
+                    "defect_vise_kwargs",
+                    "ldauu",
+                    "ldaul",
+                    "xc",
+                    "no_wavecar",
+                    "potcar_set",
+                    "outcar",
+                    "contcar",
+                    "vasprun",
+                    "procar",
+                    "vicinage_radius",
+                    "cutoff",
+                    "displacement_distance",
+                    "volume_dir",
+                    "static_diele_dir",
+                    "ionic_diele_dir",
+                    "band_edge_dir",
+                    "dos_dir",
+                    "unitcell_json",
+                    "perfect_json",
+                    "chem_pot_yaml"]
 
-    user_settings = get_user_settings()
+    user_settings = get_user_settings(yaml_filename="pydefect.yaml",
+                                      setting_keys=setting_keys)
 
     def simple_override(d: dict, keys: Union[list, str]) -> None:
-        """Override dict if keys exist in user_setting.
+        """Override dict if keys exist in user_settings.
 
         When the value in the user_settings is a dict, it will be changed to
         list using dict2list.
@@ -54,7 +83,7 @@ def main():
     pydefect is a package that helps researchers to do first-principles point 
     defect calculations with the VASP code.""",
         epilog=f"""                                 
-    Author: Yu Kumagai, Akira Takahashi
+    Author: Yu Kumagai
     Version: {__version__}                                                                 
     Last updated: {__date__}""",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
@@ -358,23 +387,23 @@ def main():
 
     # -- defect_vasp_set_maker ------------------------------------------------
     parser_defect_vasp_set = subparsers.add_parser(
-        name="defect_vasp_oba_set",
+        name="defect_vasp_set",
         description="Tools for configuring vasp defect_set files for a set of "
                     "defect calculations. One needs to set "
                     ".pydefect.yaml for potcar setup.",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-        aliases=['dvos'])
+        aliases=['dvs'])
 
     # all the defaults must be declared here.
-    dvos_defaults = {"dvos_kwargs": dict(),
-                     "xc":         "pbesol",
-                     "defect_kpt_density": DEFECT_KPT_DENSITY,
-                     "defect_incar_setting": None,
-                     "potcar_set": None,
-                     "ldauu":      None,
-                     "ldaul":      None}
+    dvs_defaults = {"dvs_kwargs": dict(),
+                    "xc":         "pbesol",
+                    "defect_kpt_density": DEFECT_KPT_DENSITY,
+                    "defect_incar_setting": None,
+                    "potcar_set": None,
+                    "ldauu":      None,
+                    "ldaul":      None}
 
-    simple_override(dvos_defaults,
+    simple_override(dvs_defaults,
                     ["xc",
                      "defect_kpt_density",
                      "defect_incar_setting",
@@ -382,11 +411,11 @@ def main():
                      "ldauu",
                      "ldaul"])
 
-    dvos_defaults["dvos_kwargs"].update(
-        user_settings.get("defect_vos_kwargs", {}))
+    dvs_defaults["dvs_kwargs"].update(
+        user_settings.get("defect_vise_kwargs", {}))
     simple_override(
-        dvos_defaults["dvos_kwargs"], ["symprec", "angle_tolerance"])
-    dvos_defaults["dvos_kwargs"] = dict2list(dvos_defaults["dvos_kwargs"])
+        dvs_defaults["dvs_kwargs"], ["symprec", "angle_tolerance"])
+    dvs_defaults["dvs_kwargs"] = dict2list(dvs_defaults["dvs_kwargs"])
 
     parser_defect_vasp_set.add_argument(
         "--defect_in", dest="defect_in", default="defect.in", type=str,
@@ -395,22 +424,22 @@ def main():
         "--dposcar", dest="dposcar", default="DPOSCAR", type=str,
         help="DPOSCAR-type file name.")
     parser_defect_vasp_set.add_argument(
-        "--potcar", dest="potcar_set", default=dvos_defaults["potcar_set"],
+        "--potcar", dest="potcar_set", default=dvs_defaults["potcar_set"],
         type=str, nargs="+",
         help="User specifying POTCAR set. E.g., Mg_pv O_h")
     parser_defect_vasp_set.add_argument(
-        "-x", "--xc", dest="xc", default=dvos_defaults["xc"], type=str,
+        "-x", "--xc", dest="xc", default=dvs_defaults["xc"], type=str,
         help="XC interaction treatment.")
     parser_defect_vasp_set.add_argument(
         "-kw", "--keywords", dest="keywords", type=str, default=None,
         nargs="+", help="Filtering keywords.")
     parser_defect_vasp_set.add_argument(
         "-vos_kw", "--vos_kwargs", dest="vos_kwargs", type=str,
-        default=dvos_defaults["dvos_kwargs"], nargs="+",
+        default=dvs_defaults["dvs_kwargs"], nargs="+",
         help="Keywords for vasp_oba_set.")
     parser_defect_vasp_set.add_argument(
         "-is", "--incar_setting", dest="incar_setting", type=str, nargs="+",
-        default=dvos_defaults["defect_incar_setting"],
+        default=dvs_defaults["defect_incar_setting"],
         help="user_incar_setting in make_input classmethod of ObaSet in vise. "
              "See document in vise for details.")
     parser_defect_vasp_set.add_argument(
@@ -421,19 +450,19 @@ def main():
         help="Set if the existing folders are overwritten.")
     parser_defect_vasp_set.add_argument(
         "-k", "--kpt_density", dest="kpt_density",
-        default=dvos_defaults["defect_kpt_density"], type=float,
+        default=dvs_defaults["defect_kpt_density"], type=float,
         help="K-point density in Angstrom along each direction .")
     parser_defect_vasp_set.add_argument(
         "-nw", "--no_wavecar", dest="wavecar", action="store_false",
         help="Do not make WAVECAR file or not.")
     parser_defect_vasp_set.add_argument(
-        "-ldauu", dest="ldauu", type=dict, default=dvos_defaults["ldauu"],
+        "-ldauu", dest="ldauu", type=dict, default=dvs_defaults["ldauu"],
         nargs="+", help=".")
     parser_defect_vasp_set.add_argument(
-        "-ldaul", dest="ldaul", type=str, default=dvos_defaults["ldaul"],
+        "-ldaul", dest="ldaul", type=str, default=dvs_defaults["ldaul"],
         nargs="+", help=".")
 
-    del dvos_defaults
+    del dvs_defaults
 
     parser_defect_vasp_set.set_defaults(func=defect_vasp_oba_set)
 
@@ -493,7 +522,6 @@ def main():
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
         aliases=['sr'])
 
-    sr_defaults = get_default_args(SupercellCalcResults.from_vasp_files)
     sr_defaults = get_default_args(SupercellCalcResults.from_vasp_files)
     simple_override(sr_defaults,
                     ["vasprun",

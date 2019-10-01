@@ -307,7 +307,7 @@ def defect_vasp_oba_set(args):
     flags = list(chain.from_iterable(incar_flags.values()))
     user_incar_settings = list2dict(args.incar_setting, flags)
 
-    def make_dir(name, obrs):
+    def make_dir(name: str, vis: ViseInputSet) -> None:
         """Helper function"""
         if args.force_overwrite and os.path.exists(name):
             logger.warning(f"{name:>10} is being removed.")
@@ -318,7 +318,8 @@ def defect_vasp_oba_set(args):
         else:
             logger.warning(f"{name:>10} is being constructed.")
             os.makedirs(name)
-            obrs.write_input(name)
+            vis.write_input(name)
+            vis.to_json_file("/".join([name, "vise.json"]))
 
     defect_initial_setting = DefectInitialSetting.from_defect_in(
         poscar=args.dposcar, defect_in_file=args.defect_in)
@@ -329,24 +330,24 @@ def defect_vasp_oba_set(args):
     if not args.specified_defects:
         perfect_incar_setting = deepcopy(user_incar_settings)
         perfect_incar_setting.update({"ISPIN": 1})
-        oba_set = ViseInputSet.make_input(
+        vise_set = ViseInputSet.make_input(
             structure=defect_initial_setting.structure,
             user_incar_settings=perfect_incar_setting,
             **kwargs)
 
-        make_dir("perfect", oba_set)
+        make_dir("perfect", vise_set)
 
     for de in defect_initial_setting.defect_entries:
         defect_name = "_".join([de.name, str(de.charge)])
         json_file_name = os.path.join(defect_name, "defect_entry.json")
 
-        oba_set = ViseInputSet.make_input(
+        vise_set = ViseInputSet.make_input(
             structure=de.perturbed_initial_structure,
             charge=de.charge,
             user_incar_settings=user_incar_settings,
             **kwargs)
 
-        make_dir(defect_name, oba_set)
+        make_dir(defect_name, vise_set)
         de.to_json_file(json_file_name)
 
         if de.neighboring_sites:

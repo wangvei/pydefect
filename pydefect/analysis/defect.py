@@ -295,7 +295,9 @@ class Defect(MSONable):
 
         if check_structure:
             if too_close_atom_pairs(dft_results.final_structure):
-                raise StructureError
+                raise StructureError(
+                    "Some atoms are too close. If you want to continue to "
+                    "generate Defect object, set check_structure=False.")
 
         band_edge_states = \
             diagnose_band_edges(dft_results.participation_ratio,

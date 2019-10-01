@@ -14,8 +14,8 @@ __author__ = "Yu Kumagai"
 __maintainer__ = "Yu Kumagai"
 
 
-class GkoCorrection(Correction, MSONable):
-    method = "GKO"
+class GkfoCorrection(Correction, MSONable):
+    method = "GKFO"
 
     def __init__(self,
                  before_charge: int,
