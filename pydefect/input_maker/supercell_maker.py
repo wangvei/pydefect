@@ -121,7 +121,7 @@ class Supercell:
         self.num_atoms = self.structure.num_sites
 
     def to(self, poscar: str, uposcar: Optional[str] = "UPOSCAR") -> None:
-        self.structure.to(poscar)
+        self.structure.to(filename=poscar)
         if self.is_structure_changed:
             self.structure.to(uposcar)
 
