@@ -464,11 +464,11 @@ def get_coordination_distances(structure: Structure,
 
     for n in neighbors:
         # remove oxidation state from species_string, e.g., Mg2+ -> Mg
-        specie = ''.join([i for i in n.site.species_string if i.isalpha()])
+        specie = ''.join([i for i in str(n._species) if i.isalpha()])
         # float is needed as the numpy.float is not compatible with the
         # combination of OrderedDict and yaml. Otherwise, the interstitial.yaml
         # shows ugly printing.
-        coordination_distances[specie].append(round(float(n.distance), 2))
+        coordination_distances[specie].append(round(float(n[1]), 2))
 
     for distances in coordination_distances.values():
         distances.sort()
