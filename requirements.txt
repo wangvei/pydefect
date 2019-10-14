@@ -3,6 +3,7 @@ ase==3.18.1
 atomate==0.9.4
 certifi==2019.9.11
 chardet==3.0.4
+chempotdiag-takahashi-akira36m==0.1.dev0
 Click==7.0
 custodian==2019.9.23
 cycler==0.10.0
