@@ -32,3 +32,4 @@ sympy==1.4
 tabulate==0.8.5
 tqdm==4.36.1
 urllib3==1.25.6
+vise-yuuukuma==0.1.dev0
