@@ -34,13 +34,13 @@ class PerturbNeighborsTest(PydefectTest):
                                       self.distance, inserted_atom_indices)
 
     def test_perturbed_sites_smaller(self):
-        expected = [43, 47, 53, 55, 62, 63]
-        self.assertEqual(expected, self.perturbed_sites)
+        expected = {43, 47, 53, 55, 62, 63}
+        self.assertEqual(expected, set(self.perturbed_sites))
 
     def test_perturbed_sites_larger(self):
-        expected = [12, 13, 14, 15, 18, 19, 22, 23, 25, 27, 29, 31, 43, 47, 53,
-                    55, 62, 63]
-        self.assertEqual(expected, self.perturbed_sites_2)
+        expected = {12, 13, 14, 15, 18, 19, 22, 23, 25, 27, 29, 31, 43, 47, 53,
+                    55, 62, 63}
+        self.assertEqual(expected, set(self.perturbed_sites_2))
 
     def test_displacement_distance(self):
         distances = []

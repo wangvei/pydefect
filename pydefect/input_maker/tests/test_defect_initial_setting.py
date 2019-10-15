@@ -326,6 +326,9 @@ class DefectInitialSettingTest(PydefectTest):
             if key == "perturbed_initial_structure":
                 continue
             print(key)
-            self.assertEqual(value, actual[key])
+            if key == "neighboring_sites":
+                self.assertEqual(set(value), set(actual[key]))
+            else:
+                self.assertEqual(value, actual[key])
 
 
