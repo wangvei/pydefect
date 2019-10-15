@@ -295,7 +295,6 @@ def defect_vasp_oba_set(args):
         "xc": args.xc,
         "override_potcar_set": potcar_set,
         "sort_structure": False,
-        "weak_incar_settings": {"LWAVE": args.wavecar},
         "kpt_mode": "manual_set",
         "kpt_density": args.kpt_density,
         "only_even": False,
@@ -306,6 +305,7 @@ def defect_vasp_oba_set(args):
     kwargs.update(list2dict(args.vos_kwargs, flags))
     flags = list(chain.from_iterable(incar_flags.values()))
     user_incar_settings = list2dict(args.incar_setting, flags)
+    user_incar_settings.update({"LWAVE": not args.no_wavecar})
 
     def make_dir(name: str, vis: ViseInputSet) -> None:
         """Helper function"""

@@ -453,7 +453,7 @@ def main():
         default=dvs_defaults["defect_kpt_density"], type=float,
         help="K-point density in Angstrom along each direction .")
     parser_defect_vasp_set.add_argument(
-        "-nw", "--no_wavecar", dest="wavecar", action="store_false",
+        "-nw", "--no_wavecar", dest="no_wavecar", action="store_true",
         help="Do not make WAVECAR file or not.")
     parser_defect_vasp_set.add_argument(
         "-ldauu", dest="ldauu", type=dict, default=dvs_defaults["ldauu"],
