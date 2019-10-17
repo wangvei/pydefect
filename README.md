@@ -20,8 +20,7 @@ run this command in the directory containing setup.py:
 `pip install ./`
 
 This will install `pydefect` and any dependant packages
-not already have installed on your system. It will also install the non-code
-files listed in the MANIFEST.in file.
+not already have installed on your system. 
 
 Note that the `scikit-image` package is required to locate interstitials but can be omitted if this feature is not required.
 
