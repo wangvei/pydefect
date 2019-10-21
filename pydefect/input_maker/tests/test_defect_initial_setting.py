@@ -325,10 +325,15 @@ class DefectInitialSettingTest(PydefectTest):
         for key, value in expected.items():
             if key == "perturbed_initial_structure":
                 continue
-            print(key)
             if key == "neighboring_sites":
                 self.assertEqual(set(value), set(actual[key]))
             else:
                 self.assertEqual(value, actual[key])
 
+
+# class DefectInitialSettingTest2(PydefectTest):
+
+    # def setUp(self):
+    #     """ Al2O3 """
+    #     self.structure = PydefectTest.get_structure_by_name("Al2O3")
 
