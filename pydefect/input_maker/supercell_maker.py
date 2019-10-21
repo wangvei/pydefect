@@ -103,7 +103,7 @@ class Supercell:
             primitive, self.is_structure_changed = \
                 find_spglib_primitive(structure, symprec, angle_tolerance)
             if self.is_structure_changed:
-                logger.warning(f"Structure is change to primitive cell.")
+                logger.warning(f"Structure is changed to primitive cell.")
                 sym_dataset = get_symmetry_dataset(structure, symprec,
                                                    angle_tolerance)
                 trans_mat = sym_dataset["transformation_matrix"] * trans_mat
@@ -119,19 +119,15 @@ class Supercell:
         self.multiplicity = multiplicity or int(round(np.linalg.det(trans_mat)))
         self.isotropy = calc_isotropy(structure, trans_mat)
         self.num_atoms = self.structure.num_sites
+        flatten_trans_mat = sum(self.trans_mat.tolist(), [])
+        self.comment = ", ".join(["trans_mat: " + str(flatten_trans_mat),
+                                  "multi: " + str(self.multiplicity),
+                                  "isotropy: " + str(self.isotropy)])
 
     def to(self, poscar: str, uposcar: Optional[str] = "UPOSCAR") -> None:
-        self.structure.to(filename=poscar)
+        self.structure.to(filename=poscar, comment=self.comment)
         if self.is_structure_changed:
-            self.structure.to(uposcar)
-
-    # def to_poscar(self, poscar_filename: str) -> None:
-    #     poscar_str = self.structure.to(fmt="poscar").splitlines(True)
-    #     poscar_str[0] = self.comment
-
-        # with open(poscar_filename, 'w') as fw:
-        #     for line in poscar_str:
-        #         fw.write(line)
+            self.structure.to(filename=uposcar)
 
 
 class Supercells:
