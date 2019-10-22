@@ -2,7 +2,8 @@
 import json
 from collections import defaultdict
 from functools import reduce
-from itertools import permutations
+from itertools import permutations,groupby
+import operator
 from typing import Union, List, Optional, Tuple, Dict
 
 from monty.json import MontyEncoder, MSONable
@@ -31,15 +32,15 @@ __maintainer__ = "Yu Kumagai"
 logger = get_logger(__name__)
 
 
-def candidate_charge_set(i: int) -> set:
+def default_charge_set(i: int) -> set:
     """Candidate charge set for defect charge states.
 
     The input value is included for both positive and negative numbers, and
     -1 (1) is included for positive (negative) odd number.
-    E.g., candidate_charge_set(3) = [-1, 0, 1, 2, 3]
-          candidate_charge_set(-3) = [-3, -2, -1, 0, 1]
-          candidate_charge_set(2) = [0, 1, 2]
-          candidate_charge_set(-4) = [-4, -3, -2, -1, 0]
+    E.g., default_charge_set(3) = [-1, 0, 1, 2, 3]
+          default_charge_set(-3) = [-3, -2, -1, 0, 1]
+          default_charge_set(2) = [0, 1, 2]
+          default_charge_set(-4) = [-4, -3, -2, -1, 0]
 
     Args:
         i (int): an integer
@@ -98,7 +99,7 @@ def get_oxidation_state(element: Union[str, Element]) -> int:
 def get_oxidation_states(dopants: list,
                          oxidation_states: dict,
                          structure: Structure) -> dict:
-    """Set oxidation states (OSs).
+    """Get oxidation states.
 
     Args:
         dopants (list): Dopant element list ["Al", "N"]
@@ -106,10 +107,9 @@ def get_oxidation_states(dopants: list,
         structure (Structure): Host structure.
 
      The oxidation states are determined in the following order.
-        1. Use specified oxidation states by hand. (If they lack some elements,
-           use oxidation_states function.
-        2. Use the pymatgen oxidation guess.
-        3. Use the OSs in the oxidation_states function.
+        1. Specified oxidation states by argument.
+        2. Pymatgen oxidation guess.
+        3. get_oxidation_state function.
 
     Return
         Dict of oxidation_states.
@@ -141,7 +141,7 @@ def get_oxidation_states(dopants: list,
 
 
 def dopant_info(dopant: Union[str, Element]) -> Union[str, None]:
-    """ Print dopant info.
+    """Print dopant info.
 
     This method is used to add dopant info a posteriori.
     Args:
@@ -162,7 +162,7 @@ def dopant_info(dopant: Union[str, Element]) -> Union[str, None]:
 
 
 def get_distances_from_string(string: list) -> dict:
-    """ Parse a string including distances to neighboring atoms
+    """Parse a string including distances to neighboring atoms
     Arg:
         string (list):
             List of string composed as "Mg: 2.1 2.2 O: 2.3 2.4".split()
@@ -187,18 +187,19 @@ def get_distances_from_string(string: list) -> dict:
 
 
 def insert_atoms(structure: Structure,
-                 inserted_atoms: List[dict]) -> Tuple[Structure, List[dict]]:
-    """  Return structure with atoms and the indices atoms are inserted.
+                 inserted_atoms: List[dict]
+                 ) -> Tuple[Structure, List[dict]]:
+    """Return the structure atoms are inserted and its inserted atom indices
 
     Args:
-        structure (Structure): Input structure.
+        structure (Structure):
+            Input structure.
         inserted_atoms (list):
-           List of dict with "element" and "coords" keys.
-           Not that "index" is absent as it is not determined, yet.
+            List of dict with "element" and "coords" keys.
+            Not that "index" is absent as it is not determined, yet.
 
     Return:
-        Tuple of inserted Structure and list of dict of inserted atom info.
-
+        (inserted Structure, list of dict of inserted atom info)
     """
     inserted_structure = structure.copy()
     inserted_atoms_with_indices = []
@@ -223,15 +224,14 @@ def select_defects(defect_set: Dict[str, dict],
                    excluded: Optional[list] = None,
                    specified_defects: Optional[List[str]] = None
                    ) -> Dict[str, dict]:
-    """ Returns names including one of keywords.
+    """Returns defect names that include at least one of keywords.
 
     Args:
         defect_set (list):
             A list of defect dict with "name" and "charge" keys.
-           e.g.  {"Va_Mg1": {"charges": {-1, 0, 1, 2}},
-                  "Va_O1": {"charges": {0}},
-                  "O_i1": {"charges": {0, 1}}}
-
+            e.g.  {"Va_Mg1": {"charges": {-1, 0, 1, 2}},
+                   "Va_O1": {"charges": {0}},
+                   "O_i1": {"charges": {0, 1}}}
         keywords (str/list):
             Keywords determining if name is selected or not.
         included (list):
@@ -240,7 +240,7 @@ def select_defects(defect_set: Dict[str, dict],
             Exceptionally excluded defects with full names.
         specified_defects (list):
             Specifies particular defect to be considered.
-            In this case, only name needs to exist in the cancdidate.
+            In this case, only name needs to exist in the candidate.
             For example, Va_O1_-1 is fine while Va_O2_-1 is not in the above
             defect_set.
 
@@ -285,7 +285,7 @@ def select_defects(defect_set: Dict[str, dict],
 
 
 class DefectInitialSetting(MSONable):
-    """ Holds full information for creating a series of DefectEntry objects."""
+    """ Holds information for creating a series of DefectEntry objects."""
 
     def __init__(self,
                  structure: Structure,
@@ -310,13 +310,13 @@ class DefectInitialSetting(MSONable):
         """
         Args:
             structure (Structure):
-                Structure for perfect supercell
+                Structure for perfect supercell.
             space_group_symbol (str):
-                space group symbol, e.g., "Pm-3m".
+                Space group symbol, e.g., "Pm-3m".
             transformation_matrix (list):
-                Matrix used for expanding the unitcell.
+                Matrix used for expanding the primitve unitcell.
             cell_multiplicity (int):
-                How much is the supercell larger than the *primitive* cell.
+                How much is the supercell larger than the primitive unitcell.
                 This is used for calculating the defect concentration.
                 (multiplicity of the symmetry) * cell_multiplicity corresponds
                 to the number of irreducible sites in the supercell.
@@ -328,15 +328,16 @@ class DefectInitialSetting(MSONable):
                 Antisite configurations, e.g., [["Mg","O"], ["O", "Mg"]]
             interstitial_site_names (list/str):
                 Interstitial site names written in interstitial.yaml file
-                "all" means that all the interstitials are considered.
+                "all" means all the interstitials are considered.
             complex_defect_names (list/str):
                 Complex defect names in complex_defects.yaml file.
             included (list):
                 Exceptionally added defects with charges,
                 e.g., ["Va_O1_-1", "Va_O1_-2"]
             excluded (list):
-                Exceptionally removed defects with charges. If they don't exist,
-                this flag does nothing. e.g., ["Va_O1_1", "Va_O1_2"]
+                Exceptionally removed defects with charges.
+                If they don't exist, this flag does nothing.
+                e.g., ["Va_O1_1", "Va_O1_2"]
             displacement_distance (float):
                 Maximum displacement in angstrom applied to neighbor atoms.
                 0 means that no random displacement is applied.
@@ -382,8 +383,8 @@ class DefectInitialSetting(MSONable):
             self.complex_defect_names = complex_defect_names[:]
         else:
             self.complex_defect_names = [complex_defect_names]
-        self.included = included[:] if included else []
-        self.excluded = excluded[:] if excluded else []
+        self.included = included[:] or []
+        self.excluded = excluded[:] or []
         self.displacement_distance = displacement_distance
         self.cutoff = cutoff
         self.symprec = symprec
@@ -442,7 +443,7 @@ class DefectInitialSetting(MSONable):
                        poscar: str = "DPOSCAR",
                        defect_in_file: str = "defect.in"
                        ) -> "DefectInitialSetting":
-        """ Class object construction with defect.in file.
+        """Class object construction with defect.in file.
 
         Currently, the file format of defect.in is not flexible, so be careful
         when modifying it by hand. The first word is mostly parsed. The number
@@ -509,13 +510,12 @@ class DefectInitialSetting(MSONable):
         cutoff = None
         symprec = None
 
-        with open(defect_in_file) as di:
-            for l in di:
+        with open(defect_in_file) as defect_in:
+            for l in defect_in:
                 line = l.split()
 
-                # Vacant line is skipped.
                 if not line:
-                    continue
+                    continue  # Vacant line is skipped.
                 elif line[0] == "Space":
                     space_group_symbol = line[-1]
                 elif line[0] == "Transformation":
@@ -530,26 +530,21 @@ class DefectInitialSetting(MSONable):
                         [i for i in irreducible_name if not i.isdigit()])
 
                     # Here, reading defect.in file is put forward.
-                    # Wyckoff letter: line
-                    split_next_line = di.readline().split()
+                    split_next_line = defect_in.readline().split()
                     wyckoff = split_next_line[-1]
 
-                    # Site symmetry: line
-                    split_next_line = di.readline().split()
+                    split_next_line = defect_in.readline().split()
                     site_symmetry = split_next_line[-1]
 
-                    # Coordination: line
-                    split_next_line = di.readline().split()
+                    split_next_line = defect_in.readline().split()
                     coordination_distances = \
                         get_distances_from_string(split_next_line[1:])
 
-                    # Equivalent atoms: line
-                    split_next_line = di.readline().split()
+                    split_next_line = defect_in.readline().split()
                     first_index, last_index = \
                         [int(i) for i in split_next_line[2].split("..")]
 
-                    # Fractional coordinates: line
-                    split_next_line = di.readline().split()
+                    split_next_line = defect_in.readline().split()
                     repr_coords = [float(i) for i in split_next_line[2:]]
 
                     irreducible_sites.append(
@@ -562,12 +557,10 @@ class DefectInitialSetting(MSONable):
                                         site_symmetry,
                                         coordination_distances))
 
-                    # Electronegativity: line
-                    split_next_line = di.readline().split()
+                    split_next_line = defect_in.readline().split()
                     electronegativity[element] = float(split_next_line[1])
 
-                    # Oxidation state: line
-                    split_next_line = di.readline().split()
+                    split_next_line = defect_in.readline().split()
                     oxidation_states[element] = int(split_next_line[2])
 
                 elif line[0] == "Interstitials:":
@@ -583,8 +576,9 @@ class DefectInitialSetting(MSONable):
 
                 elif line[0] == "Dopant":
                     d = line[2]
-                    electronegativity[d] = float(di.readline().split()[1])
-                    oxidation_states[d] = int(di.readline().split()[2])
+                    electronegativity[d] = \
+                        float(defect_in.readline().split()[1])
+                    oxidation_states[d] = int(defect_in.readline().split()[2])
 
                 elif line[0] == "Substituted":
                     dopant_configs = [i.split("_") for i in line[2:]]
@@ -733,15 +727,16 @@ class DefectInitialSetting(MSONable):
 
             first_index = last_index + 1
             last_index = last_index + len(equiv_site)
-            # np.array must be converted to list be consistent with arg type.
+            # np.array must be converted to list, being consistent with arg type
             representative_coords = list(equiv_site[0].frac_coords)
             irreducible_name = element + str(num_irreducible_sites[element])
             wyckoff = sym_dataset["wyckoffs"][first_index]
             site_symmetry = sym_dataset["site_symmetry_symbols"][i]
 
             coordination_distances = \
-                get_coordination_distances(sorted_structure, first_index,
-                                           cutoff)
+                get_coordination_distances(structure=sorted_structure,
+                                           atom_index=first_index,
+                                           cutoff=cutoff)
 
             irreducible_sites.append(IrreducibleSite(irreducible_name,
                                                      element,
@@ -797,7 +792,7 @@ class DefectInitialSetting(MSONable):
                    symprec=symprec,
                    angle_tolerance=angle_tolerance,
                    oxidation_states=oxidation_states,
-                   electronegativity=electroneg)
+                   electronegativity=electronegativity)
 
     def to_yaml_file(self, filename: str = "defect.yaml") -> None:
         dumpfn(self.as_dict(), filename)
@@ -845,7 +840,7 @@ class DefectInitialSetting(MSONable):
                 inserted_atoms = {}
                 inserted_oxi_state = 0
 
-            charges = candidate_charge_set(
+            charges = default_charge_set(
                 inserted_oxi_state - self.oxidation_states[rs.element])
 
             defect_set[name] = \
@@ -874,7 +869,7 @@ class DefectInitialSetting(MSONable):
                 changes_of_num_elements = defaultdict(int)
                 name = "_".join([e, interstitial_name])
                 extreme_charge = self.oxidation_states[e]
-                charges = candidate_charge_set(extreme_charge)
+                charges = default_charge_set(extreme_charge)
                 changes_of_num_elements[e] += 1
                 inserted_atom = [{"element": e,
                                   "coords": i.representative_coords}]
@@ -921,7 +916,7 @@ class DefectInitialSetting(MSONable):
             coords = [i["coords"] for i in inserted_atoms + removed_atoms]
             center = defect_center_from_coords(coords, self.structure)
 
-            charges = candidate_charge_set(complex_defect.extreme_charge_state)
+            charges = default_charge_set(complex_defect.extreme_charge_state)
 
             defect_set[name] = \
                 {"defect_type": DefectType.complex,

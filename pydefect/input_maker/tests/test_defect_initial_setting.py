@@ -5,7 +5,7 @@ from copy import deepcopy
 from pydefect.core.defect_entry import DefectType
 from pydefect.core.irreducible_site import IrreducibleSite
 from pydefect.input_maker.defect_initial_setting import (
-    candidate_charge_set, get_electronegativity, get_oxidation_state,
+    default_charge_set, get_electronegativity, get_oxidation_state,
     dopant_info, get_distances_from_string, insert_atoms, select_defects,
     DefectInitialSetting)
 from pydefect.util.testing import PydefectTest
@@ -18,22 +18,22 @@ __maintainer__ = "Yu Kumagai"
 
 class CandidateChargeSetTest(PydefectTest):
     def test_range1(self):
-        actual_positive = candidate_charge_set(2)
+        actual_positive = default_charge_set(2)
         expected_positive = {0, 1, 2}
         self.assertEqual(expected_positive, actual_positive)
 
     def test_range2(self):
-        actual_negative = candidate_charge_set(-2)
+        actual_negative = default_charge_set(-2)
         expected_negative = {-2, -1, 0}
         self.assertEqual(expected_negative, actual_negative)
 
     def test_range3(self):
-        actual_positive = candidate_charge_set(3)
+        actual_positive = default_charge_set(3)
         expected_positive = {-1, 0, 1, 2, 3}
         self.assertEqual(expected_positive, actual_positive)
 
     def test_range4(self):
-        actual_negative = candidate_charge_set(-3)
+        actual_negative = default_charge_set(-3)
         expected_negative = {-3, -2, -1, 0, 1}
         self.assertEqual(expected_negative, actual_negative)
 
