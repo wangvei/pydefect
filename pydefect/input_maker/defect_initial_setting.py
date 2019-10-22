@@ -702,10 +702,14 @@ class DefectInitialSetting(MSONable):
         sorted_structure = \
             Structure.from_sites(reduce(lambda a, b: a + b, equiv_sites))
 
-        host_element_set = structure.symbol_set
-        element_set = host_element_set + tuple(dopants)
+        species = [str(s) for s in sorted_structure.species]
+        # unique_justseen https://docs.python.org/ja/3/library/itertools.html
+        # ["H", "H", "O", "O", "H"] -> ['H', 'O', 'H']
+        host_element_list = \
+            list(map(next, map(operator.itemgetter(1), groupby(species, None))))
+        element_list = host_element_list + dopants
 
-        electroneg = {e: get_electronegativity(e) for e in element_set}
+        electronegativity = {e: get_electronegativity(e) for e in element_list}
         oxidation_states = get_oxidation_states(dopants, oxidation_states,
                                                 structure)
 
@@ -751,11 +755,12 @@ class DefectInitialSetting(MSONable):
         # List of inserted and removed atoms, e.g., [["Mg, "O"], ...]
         antisite_configs = []
         if is_antisite is True:
-            for elem1, elem2 in permutations(host_element_set, 2):
+            for elem1, elem2 in permutations(host_element_list, 2):
                 if elem1 == elem2:
                     continue
-                elif elem1 in electroneg and elem2 in electroneg:
-                    if abs(electroneg[elem1] - electroneg[elem2]) < en_diff:
+                elif elem1 in electronegativity and elem2 in electronegativity:
+                    if abs(electronegativity[elem1]
+                           - electronegativity[elem2]) < en_diff:
                         antisite_configs.append([elem1, elem2])
                 else:
                     logger.warning(f"Electronegativity of {elem1} and/or " 
@@ -764,12 +769,13 @@ class DefectInitialSetting(MSONable):
         # List of inserted and removed atoms, e.g., [["Al", "Mg"], ...]
         dopant_configs = []
         for dopant in dopants:
-            if dopant in host_element_set:
+            if dopant in host_element_list:
                 logger.warning(f"Dopant {dopant} constitutes host.")
                 continue
-            for elem in host_element_set:
-                if elem and dopant in electroneg:
-                    if abs(electroneg[elem] - electroneg[dopant]) < en_diff:
+            for elem in host_element_list:
+                if elem and dopant in electronegativity:
+                    if abs(electronegativity[elem]
+                           - electronegativity[dopant]) < en_diff:
                         dopant_configs.append([dopant, elem])
                 else:
                     logger.warning(f"Electronegativity of {dopant} and/or "
