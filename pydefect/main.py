@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import argparse
+from typing import Union
 
 from pydefect.core.defect_entry import DefectEntry
 from pydefect.core.interstitial_site import InterstitialSiteSet
@@ -17,7 +18,7 @@ from pydefect.main_functions import (
     parse_eigenvalues, vasp_parchg_set, local_structure, concentration)
 from pydefect.util.logger import get_logger
 from pydefect.util.main_tools import (
-    get_default_args, simple_override)
+    get_default_args)
 from vise.util.main_tools import get_user_settings, dict2list
 from pydefect.corrections.efnv_corrections import Ewald
 
@@ -62,6 +63,21 @@ def main():
     user_settings = get_user_settings(yaml_filename="pydefect.yaml",
                                       setting_keys=setting_keys)
 
+    def simple_override(d: dict, keys: Union[list, str]) -> None:
+        """Override dict if keys exist in user_settings.
+
+        When the value in the user_settings is a dict, it will be changed to
+        list using dict2list.
+        """
+        if isinstance(keys, str):
+            keys = [keys]
+        for key in keys:
+            if key in user_settings:
+                v = user_settings[key]
+                if isinstance(v, dict):
+                    v = dict2list(v)
+                d[key] = v
+
     parser = argparse.ArgumentParser(
         description="""                            
     pydefect is a package that helps researchers to do first-principles point 
@@ -91,8 +107,7 @@ def main():
                    "outcar": "OUTCAR",
                    "vasprun": "vasprun.xml"}
 
-    ur_defaults = simple_override(ur_defaults,
-                    user_settings,
+    simple_override(ur_defaults,
                     ["volume_dir",
                      "static_diele_dir",
                      "ionic_diele_dir",
@@ -163,8 +178,7 @@ def main():
 
     is_defaults = get_default_args(DefectInitialSetting.from_basic_settings)
     is_defaults.update(get_default_args(Supercells))
-    is_defaults = simple_override(is_defaults,
-                    user_settings,
+    simple_override(is_defaults,
                     ["symprec",
                      "angle_tolerance",
                      "cutoff",
@@ -272,8 +286,7 @@ def main():
     i_defaults = get_default_args(InterstitialSiteSet.add_sites)
     i_defaults.update(get_default_args(InterstitialSiteSet.from_files))
 
-    i_defaults = simple_override(i_defaults,
-                    user_settings,
+    simple_override(i_defaults,
                     ["vicinage_radius", "symprec", "angle_tolerance"])
 
     parser_interstitial.add_argument(
@@ -327,9 +340,7 @@ def main():
 
     cd_defaults = get_default_args(ComplexDefects.add_defect)
     cd_defaults.update(get_default_args(ComplexDefects.from_files))
-    cd_defaults = simple_override(cd_defaults,
-                    user_settings,
-                    ["symprec", "angle_tolerance"])
+    simple_override(cd_defaults, ["symprec", "angle_tolerance"])
 
     parser_complex_defects.add_argument(
         "--yaml", dest="yaml", type=str, default=cd_defaults["yaml_filename"],
@@ -392,8 +403,7 @@ def main():
                     "ldauu":      None,
                     "ldaul":      None}
 
-    dvs_defaults = simple_override(dvs_defaults,
-                    user_settings,
+    simple_override(dvs_defaults,
                     ["xc",
                      "defect_kpt_density",
                      "defect_incar_setting",
@@ -403,10 +413,8 @@ def main():
 
     dvs_defaults["dvs_kwargs"].update(
         user_settings.get("defect_vise_kwargs", {}))
-    dvs_defaults = simple_override(
-        dvs_defaults["dvs_kwargs"],
-        user_settings,
-        ["symprec", "angle_tolerance"])
+    simple_override(
+        dvs_defaults["dvs_kwargs"], ["symprec", "angle_tolerance"])
     dvs_defaults["dvs_kwargs"] = dict2list(dvs_defaults["dvs_kwargs"])
 
     parser_defect_vasp_set.add_argument(
@@ -467,9 +475,7 @@ def main():
         aliases=['de'])
 
     de_defaults = get_default_args(DefectEntry.from_defect_structure)
-    de_defaults = simple_override(de_defaults,
-                    user_settings,
-                    ["displacement_distance"])
+    simple_override(de_defaults, ["displacement_distance"])
 
     parser_defect_entry.add_argument(
         "--print", dest="print", action="store_true",
@@ -517,8 +523,7 @@ def main():
         aliases=['sr'])
 
     sr_defaults = get_default_args(SupercellCalcResults.from_vasp_files)
-    sr_defaults = simple_override(sr_defaults,
-                    user_settings,
+    simple_override(sr_defaults,
                     ["vasprun",
                      "contcar",
                      "outcar",
@@ -579,9 +584,7 @@ def main():
     efc_defaults = get_default_args(Ewald.from_optimization)
     efc_defaults.update({"unitcell_json": "../unitcell/unitcell.json",
                          "perfect_json": "perfect/dft_results.json"})
-    efc_defaults = simple_override(efc_defaults,
-                    user_settings,
-                    ["unitcell_json", "perfect_json"])
+    simple_override(efc_defaults, ["unitcell_json", "perfect_json"])
 
     # when no corrections are required for some reasons
     parser_correction.add_argument(
@@ -651,9 +654,7 @@ def main():
         aliases=['d'])
 
     d_defaults = {"perfect_json": "perfect/dft_results.json"}
-    d_defaults = simple_override(d_defaults,
-                    user_settings,
-                    "perfect_json")
+    simple_override(d_defaults, "perfect_json")
 
     parser_defects.add_argument(
         "--defect_dirs", dest="defect_dirs", nargs="+", type=str,
@@ -696,8 +697,7 @@ def main():
     pe_defaults = {"unitcell_json": "../unitcell/unitcell.json",
                    "perfect_json": "perfect/dft_results.json",
                    "chem_pot_yaml": "../competing_phases/vertices.yaml"}
-    pe_defaults = simple_override(pe_defaults,
-                    user_settings,
+    simple_override(pe_defaults,
                     ["unitcell_json", "perfect_json", "chem_pot_yaml"])
 
     parser_plot_energy.add_argument(
@@ -767,9 +767,7 @@ def main():
         aliases=['eig'])
 
     eig_defaults = {"unitcell_json": "../unitcell/unitcell.json"}
-    eig_defaults =simple_override(eig_defaults,
-                    user_settings,
-                    "unitcell_json")
+    simple_override(eig_defaults, "unitcell_json")
 
     parser_parse_eigenvalues.add_argument(
         "--title", dest="title", type=str, default="",
@@ -847,9 +845,7 @@ def main():
         aliases=['c'])
 
     c_defaults = {"unitcell_json": "../unitcell/unitcell.json"}
-    c_defaults =simple_override(c_defaults,
-                    user_settings,
-                    "unitcell_json")
+    simple_override(c_defaults, "unitcell_json")
 
     parser_concentration.add_argument(
         "--energies", dest="energies", type=str,
