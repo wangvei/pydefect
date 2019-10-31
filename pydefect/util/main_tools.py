@@ -1,9 +1,10 @@
 # -*- coding: utf-8 -*-
 from inspect import signature, _empty
 from os.path import join
-from typing import Callable, Optional, List
+from typing import Callable, Optional, List, Union
 
 from pydefect.util.logger import get_logger
+from vise.util.main_tools import dict2list
 
 __author__ = "Yu Kumagai"
 __maintainer__ = "Yu Kumagai"
@@ -11,7 +12,23 @@ __maintainer__ = "Yu Kumagai"
 logger = get_logger(__name__)
 
 
+def simple_override(d: dict, user_settings: dict,
+                    keys: Union[list, str])  -> dict:
+    """Override dict if keys exist in user_settings.
 
+    When the value in the user_settings is a dict, it will be changed to
+    list using dict2list.
+    """
+    if isinstance(keys, str):
+        keys = [keys]
+    for key in keys:
+        if key in user_settings:
+            v = user_settings[key]
+            if isinstance(v, dict):
+                v = dict2list(v)
+            d[key] = v
+
+    return d
 
 def get_default_args(function: Callable) -> dict:
     """Get the default values of the arguments in the method/function.

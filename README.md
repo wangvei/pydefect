@@ -22,6 +22,14 @@ run this command in the directory containing setup.py:
 This will install `pydefect` and any dependant packages
 not already have installed on your system. 
 
+If you are a developer and you would like the latest changes to be executable without re-install then it is recommended to use:
+
+`pip install -e ./`
+
+This will install the package in editable mode. For more information, see the reddit discussion [here](https://www.reddit.com/r/learnpython/comments/ayx7za/how_does_pip_install_e_work_is_there_a_specific/).
+
+#### Handling dependancies
+
 Note that the `scikit-image` package is required to locate interstitials but can be omitted if this feature is not required.
 
 Sometimes errors will be given if a specific version of a package is not 
