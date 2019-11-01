@@ -7,7 +7,7 @@ import argparse
 from typing import Union
 
 from pydefect.capture.main_functions import identify_capture_processes
-from vise.util.main_tools import get_user_settings
+from vise.util.main_tools import get_user_settings, dict2list
 
 
 def main():
@@ -61,6 +61,9 @@ def main():
     del gs_defaults # is this for memory conisderations only?
 
     parser_identify_processes.set_defaults(func=identify_capture_processes)
+
+    args = parser.parse_args()
+    args.func(args)
 
 if __name__ == "__main__":
     main()

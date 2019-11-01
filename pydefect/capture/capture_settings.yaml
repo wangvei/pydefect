@@ -1,0 +1,6 @@
+# Example settings file
+# Note that running main from pycharm sets CWD as
+# /Applications/PyCharm CE.app/Contents/bin and so needs to be tested
+# in terminal
+
+defect_dir: "../../test_files/defects/"

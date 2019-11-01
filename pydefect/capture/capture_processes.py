@@ -2,6 +2,9 @@
 considered from a given set of defect data
 """
 
+import json
+import itertools
+
 from typing import Generator
 from pathlib import Path
 
@@ -32,5 +35,26 @@ def identify_processes(path_list: Generator[Path, None, None]) -> None:
         None.
     """
 
+    valid_defects = {}
+    for path in path_list:
+        with path.open() as file:
+            data = json.load(file)
+            if data['@class'] == "Defect" and data['is_converged'] == True:
+                valid_defects[data['name'] + "_" + str(data['charge'])] = {
+                    'name': data['name'], 'charge': data['charge'],
+                    'path': path.resolve(),
+                    'band_edge_states': data['band_edge_states']}
 
-    return
+    capture_processes = {}
+    for d1, d2 in itertools.combinations(valid_defects,2):
+        if d1['name']==d2['name'] and abs(d1['charge']-d2['charge'])==1:
+            capture_processes[d1]
+
+    # loop through and record key (name, charge, localised, path) info if
+    # 1) defect class 3) converged into a dict
+    # in new dict, create dictionary entries where charge state diff by one with path/name/initial->final
+    # option to calc delta Q and delta E (use displacements)
+    # option to do unconverged
+    # option to include non-local states
+    # print out to screen / to file
+    # error handling and tests
