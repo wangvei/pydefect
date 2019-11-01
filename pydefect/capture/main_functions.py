@@ -1,8 +1,7 @@
 """ Module containing functions used in main.py
 """
 
-from pydefect.capture.capture_processes import (locate_defect_jsons,
-                                                identify_processes)
+from pydefect.capture.capture_processes import CaptureProcesses
 
 
 def identify_capture_processes(args):
@@ -10,8 +9,9 @@ def identify_capture_processes(args):
     set of defect data"""
 
     try:
-        defect_json_files = locate_defect_jsons(args.defect_dir)
-        identify_processes(defect_json_files)
+        capture_processes = CaptureProcesses.from_directory(args.defect_dir)
+        capture_processes.to_yaml_file()
+        capture_processes.print_to_terminal()
 
     except IOError:
         raise FileNotFoundError(args.defect_dir, 'does not contain multiple '

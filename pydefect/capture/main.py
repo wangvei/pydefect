@@ -50,7 +50,7 @@ def main():
 
     gs_defaults = {"defect_dir": "../defects/"}
 
-    simple_override(gs_defaults, list(gs_defaults.keys())) # redundant argument?
+    simple_override(gs_defaults, list(gs_defaults.keys()))  # redundant arg?
 
     parser_identify_processes.add_argument(
         "--defect_dir", dest="defect_dir",
@@ -58,12 +58,13 @@ def main():
         help="Identify capture processes from a directory containing "
              "defects.json files (recursive search)")
 
-    del gs_defaults # is this for memory conisderations only?
+    del gs_defaults  # is this for memory considerations only?
 
     parser_identify_processes.set_defaults(func=identify_capture_processes)
 
     args = parser.parse_args()
     args.func(args)
+
 
 if __name__ == "__main__":
     main()

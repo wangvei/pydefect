@@ -1,0 +1,29 @@
+'@class': CaptureProcesses
+'@module': pydefect.capture.capture_processes
+capture_processes:
+  O_i1_-1_-2:
+    charges:
+    - -1
+    - -2
+    name: O_i1
+  O_i1_-1_0:
+    charges:
+    - -1
+    - 0
+    name: O_i1
+  Va_Mg1_-2_-1:
+    charges:
+    - -2
+    - -1
+    name: Va_Mg1
+  Va_O1_1_0:
+    charges:
+    - 1
+    - 0
+    name: Va_O1
+  Va_O1_2_1:
+    charges:
+    - 2
+    - 1
+    name: Va_O1
+defect_dir: ../../test_files/defects
