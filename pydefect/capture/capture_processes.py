@@ -88,7 +88,8 @@ class CaptureProcesses:
              "defect_dir": self.defect_dir}
         return d
 
-    # option to calc delta Q and delta E (use displacements)
-    # option to do unconverged
-    # option to include non-local states
-    # error handling and tests
+    # TODO: option to calc delta Q and delta E (use displacements)
+    # TODO: move pass checks all in one place
+    # TODO: option to do unconverged
+    # TODO: option to include non-local states
+    # TODO: error handling and tests
