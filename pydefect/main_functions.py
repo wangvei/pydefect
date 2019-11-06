@@ -238,13 +238,13 @@ def interstitial(args):
         supercell_coords = [np.dot(c, inv_trans_mat).tolist() for c in coords]
 #        print(supercell_coords)
 
-        # interstitial_set.add_sites(frac_coords=supercell_coords,
-        #                            cutoff=defect_initial_setting.cutoff,
-        #                            vicinage_radius=args.radius,
-        #                            symprec=args.symprec,
-        #                            angle_tolerance=args.angle_tolerance)
+        interstitial_set.add_sites(frac_coords=supercell_coords,
+                                   cutoff=defect_initial_setting.cutoff,
+                                   vicinage_radius=args.radius,
+                                   symprec=args.symprec,
+                                   angle_tolerance=args.angle_tolerance)
 
-        # interstitial_set.site_set_to_yaml_file(yaml_filename=args.yaml)
+        interstitial_set.site_set_to_yaml_file(yaml_filename=args.yaml)
 
 
 def complex_defects(args):
