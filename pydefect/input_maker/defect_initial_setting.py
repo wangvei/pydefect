@@ -804,7 +804,7 @@ class DefectInitialSetting(MSONable):
     def to(self,
            defect_in_file: str = "defect.in",
            poscar_file: str = "DPOSCAR") -> None:
-        """ Prints readable defect.in file and corresponding DPOSCAR file. """
+        """Prints readable defect.in file and corresponding DPOSCAR file. """
         self._write_defect_in(defect_in_file)
         self.structure.to(fmt="poscar", filename=poscar_file)
 
@@ -890,6 +890,7 @@ class DefectInitialSetting(MSONable):
         return defect_set
 
     def _complex_set(self) -> dict:
+        """Complex defect set. """
         defect_set = {}
         changes_of_num_elements = defaultdict(int)
 
@@ -934,7 +935,7 @@ class DefectInitialSetting(MSONable):
     def make_defect_set(self,
                         keywords: Optional[list] = None,
                         specified_defects: Optional[list] = None) -> None:
-        """ Return defect name list based on DefectInitialSetting object. """
+        """Return defect name list based on DefectInitialSetting object. """
         defects = {}
         # vacancies
         defects.update(self._substituted_set(
@@ -989,7 +990,7 @@ class DefectInitialSetting(MSONable):
                                 **defect))
 
     def _write_defect_in(self, defect_in_file: str = "defect.in") -> None:
-        """ Helper method to write down defect.in file.
+        """Helper method to write down defect.in file.
 
         Args:
             defect_in_file (str):

@@ -32,6 +32,7 @@ __date__ = 'will be inserted'
 
 
 def main():
+    # The following keys are set by pydefect.yaml
     setting_keys = ["symprec",
                     "defect_symprec",
                     "angle_tolerance",

@@ -231,15 +231,20 @@ def interstitial(args):
         tm_list = defect_initial_setting.transformation_matrix
         trans_mat = [[tm_list[3 * i + j] for j in range(3)] for i in range(3)]
         inv_trans_mat = np.linalg.inv(trans_mat)
-        supercell_coords = [np.dot(inv_trans_mat, c).tolist() for c in coords]
+#        supercell_coords = [np.dot(inv_trans_mat, c).tolist() for c in coords]
+#        print(supercell_coords)
+        # TODO: understand the reason why inv_trans_mat must be multiplied from
+        #  right.
+        supercell_coords = [np.dot(c, inv_trans_mat).tolist() for c in coords]
+#        print(supercell_coords)
 
-        interstitial_set.add_sites(frac_coords=supercell_coords,
-                                   cutoff=defect_initial_setting.cutoff,
-                                   vicinage_radius=args.radius,
-                                   symprec=args.symprec,
-                                   angle_tolerance=args.angle_tolerance)
+        # interstitial_set.add_sites(frac_coords=supercell_coords,
+        #                            cutoff=defect_initial_setting.cutoff,
+        #                            vicinage_radius=args.radius,
+        #                            symprec=args.symprec,
+        #                            angle_tolerance=args.angle_tolerance)
 
-        interstitial_set.site_set_to_yaml_file(yaml_filename=args.yaml)
+        # interstitial_set.site_set_to_yaml_file(yaml_filename=args.yaml)
 
 
 def complex_defects(args):
