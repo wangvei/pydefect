@@ -306,7 +306,8 @@ class DefectInitialSetting(MSONable):
                  oxidation_states: dict,
                  electronegativity: dict,
                  interstitials_yaml: str = "interstitials.yaml",
-                 complex_defect_yaml: str = "complex_defects.yaml"):
+                 complex_defect_yaml: str = "complex_defects.yaml",
+                 defect_entries: List[DefectEntry] = None):
         """
         Args:
             structure (Structure):
@@ -383,8 +384,8 @@ class DefectInitialSetting(MSONable):
             self.complex_defect_names = complex_defect_names[:]
         else:
             self.complex_defect_names = [complex_defect_names]
-        self.included = included[:] or []
-        self.excluded = excluded[:] or []
+        self.included = included[:] if included else []
+        self.excluded = excluded[:] if excluded else []
         self.displacement_distance = displacement_distance
         self.cutoff = cutoff
         self.symprec = symprec
@@ -431,7 +432,7 @@ class DefectInitialSetting(MSONable):
                     f"{complex_defect_yaml}.")
             self.complex_defects[c] = complexes[c]
 
-        self.defect_entries = None
+        self.defect_entries = defect_entries or None
 
     # see history at 2019/8/2 if from_dict and as_dict need to be recovered.
     @classmethod
@@ -933,7 +934,7 @@ class DefectInitialSetting(MSONable):
         return defect_set
 
     def make_defect_set(self,
-                        keywords: Optional[list] = None,
+                        keywords: Union[str, list, None] = None,
                         specified_defects: Optional[list] = None) -> None:
         """Return defect name list based on DefectInitialSetting object. """
         defects = {}

@@ -20,14 +20,14 @@ class PydefectTest(PymatgenTest):
         return Structure.from_file(filename)
 
     @classmethod
-    def get_object_by_name(cls, method: Callable, name: Union[list, str]):
+    def get_object_by_name(cls, method: Callable, names: Union[list, str]):
         """ return cls by passing classmethod returning cls """
-        if isinstance(name, str):
-            name = [name]
+        if isinstance(names, str):
+            names = [names]
 
         filename = cls.TEST_FILES_DIR
-        for n in name:
-            filename = filename / n
+        for name in names:
+            filename = filename / name
 
         return method(filename)
 

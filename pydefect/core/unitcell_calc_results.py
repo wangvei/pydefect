@@ -23,16 +23,16 @@ class UnitcellCalcResults(MSONable):
 
     def __init__(self,
                  band_edge: list = None,
-                 static_dielectric_tensor: np.array = None,
-                 ionic_dielectric_tensor: np.array = None,
+                 static_dielectric_tensor: list = None,
+                 ionic_dielectric_tensor: list = None,
                  total_dos: list = None,
                  volume: float = None,
                  is_direct: bool = None):
         """
         Args:
             band_edge (list): [VBM, CBM].
-            static_dielectric_tensor (3x3 numpy array):
-            ionic_dielectric_tensor (3x3 numpy array):
+            static_dielectric_tensor (3x3 list):
+            ionic_dielectric_tensor (3x3 list):
             total_dos (list):
                 [[energy1, energy2, ...], [dos1, dos2, ...]]
             volume (float): Volume in A-3.
@@ -51,6 +51,8 @@ class UnitcellCalcResults(MSONable):
         else:
             band_edge = [None, None]
 
+        volume = round(self._volume, 2) if self._volume else None
+
         is_total_dos = "Exists" if self._total_dos else "None"
 
         static_dielectric = "\n ".join([str([round(i, 2) for i in j])
@@ -66,7 +68,7 @@ class UnitcellCalcResults(MSONable):
                 f"static dielectric tensor: \n {static_dielectric}",
                 f"ionic dielectric tensor: \n {ionic_dielectric}",
                 f"total dielectric tensor: \n {total_dielectric}",
-                f"volume (A^3): {round(self._volume, 2)}",
+                f"volume (A^3): {volume}",
                 f"Total DOS: {is_total_dos}"]
 
         return "\n".join(outs)
