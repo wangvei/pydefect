@@ -279,9 +279,9 @@ class SupercellCalcResults(MSONable):
         if vasprun.converged_ionic is False:
             logger.warning("Ionic step is not converged.")
 
-        if band_gap_properties(vasprun):
+        try:
             vbm, cbm = (i["energy"] for i in band_gap_properties(vasprun)[1:3])
-        else:
+        except TypeError:
             vbm = cbm = vasprun.efermi
 
         # outcar related
