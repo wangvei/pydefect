@@ -10,6 +10,9 @@ import matplotlib.pyplot as plt
 import numpy as np
 from monty.json import MontyEncoder, MSONable
 from monty.serialization import loadfn
+
+from pymatgen.core.sites import Element
+
 from pydefect.analysis.defect import Defect
 from pydefect.core.config import COLOR
 from pydefect.core.defect_name import DefectName
@@ -137,7 +140,12 @@ class DefectEnergies(MSONable):
 
         # Chemical potentials
         relative_chem_pots, standard_e = chem_pot
-        relative_chem_pot = relative_chem_pots[chem_pot_label]
+        for rcp in relative_chem_pots:
+            if rcp.label == chem_pot_label:
+                relative_chem_pot = rcp
+                break
+        else:
+            raise ValueError(f"chem_pot_label {chem_pot_label} is invalid.")
 
         # defect_energies[name][charge] = DefectEnergy
         defect_energies = {}
@@ -174,8 +182,8 @@ class DefectEnergies(MSONable):
                     min(energy_by_annotation.items(), key=itemgetter(1))
 
                 for el, diff in defect.changes_of_num_elements.items():
-                    relative_e = relative_chem_pot.elem_coords[el]
-                    standard = standard_e[el]
+                    relative_e = relative_chem_pot.coords[Element(el)]
+                    standard = standard_e[Element(el)]
                     defect_energy -= diff * (relative_e + standard)
 
                 energy_by_c[charge] = \

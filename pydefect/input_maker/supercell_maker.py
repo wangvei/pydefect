@@ -187,6 +187,10 @@ class Supercells:
             rhombohedral = sga.get_lattice_type() == "rhombohedral"
             self.conventional_base = False
 
+        # print(sga.get_lattice_type())
+        # print("rhombohedral")
+        # print(rhombohedral)
+
         self.supercells = []
         # Isotropically incremented matrix one by one
         incremented_mat = np.identity(3, dtype="int8")
@@ -230,6 +234,7 @@ class Supercells:
                         incremented_mat[j, j] += 1
 
             trans_mat = np.dot(incremented_mat, based_trans_mat)
+
 
     @property
     def sorted_supercells_by_num_atoms(self) -> list:

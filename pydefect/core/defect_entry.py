@@ -357,6 +357,11 @@ class DefectEntry(MSONable):
         return loadfn(filename)
 
     @property
+    def defect_name(self):
+        """ """
+        return "_".join([self.name, str(self.charge)])
+
+    @property
     def atom_mapping_to_perfect(self):
         """ Returns a list of atom mapping from defect structure to perfect.
 
