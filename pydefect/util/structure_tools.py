@@ -259,6 +259,21 @@ def distance_list(structure: Structure,
     return distance
 
 
+def min_distance_from_site(structure: Structure, coords: np.array) -> float:
+    """Return the minimum distance
+
+    Args:
+       structure (Structure):
+           pmg structure class object
+       coords (1x3 numpy array):
+           Fractional coordinates of a single point.
+
+    Return:
+        distance
+    """
+    return min(distance_list(structure, coords))
+
+
 def create_saturated_interstitial_structure(
         structure: Structure,
         inserted_atom_coords: list,

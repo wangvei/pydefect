@@ -19,9 +19,9 @@ DEFECT_KPT_DENSITY = 2
 ENCUT_FACTOR_STR_OPT = 1.3
 
 # Factor multiplied with the minimum distance, of which distance determine
-# the coordination environment and in which atoms are perturbed. 1.4 is less
+# the coordination environment and in which atoms are perturbed. 1.3 is less
 # than sqrt(2), meaning the 2NNs are excluded in e.g., the rocksalt structure.
-CUTOFF_FACTOR = 1.4
+CUTOFF_FACTOR = 1.3
 
 COLOR = [
     "xkcd:blue",
