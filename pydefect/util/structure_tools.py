@@ -238,7 +238,8 @@ def defect_center_from_coords(defect_coords: list,
 
 
 def distance_list(structure: Structure,
-                  coords: np.array) -> list:
+                  coords: np.array,
+                  remove_self: bool = True) -> list:
     """Return a list of the shortest distances between a point and atoms
 
     Args:
@@ -246,6 +247,8 @@ def distance_list(structure: Structure,
            pmg structure class object
        coords (1x3 numpy array):
            Fractional coordinates of a single point.
+       remove_self (bool):
+            Whether to remove self site distance, i.e. distance = 0.0
 
     Return:
         List of the shortest distances from coords to atoms
@@ -254,7 +257,8 @@ def distance_list(structure: Structure,
     for frac_coord in structure.frac_coords:
         # return of get_distance_and_image is (distance, jimage).
         dist = structure.lattice.get_distance_and_image(frac_coord, coords)[0]
-        distance.append(dist)
+        if dist > 1e-5 or remove_self is False:
+            distance.append(dist)
 
     return distance
 

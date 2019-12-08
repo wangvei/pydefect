@@ -29,14 +29,16 @@ class InterstitialSiteTest(PydefectTest):
                 site_symmetry=site_symmetry,
                 multiplicity=multiplicity,
                 coordination_distances=coordination_distances,
+                cutoff=2.37,
                 method=method)
 
     def test_repr(self):
-        expected = """representative_coords: [0.25, 0.25, 0.25]
+        expected = """representative coords: [0.25, 0.25, 0.25]
 wyckoff: b
-site_symmetry: m-3m
+site symmetry: m-3m
 multiplicity: 8
-coordination_distances: {'Mg': [2.12, 2.12, 2.12, 2.12, 2.12, 2.12]}
+coordination distances: {'Mg': [2.12, 2.12, 2.12, 2.12, 2.12, 2.12]}
+cutoff: 2.37
 method: manual"""
         self.assertEqual(expected, str(self.mgo_interstitial))
 
@@ -61,6 +63,7 @@ class InterstitialSiteSetTest(PydefectTest):
           coordination_distances:
             Mg: [1.84, 1.84, 1.84, 1.84]
             O: [1.84, 1.84, 1.84, 1.84]
+          cutoff: 2.37
           method: manual
         i2:
           representative_coords: [0.0, 0.125, 0.125]
@@ -70,6 +73,7 @@ class InterstitialSiteSetTest(PydefectTest):
           coordination_distances:
             Mg: [1.5, 1.5, 2.6, 2.6, 2.6, 2.6]
             O: [1.5, 1.5, 2.6, 2.6, 2.6, 2.6]
+          cutoff: 2.37
           method: manual
         """
         self.structure = self.get_structure_by_name("MgO64atoms")
@@ -80,6 +84,7 @@ class InterstitialSiteSetTest(PydefectTest):
             site_symmetry="-43m",
             multiplicity=64,
             coordination_distances={"Mg": [1.84] * 4, "O": [1.84] * 4},
+            cutoff=2.37,
             method="manual")
 
         i2 = InterstitialSite(
@@ -89,6 +94,7 @@ class InterstitialSiteSetTest(PydefectTest):
             multiplicity=192,
             coordination_distances={"Mg": [1.5] * 2 + [2.6] * 4,
                                     "O": [1.5] * 2 + [2.6] * 4},
+            cutoff=2.37,
             method="manual")
 
         d = OrderedDict({"i1": i1, "i2": i2})
@@ -107,11 +113,12 @@ class InterstitialSiteSetTest(PydefectTest):
 
     def test_str(self):
         actual = str(self.interstitial_site_set.interstitial_sites["i1"])
-        expected = """representative_coords: [0.125, 0.125, 0.125]
+        expected = """representative coords: [0.125, 0.125, 0.125]
 wyckoff: c
-site_symmetry: -43m
+site symmetry: -43m
 multiplicity: 64
-coordination_distances: {'Mg': [1.84, 1.84, 1.84, 1.84], 'O': [1.84, 1.84, 1.84, 1.84]}
+coordination distances: {'Mg': [1.84, 1.84, 1.84, 1.84], 'O': [1.84, 1.84, 1.84, 1.84]}
+cutoff: 2.37,
 method: manual"""
         self.assertEqual(expected, actual)
 
@@ -138,6 +145,7 @@ method: manual"""
             multiplicity=64,
             coordination_distances={"Mg": [1.05] + [2.35] * 4,
                                     "O": [1.05] + [2.35] * 4},
+            cutoff=2.37,
             method="manual")
         self.assertEqual(expected.as_dict(),
                          interstitial_set.interstitial_sites["i3"].as_dict())

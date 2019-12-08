@@ -30,6 +30,8 @@ class IrreducibleSite(MSONable):
             A wyckoff letter.
         site_symmetry (str):
             Site symmetry.
+        cutoff (float):
+            Cutoff radius to determine the neighboring atoms.
         coordination_distances (dict):
             Coordination environment. An example is
             {"Mg": [1.92, 1.95, 2.01], "Al": [1.82, 1.95]}
@@ -44,6 +46,7 @@ class IrreducibleSite(MSONable):
                  representative_coords: list,
                  wyckoff: str,
                  site_symmetry: str,
+                 cutoff: float,
                  coordination_distances: Optional[dict] = None,
                  magmom: Optional[float] = None):
         self.irreducible_name = irreducible_name
@@ -53,6 +56,7 @@ class IrreducibleSite(MSONable):
         self.representative_coords = representative_coords
         self.wyckoff = wyckoff
         self.site_symmetry = site_symmetry
+        self.cutoff = cutoff
         self.coordination_distances = coordination_distances
         self.magmom = magmom
 

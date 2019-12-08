@@ -167,6 +167,7 @@ class DefectInitialSettingTest(PydefectTest):
                               representative_coords=[0.0, 0.0, 0.0],
                               wyckoff="a",
                               site_symmetry="m-3m",
+                              cutoff=2.76,
                               coordination_distances=coordination_distances_mg)
         o1 = IrreducibleSite(irreducible_name="O1",
                              element="O",
@@ -175,6 +176,7 @@ class DefectInitialSettingTest(PydefectTest):
                              representative_coords=[0.25, 0.25, 0.25],
                              wyckoff="b",
                              site_symmetry="m-3m",
+                             cutoff=2.76,
                              coordination_distances=coordination_distances_o)
         irreducible_sites = [mg1, o1]
         dopant_configs = [["Al", "Mg"], ["N", "O"]]
@@ -184,7 +186,6 @@ class DefectInitialSettingTest(PydefectTest):
         included = ["Va_O1_-1", "Va_O1_-2"]
         excluded = ["Va_O1_1", "Va_O1_2"]
         displacement_distance = 0.15
-        cutoff = 2.97
         symprec = 0.01
         angle_tolerance = 5
         oxidation_states = {"Mg": 2, "O": -2, "Al": 3, "N": -3}
@@ -203,7 +204,6 @@ class DefectInitialSettingTest(PydefectTest):
             included=included,
             excluded=excluded,
             displacement_distance=displacement_distance,
-            cutoff=cutoff,
             symprec=symprec,
             angle_tolerance=angle_tolerance,
             oxidation_states=oxidation_states,
@@ -316,7 +316,7 @@ class DefectInitialSettingTest(PydefectTest):
                     "changes_of_num_elements": {"Al": 1, "Mg": -1},
                     "charge": 5,
                     "initial_site_symmetry": "m-3m",
-                    "cutoff": 2.97,
+                    "cutoff": 2.76,
                     "neighboring_sites": [40, 44, 48, 50, 56, 57],
                     "annotation": None,
                     "multiplicity": 32}

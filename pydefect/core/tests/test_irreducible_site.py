@@ -17,6 +17,7 @@ class IrreducibleSiteTest(PydefectTest):
         representative_coords = [0, 0, 0]
         wyckoff = "m3m"
         site_symmetry = "Oh"
+        cutoff = 2.37
         coordination_distance = {"Mg": [2, 2, 2, 2, 2, 2]}
 
         self.mgo_o1 = IrreducibleSite(irreducible_name,
@@ -26,6 +27,7 @@ class IrreducibleSiteTest(PydefectTest):
                                       representative_coords,
                                       wyckoff,
                                       site_symmetry,
+                                      cutoff,
                                       coordination_distance)
 
     def test_dict(self):

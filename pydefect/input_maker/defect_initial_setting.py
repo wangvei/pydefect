@@ -21,7 +21,7 @@ from pydefect.database.atom import electronegativity_list, oxidation_state_dict
 from pydefect.util.logger import get_logger
 from pydefect.util.structure_tools import (
     get_min_distance, first_appearing_index, perturb_neighboring_atoms,
-    defect_center_from_coords, get_coordination_distances)
+    defect_center_from_coords, get_coordination_distances, min_distance_from_coords)
 from pymatgen.core.periodic_table import Element
 from pymatgen.core.structure import Structure
 from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
@@ -300,7 +300,6 @@ class DefectInitialSetting(MSONable):
                  included: Optional[list],
                  excluded: Optional[list],
                  displacement_distance: float,
-                 cutoff: float,
                  symprec: float,
                  angle_tolerance: float,
                  oxidation_states: dict,
@@ -342,8 +341,6 @@ class DefectInitialSetting(MSONable):
             displacement_distance (float):
                 Maximum displacement in angstrom applied to neighbor atoms.
                 0 means that no random displacement is applied.
-            cutoff (float):
-                Cutoff radius in which atoms are displaced in angstrom.
             symprec (float):
                 Precision used for symmetry analysis in angstrom.
             angle_tolerance (float):
@@ -387,7 +384,6 @@ class DefectInitialSetting(MSONable):
         self.included = included[:] if included else []
         self.excluded = excluded[:] if excluded else []
         self.displacement_distance = displacement_distance
-        self.cutoff = cutoff
         self.symprec = symprec
         self.angle_tolerance = angle_tolerance
         self.oxidation_states = oxidation_states
@@ -399,24 +395,24 @@ class DefectInitialSetting(MSONable):
             self.interstitials = {}
         else:
             try:
-                sites = InterstitialSiteSet.from_files(
+                interstitial_site_set = InterstitialSiteSet.from_files(
                     self.structure, interstitials_yaml).interstitial_sites
             except FileNotFoundError:
                 if not self.interstitial_site_names[0] == "all":
                     logger.error("interstitial.yaml file is needed.")
                     raise
-                sites = []
+                interstitial_site_set = []
 
             if self.interstitial_site_names[0] == "all":
-                self.interstitials = dict(sites)
+                self.interstitials = dict(interstitial_site_set)
             else:
                 self.interstitials = {}
                 for i_site in self.interstitial_site_names:
-                    if i_site not in sites.keys():
+                    if i_site not in interstitial_site_set.keys():
                         raise ValueError(
                             f"Interstitial site name {i_site} "
                             f"does not exist in {interstitials_yaml}")
-                    self.interstitials[i_site] = sites[i_site]
+                    self.interstitials[i_site] = interstitial_site_set[i_site]
 
         self.complex_defects = {}
         try:
@@ -459,6 +455,7 @@ class DefectInitialSetting(MSONable):
            Irreducible element: Mg1
                 Wyckoff letter: a
                  Site symmetry: m-3m
+                 Cutoff radius: 2.5
                   Coordination: O: 2.1 2.1 2.1 2.1 2.1 2.1
               Equivalent atoms: 0..31
         Fractional coordinates: 0.0000000  0.0000000  0.0000000
@@ -468,6 +465,7 @@ class DefectInitialSetting(MSONable):
            Irreducible element: O1
                 Wyckoff letter: b
                  Site symmetry: m-3m
+                 Cutoff radius: 2.5
                   Coordination: Mg: 2.1 2.1 2.1 2.1 2.1 2.1
               Equivalent atoms: 32..63
         Fractional coordinates: 0.2500000  0.0000000  0.0000000
@@ -485,7 +483,6 @@ class DefectInitialSetting(MSONable):
         Exceptionally included:
         Exceptionally excluded:
 
-        Cutoff region of neighboring atoms: 2.95
         Symprec: 0.01
         Angle tolerance: 5
         ------------------------------------------------------------------------
@@ -508,7 +505,6 @@ class DefectInitialSetting(MSONable):
         oxidation_states = {}
         dopant_configs = []
         displacement_distance = None
-        cutoff = None
         symprec = None
 
         with open(defect_in_file) as defect_in:
@@ -538,6 +534,9 @@ class DefectInitialSetting(MSONable):
                     site_symmetry = split_next_line[-1]
 
                     split_next_line = defect_in.readline().split()
+                    cutoff_radius = float(split_next_line[-1])
+
+                    split_next_line = defect_in.readline().split()
                     coordination_distances = \
                         get_distances_from_string(split_next_line[1:])
 
@@ -556,6 +555,7 @@ class DefectInitialSetting(MSONable):
                                         repr_coords,
                                         wyckoff,
                                         site_symmetry,
+                                        cutoff_radius,
                                         coordination_distances))
 
                     split_next_line = defect_in.readline().split()
@@ -587,9 +587,6 @@ class DefectInitialSetting(MSONable):
                 elif line[0] == "Maximum":
                     displacement_distance = float(line[2])
 
-                elif line[0] == "Cutoff":
-                    cutoff = float(line[-1])
-
                 elif line[0] == "Symprec:":
                     symprec = float(line[1])
 
@@ -618,15 +615,14 @@ class DefectInitialSetting(MSONable):
                    included=included,
                    excluded=excluded,
                    displacement_distance=displacement_distance,
-                   cutoff=cutoff,
                    symprec=symprec,
                    angle_tolerance=angle_tolerance,
                    oxidation_states=oxidation_states,
                    electronegativity=electronegativity)
 
-    @property
-    def are_atoms_perturbed(self) -> bool:
-        return self.cutoff > 1e-5
+    # @property
+    # def are_atoms_perturbed(self) -> bool:
+    #     return self.cutoff > 1e-5
 
     @classmethod
     def from_basic_settings(cls,
@@ -641,7 +637,6 @@ class DefectInitialSetting(MSONable):
                             excluded: Optional[list] = None,
                             displacement_distance: float
                             = DISPLACEMENT_DISTANCE,
-                            cutoff: Optional[float] = None,
                             symprec: float = SYMMETRY_TOLERANCE,
                             angle_tolerance: float = ANGLE_TOL,
                             interstitial_sites: list = None,
@@ -711,8 +706,6 @@ class DefectInitialSetting(MSONable):
         # num_irreducible_sites["Mg"] = 2 <-> Mg has 2 inequivalent sites
         num_irreducible_sites = defaultdict(int)
 
-        cutoff = cutoff or round(get_min_distance(structure) * CUTOFF_FACTOR, 2)
-
         # Set of IrreducibleSite class objects
         irreducible_sites = []
         # Initialize the last index, which must start from -1 to begin with 0.
@@ -734,6 +727,9 @@ class DefectInitialSetting(MSONable):
             wyckoff = sym_dataset["wyckoffs"][first_index]
             site_symmetry = sym_dataset["site_symmetry_symbols"][i]
 
+            min_dist = min_distance_from_coords(structure,
+                                                representative_coords)
+            cutoff = round(min_dist * CUTOFF_FACTOR, 2)
             coordination_distances = \
                 get_coordination_distances(structure=sorted_structure,
                                            atom_index=first_index,
@@ -746,6 +742,7 @@ class DefectInitialSetting(MSONable):
                                                      representative_coords,
                                                      wyckoff,
                                                      site_symmetry,
+                                                     cutoff,
                                                      coordination_distances))
 
         # List of inserted and removed atoms, e.g., [["Mg, "O"], ...]
@@ -789,7 +786,6 @@ class DefectInitialSetting(MSONable):
                    included=included,
                    excluded=excluded,
                    displacement_distance=displacement_distance,
-                   cutoff=cutoff,
                    symprec=symprec,
                    angle_tolerance=angle_tolerance,
                    oxidation_states=oxidation_states,
@@ -828,6 +824,7 @@ class DefectInitialSetting(MSONable):
                               "coords": rs.representative_coords}]
             changes_of_num_elements[rs.element] += -1
             multiplicity = rs.multiplicity
+            cutoff = rs.cutoff
 
             if inserted_element:
                 defect_type = DefectType.substituted
@@ -853,18 +850,20 @@ class DefectInitialSetting(MSONable):
                  "initial_site_symmetry": symmetry,
                  "charges": charges,
                  "multiplicity": multiplicity,
+                 "cutoff": cutoff,
                  "center": center}
 
         return defect_set
 
-    def _inserted_set(self, inserted_elements: Union[List[str], Tuple[str]]
-                      ) -> dict:
+    def _inserted_set(self,
+                      inserted_elements: Union[List[str], Tuple[str]]) -> dict:
         """Interstitials. """
         defect_set = {}
         for interstitial_name, i in self.interstitials.items():
             center = i.representative_coords
             symmetry = i.site_symmetry
             multiplicity = i.multiplicity
+            cutoff = i.cutoff
 
             for e in inserted_elements:
                 changes_of_num_elements = defaultdict(int)
@@ -886,6 +885,7 @@ class DefectInitialSetting(MSONable):
                      "initial_site_symmetry": symmetry,
                      "charges": charges,
                      "multiplicity": multiplicity,
+                     "cutoff": cutoff,
                      "center": center}
 
         return defect_set
@@ -917,6 +917,8 @@ class DefectInitialSetting(MSONable):
 
             coords = [i["coords"] for i in inserted_atoms + removed_atoms]
             center = defect_center_from_coords(coords, self.structure)
+            cutoff = round(min_distance_from_coords(self.structure, coords)
+                           * CUTOFF_FACTOR, 2)
 
             charges = default_charge_set(complex_defect.extreme_charge_state)
 
@@ -929,6 +931,7 @@ class DefectInitialSetting(MSONable):
                  "initial_site_symmetry": complex_defect.point_group,
                  "charges": charges,
                  "multiplicity": complex_defect.multiplicity,
+                 "cutoff": cutoff,
                  "center": center}
 
         return defect_set
@@ -975,7 +978,7 @@ class DefectInitialSetting(MSONable):
                     perturb_neighboring_atoms(
                         structure=defect["initial_structure"],
                         center=center,
-                        cutoff=self.cutoff,
+                        cutoff=defect["cutoff"],
                         distance=self.displacement_distance,
                         inserted_atom_indices=inserted_indices)
 
@@ -985,7 +988,6 @@ class DefectInitialSetting(MSONable):
                 self.defect_entries.append(
                     DefectEntry(name=name,
                                 perturbed_initial_structure=perturbed_structure,
-                                cutoff=self.cutoff,
                                 charge=charge,
                                 neighboring_sites=neighboring_sites,
                                 **defect))
@@ -1009,6 +1011,7 @@ class DefectInitialSetting(MSONable):
             lines.append(f"   Irreducible element: {site.irreducible_name}")
             lines.append(f"        Wyckoff letter: {site.wyckoff}")
             lines.append(f"         Site symmetry: {site.site_symmetry}")
+            lines.append(f"         Cutoff radius: {site.cutoff}")
 
             neighbor_atom_distances = list()
             for k, v in site.coordination_distances.items():
@@ -1069,7 +1072,6 @@ class DefectInitialSetting(MSONable):
         lines.append(f"Exceptionally included: {' '.join(self.included)}")
         lines.append(f"Exceptionally excluded: {' '.join(self.excluded)}")
         lines.append("")
-        lines.append(f"Cutoff region of neighboring atoms: {self.cutoff}")
         lines.append(f"Symprec: {self.symprec}")
         lines.append(f"Angle tolerance: {self.angle_tolerance}")
         lines.append("")

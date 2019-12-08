@@ -6,6 +6,7 @@ i1:
   coordination_distances:
     Mg: [1.84, 1.84, 1.84, 1.84]
     O: [1.84, 1.84, 1.84, 1.84]
+  cutoff: 2.37
   method: manual
 i2:
   representative_coords: [0, 0.125, 0.125]
@@ -15,4 +16,5 @@ i2:
   coordination_distances:
     Mg: [1.5, 1.5, 2.6, 2.6, 2.6, 2.6]
     O: [1.5, 1.5, 2.6, 2.6, 2.6, 2.6]
+  cutoff: 2.37
   method: manual

@@ -17,7 +17,7 @@ from pymatgen.core.periodic_table import DummySpecie
 from pymatgen.core.structure import Structure
 from pymatgen.io.vasp.outputs import Chgcar
 from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
-from pydefect.util.structure_tools import get_min_distance
+from pydefect.util.structure_tools import min_distance_from_coords
 
 __author__ = "Yu Kumagai"
 __maintainer__ = "Yu Kumagai"
@@ -34,6 +34,7 @@ class InterstitialSite(MSONable):
                  site_symmetry: str = None,
                  multiplicity: int = None,
                  coordination_distances: dict = None,
+                 cutoff: float = None,
                  method: str = None):
         """
         Args:
@@ -57,14 +58,16 @@ class InterstitialSite(MSONable):
         self.site_symmetry = site_symmetry
         self.multiplicity = multiplicity
         self.coordination_distances = coordination_distances
+        self.cutoff = cutoff
         self.method = method
 
     def __repr__(self):
-        outs = [f"representative_coords: {self.representative_coords}",
+        outs = [f"representative coords: {self.representative_coords}",
                 f"wyckoff: {self.wyckoff}",
-                f"site_symmetry: {self.site_symmetry}",
+                f"site symmetry: {self.site_symmetry}",
                 f"multiplicity: {self.multiplicity}",
-                f"coordination_distances: {self.coordination_distances}",
+                f"coordination distances: {self.coordination_distances}",
+                f"cutoff: {self.cutoff}",
                 f"method: {self.method}"]
         return "\n".join(outs)
 
@@ -75,6 +78,7 @@ class InterstitialSite(MSONable):
              "site_symmetry":          self.site_symmetry,
              "multiplicity":           self.multiplicity,
              "coordination_distances": self.coordination_distances,
+             "cutoff":                 self.cutoff,
              "method":                 self.method})
 
         return d
@@ -168,7 +172,6 @@ class InterstitialSiteSet(MSONable):
 
     def add_sites(self,
                   frac_coords: list,
-                  cutoff: Optional[float] = None,
                   vicinage_radius: float = 0.3,
                   symprec: float = SYMMETRY_TOLERANCE,
                   angle_tolerance: float = ANGLE_TOL,
@@ -204,8 +207,8 @@ class InterstitialSiteSet(MSONable):
                 symprec=symprec,
                 angle_tolerance=angle_tolerance)
 
-        cutoff = cutoff or round(get_min_distance(self.structure)
-                                 * CUTOFF_FACTOR, 2)
+        cutoff = round(min_distance_from_coords(self.structure, total_coords)
+                       * CUTOFF_FACTOR, 2)
 
         sga = SpacegroupAnalyzer(saturated_structure, symprec, angle_tolerance)
         symmetry_dataset = sga.get_symmetry_dataset()
@@ -232,8 +235,9 @@ class InterstitialSiteSet(MSONable):
             defect_str = self.structure.copy()
             defect_str.append(DummySpecie(), coord)
             coordination_distances = \
-                get_coordination_distances(defect_str, len(defect_str) - 1,
-                                           cutoff)
+                get_coordination_distances(structure=defect_str,
+                                           atom_index=len(defect_str) - 1,
+                                           cutoff=cutoff)
 
             interstitial_site = \
                 InterstitialSite(representative_coords=coord,
@@ -241,6 +245,7 @@ class InterstitialSiteSet(MSONable):
                                  site_symmetry=site_symmetry,
                                  multiplicity=multiplicity,
                                  coordination_distances=coordination_distances,
+                                 cutoff=cutoff,
                                  method=method)
 
             self.interstitial_sites[site_name] = interstitial_site
