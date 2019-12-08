@@ -14,7 +14,7 @@ from pydefect.core.defect_entry import DefectEntry
 from pydefect.core.error_classes import NoConvergenceError, StructureError
 from pydefect.util.logger import get_logger
 from pydefect.util.structure_tools import (
-    get_displacements, get_min_distance, min_distance_from_site)
+    get_displacements, get_min_distance, min_distance_from_coords)
 from pydefect.util.tools import (
     spin_key_to_str, str_key_to_spin, parse_file, defaultdict_to_dict,
     mod_defaultdict)
@@ -307,9 +307,8 @@ class SupercellCalcResults(MSONable):
                 center = defect_coords = defect_entry.defect_center_coords
 
             cutoff = (cutoff or
-                      round(min_distance_from_site(final_structure, center)
+                      round(min_distance_from_coords(final_structure, center)
                             * CUTOFF_FACTOR, 2))
-            print(cutoff)
             neighboring_sites = []
             for i, site in enumerate(final_structure):
                 # Calculate the distance between defect and site

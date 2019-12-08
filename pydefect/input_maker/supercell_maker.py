@@ -187,10 +187,6 @@ class Supercells:
             rhombohedral = sga.get_lattice_type() == "rhombohedral"
             self.conventional_base = False
 
-        # print(sga.get_lattice_type())
-        # print("rhombohedral")
-        # print(rhombohedral)
-
         self.supercells = []
         # Isotropically incremented matrix one by one
         incremented_mat = np.identity(3, dtype="int8")

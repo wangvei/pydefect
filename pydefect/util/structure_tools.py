@@ -259,7 +259,7 @@ def distance_list(structure: Structure,
     return distance
 
 
-def min_distance_from_site(structure: Structure, coords: np.array) -> float:
+def min_distance_from_coords(structure: Structure, coords: np.array) -> float:
     """Return the minimum distance
 
     Args:

@@ -6,38 +6,40 @@ from copy import deepcopy
 from glob import glob
 from inspect import signature
 from itertools import chain
-from os.path import join
 from pathlib import Path
 
 import numpy as np
+
 from chempotdiag.chem_pot_diag import ChemPotDiag
-from vise.input_set.incar import incar_flags
-from vise.input_set.input_set import ViseInputSet
+
 from pydefect.analysis.defect import Defect
 from pydefect.analysis.defect_carrier_concentration import DefectConcentration
 from pydefect.analysis.defect_eigenvalues import DefectEigenvalue
 from pydefect.analysis.defect_energies import DefectEnergies
 from pydefect.analysis.defect_structure import (
     DefectStructure, defect_structure_matcher)
+from pydefect.core.complex_defects import ComplexDefects
 from pydefect.core.defect_entry import DefectEntry
+from pydefect.core.error_classes import StructureError
 from pydefect.core.interstitial_site import (
     InterstitialSiteSet, interstitials_from_charge_density)
-from pydefect.core.complex_defects import ComplexDefects
-
-from pydefect.core.error_classes import StructureError
 from pydefect.core.supercell_calc_results import SupercellCalcResults
 from pydefect.core.unitcell_calc_results import UnitcellCalcResults
-from pydefect.corrections.efnv_corrections import ExtendedFnvCorrection, Ewald
 from pydefect.corrections.corrections import ManualCorrection
+from pydefect.corrections.efnv_corrections import ExtendedFnvCorrection, Ewald
 from pydefect.input_maker.defect_initial_setting import (
     dopant_info, DefectInitialSetting)
 from pydefect.input_maker.supercell_maker import Supercell, Supercells
 from pydefect.util.logger import get_logger
 from pydefect.util.main_tools import (
     generate_objects_from_json_files)
-from vise.util.main_tools import potcar_str2dict, list2dict
+
 from pymatgen import Structure, Spin
 from pymatgen.core.periodic_table import Element
+
+from vise.input_set.incar import incar_flags
+from vise.input_set.input_set import ViseInputSet
+from vise.util.main_tools import potcar_str2dict, list2dict
 
 __author__ = "Yu Kumagai"
 __maintainer__ = "Yu Kumagai"
@@ -413,7 +415,7 @@ def supercell_calc_results(args):
                     raise IOError("Parsing data in perfect failed.")
             else:
                 try:
-                    de = DefectEntry.load_json(join(d, args.defect_entry_name))
+                    de = DefectEntry.load_json(os.path.join(d, args.defect_entry_name))
 
                     dft_results = \
                         SupercellCalcResults.from_vasp_files(
@@ -430,7 +432,7 @@ def supercell_calc_results(args):
                     logger.warning(f"Parsing data in {d} failed.")
                     continue
 
-            dft_results.to_json_file(filename=join(d, "dft_results.json"))
+            dft_results.to_json_file(filename=os.path.join(d, "dft_results.json"))
         else:
             logger.warning(f"{d} does not exist, so nothing is done.")
 
@@ -444,16 +446,16 @@ def efnv_correction(args):
 
     if args.plot_potential:
         for directory in dirs:
-            json_file = join(directory, "correction.json")
+            json_file = os.path.join(directory, "correction.json")
             c = ExtendedFnvCorrection.load_json(json_file)
-            c.plot_distance_vs_potential(join(directory, "potential.pdf"),
+            c.plot_distance_vs_potential(os.path.join(directory, "potential.pdf"),
                                          args.y_range)
         return
 
     if args.nocorr:
         for directory in dirs:
             c = ManualCorrection(manual_correction_energy=args.manual)
-            c.to_json_file(join(directory, "correction.json"))
+            c.to_json_file(os.path.join(directory, "correction.json"))
         return
 
     try:
@@ -478,16 +480,16 @@ def efnv_correction(args):
         ewald.to_json_file(args.ewald_json)
 
     for directory in dirs:
-        json_to_make = join(directory, "correction.json")
+        json_to_make = os.path.join(directory, "correction.json")
 
         if os.path.exists(json_to_make) and not args.force_overwrite:
             logger.warning(f"{json_to_make} already exists, so nothing done.")
             continue
 
         logger.info(f"correcting {directory} ...")
-        entry = DefectEntry.load_json(join(directory, "defect_entry.json"))
+        entry = DefectEntry.load_json(os.path.join(directory, "defect_entry.json"))
         defect_dft_data = SupercellCalcResults.load_json(
-            join(directory, "dft_results.json"))
+            os.path.join(directory, "dft_results.json"))
 
         c = ExtendedFnvCorrection. \
             compute_correction(defect_entry=entry,
@@ -496,9 +498,9 @@ def efnv_correction(args):
                                unitcell_dft=unitcell_dft_data,
                                ewald=args.ewald_json)
 
-        c.plot_distance_vs_potential(join(directory, "potential.pdf"),
+        c.plot_distance_vs_potential(os.path.join(directory, "potential.pdf"),
                                      args.y_range)
-        c.to_json_file(join(directory, "correction.json"))
+        c.to_json_file(os.path.join(directory, "correction.json"))
 
 
 def defects(args):
@@ -524,7 +526,7 @@ def defects(args):
 
     defects_dirs = args.defect_dirs if args.defect_dirs else glob('*[0-9]/')
     for d in defects_dirs:
-        filename = join(d, args.json)
+        filename = os.path.join(d, args.json)
         if args.diagnose:
             print(d.rjust(12), end="  ")
             try:
@@ -568,7 +570,7 @@ def plot_energy(args):
 
         defect_list = []
         for d in defects_dirs:
-            filename = join(d, args.defect)
+            filename = os.path.join(d, args.defect)
             logger.info(f"parsing directory {d}...")
             try:
                 defect_list.append(Defect.load_json(filename))
@@ -628,7 +630,7 @@ def parse_eigenvalues(args):
 
     # TODO: Modify here to run w/o correction
     logger.info(f"parsing directory {args.defect_dir}...")
-    filename = join(args.defect_dir, args.defect)
+    filename = os.path.join(args.defect_dir, args.defect)
     defect = Defect.load_json(filename)
 
     defect_eigenvalues = DefectEigenvalue.from_files(unitcell=unitcell,
@@ -665,7 +667,7 @@ def local_structure(args):
 
     d_list = []
     for d in defects_dirs:
-        filename = join(d, args.defect)
+        filename = os.path.join(d, args.defect)
         logger.info(f"parsing directory {d}...")
         try:
             defect = Defect.load_json(filename)
