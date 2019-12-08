@@ -267,7 +267,8 @@ class Defect(MSONable):
                      dft_results: SupercellCalcResults,
                      perfect_dft_results: SupercellCalcResults,
                      correction: Correction = None,
-                     check_structure: bool = True):
+                     check_structure: bool = True,
+                     raise_error: bool = True):
         """ Gather and generate full defect information related to analysis.
 
         While SupercellCalcResults class only collect the data from the
@@ -283,7 +284,7 @@ class Defect(MSONable):
         final_multiplicity = \
             initial_multiplicity * initial_nsymop / final_nsymop
 
-        if not final_multiplicity.is_integer():
+        if not final_multiplicity.is_integer() and raise_error:
             n = DefectName(
                 defect_entry.name, defect_entry.charge, defect_entry.annotation)
             raise ValueError(
