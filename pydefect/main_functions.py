@@ -116,7 +116,6 @@ def initial_setting(args):
               "included": args.included,
               "excluded": args.excluded,
               "displacement_distance": args.displacement_distance,
-              "cutoff": args.cutoff,
               "symprec": args.symprec,
               "angle_tolerance": args.angle_tolerance,
               "interstitial_sites": args.interstitials,
@@ -241,7 +240,6 @@ def interstitial(args):
 #        print(supercell_coords)
 
         interstitial_set.add_sites(frac_coords=supercell_coords,
-                                   cutoff=defect_initial_setting.cutoff,
                                    vicinage_radius=args.radius,
                                    symprec=args.symprec,
                                    angle_tolerance=args.angle_tolerance)

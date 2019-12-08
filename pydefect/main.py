@@ -50,7 +50,7 @@ def main():
                     "vasprun",
                     "procar",
                     "vicinage_radius",
-                    "cutoff",
+#                    "cutoff",
                     "displacement_distance",
                     "volume_dir",
                     "static_diele_dir",
@@ -182,13 +182,12 @@ def main():
     simple_override(is_defaults,
                     ["symprec",
                      "angle_tolerance",
-                     "cutoff",
                      "displacement_distance"])
 
-    parser_initial.add_argument(
-        "--cutoff", dest="cutoff", type=float,
-        default=is_defaults["cutoff"],
-        help="Set the cutoff radius [A] in which atoms are displaced.")
+    # parser_initial.add_argument(
+    #     "--cutoff", dest="cutoff", type=float,
+    #     default=is_defaults["cutoff"],
+    #     help="Set the cutoff radius [A] in which atoms are displaced.")
     parser_initial.add_argument(
         "--symprec", dest="symprec", type=float,
         default=is_defaults["symprec"],
@@ -490,10 +489,10 @@ def main():
     parser_defect_entry.add_argument(
         "--json", dest="json", type=str, default="defect_entry.json",
         help="defect_entry.json type file name.")
-    parser_defect_entry.add_argument(
-        "--cutoff", "-c", dest="cutoff", type=float,
-        default=de_defaults["cutoff"],
-        help="Cutoff radius to determine the neighboring atoms.")
+#    parser_defect_entry.add_argument(
+#        "--cutoff", "-c", dest="cutoff", type=float,
+#        default=de_defaults["cutoff"],
+#        help="Cutoff radius to determine the neighboring atoms.")
     parser_defect_entry.add_argument(
         "--perfect_poscar", dest="perfect_poscar", type=str,
         default="../perfect/POSCAR",
@@ -557,7 +556,7 @@ def main():
         help="dft_results.json type file name.")
     parser_supercell_results.add_argument(
         "--cutoff", dest="cutoff", type=float, default=sr_defaults["cutoff"],
-        help="Cutoff radius [A].")
+        help="Cutoff radius to determine the neighboring atoms.")
     parser_supercell_results.add_argument(
         "--defect_symprec", dest="symprec", type=float,
         default=sr_defaults["defect_symprec"],
