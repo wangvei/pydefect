@@ -754,13 +754,24 @@ class DefectInitialSetting(MSONable):
             for elem1, elem2 in permutations(host_element_list, 2):
                 if elem1 == elem2:
                     continue
-                elif elem1 in electronegativity and elem2 in electronegativity:
-                    if abs(electronegativity[elem1]
-                           - electronegativity[elem2]) < en_diff:
+                elif elem1 in oxidation_states and elem2 in oxidation_states:
+                    if oxidation_states[elem1] * oxidation_states[elem2] > 0:
                         antisite_configs.append([elem1, elem2])
                 else:
-                    logger.warning(f"Electronegativity of {elem1} and/or " 
-                                   f"{elem2} is not defined")
+                    logger.warning(f"Oxidation states of {elem1} and/or " 
+                                   f"{elem2} is not defined, so consideration"
+                                   f"of antisite of its pair is skipped.")
+
+            # for elem1, elem2 in permutations(host_element_list, 2):
+            #     if elem1 == elem2:
+            #         continue
+            #     elif elem1 in electronegativity and elem2 in electronegativity:
+            #         if abs(electronegativity[elem1]
+            #                - electronegativity[elem2]) < en_diff:
+            #             antisite_configs.append([elem1, elem2])
+            #     else:
+            #         logger.warning(f"Electronegativity of {elem1} and/or "
+            #                        f"{elem2} is not defined")
 
         # List of inserted and removed atoms, e.g., [["Al", "Mg"], ...]
         dopant_configs = []
