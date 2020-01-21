@@ -923,6 +923,7 @@ class DefectInitialSetting(MSONable):
                 changes_of_num_elements[element] -= 1
 
             structure.remove_sites(complex_defect.removed_atom_indices)
+            removed_structure = structure.copy()
 
             # inserted_atoms contains indices of the inserted atoms in the
             # returned structure.
@@ -932,8 +933,9 @@ class DefectInitialSetting(MSONable):
                 changes_of_num_elements[i["element"]] += -1
 
             coords = [i["coords"] for i in inserted_atoms + removed_atoms]
-            center = defect_center_from_coords(coords, self.structure)
-            min_dist = min_distance_from_coords(self.structure, coords)
+
+            center = defect_center_from_coords(coords, removed_structure)
+            min_dist = min_distance_from_coords(removed_structure, coords)
             cutoff = round(min_dist * CUTOFF_FACTOR, 2)
 
             charges = default_charge_set(complex_defect.extreme_charge_state)
