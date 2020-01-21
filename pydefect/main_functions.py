@@ -154,7 +154,7 @@ def initial_setting(args):
     if unitcell != structure:
         logger.warning(
             "The unitcell is different from input, so generate UPOSCAR.")
-        supercells.to_uposcar(uposcar_filename="UPOSCAR")
+        supercells.to_uposcar(uposcar="UPOSCAR")
     else:
         logger.info("Input structure is the primitive cell.")
 
