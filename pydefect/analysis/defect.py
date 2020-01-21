@@ -54,33 +54,32 @@ class BandEdgeState(Enum):
         return self in [BandEdgeState.acceptor_phs, BandEdgeState.donor_phs]
 
 
-def too_close_atom_pairs(structure: Structure,
-                         radius: float = 1.5,
-                         too_close_criterion_factor: float = 0.7) -> bool:
-    """Check whether too close atomic pairs exist in the structure or not.
+# def too_close_atom_pairs(structure: Structure,
+#                          radius: float = 1.5,
+#                          too_close_criterion_factor: float = 0.7) -> bool:
+#     """Check whether too close atomic pairs exist in the structure or not.
 
-    Raise a ValueError if the number of atoms in structure is 1.
+    # Raise a ValueError if the number of atoms in structure is 1.
 
-    Args:
+    # Args:
 
-    """
+    # """
 
-    distances = structure.get_all_neighbors(radius)
-    for i, dist in enumerate(distances):
-        for j in dist:
-            periodic_site, dist = j
-            elem1 = structure[i].species_string
-            frac1 = structure[i].frac_coords
-            elem2 = periodic_site.species_string
-            frac2 = periodic_site.frac_coords
-            rcore_sum = rcore[elem1] + rcore[elem2]
-            if dist < rcore_sum * too_close_criterion_factor:
-                logger.warning(
-                    f"Element {elem1} at {frac1} & Element {elem2} at {frac2} "
-                    f"are too close with distance {round(dist, 4)}.")
+    # distances = structure.get_all_neighbors(radius)
+    # for i, periodic_neighbors in enumerate(distances):
+    #     for periodic_neighbor in periodic_neighbors:
+    #         elem1 = structure[periodic_neighbor.index].species_string
+    #         frac1 = periodic_neighbor._frac_coords
+    #         elem2 = periodic_site.species_string
+    #         frac2 = periodic_site.frac_coords
+    #         rcore_sum = rcore[elem1] + rcore[elem2]
+    #         if dist < rcore_sum * too_close_criterion_factor:
+    #             logger.warning(
+    #                 f"Element {elem1} at {frac1} & Element {elem2} at {frac2} "
+    #                 f"are too close with distance {round(dist, 4)}.")
 
-                return True
-    return False
+    #             return True
+    # return False
 
 
 def diagnose_band_edges(participation_ratio: dict,
@@ -294,11 +293,11 @@ class Defect(MSONable):
 
         magnetization = round(dft_results.total_magnetization, 2)
 
-        if check_structure:
-            if too_close_atom_pairs(dft_results.final_structure):
-                raise StructureError(
-                    "Some atoms are too close. If you want to continue to "
-                    "generate Defect object, set check_structure=False.")
+        # if check_structure:
+        #     if too_close_atom_pairs(dft_results.final_structure):
+        #         raise StructureError(
+        #             "Some atoms are too close. If you want to continue to "
+        #             "generate Defect object, set check_structure=False.")
 
         band_edge_states = \
             diagnose_band_edges(dft_results.participation_ratio,
