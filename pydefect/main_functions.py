@@ -60,7 +60,8 @@ def unitcell_calc_results(args):
     if args.band_edge_dir:
         try:
             dft_results.set_band_edge_from_vasp(args.band_edge_dir,
-                                                vasprun_name=args.vasprun)
+                                                vasprun_name=args.vasprun,
+                                                outcar_name=args.outcar)
         except IOError:
             raise FileNotFoundError(args.band_edge_dir, "is not appropriate.")
 
