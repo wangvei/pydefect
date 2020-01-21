@@ -23,7 +23,7 @@ logger = get_logger(__name__)
 
 def calc_isotropy(structure: Structure,
                   trans_mat: np.array) -> tuple:
-    """ Return mean absolute deviation of lattice constants from their average
+    """Return mean absolute deviation of lattice constants from their average.
 
     Args:
         structure (Structure):
@@ -49,7 +49,7 @@ def calc_isotropy(structure: Structure,
 
 
 def sanitize_matrix(matrix: list) -> np.ndarray:
-    """Sanitize the matrix component to 3x3 matrix
+    """Sanitize the matrix component to 3x3 np array with int type.
 
     Args:
         matrix (list or np.array):
@@ -86,7 +86,7 @@ class Supercell:
                  check_unitcell: bool = False,
                  symprec: float = SYMMETRY_TOLERANCE,
                  angle_tolerance: float = ANGLE_TOL):
-        """ Supercell class constructed based on a given multiplicity.
+        """Supercell class constructed based on a given multiplicity.
 
         Args:
             structure (Structure):
@@ -125,6 +125,14 @@ class Supercell:
                                   "isotropy: " + str(self.isotropy)])
 
     def to(self, poscar: str, uposcar: Optional[str] = "UPOSCAR") -> None:
+        """Write out the Supercell POSCAR and unitcell UPOSCAR.
+
+        Args:
+            poscar (str): POSCAR file name.
+            uposcar (str): UPOSCAR file name.
+
+        Return: None
+        """
         self.structure.to(filename=poscar, comment=self.comment)
         if self.is_structure_changed:
             self.structure.to(filename=uposcar)
@@ -140,7 +148,7 @@ class Supercells:
                  rhombohedral_angle: float = 70,
                  symprec: float = SYMMETRY_TOLERANCE,
                  angle_tolerance: float = ANGLE_TOL):
-        """ Constructs a set of supercells satisfying an isotropic criterion.
+        """Constructs a set of supercells satisfying an isotropic criterion.
 
         Args:
             structure (pmg structure class object):
@@ -200,16 +208,16 @@ class Supercells:
             if num_atoms > max_num_atoms:
                 break
 
+            if isotropy < criterion and num_atoms >= min_num_atoms:
+                self.supercells.append(
+                    Supercell(self.unitcell, trans_mat, multiplicity))
+
             rhombohedral_shape = None
-            if rhombohedral_angle and rhombohedral:
+            if rhombohedral:
                 if angle < rhombohedral_angle:
                     rhombohedral_shape = "sharp"
                 elif angle > 180 - rhombohedral_angle:
                     rhombohedral_shape = "blunt"
-
-            if isotropy < criterion and num_atoms >= min_num_atoms:
-                self.supercells.append(
-                    Supercell(self.unitcell, trans_mat, multiplicity))
 
             if rhombohedral_shape == "sharp":
                 multiplied_matrix = np.array([[ 1,  1, -1],
@@ -231,7 +239,6 @@ class Supercells:
 
             trans_mat = np.dot(incremented_mat, based_trans_mat)
 
-
     @property
     def sorted_supercells_by_num_atoms(self) -> list:
         return sorted(deepcopy(self.supercells),
@@ -250,6 +257,13 @@ class Supercells:
     def most_isotropic_supercell(self) -> Supercell:
         return self.sorted_supercells_by_isotropy[0]
 
-    def to_uposcar(self, uposcar_filename: str) -> None:
-        self.unitcell.to(filename=uposcar_filename)
+    def to_uposcar(self, uposcar: Optional[str] = "UPOSCAR") -> None:
+        """ Write out the unitcell UPOSCAR file.
+
+        Args:
+            uposcar (str): UPOSCAR file name.
+
+        Return: None
+        """
+        self.unitcell.to(filename=uposcar)
 

@@ -10,10 +10,11 @@ __maintainer__ = "Yu Kumagai"
 class IrreducibleSite(MSONable):
     """ Container class related to the symmetrically equivalent atom set.
 
-    Note1: Atomic indices begin from 0.
+    Note1: The first atomic index begins at 0.
     Note2: Atomic indices need to be sorted, meaning they can be written in a
            sequence, like 16..31.
-    Note3: first_index atom is assumed to represent the irreducible atoms.
+    Note3: first_index atom in each specie is assumed to represent the
+           irreducible atoms.
 
     Args:
         irreducible_name (str):

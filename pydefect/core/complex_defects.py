@@ -17,7 +17,7 @@ __maintainer__ = "Yu Kumagai"
 
 """ Module related to complex defects.
 
-The class structures are similar to the interstitial ones.
+The classes are similar to the interstitial ones.
 """
 
 logger = get_logger(__name__)
