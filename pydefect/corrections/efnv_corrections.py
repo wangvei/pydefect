@@ -8,7 +8,7 @@ from math import sqrt, pow, ceil
 from operator import itemgetter
 from typing import Optional, Union, Tuple
 
-#import matplotlib.pyplot as plt
+import matplotlib.pyplot as plt
 import numpy as np
 from monty.json import MontyEncoder, MSONable
 from monty.serialization import loadfn
@@ -351,51 +351,51 @@ class ExtendedFnvCorrection(Correction, MSONable):
     def max_sphere_radius(self) -> float:
         return calc_max_sphere_radius(self.lattice_matrix)
 
-#    def plot_distance_vs_potential(self, file_name: str,
-#                                   yrange: Optional[list] = None) -> None:
-#        """Plotter for the potential as a function of distance."""
-#        property_without_defect = list(zip(self.symbols_without_defect,
-#                                           self.distances_from_defect,
-#                                           self.difference_electrostatic_pot))
-#        # E.g. points_dictionary = {'Mg': [(3.67147, -0.7019),  ..], 'O': [..]}
-#        points_dictionary = {}
-#        for element, properties in \
-#                groupby(property_without_defect, key=itemgetter(0)):
-#            points_dictionary[element] = [(x, y) for _, x, y in properties]
-#
-#        fig = plt.figure()
-#        ax = fig.add_subplot(111)
-#
-#        # DFT electrostatic potential
-#        for i, (symbol, points) in enumerate(points_dictionary.items()):
-#            x_set = np.array([point[0] for point in points])
-#            y_set = np.array([point[1] for point in points])
-#            ax.scatter(x_set, y_set, c=COLOR[i], marker="x", label=symbol)
-#
-#        # PC model potential
-#        ax.scatter(self.distances_from_defect, self.model_pot,
-#                   marker=".", label="model potential", color=COLOR[-1])
-#
-#        # difference between PC model potential and DFT electrostatic potential
-#        diff_model_electrostatic = (np.array(self.difference_electrostatic_pot)
-#                                    - np.array(self.model_pot))
-#
-#        ax.scatter(self.distances_from_defect, diff_model_electrostatic,
-#                   marker="o", label="model - first principles",
-#                   facecolors='none', edgecolors=COLOR[-2])
-#
-#        # potential difference
-#        point_x = [self.max_sphere_radius, max(self.distances_from_defect)]
-#        point_y = [self.ave_pot_diff, self.ave_pot_diff]
-#        ax.plot(point_x, point_y, c=(0, 0, 0), label="potential difference")
-#        ax.legend(loc="upper left")
-#
-#        if yrange:
-#            plt.ylim(yrange[0], yrange[1])
-#
-#        plt.title("Distance vs potential")
-#
-#        plt.savefig(file_name, format="pdf")
+    def plot_distance_vs_potential(self, file_name: str,
+                                   yrange: Optional[list] = None) -> None:
+        """Plotter for the potential as a function of distance."""
+        property_without_defect = list(zip(self.symbols_without_defect,
+                                           self.distances_from_defect,
+                                           self.difference_electrostatic_pot))
+        # E.g. points_dictionary = {'Mg': [(3.67147, -0.7019),  ..], 'O': [..]}
+        points_dictionary = {}
+        for element, properties in \
+                groupby(property_without_defect, key=itemgetter(0)):
+            points_dictionary[element] = [(x, y) for _, x, y in properties]
+
+        fig = plt.figure()
+        ax = fig.add_subplot(111)
+
+        # DFT electrostatic potential
+        for i, (symbol, points) in enumerate(points_dictionary.items()):
+            x_set = np.array([point[0] for point in points])
+            y_set = np.array([point[1] for point in points])
+            ax.scatter(x_set, y_set, c=COLOR[i], marker="x", label=symbol)
+
+        # PC model potential
+        ax.scatter(self.distances_from_defect, self.model_pot,
+                   marker=".", label="model potential", color=COLOR[-1])
+
+        # difference between PC model potential and DFT electrostatic potential
+        diff_model_electrostatic = (np.array(self.difference_electrostatic_pot)
+                                    - np.array(self.model_pot))
+
+        ax.scatter(self.distances_from_defect, diff_model_electrostatic,
+                   marker="o", label="model - first principles",
+                   facecolors='none', edgecolors=COLOR[-2])
+
+        # potential difference
+        point_x = [self.max_sphere_radius, max(self.distances_from_defect)]
+        point_y = [self.ave_pot_diff, self.ave_pot_diff]
+        ax.plot(point_x, point_y, c=(0, 0, 0), label="potential difference")
+        ax.legend(loc="upper left")
+
+        if yrange:
+            plt.ylim(yrange[0], yrange[1])
+
+        plt.title("Distance vs potential")
+
+        plt.savefig(file_name, format="pdf")
 
     @classmethod
     def compute_correction(cls,

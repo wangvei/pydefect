@@ -934,6 +934,7 @@ class DefectInitialSetting(MSONable):
 
             coords = [i["coords"] for i in inserted_atoms + removed_atoms]
 
+            # need to evaluate min_dist using the atom removed structure
             center = defect_center_from_coords(coords, removed_structure)
             min_dist = min_distance_from_coords(removed_structure, coords)
             cutoff = round(min_dist * CUTOFF_FACTOR, 2)

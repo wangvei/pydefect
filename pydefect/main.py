@@ -32,7 +32,7 @@ __date__ = 'will be inserted'
 
 
 def main():
-    # The following keys are set by pydefect.yaml
+    # The following keys can be set by pydefect.yaml
     setting_keys = ["symprec",
                     "defect_symprec",
                     "angle_tolerance",
@@ -50,7 +50,6 @@ def main():
                     "vasprun",
                     "procar",
                     "vicinage_radius",
-#                    "cutoff",
                     "displacement_distance",
                     "volume_dir",
                     "static_diele_dir",
@@ -64,15 +63,15 @@ def main():
     user_settings = get_user_settings(yaml_filename="pydefect.yaml",
                                       setting_keys=setting_keys)
 
-    def simple_override(d: dict, keys: Union[list, str]) -> None:
+    def simple_override(d: dict, overridden_keys: Union[list, str]) -> None:
         """Override dict if keys exist in user_settings.
 
         When the value in the user_settings is a dict, it will be changed to
         list using dict2list.
         """
-        if isinstance(keys, str):
-            keys = [keys]
-        for key in keys:
+        if isinstance(overridden_keys, str):
+            overridden_keys = [overridden_keys]
+        for key in overridden_keys:
             if key in user_settings:
                 v = user_settings[key]
                 if isinstance(v, dict):
@@ -180,14 +179,8 @@ def main():
     is_defaults = get_default_args(DefectInitialSetting.from_basic_settings)
     is_defaults.update(get_default_args(Supercells))
     simple_override(is_defaults,
-                    ["symprec",
-                     "angle_tolerance",
-                     "displacement_distance"])
+                    ["symprec", "angle_tolerance", "displacement_distance"])
 
-    # parser_initial.add_argument(
-    #     "--cutoff", dest="cutoff", type=float,
-    #     default=is_defaults["cutoff"],
-    #     help="Set the cutoff radius [A] in which atoms are displaced.")
     parser_initial.add_argument(
         "--symprec", dest="symprec", type=float,
         default=is_defaults["symprec"],
@@ -242,7 +235,7 @@ def main():
     parser_initial.add_argument(
         "--en_diff", dest="en_diff", type=float, default=is_defaults["en_diff"],
         help="Criterion of the electronegativity difference that determines "
-             "antisites and/or substituted impurity types.")
+             "substituted impurity types.")
     parser_initial.add_argument(
         "--included", dest="included", type=str, nargs="+",
         default=is_defaults["included"],
@@ -353,7 +346,8 @@ def main():
         help="defect.in-type file name.")
     parser_complex_defects.add_argument(
         "-r", dest="removed_atom_indices", nargs="+", type=int,
-        help="Removed atom indices when constructing a complex defect.")
+        help="Removed atom indices (beginning at 0) from the pristine supercell"
+             " when constructing a complex defect.")
     parser_complex_defects.add_argument(
         "-i", dest="inserted_elements", nargs="+", type=str,
         help="Inserted atom elements when constructing a complex defect."
@@ -489,10 +483,6 @@ def main():
     parser_defect_entry.add_argument(
         "--json", dest="json", type=str, default="defect_entry.json",
         help="defect_entry.json type file name.")
-#    parser_defect_entry.add_argument(
-#        "--cutoff", "-c", dest="cutoff", type=float,
-#        default=de_defaults["cutoff"],
-#        help="Cutoff radius to determine the neighboring atoms.")
     parser_defect_entry.add_argument(
         "--perfect_poscar", dest="perfect_poscar", type=str,
         default="../perfect/POSCAR",

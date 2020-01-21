@@ -11,8 +11,6 @@ __maintainer__ = "Yu Kumagai"
 logger = get_logger(__name__)
 
 
-
-
 def get_default_args(function: Callable) -> dict:
     """Get the default values of the arguments in the method/function.
 

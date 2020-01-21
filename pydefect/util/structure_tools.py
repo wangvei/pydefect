@@ -275,7 +275,7 @@ def min_distance_from_coords(structure: Structure, coords: np.array) -> float:
     Return:
         distance
     """
-    return min(distance_list(structure, coords))
+    return min(distance_list(structure, coords, remove_self=True))
 
 
 def create_saturated_interstitial_structure(

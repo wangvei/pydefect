@@ -336,7 +336,10 @@ class DefectEnergies(MSONable):
             fig, (ax, ax2) = plt.subplots(2, sharex=True)
         else:
             fig, ax = plt.subplots()
+
         plt.title(self.title, fontsize=15)
+        plt.rcParams["xtick.direction"] = "in"
+        plt.rcParams["ytick.direction"] = "in"
 
         color = color or COLOR
 
@@ -444,9 +447,9 @@ class DefectEnergies(MSONable):
         # plot vbm, cbm, supercell_vbm, supercell_cbm lines.
         plt.axvline(x=0, linewidth=1.0, linestyle="-", color='b')
         plt.axvline(x=self.band_gap, linewidth=1.0, linestyle="-", color='b')
-        ax.annotate("vbm", (0, y_min * 0.9 + y_max * 0.1),
+        ax.annotate("VBM", (0, y_min * 0.9 + y_max * 0.1),
                     fontsize=10, color='b')
-        ax.annotate("cbm", (self.band_gap, y_min * 0.9 + y_max * 0.1),
+        ax.annotate("CBM", (self.band_gap, y_min * 0.9 + y_max * 0.1),
                     fontsize=10, color='b')
 
         supercell_vbm = self.supercell_vbm - self.vbm
@@ -454,13 +457,13 @@ class DefectEnergies(MSONable):
 
 #        if supercell_vbm < - 0.05:
         plt.axvline(x=supercell_vbm, linewidth=1.0, linestyle='-', color='r')
-        ax.annotate("supercell vbm",
+        ax.annotate("supercell VBM",
                     (supercell_vbm, y_min * 0.8 + y_max * 0.2),
                     fontsize=10, color='r')
 
 #        if supercell_cbm > self.band_gap + 0.05:
         plt.axvline(x=supercell_cbm, linewidth=1.0, linestyle='-', color='r')
-        ax.annotate("supercell cbm",
+        ax.annotate("supercell CBM",
                     (supercell_cbm, y_min * 0.8 + y_max * 0.2),
                     fontsize=10, color='r')
 

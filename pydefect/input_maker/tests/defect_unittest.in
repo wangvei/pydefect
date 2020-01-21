@@ -27,13 +27,13 @@ Interstitials: i1
 Complex defects: divacancy
 Antisite defects: 
 
-   Dopant element: Al
-Electronegativity: 1.61
-  Oxidation state: 3
-
    Dopant element: N
 Electronegativity: 3.04
   Oxidation state: -3
+
+   Dopant element: Al
+Electronegativity: 1.61
+  Oxidation state: 3
 
 Substituted defects: Al_Mg N_O
 
