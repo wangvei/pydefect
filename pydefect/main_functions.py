@@ -392,6 +392,15 @@ def supercell_calc_results(args):
         print(SupercellCalcResults.load_json(args.json))
         return
 
+    if args.defect_center:
+        if not len(args.defect_center) == 3:
+            raise ValueError("The number of coordinates for defect center is "
+                             "not 3")
+        results = SupercellCalcResults.load_json(args.json)
+        results.defect_center = args.defect_center
+        results.to_json_file(filename=args.json)
+        return
+
     if args.dir_all:
         dirs = glob('*[0-9]/')
         dirs.insert(0, "perfect/")

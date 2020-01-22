@@ -540,6 +540,9 @@ def main():
         "-s", dest="not_check_shallow", action="store_false",
         help="Not check whether the defects are shallow.")
     parser_supercell_results.add_argument(
+        "--center", dest="defect_center", nargs="+", type=float,
+        help="Set defect center in fractional coordinates.")
+    parser_supercell_results.add_argument(
         "-de", dest="defect_entry_name", type=str, default="defect_entry.json")
     parser_supercell_results.add_argument(
         "--json", dest="json", type=str, default="dft_results.json",
