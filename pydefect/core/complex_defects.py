@@ -102,16 +102,15 @@ class ComplexDefects(MSONable):
 
         return d
 
-    def site_set_to_yaml_file(self,
-                              yaml_filename: str = "complex_defects.yaml"
-                              ) -> None:
+    # def site_set_to_yaml_file(self,
+    #                           yaml_filename: str = "complex_defects.yaml"
+    #                           ) -> None:
+    #     with open(yaml_filename, "w") as f:
+    #         f.write(yaml.dump(self.set_as_dict()))
+
+    def to_yaml_file(self, yaml_filename: str = "complex_defects.yaml") -> None:
         with open(yaml_filename, "w") as f:
             f.write(yaml.dump(self.set_as_dict()))
-
-    def to_yaml_file(self,
-                     yaml_filename: str = "complex_defects.yaml") -> None:
-        with open(yaml_filename, "w") as f:
-            f.write(yaml.dump(self.as_dict()))
 
     @classmethod
     def from_files(cls,

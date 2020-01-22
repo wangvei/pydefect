@@ -13,7 +13,7 @@ from pydefect.input_maker.supercell_maker import Supercells
 from pydefect.core.config import DEFECT_KPT_DENSITY
 from pydefect.main_functions import (
     initial_setting, interstitial, complex_defects,
-    defect_vasp_oba_set, defect_entry, supercell_calc_results,
+    defect_vasp_set, defect_entry, supercell_calc_results,
     unitcell_calc_results, efnv_correction, defects, plot_energy,
     parse_eigenvalues, vasp_parchg_set, local_structure, concentration)
 from pydefect.util.logger import get_logger
@@ -458,7 +458,7 @@ def main():
 
     del dvs_defaults
 
-    parser_defect_vasp_set.set_defaults(func=defect_vasp_oba_set)
+    parser_defect_vasp_set.set_defaults(func=defect_vasp_set)
 
     # -- defect_entry ---------------------------------------------------------
     parser_defect_entry = subparsers.add_parser(
@@ -698,7 +698,7 @@ def main():
         help="System name that is written in the title.")
     parser_plot_energy.add_argument(
         "-x", "--x_range", dest="x_range", type=float, nargs='+', default=None,
-        help="Two float values for the x-range of the plot.")
+        help="Two float values for the x-range of the plot wrt the VBM.")
     parser_plot_energy.add_argument(
         "-y", "--y_range", dest="y_range", type=float, nargs='+', default=None,
         help="Two float values for the y-range of the plot.")
@@ -821,7 +821,8 @@ def main():
     parser_local_structure.add_argument(
         "--show_all", dest="show_all", action="store_true")
     parser_local_structure.add_argument(
-        "--cs", dest="compare_structure", action="store_true")
+        "--cs", dest="compare_structure", action="store_true",
+        help="Compare the structures between different charge states.")
     parser_local_structure.add_argument(
         "--defect_dirs", dest="defect_dirs", type=str, default=None, nargs="+",
         help="Directory names for the defect supercell result."

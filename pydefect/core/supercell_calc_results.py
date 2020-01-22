@@ -111,8 +111,10 @@ def analyze_procar(hob_index: dict,
                                            kpoint_index=k_index)
 
     # participation_ratio must be None for perfect supercell.
-    participation_ratio = defaultdict_to_dict(participation_ratio) \
-        if participation_ratio else None
+    if participation_ratio:
+        participation_ratio = defaultdict_to_dict(participation_ratio)
+    else:
+        participation_ratio = None
 
     orbital_character = defaultdict_to_dict(orbital_character)
     orbital_character_indices = defaultdict_to_dict(orbital_character_indices)

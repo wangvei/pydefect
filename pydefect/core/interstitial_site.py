@@ -86,6 +86,8 @@ class InterstitialSite(MSONable):
 
 # The followings are needed to keep order of dictionary for interstitial.yaml.
 # https://qiita.com/podhmo/items/aa954ee1dc1747252436
+# If yaml files show weird output, check quantities does not include numpy
+# variables (e.g., numpy.float)
 def represent_odict(dumper, instance):
     return dumper.represent_mapping('tag:yaml.org,2002:map', instance.items())
 

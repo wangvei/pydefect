@@ -289,7 +289,7 @@ def complex_defects(args):
     complex_defects_obj.site_set_to_yaml_file(yaml_filename=args.yaml)
 
 
-def defect_vasp_oba_set(args):
+def defect_vasp_set(args):
 
     flags = [str(s) for s in list(Element)]
     ldauu = list2dict(args.ldauu, flags)
@@ -423,7 +423,8 @@ def supercell_calc_results(args):
                     raise IOError("Parsing data in perfect failed.")
             else:
                 try:
-                    de = DefectEntry.load_json(os.path.join(d, args.defect_entry_name))
+                    de = DefectEntry.load_json(
+                        os.path.join(d, args.defect_entry_name))
 
                     dft_results = \
                         SupercellCalcResults.from_vasp_files(
@@ -658,7 +659,7 @@ def vasp_parchg_set(args):
     if args.kpoint_indices:
         user_incar_settings["KPUSE"] = args.kpoint_indices
 
-    oba_set = ViseInputSet.from_prev_calc(
+    vasp_set = ViseInputSet.from_prev_calc(
         dirname=args.read_dir,
         parse_calc_results=False,
         parse_incar=True,
@@ -667,7 +668,7 @@ def vasp_parchg_set(args):
         files_to_transfer={"WAVECAR": "L"},
         user_incar_settings=user_incar_settings)
 
-    oba_set.write_input(args.write_dir)
+    vasp_set.write_input(args.write_dir)
 
 
 def local_structure(args):
@@ -687,10 +688,12 @@ def local_structure(args):
         defect_structure = DefectStructure.from_defect(defect)
         print("-" * 80)
         print(defect_structure.show_displacements(all_atoms=args.show_all))
+        print("")
 
     if args.compare_structure:
         print("-" * 80)
         print(defect_structure_matcher(d_list))
+        print("")
 
 
 def concentration(args):
