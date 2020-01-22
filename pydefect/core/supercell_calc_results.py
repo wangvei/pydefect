@@ -14,7 +14,7 @@ from pydefect.core.defect_entry import DefectEntry
 from pydefect.core.error_classes import NoConvergenceError, StructureError
 from pydefect.util.logger import get_logger
 from pydefect.util.structure_tools import (
-    get_displacements, get_min_distance, min_distance_from_coords)
+    get_displacements, min_distance_from_coords)
 from pydefect.util.tools import (
     spin_key_to_str, str_key_to_spin, parse_file, defaultdict_to_dict,
     mod_defaultdict)
@@ -33,95 +33,115 @@ __maintainer__ = "Yu Kumagai"
 logger = get_logger(__name__)
 
 
-def analyze_procar(hob_index: dict,
-                   procar: Procar,
-                   eigenvalues: dict,
-                   structure: Structure,
-                   neighboring_sites: list) -> Tuple[dict, dict, dict, dict]:
-    """ Analyze Procar to investigate defect properties
+class ProcarDefectProperty(MSONable):
+    """ Class with DFT results for supercell systems. """
 
-    Args:
-        hob_index (dict):
-           Highest occupied band (HOB) index for each spin channel
-           {Spin.up: 100, Spin.down: 100}
-        procar (Procar):
-            Pymatgen Procar class object.
-        eigenvalues:
-           eigenvalues[Spin][k-index][band-index] = [energy, occupation]
-        structure:
-            Structure used for extracting symbol_set
-        neighboring_sites:
-            Atomic site indices neighboring a defect.
+    def __init__(self,
+                 band_edge_energies: dict,
+                 orbital_character: dict,
+                 orbital_character_indices: dict,
+                 participation_ratio: dict):
+        """
+        Args:
+            band_edge_energies (dict):
+                Averaged band energy over k-space as functions of spin and
+                band_edge.
+            orbital_character (dict):
+                Orbital character at an eigenstate of spin, band_edge
+                (="hob" or "lub"), and energy_position = (="top" or "bottom")
+                ex. {Spin.up: {"hob": {"top": {"Mg": {"s": 0.1, ...},
+                                               "O": {...},..
+                               "lub": {...},
+                     Spin.down: {...}}
+            orbital_character_indices (dict):
+                Band indices used for orbital_character.
+            participation_ratio (dict):
+               Participation ratio averaged over k-space as function of Spin and
+               band_edge.
+        """
+        self.band_edge_energies = band_edge_energies
+        self.orbital_character = orbital_character
+        self.orbital_character_indices = orbital_character_indices
+        self.participation_ratio = participation_ratio
 
-    Return:
-        Tuple of the following dict.
+    @classmethod
+    def analyze_procar(cls,
+                       hob_index: dict,
+                       procar: Procar,
+                       eigenvalues: dict,
+                       structure: Structure,
+                       neighboring_sites: list
+                       ) -> "ProcarDefectProperty":
+        """ Analyze Procar to investigate defect properties
 
-        band_edge_energies (dict):
-            Averaged band energy over k-space as function of spin and band_edge
-        orbital_character (dict):
-            Orbital character at an eigenstate of spin, band_edge
-            (="hob" or "lub"), and energy_position = (="top" or "bottom")
-            ex. {Spin.up: {"hob": {"top": {"Mg": {"s": 0.1, ...}, "O": {...},..
-                           "lub": {...},
-                 Spin.down: {...}}
-        participation_ratio (dict):
-           Participation ratio averaged over k-space as function of Spin and
-           band_edge.
-    """
+        Args:
+            hob_index (dict):
+               Highest occupied band (HOB) index for each spin channel
+               {Spin.up: 100, Spin.down: 100}
+            procar (Procar):
+                Pymatgen Procar class object.
+            eigenvalues:
+               eigenvalues[Spin][k-index][band-index] = [energy, occupation]
+            structure:
+                Structure used for extracting symbol_set
+            neighboring_sites:
+                Atomic site indices neighboring a defect.
+        """
 
-    edge_energies = mod_defaultdict(depth=3)
-    orbital_character = mod_defaultdict(depth=3)
-    orbital_character_indices = mod_defaultdict(depth=3)
-    participation_ratio = mod_defaultdict(depth=2)
+        band_edge_energies = mod_defaultdict(depth=3)
+        orbital_character = mod_defaultdict(depth=3)
+        orbital_character_indices = mod_defaultdict(depth=3)
+        participation_ratio = mod_defaultdict(depth=2)
 
-    for spin in eigenvalues.keys():
-        # index i is used to increment band index from hob to lub
-        for i, band_edge in enumerate(["hob", "lub"]):
+        for spin in eigenvalues.keys():
+            # index i is used to increment band index from hob to lub
+            for i, band_edge in enumerate(["hob", "lub"]):
 
-            # The band index of "lub" is incremented from "hob" by 1.
-            band_index = hob_index[spin] + i
+                # The band index of LUB is incremented from HOB by 1.
+                band_index = hob_index[spin] + i
 
-            # participation_ratio is not calculated for perfect supercell.
-            if neighboring_sites:
-                participation_ratio[spin][band_edge] = \
-                    calc_participation_ratio(
-                        procar, spin, band_index, neighboring_sites)
+                # participation_ratio is not calculated for perfect supercell.
+                if neighboring_sites:
+                    participation_ratio[spin][band_edge] = \
+                        calc_participation_ratio(
+                            procar, spin, band_index, neighboring_sites)
 
-            top_eigenvalue = np.amax(eigenvalues[spin][:, band_index, 0])
-            edge_energies[spin][band_edge]["top"] = top_eigenvalue
-            top_k_index = int(np.where(
-                eigenvalues[spin][:, band_index, 0] == top_eigenvalue)[0][0])
+                top_eigenvalue = np.amax(eigenvalues[spin][:, band_index, 0])
+                band_edge_energies[spin][band_edge]["top"] = top_eigenvalue
+                top_k_index = int(
+                    np.where(eigenvalues[spin][:, band_index, 0]
+                             == top_eigenvalue)[0][0])
 
-            bottom_eigenvalue = np.amin(eigenvalues[spin][:, band_index, 0])
-            edge_energies[spin][band_edge]["bottom"] = bottom_eigenvalue
-            bottom_k_index = int(np.where(
-                eigenvalues[spin][:, band_index, 0] == bottom_eigenvalue)[0][0])
+                bottom_eigenvalue = np.amin(eigenvalues[spin][:, band_index, 0])
+                band_edge_energies[spin][band_edge]["bottom"] \
+                    = bottom_eigenvalue
+                bottom_k_index = int(
+                    np.where(eigenvalues[spin][:, band_index, 0]
+                             == bottom_eigenvalue)[0][0])
 
-            for energy_position, k_index \
-                    in zip(["top", "bottom"], [top_k_index, bottom_k_index]):
+                for energy_position, k_index in \
+                        zip(["top", "bottom"], [top_k_index, bottom_k_index]):
 
-                orbital_character_indices[spin][band_edge][energy_position] = \
-                    {"band_index": band_index, "k_index": k_index}
+                    orbital_character_indices[spin][band_edge][energy_position] = \
+                        {"band_index": band_index, "k_index": k_index}
 
-                orbital_character[spin][band_edge][energy_position] = \
-                    calc_orbital_character(procar=procar,
-                                           structure=structure,
-                                           spin=spin,
-                                           band_index=band_index,
-                                           kpoint_index=k_index)
+                    orbital_character[spin][band_edge][energy_position] = \
+                        calc_orbital_character(procar=procar,
+                                               structure=structure,
+                                               spin=spin,
+                                               band_index=band_index,
+                                               kpoint_index=k_index)
 
-    # participation_ratio must be None for perfect supercell.
-    if participation_ratio:
-        participation_ratio = defaultdict_to_dict(participation_ratio)
-    else:
-        participation_ratio = None
+        # participation_ratio must be None for perfect supercell.
+        if participation_ratio:
+            participation_ratio = defaultdict_to_dict(participation_ratio)
+        else:
+            participation_ratio = None
 
-    orbital_character = defaultdict_to_dict(orbital_character)
-    orbital_character_indices = defaultdict_to_dict(orbital_character_indices)
-    edge_energies = defaultdict_to_dict(edge_energies)
-
-    return (edge_energies, orbital_character, orbital_character_indices,
-            participation_ratio)
+        return cls(defaultdict_to_dict(band_edge_energies),
+                   defaultdict_to_dict(orbital_character),
+                   defaultdict_to_dict(orbital_character_indices),
+                   participation_ratio)
 
 
 class SupercellCalcResults(MSONable):
@@ -220,11 +240,13 @@ class SupercellCalcResults(MSONable):
         self.orbital_character_indices = orbital_character_indices
         self.participation_ratio = participation_ratio
 
+        self.manually_set_defect_center = None
+
     def __repr__(self):
         outs = [f"total energy (eV): {self.total_energy}",
                 f"total total_magnetization (mu_B): {self.total_magnetization}",
-                f"vbm: {self.vbm}",
-                f"cbm: {self.cbm}",
+                f"VBM: {self.vbm}",
+                f"CBM: {self.cbm}",
                 f"site_symmetry: {self.site_symmetry}",
                 f"volume: {self.volume}",
                 f"Fermi level (eV): {self.fermi_level}",
@@ -328,10 +350,8 @@ class SupercellCalcResults(MSONable):
                                               center,
                                               defect_entry.anchor_atom_index)
         # procar related
-        if not procar:
-            band_edge_energies = orbital_character = \
-                orbital_character_indices = participation_ratio = None
-        else:
+        kwargs = {}
+        if procar:
             procar = parse_file(Procar, Path(directory_path) / procar)
             # The k-point indices at the band edges in defect calculations.
             # hob (lub) = highest (lowest) (un)occupied state
@@ -340,10 +360,12 @@ class SupercellCalcResults(MSONable):
             down_index = round((outcar.nelect - (magnetization + 0.1)) / 2) - 1
             hob_index = {Spin.up: up_index, Spin.down: down_index}
 
-            (band_edge_energies, orbital_character, orbital_character_indices,
-             participation_ratio) = \
+            prop = ProcarDefectProperty. \
                 analyze_procar(hob_index, procar, vasprun.eigenvalues,
                                final_structure, neighboring_sites)
+            for k, v in prop.as_dict().items():
+                if k[0] != "@":
+                    kwargs[k] = v
 
         return cls(final_structure=final_structure,
                    site_symmetry=site_symmetry,
@@ -362,10 +384,7 @@ class SupercellCalcResults(MSONable):
                    defect_coords=defect_coords,
                    displacements=displacements,
                    neighboring_sites_after_relax=neighboring_sites,
-                   band_edge_energies=band_edge_energies,
-                   orbital_character=orbital_character,
-                   orbital_character_indices=orbital_character_indices,
-                   participation_ratio=participation_ratio)
+                   **kwargs)
 
     @classmethod
     def from_dict(cls, d):

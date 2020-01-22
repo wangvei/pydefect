@@ -5,7 +5,7 @@ import tempfile
 import numpy as np
 from pydefect.core.defect_entry import DefectEntry
 from pydefect.core.supercell_calc_results import (
-    analyze_procar, SupercellCalcResults)
+     ProcarDefectProperty, SupercellCalcResults)
 from pymatgen.io.vasp.outputs import Vasprun, Procar
 from pymatgen.electronic_structure.core import Spin
 from pydefect.util.testing import PydefectTest
@@ -15,7 +15,7 @@ __author__ = "Yu Kumagai"
 __maintainer__ = "Yu Kumagai"
 
 
-class AnalyzeProcarTest(PydefectTest):
+class ProcarDefectPropertyTest(PydefectTest):
     def setUp(self) -> None:
         """ Va_O in the 2+ charge state in 64-atom supercells"""
         # TODO: Fix the hob_index to 123 and change related values.
@@ -29,20 +29,19 @@ class AnalyzeProcarTest(PydefectTest):
         structure = self.get_structure_by_name("MgO64atoms-Va_O1_2")
         neighboring_sites = [0, 4, 16, 17, 24, 26]
 
-        (self.band_edge_energies, self.orbital_character,
-         self.orbital_character_indices, self.participation_ratio) \
-            = analyze_procar(hob_index=hob_index,
-                             procar=procar,
-                             eigenvalues=eigenvalues,
-                             structure=structure,
-                             neighboring_sites=neighboring_sites)
+        self.prop = ProcarDefectProperty.analyze_procar(
+            hob_index=hob_index,
+            procar=procar,
+            eigenvalues=eigenvalues,
+            structure=structure,
+            neighboring_sites=neighboring_sites)
 
     def test_band_edge_energies(self):
         expected = {  Spin.up: {'hob': {'top': 5.5148, 'bottom': 5.5148},
                                 'lub': {'top': 8.6662, 'bottom': 8.6662}},
                     Spin.down: {'hob': {'top': 5.5148, 'bottom': 5.5148},
                                 'lub': {'top': 8.6662, 'bottom': 8.6662}}}
-        self.assertEqual(expected, self.band_edge_energies)
+        self.assertEqual(expected, self.prop.band_edge_energies)
 
     def test_orbital_character(self):
         expected = \
@@ -65,13 +64,13 @@ class AnalyzeProcarTest(PydefectTest):
         expected[Spin.down] = deepcopy(expected[Spin.up])
         for k1, k2, k3, k4, k5, v in flatten_dict(expected):
             self.assertAlmostEqual(
-                v, self.orbital_character[k1][k2][k3][k4][k5], 3)
+                v, self.prop.orbital_character[k1][k2][k3][k4][k5], 3)
 
     def test_participation_ratio(self):
         expected = {  Spin.up: {'hob': 0.235294, 'lub': 0.060852},
                     Spin.down: {'hob': 0.235294, 'lub': 0.060852}}
         for k1, k2, v in flatten_dict(expected):
-            self.assertAlmostEqual(v, self.participation_ratio[k1][k2], 5)
+            self.assertAlmostEqual(v, self.prop.participation_ratio[k1][k2], 5)
 
 
 class SupercellDftResultsTest(PydefectTest):
