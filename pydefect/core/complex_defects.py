@@ -123,7 +123,7 @@ class ComplexDefects(MSONable):
             d = {"structure": structure}
 
         with open(yaml_filename, "r") as f:
-            d["complex_defects"] = yaml.load(f)
+            d["complex_defects"] = yaml.load(f, Loader=yaml.FullLoader)
 
         return cls.from_dict(d)
 
