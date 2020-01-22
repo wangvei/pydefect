@@ -58,7 +58,7 @@ class InterstitialSite(MSONable):
         self.site_symmetry = site_symmetry
         self.multiplicity = multiplicity
         self.coordination_distances = coordination_distances
-        self.cutoff = cutoff
+        self.cutoff = float(cutoff)
         self.method = method
 
     def __repr__(self):
@@ -166,7 +166,7 @@ class InterstitialSiteSet(MSONable):
             d = {"structure": dposcar}
 
         with open(yaml_filename, "r") as f:
-            d["interstitial_site_set"] = yaml.load(f, Loader=yaml.FullLoader)
+            d["interstitial_site_set"] = yaml.load(f, Loader=yaml.Loader)
 
         return cls.from_dict(d)
 
