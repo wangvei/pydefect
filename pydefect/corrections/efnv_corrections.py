@@ -14,13 +14,17 @@ from monty.json import MontyEncoder, MSONable
 from monty.serialization import loadfn
 from numpy import cos, sqrt, dot, cross, pi, exp, mean
 from numpy.linalg import norm
+
 from pydefect.core.config import COLOR
 from pydefect.core.defect_entry import DefectEntry
 from pydefect.core.supercell_calc_results import SupercellCalcResults
 from pydefect.core.unitcell_calc_results import UnitcellCalcResults
 from pydefect.corrections.corrections import Correction
+from pydefect.util.logger import get_logger
+
 from pymatgen.core import Structure
 from pymatgen.core.lattice import Lattice
+
 from scipy.constants import elementary_charge, epsilon_0
 from scipy.special import erfc
 from scipy.stats import mstats
@@ -32,6 +36,8 @@ with finite supercell-size dependencies.
 
 __author__ = "Yu Kumagai, Akira Takahashi"
 __maintainer__ = "Yu Kumagai"
+
+logger = get_logger(__name__)
 
 
 def calc_max_sphere_radius(lattice_vectors: np.ndarray) -> float:
@@ -351,7 +357,8 @@ class ExtendedFnvCorrection(Correction, MSONable):
     def max_sphere_radius(self) -> float:
         return calc_max_sphere_radius(self.lattice_matrix)
 
-    def plot_distance_vs_potential(self, file_name: str,
+    def plot_distance_vs_potential(self,
+                                   file_name: str,
                                    yrange: Optional[list] = None) -> None:
         """Plotter for the potential as a function of distance."""
         property_without_defect = list(zip(self.symbols_without_defect,
@@ -381,7 +388,7 @@ class ExtendedFnvCorrection(Correction, MSONable):
                                     - np.array(self.model_pot))
 
         ax.scatter(self.distances_from_defect, diff_model_electrostatic,
-                   marker="o", label="model - first principles",
+                   marker="o", label="model - first principles calc",
                    facecolors='none', edgecolors=COLOR[-2])
 
         # potential difference
@@ -403,6 +410,7 @@ class ExtendedFnvCorrection(Correction, MSONable):
                            defect_dft: SupercellCalcResults,
                            perfect_dft: SupercellCalcResults,
                            unitcell_dft: UnitcellCalcResults,
+                           defect_center: list = None,
                            ewald: Union[str, Ewald] = None,
                            to_filename: str = "ewald.json"):
         """ Estimate correction energy for point defect formation energy.
@@ -450,7 +458,11 @@ class ExtendedFnvCorrection(Correction, MSONable):
         charge = defect_entry.charge
         lattice = defect_dft.final_structure.lattice
         volume = lattice.volume
-        defect_coords = defect_entry.defect_center_coords
+        if defect_center:
+            logger.warning(f"Defect center {defect_center} is explicitly set."
+                           f"User needs to know what's going on.")
+        else:
+            defect_coords = defect_entry.defect_center_coords
 
         distances_from_defect = \
             deepcopy(defect_dft.displacements["final_distances"])

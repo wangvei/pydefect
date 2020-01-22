@@ -441,7 +441,8 @@ def supercell_calc_results(args):
                     logger.warning(f"Parsing data in {d} failed.")
                     continue
 
-            dft_results.to_json_file(filename=os.path.join(d, "dft_results.json"))
+            dft_results.to_json_file(
+                filename=os.path.join(d, "dft_results.json"))
         else:
             logger.warning(f"{d} does not exist, so nothing is done.")
 
@@ -457,7 +458,8 @@ def efnv_correction(args):
         for directory in dirs:
             json_file = os.path.join(directory, "correction.json")
             c = ExtendedFnvCorrection.load_json(json_file)
-            c.plot_distance_vs_potential(os.path.join(directory, "potential.pdf"),
+            c.plot_distance_vs_potential(os.path.join(directory,
+                                                      "potential.pdf"),
                                          args.y_range)
         return
 
@@ -496,7 +498,8 @@ def efnv_correction(args):
             continue
 
         logger.info(f"correcting {directory} ...")
-        entry = DefectEntry.load_json(os.path.join(directory, "defect_entry.json"))
+        entry = DefectEntry.load_json(os.path.join(directory,
+                                                   "defect_entry.json"))
         defect_dft_data = SupercellCalcResults.load_json(
             os.path.join(directory, "dft_results.json"))
 
@@ -505,6 +508,7 @@ def efnv_correction(args):
                                defect_dft=defect_dft_data,
                                perfect_dft=perfect_dft_data,
                                unitcell_dft=unitcell_dft_data,
+                               defect_center=args.defect_center,
                                ewald=args.ewald_json)
 
         c.plot_distance_vs_potential(os.path.join(directory, "potential.pdf"),

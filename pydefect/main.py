@@ -620,6 +620,9 @@ def main():
         "--force_overwrite", dest="force_overwrite", action="store_true",
         help="Overwrite already existing correction.json.")
     parser_correction.add_argument(
+        "--center", dest="defect_center", nargs="+", type=float, default=None,
+        help="Set defect center in fractional coordinates.")
+    parser_correction.add_argument(
         "--json_file", dest="json_file", default="correction.json", type=str,
         help="Json file for the correction.")
     parser_correction.add_argument(
@@ -867,23 +870,6 @@ def main():
 
     parser_concentration.set_defaults(func=concentration)
 
-    # # -- refined_structure_vasp_oba_set ---------------------------------------
-    # parser_rs_vasp_oba_set = subparsers.add_parser(
-    #     name="refined_structure_vasp_oba_sst",
-    #     description="Tools for constructing vasp set for refined structures",
-    #     formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-    #     aliases=['rsvos'])
-
-    # parser_rs_vasp_oba_set.add_argument(
-    #     "--defect_dirs", dest="defect_dirs", nargs="+", type=str,
-    #     help="Directory names for the defect supercell results. "
-    #          "defect_entry.json, dft_results.json, and correction.json files "
-    #          "are required in each directory.")
-    # parser_rs_vasp_oba_set.add_argument(
-    #     "--dft_results", dest="dft_results", type=str,
-    #     default="dft_results.json")
-
-    # parser_rs_vasp_oba_set.set_defaults(func=make_refined_structure)
 
     args = parser.parse_args()
     args.func(args)
