@@ -57,6 +57,8 @@ class ClusterDefectsTest(PydefectTest):
     def test_yaml(self):
         tmp_file = tempfile.NamedTemporaryFile().name
         self.cu2o.site_set_to_yaml_file(tmp_file)
+        with open(tmp_file) as f:
+            print(f.read())
         self.assertTrue(filecmp.cmp("expected_cluster_defects.yaml", tmp_file))
 
     def test_msonable(self):

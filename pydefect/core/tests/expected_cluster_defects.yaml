@@ -1,7 +1,12 @@
 split:
-  removed_atom_indices: [9, 31]
+  removed_atom_indices:
+  - 9
+  - 31
   inserted_atoms:
-  - coords: [0.5, 0.5, 0.625]
+  - coords:
+    - 0.5
+    - 0.5
+    - 0.625
     element: Cu
   point_group: mm2
   multiplicity: 96
