@@ -18,7 +18,7 @@ from pydefect.analysis.defect_eigenvalues import DefectEigenvalue
 from pydefect.analysis.defect_energies import DefectEnergies
 from pydefect.analysis.defect_structure import (
     DefectStructure, defect_structure_matcher)
-from pydefect.core.complex_defects import ComplexDefects
+from pydefect.core.cluster_defects import ClusterDefects
 from pydefect.core.defect_entry import DefectEntry
 from pydefect.core.error_classes import StructureError
 from pydefect.core.interstitial_site import (
@@ -248,12 +248,12 @@ def interstitial(args):
         interstitial_set.site_set_to_yaml_file(yaml_filename=args.yaml)
 
 
-def complex_defects(args):
+def cluster_defects(args):
     try:
-        complex_defects_obj = ComplexDefects.from_files(args.dposcar, args.yaml)
+        complex_defects_obj = ClusterDefects.from_files(args.dposcar, args.yaml)
     except FileNotFoundError:
         structure = Structure.from_file(args.dposcar)
-        complex_defects_obj = ComplexDefects(structure=structure)
+        complex_defects_obj = ClusterDefects(structure=structure)
 
     if (args.inserted_elements and not args.inserted_coords) or \
             (not args.inserted_elements and args.inserted_coords):

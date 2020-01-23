@@ -7,12 +7,12 @@ from typing import Union
 from pydefect.core.defect_entry import DefectEntry
 from pydefect.core.interstitial_site import InterstitialSiteSet
 from pydefect.core.supercell_calc_results import SupercellCalcResults
-from pydefect.core.complex_defects import ComplexDefects
+from pydefect.core.cluster_defects import ClusterDefects
 from pydefect.input_maker.defect_initial_setting import DefectInitialSetting
 from pydefect.input_maker.supercell_maker import Supercells
 from pydefect.core.config import DEFECT_KPT_DENSITY
 from pydefect.main_functions import (
-    initial_setting, interstitial, complex_defects,
+    initial_setting, interstitial, cluster_defects,
     defect_vasp_set, defect_entry, supercell_calc_results,
     unitcell_calc_results, efnv_correction, defects, plot_energy,
     parse_eigenvalues, vasp_parchg_set, local_structure, concentration)
@@ -324,60 +324,60 @@ def main():
 
     parser_interstitial.set_defaults(func=interstitial)
 
-    # -- complex_defects -------------------------------------------------------
-    parser_complex_defects = subparsers.add_parser(
-        name="complex_defects",
-        description="Tools for handling the complex defects.",
+    # -- cluster_defects -------------------------------------------------------
+    parser_cluster_defects = subparsers.add_parser(
+        name="cluster_defects",
+        description="Tools for handling the cluster defects.",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
         aliases=['cd'])
 
-    cd_defaults = get_default_args(ComplexDefects.add_defect)
-    cd_defaults.update(get_default_args(ComplexDefects.from_files))
+    cd_defaults = get_default_args(ClusterDefects.add_defect)
+    cd_defaults.update(get_default_args(ClusterDefects.from_files))
     simple_override(cd_defaults, ["symprec", "angle_tolerance"])
 
-    parser_complex_defects.add_argument(
+    parser_cluster_defects.add_argument(
         "--yaml", dest="yaml", type=str, default=cd_defaults["yaml_filename"],
-        help="complex_defect.yaml file name.")
-    parser_complex_defects.add_argument(
+        help="cluster_defect.yaml file name.")
+    parser_cluster_defects.add_argument(
         "--dposcar", dest="dposcar", type=str, default=cd_defaults["structure"],
         help="DPOSCAR-type file name.")
-    parser_complex_defects.add_argument(
+    parser_cluster_defects.add_argument(
         "--defect_in", dest="defect_in", default="defect.in", type=str,
         help="defect.in-type file name.")
-    parser_complex_defects.add_argument(
+    parser_cluster_defects.add_argument(
         "-r", dest="removed_atom_indices", nargs="+", type=int,
         help="Removed atom indices (beginning at 0) from the pristine supercell"
-             " when constructing a complex defect.")
-    parser_complex_defects.add_argument(
+             " when constructing a cluster defect.")
+    parser_cluster_defects.add_argument(
         "-i", dest="inserted_elements", nargs="+", type=str,
-        help="Inserted atom elements when constructing a complex defect."
+        help="Inserted atom elements when constructing a cluster defect."
              "E.g., Mg Al")
-    parser_complex_defects.add_argument(
+    parser_cluster_defects.add_argument(
         "-c", dest="inserted_coords", nargs="+", type=float,
-        help="Inserted atom coordinates when constructing a complex defect."
+        help="Inserted atom coordinates when constructing a cluster defect."
              "E.g., 0 0 0  0.25 0.25 0.25")
-    parser_complex_defects.add_argument(
+    parser_cluster_defects.add_argument(
         "--name", dest="name", type=str, help="Complex defect name.")
-    parser_complex_defects.add_argument(
+    parser_cluster_defects.add_argument(
         "--extreme_charge_state", dest="extreme_charge_state", type=int,
-        help="Extreme charge state of the complex defect. For example, in case"
+        help="Extreme charge state of the cluster defect. For example, in case"
              "of V_Na + V_O, the extreme charge state would be "
              "(-1) + (+2) = 1.")
-    parser_complex_defects.add_argument(
+    parser_cluster_defects.add_argument(
         "--annotation", dest="annotation", type=str, default=None,
-        help="Annotation of the complex defect.")
-    parser_complex_defects.add_argument(
+        help="Annotation of the cluster defect.")
+    parser_cluster_defects.add_argument(
         "--symprec", dest="symprec", type=float,
         default=cd_defaults["symprec"],
         help="Set length precision used for symmetry analysis [A].")
-    parser_complex_defects.add_argument(
+    parser_cluster_defects.add_argument(
         "--angle_tolerance", dest="angle_tolerance", type=float,
         default=cd_defaults["angle_tolerance"],
         help="Set angle precision used for symmetry analysis.")
 
     del cd_defaults
 
-    parser_complex_defects.set_defaults(func=complex_defects)
+    parser_cluster_defects.set_defaults(func=cluster_defects)
 
     # -- defect_vasp_set_maker ------------------------------------------------
     parser_defect_vasp_set = subparsers.add_parser(
