@@ -47,7 +47,7 @@ class ProcarDefectProperty(MSONable):
                 Averaged band energy over k-space as functions of spin and
                 band_edge.
             orbital_character (dict):
-                Orbital character at an eigenstate of spin, band_edge
+                Orbital character at the eigenstate of each spin, band_edge
                 (="hob" or "lub"), and energy_position = (="top" or "bottom")
                 ex. {Spin.up: {"hob": {"top": {"Mg": {"s": 0.1, ...},
                                                "O": {...},..
@@ -57,7 +57,7 @@ class ProcarDefectProperty(MSONable):
                 Band indices used for orbital_character.
             participation_ratio (dict):
                Participation ratio averaged over k-space as function of Spin and
-               band_edge.
+               band_edge determined from the neighboring sites.
         """
         self.band_edge_energies = band_edge_energies
         self.orbital_character = orbital_character
@@ -77,7 +77,9 @@ class ProcarDefectProperty(MSONable):
         Args:
             hob_index (dict):
                Highest occupied band (HOB) index for each spin channel
-               {Spin.up: 100, Spin.down: 100}
+               {Spin.up: 100, Spin.down: 100}.
+               Note that the index of the lowest unoccupied band (LUB) is
+               incremented from HOB index by one.
             procar (Procar):
                 Pymatgen Procar class object.
             eigenvalues:
@@ -85,7 +87,8 @@ class ProcarDefectProperty(MSONable):
             structure:
                 Structure used for extracting symbol_set
             neighboring_sites:
-                Atomic site indices neighboring a defect.
+                Atomic site indices neighboring a defect determining the
+                participation ratio. When None, participation_ratio is None.
         """
 
         band_edge_energies = mod_defaultdict(depth=3)
@@ -240,7 +243,7 @@ class SupercellCalcResults(MSONable):
         self.orbital_character_indices = orbital_character_indices
         self.participation_ratio = participation_ratio
 
-        self.manually_set_defect_center = None
+#        self.manually_set_defect_center = None
 
     def __repr__(self):
         outs = [f"total energy (eV): {self.total_energy}",

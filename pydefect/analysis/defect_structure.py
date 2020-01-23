@@ -16,17 +16,21 @@ __maintainer__ = "Yu Kumagai"
 
 logger = get_logger(__name__)
 
+"""
+This module provides a class used to analyze the atomic structures around 
+defects.
+"""
+
 
 class DefectStructure(MSONable):
     """ A class related to local structures around defect
 
     Attributes:
         initial_local_structure (Structure)
-            Initial local structure with only neighboring atoms determined after
-            structure optimization.
+            Initial local structure with only neighboring atoms where the
+            neighbors are determined at the final structure.
         final_local_structure (Structure)
-            Final local structure with only neighboring atoms determined after
-            structure optimization.
+            Same as initial_local_structure but for the final structure.
     """
 
     def __init__(self,
@@ -66,13 +70,16 @@ class DefectStructure(MSONable):
                 + final_distances:
                     Distances from a defect in the final structure.
                 + displacement_vectors:
-                    Displacement vectors of atoms from initial to final structures.
+                    Displacement vectors of atoms from initial to final
+                    structures.
                 + displacement_norms:
                     Norms of displacement vectors.
                 + initial_vectors:
-                    Vectors from a defect position to atoms in the initial supercell.
+                    Vectors from a defect position to atoms in the initial
+                    supercell.
                 + final_vectors:
-                    Vectors from a defect position to atoms in the final supercell.
+                    Vectors from a defect position to atoms in the final
+                    supercell.
                 + defect_migration_distance:
                     Distance the defect migrates defined only for interstitials,
                     antisites, and substituted defects.
@@ -109,6 +116,7 @@ class DefectStructure(MSONable):
         self.defect_center_coords = defect_center_coords
         self.neighboring_sites = neighboring_sites
 
+        # distant sites from the defect in the *final_structure*.
         distant_sites = [i for i in range(len(self.final_structure))
                          if i not in self.neighboring_sites]
 

@@ -99,7 +99,7 @@ class DefectEigenvalue(MSONable):
             defect (Defect):
                 Defect namedtuple object of a defect supercell DFT calculation
         """
-        # Note: vbm, cbm, perfect_vbm, perfect_cbm are in absolute energy.
+        # Note: vbm, cbm, perfect_vbm, perfect_cbm are in absolute energy scale.
         return cls(name=defect.name,
                    charge=defect.charge,
                    annotation=defect.annotation,
@@ -118,7 +118,8 @@ class DefectEigenvalue(MSONable):
              y_range: Optional[str] = None,
              title: Optional[str] = None,
              filename: Optional[str] = None) -> None:
-        """ Plots the defect eigenvalues.
+        """Plots the defect eigenvalues.
+
         Args:
             y_range (list):
                 1x2 list for determining y energy range.
@@ -126,6 +127,9 @@ class DefectEigenvalue(MSONable):
                 Title of the plot
             filename (str):
                 Filename when the plot is saved; otherwise show plot.
+
+        Returns:
+            Matplotlib pyplot object.
         """
         num_figure = len(self.eigenvalues.keys())
         fig, axs = plt.subplots(nrows=1, ncols=num_figure, sharey='all')
@@ -140,7 +144,7 @@ class DefectEigenvalue(MSONable):
         if y_range is None:
             y_range = [self.supercell_vbm - 3, self.supercell_cbm + 3]
 
-        last_k_index = self.add_eigenvalues_to_plot(axs)
+        last_k_index = self._add_eigenvalues_to_plot(axs)
 
         x_labels = ["\n".join([str(i) for i in k]) for k in self.kpoint_coords]
 
@@ -173,7 +177,7 @@ class DefectEigenvalue(MSONable):
 
         plt.savefig(filename) if filename else plt.show()
 
-    def add_eigenvalues_to_plot(self, axs):
+    def _add_eigenvalues_to_plot(self, axs):
 
         k_index = 0
         for i, s in enumerate(self.eigenvalues.keys()):

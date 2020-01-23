@@ -48,6 +48,9 @@ def hole_concentration(temperature: float,
             Determines up to where electrons occupy the dos from the vbm.
             Note that the total dos near the band edges is not so accurate
             compared to band structure, so threshold is needed.
+
+    Returns:
+        Float of the hole concentration in cm-3.
     """
     doses, energies = total_dos
     energy_range = energies[-1] - energies[0]
@@ -85,6 +88,9 @@ def electron_concentration(temperature: float,
             Determines up to where electrons occupy the dos from the vbm.
             Note that the total dos near the band edges is not so accurate
             compared to band structure, so threshold is needed.
+
+    Returns:
+        Float of the electron concentration in cm-3.
     """
     doses, energies = total_dos
 
@@ -134,8 +140,8 @@ def calc_concentration(defect_energies: Optional[dict],
     Return:
         concentration (dict):
             Defect concentration in cm-3. concentration[name][charge]
-        Note that "p" and "n" are special and mean the carrier hole and
-        electron concentration in cm-3.
+        Note that "p" and "n" have special meaning as the carrier hole and
+        electron concentration in cm-3, respectively.
     """
     concentrations = mod_defaultdict(depth=2)
 
