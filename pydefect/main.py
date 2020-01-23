@@ -541,7 +541,7 @@ def main():
         help="Not check whether the defects are shallow.")
     parser_supercell_results.add_argument(
         "--center", dest="defect_center", nargs="+", type=float,
-        help="Set defect center in fractional coordinates.")
+        help="Set defect center in fractional coordinates or atomic index.")
     parser_supercell_results.add_argument(
         "-de", dest="defect_entry_name", type=str, default="defect_entry.json")
     parser_supercell_results.add_argument(

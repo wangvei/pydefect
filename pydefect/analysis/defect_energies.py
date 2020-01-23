@@ -520,8 +520,13 @@ class DefectEnergies(MSONable):
         ax.set_position([box.x0, box.y0, box.width * 0.9, box.height * 0.9])
         ax.legend(bbox_to_anchor=(1, 0.5), loc='center left')
 
-        plt.rcParams["xtick.direction"] = "in"
-        plt.rcParams["ytick.direction"] = "in"
+        ax.tick_params(
+            direction='in', bottom=True, top=True, left=True, right=True)
+
+        # change 0.0 to 0
+        from pydefect.util.matplotlib import formatter
+        ax.xaxis.set_major_formatter(formatter)
+        ax.yaxis.set_major_formatter(formatter)
 
         if compile:
             return plt, ax2

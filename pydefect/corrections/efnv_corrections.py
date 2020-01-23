@@ -6,7 +6,7 @@ from functools import reduce
 from itertools import product, groupby
 from math import sqrt, pow, ceil
 from operator import itemgetter
-from typing import Optional, Union, Tuple
+from typing import Optional, Union, Tuple, List
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -41,20 +41,28 @@ logger = get_logger(__name__)
 
 
 def calc_max_sphere_radius(lattice_vectors: np.ndarray) -> float:
-    # Calculate distances between two planes.
-    # (a_i x a_j) . a_k / |a_i . a_j|
+    """Calculate Maximum radius of a sphere fitting inside the unit cell.
+
+    Calculate three distances between two parallel planes using
+    (a_i x a_j) . a_k / |a_i . a_j|
+
+    Args:
+        lattice_vectors (np.ndarray): 3x3 lattice vectors.
+
+    Returns:
+        Float of the radius
+    """
     distances = np.zeros(3, dtype=float)
     for i in range(3):
         a_i_a_j = cross(lattice_vectors[i - 2], lattice_vectors[i - 1])
         a_k = lattice_vectors[i]
         distances[i] = abs(dot(a_i_a_j, a_k)) / norm(a_i_a_j)
-    # Maximum radius of a sphere fitting inside the unit cell.
     return max(distances) / 2.0
 
 
 def create_lattice_set(lattice_vectors: np.ndarray,
-                       max_length: float) -> list:
-    """ Return a set of lattice vectors within the max length.
+                       max_length: float) -> List[list]:
+    """Return a set of lattice vectors within the max length.
 
     Note that angles between any two axes are assumed to be between 60 and
     120 degrees.
@@ -63,8 +71,8 @@ def create_lattice_set(lattice_vectors: np.ndarray,
         lattice_vectors (np.ndarray): 3x3 matrix.
         max_length (float): Max length to search lattice set.
 
-    Return :
-        List of Cartesian vector of lattice points.
+    Returns:
+        List of list of Cartesian vectors of lattice points.
     """
     max_int = [ceil(max_length / norm(lattice_vectors[i])) for i in range(3)]
     range_list = [range(-mi, mi + 1) for mi in max_int]
@@ -80,8 +88,8 @@ def create_lattice_set(lattice_vectors: np.ndarray,
 
 def calc_relative_potential(defect: SupercellCalcResults,
                             perfect: SupercellCalcResults,
-                            defect_entry: DefectEntry) -> list:
-    """ Return a list of relative site potential w.r.t. the perfect supercell.
+                            defect_entry: DefectEntry) -> List[float]:
+    """Return a list of relative site potential w.r.t. the perfect supercell.
 
     None is inserted for foreign atoms such as interstitials and substituted
     atoms.
@@ -94,6 +102,9 @@ def calc_relative_potential(defect: SupercellCalcResults,
             Usually it is for perfect supercell.
         defect_entry (DefectEntry):
             DefectEntry class object corresponding.
+
+    Returns:
+        List of floats showing relative potential.
     """
     mapping = defect_entry.atom_mapping_to_perfect
     relative_potential = list()
@@ -124,11 +135,17 @@ class Ewald(MSONable):
 
         Args:
             lattice (Lattice):
+                The given lattice.
             dielectric_tensor (3x3 np.array):
+                Static dielectric tensor where the directions are compatible
+                with the lattice.
             ewald_param (float):
+                A parameter used for evaluating Ewald sum.
             prod_cutoff_fwhm (float):
             real_neighbor_lattices (list):
+                List of lattice vectors in real space.
             reciprocal_neighbor_lattices (list):
+                List of reciprocal lattice vectors.
         """
 
         self.lattice = lattice
@@ -388,21 +405,30 @@ class ExtendedFnvCorrection(Correction, MSONable):
                                     - np.array(self.model_pot))
 
         ax.scatter(self.distances_from_defect, diff_model_electrostatic,
-                   marker="o", label="model - first principles calc",
+                   marker="o", label="potential diff",
                    facecolors='none', edgecolors=COLOR[-2])
 
         # potential difference
         point_x = [self.max_sphere_radius, max(self.distances_from_defect)]
         point_y = [self.ave_pot_diff, self.ave_pot_diff]
+
+        ax.set_xlabel(r"Distance from a defect (${\rm \AA}$)", fontsize=15)
+        ax.set_ylabel("Electrostatic potential (V)", fontsize=15)
+
         ax.plot(point_x, point_y, c=(0, 0, 0), label="potential difference")
-        ax.legend(loc="upper left")
+        ax.legend(bbox_to_anchor=(1, 0.5), loc='center left')
+        ax.tick_params(
+            direction='in', bottom=True, top=True, left=True, right=True)
+
+        # change 0.0 to 0
+        from pydefect.util.matplotlib import formatter
+        ax.xaxis.set_major_formatter(formatter)
+#        ax.yaxis.set_major_formatter(formatter)
 
         if yrange:
             plt.ylim(yrange[0], yrange[1])
 
-        plt.title("Distance vs potential")
-
-        plt.savefig(file_name, format="pdf")
+        plt.savefig(file_name, format="pdf", transparent=True)
 
     @classmethod
     def compute_correction(cls,
@@ -424,6 +450,8 @@ class ExtendedFnvCorrection(Correction, MSONable):
                 Calculated defect DFT results for perfect supercell.
             unitcell_dft (UnitcellCalcResults):
                 UnitcellCalcResults object of the considering host.
+            defect_center (list):
+                Defect center in fractional coordinates.
             ewald (str / Ewald):
                 Ewald object or ewald.json filename.
             to_filename (str):
@@ -571,8 +599,10 @@ def calc_ewald_sum(ewald: Ewald,
 
 
 def constants_for_anisotropic_ewald_sum(
-        charge: int, ewald: Ewald, volume: float) -> Tuple[float, float,
-                                                           float, np.ndarray]:
+        charge: int,
+        ewald: Ewald,
+        volume: float
+) -> Tuple[float, float, float, np.ndarray]:
     """Derive some constants used for anisotropic Ewald sum.
 
     YK2014: Kumagai and Oba, PRB 89, 195205 (2014)

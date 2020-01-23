@@ -393,9 +393,8 @@ def supercell_calc_results(args):
         return
 
     if args.defect_center:
-        if not len(args.defect_center) == 3:
-            raise ValueError("The number of coordinates for defect center is "
-                             "not 3")
+        if len(args.defect_center) != 1 and len(args.defect_center) != 3:
+            raise ValueError("Length of the defect center is neither 1 or 3")
         results = SupercellCalcResults.load_json(args.json)
         results.defect_center = args.defect_center
         results.to_json_file(filename=args.json)
@@ -635,7 +634,10 @@ def plot_energy(args):
                                       show_transition_levels=args.show_tl,
                                       show_all_energies=args.show_all)
 
-    plt.savefig(args.save_file, format="pdf") if args.save_file else plt.show()
+    if args.save_file:
+        plt.savefig(args.save_file, format="pdf", transparent=True)
+    else:
+        plt.show()
 
 
 def parse_eigenvalues(args):
