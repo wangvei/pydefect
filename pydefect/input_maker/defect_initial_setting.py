@@ -8,7 +8,7 @@ from typing import Union, List, Optional, Tuple, Dict
 
 from monty.json import MontyEncoder, MSONable
 from monty.serialization import loadfn, dumpfn
-from pydefect.core.complex_defects import ComplexDefects
+from pydefect.core.cluster_defects import ClusterDefects
 from pydefect.core.config import (
     ELECTRONEGATIVITY_DIFFERENCE, DISPLACEMENT_DISTANCE, SYMMETRY_TOLERANCE,
     ANGLE_TOL, CUTOFF_FACTOR)
@@ -421,7 +421,7 @@ class DefectInitialSetting(MSONable):
 
         self.complex_defects = {}
         try:
-            complexes = ComplexDefects.from_files(
+            complexes = ClusterDefects.from_files(
                 self.structure, complex_defect_yaml).complex_defects
         except FileNotFoundError:
             complexes = {}
