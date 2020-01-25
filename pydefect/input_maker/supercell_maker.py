@@ -173,7 +173,7 @@ class Supercells:
             symprec (float):
                 Precision used for symmetry analysis in angstrom.
             angle_tolerance (float):
-                Angle tolerance for symmetry analysis in degree
+                Angle tolerance for symmetry analysis in degree.
         """
         primitive_cell, _ = \
             find_spglib_primitive(structure, symprec, angle_tolerance)
@@ -189,16 +189,22 @@ class Supercells:
             centering = symmetry_dataset["international"][0]
             based_trans_mat = tm_from_primitive_to_standard(centering)
             rhombohedral = False
+            tetragonal = sga.get_lattice_type() == "tetragonal"
             self.conventional_base = True
         else:
             based_trans_mat = np.identity(3, dtype="int8")
             rhombohedral = sga.get_lattice_type() == "rhombohedral"
+            tetragonal = False
+            if sga.get_lattice_type() == "tetragonal" \
+                    and symmetry_dataset["international"][0] == "P":
+                tetragonal = True
             self.conventional_base = False
 
         self.supercells = []
         # Isotropically incremented matrix one by one
         incremented_mat = np.identity(3, dtype="int8")
         trans_mat = based_trans_mat
+        multiplied_matrix = np.eye(3, dtype=int)
 
         for i in range(int(max_num_atoms / len(primitive_cell))):
             isotropy, angle = calc_isotropy(self.unitcell, trans_mat)
@@ -220,24 +226,42 @@ class Supercells:
                     rhombohedral_shape = "blunt"
 
             if rhombohedral_shape == "sharp":
-                multiplied_matrix = np.array([[ 1,  1, -1],
-                                              [-1,  1,  1],
-                                              [ 1, -1,  1]])
-                based_trans_mat = np.dot(multiplied_matrix, based_trans_mat)
+                m = np.array([[1,  1, -1], [-1,  1,  1], [1, -1,  1]])
+                multiplied_matrix = np.dot(multiplied_matrix, m)
             elif rhombohedral_shape == "blunt":
-                multiplied_matrix = np.array([[1, 1, 0],
-                                              [0, 1, 1],
-                                              [1, 0, 1]])
-                based_trans_mat = np.dot(multiplied_matrix, based_trans_mat)
+                m = np.array([[1, 1, 0], [0, 1, 1], [1, 0, 1]])
+                multiplied_matrix = np.dot(multiplied_matrix, m)
             else:
-                super_abc = (self.unitcell * trans_mat).lattice.abc
-                # multi indices within 1.05a, where a is the shortest supercell
-                # lattice length, are incremented at the same time.
-                for j in range(3):
-                    if super_abc[j] / min(super_abc) < 1.05:
-                        incremented_mat[j, j] += 1
+                if tetragonal:
+                    s = self.unitcell * trans_mat
+                    if s.lattice.a < s.lattice.c:
+                        if multiplied_matrix[0, 1] == 0:
+                            a = incremented_mat[0, 0]
+                            if (a + 1) ** 2 < a ** 2 * 2:
+                                incremented_mat[0, 0] += 1
+                                incremented_mat[1, 1] += 1
+                            else:
+                                multiplied_matrix = np.array([[ 1, 1, 0],
+                                                              [-1, 1, 0],
+                                                              [ 0, 0, 1]])
+                        else:
+                            incremented_mat[0, 0] += 1
+                            incremented_mat[1, 1] += 1
+                            multiplied_matrix = np.eye(3, dtype=int)
 
-            trans_mat = np.dot(incremented_mat, based_trans_mat)
+                        incremented_mat *= multiplied_matrix
+                    else:
+                        incremented_mat[2, 2] += 1
+                else:
+                    super_abc = (self.unitcell * trans_mat).lattice.abc
+                    # multi indices within 1.05a, where a is the shortest
+                    # supercell lattice length, are incremented simultaneously.
+                    for j in range(3):
+                        if super_abc[j] / min(super_abc) < 1.05:
+                            incremented_mat[j, j] += 1
+
+            trans_mat = np.dot(np.dot(incremented_mat, multiplied_matrix),
+                               based_trans_mat)
 
     @property
     def sorted_supercells_by_num_atoms(self) -> list:
