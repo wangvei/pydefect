@@ -185,26 +185,26 @@ class Supercells:
         symmetry_dataset = sga.get_symmetry_dataset()
         logger.info(f"Space group: {symmetry_dataset['international']}")
 
+        self.conventional_base = conventional_base
+        lattice = sga.get_lattice_type()
+        centering = symmetry_dataset["international"][0]
         if conventional_base:
-            centering = symmetry_dataset["international"][0]
-            based_trans_mat = tm_from_primitive_to_standard(centering)
+            to_unitcell_mat = tm_from_primitive_to_standard(centering)
             rhombohedral = False
-            tetragonal = sga.get_lattice_type() == "tetragonal"
-            self.conventional_base = True
+            tetragonal = lattice == "tetragonal"
         else:
-            based_trans_mat = np.identity(3, dtype="int8")
-            rhombohedral = sga.get_lattice_type() == "rhombohedral"
-            tetragonal = False
-            if sga.get_lattice_type() == "tetragonal" \
-                    and symmetry_dataset["international"][0] == "P":
+            to_unitcell_mat = np.eye(3, dtype=int)
+            rhombohedral = lattice == "rhombohedral"
+            if lattice == "tetragonal" and centering == "P":
                 tetragonal = True
-            self.conventional_base = False
+            else:
+                tetragonal = False
 
         self.supercells = []
         # Isotropically incremented matrix one by one
-        incremented_mat = np.identity(3, dtype="int8")
-        trans_mat = based_trans_mat
-        multiplied_matrix = np.eye(3, dtype=int)
+        trans_mat = to_unitcell_mat
+        incremented_mat = np.eye(3, dtype=int)
+        rotation_matrix = np.eye(3, dtype=int)
 
         for i in range(int(max_num_atoms / len(primitive_cell))):
             isotropy, angle = calc_isotropy(self.unitcell, trans_mat)
@@ -227,29 +227,28 @@ class Supercells:
 
             if rhombohedral_shape == "sharp":
                 m = np.array([[1,  1, -1], [-1,  1,  1], [1, -1,  1]])
-                multiplied_matrix = np.dot(multiplied_matrix, m)
+                rotation_matrix = np.dot(rotation_matrix, m)
             elif rhombohedral_shape == "blunt":
                 m = np.array([[1, 1, 0], [0, 1, 1], [1, 0, 1]])
-                multiplied_matrix = np.dot(multiplied_matrix, m)
+                rotation_matrix = np.dot(rotation_matrix, m)
             else:
                 if tetragonal:
                     s = self.unitcell * trans_mat
                     if s.lattice.a < s.lattice.c:
-                        if multiplied_matrix[0, 1] == 0:
+                        if rotation_matrix[0, 1] == 0:
                             a = incremented_mat[0, 0]
                             if (a + 1) ** 2 < a ** 2 * 2:
                                 incremented_mat[0, 0] += 1
                                 incremented_mat[1, 1] += 1
                             else:
-                                multiplied_matrix = np.array([[ 1, 1, 0],
-                                                              [-1, 1, 0],
-                                                              [ 0, 0, 1]])
+                                rotation_matrix = \
+                                    np.array([[1, 1, 0], [-1, 1, 0], [0, 0, 1]])
                         else:
                             incremented_mat[0, 0] += 1
                             incremented_mat[1, 1] += 1
-                            multiplied_matrix = np.eye(3, dtype=int)
+                            rotation_matrix = np.eye(3, dtype=int)
 
-                        incremented_mat *= multiplied_matrix
+                        incremented_mat *= rotation_matrix
                     else:
                         incremented_mat[2, 2] += 1
                 else:
@@ -260,8 +259,8 @@ class Supercells:
                         if super_abc[j] / min(super_abc) < 1.05:
                             incremented_mat[j, j] += 1
 
-            trans_mat = np.dot(np.dot(incremented_mat, multiplied_matrix),
-                               based_trans_mat)
+            trans_mat = np.dot(np.dot(incremented_mat, rotation_matrix),
+                               to_unitcell_mat)
 
     @property
     def sorted_supercells_by_num_atoms(self) -> list:
