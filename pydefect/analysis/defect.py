@@ -89,7 +89,6 @@ def diagnose_band_edges(participation_ratio: dict,
                         perfect_supercell_vbm: float,
                         perfect_supercell_cbm: float,
                         similarity_criterion: float = 0.12,
-                        phs_similarity_criterion: float = 0.2,
                         localized_criterion: float = 0.5,
                         near_edge_energy_criterion: float = 0.3):
     """ Diagnose the band edge states in supercell with a defect.
@@ -115,8 +114,6 @@ def diagnose_band_edges(participation_ratio: dict,
             CBM in the perfect supercell.
         similarity_criterion:
             Criterion to judge if the eigenstate is different from a host state
-        phs_similarity_criterion:
-            Criterion to judge if the system shows the phs.
         localized_criterion (float):
             Criterion to judge the orbital is localized if the participation
             ratio is larger than this value.
@@ -134,27 +131,27 @@ def diagnose_band_edges(participation_ratio: dict,
             perfect = perfect_orbital_character[Spin.up]
 
         # highest-occupied band = hob
-        vbm_difference = calc_orbital_difference(
+        # Large this value means the occupied band should be the VBM
+        vbm_orbital_difference = calc_orbital_difference(
             orbital_character[spin]["hob"]["top"], perfect["hob"]["top"])
-        # The difference between the bottom of the highest-occupied
-        # band and the conduction band minimum (= bottom of the
-        # lowest-unoccupied band in the perfect supercell)
-        donor_phs_difference = calc_orbital_difference(
-            orbital_character[spin]["hob"]["bottom"], perfect["lub"]["bottom"])
 
         # lowest-unoccupied band = lub
-        cbm_difference = calc_orbital_difference(
+        # Large this value means the occupied band should be the CBM
+        cbm_orbital_difference = calc_orbital_difference(
             orbital_character[spin]["lub"]["bottom"], perfect["lub"]["bottom"])
-        acceptor_phs_difference = calc_orbital_difference(
-            orbital_character[spin]["lub"]["top"], perfect["hob"]["top"])
+
+        hob_bottom_from_cbm = \
+            band_edge_energies[spin]["hob"]["bottom"] - perfect_supercell_cbm
+        lub_top_from_vbm = \
+            band_edge_energies[spin]["lub"]["top"] - perfect_supercell_vbm
 
         # When there is no any in-gap state,
         # 1. Vbm and cbm orbitals are similar to the perfect ones.
         # 2. Participation rations are small enough.
         # 3. Band-edge energies should be close to the host ones.
         # Note that the participation ratio depends on the supercell size.
-        if (vbm_difference < similarity_criterion
-                and cbm_difference < similarity_criterion
+        if (vbm_orbital_difference < similarity_criterion
+                and cbm_orbital_difference < similarity_criterion
                 and participation_ratio[spin]["hob"] < localized_criterion
                 and participation_ratio[spin]["lub"] < localized_criterion
                 and abs(band_edge_energies[spin]["lub"]["bottom"]
@@ -164,24 +161,16 @@ def diagnose_band_edges(participation_ratio: dict,
             band_edges[spin] = BandEdgeState.no_in_gap
 
         # When the highest-occupied band (=hob) is a perturbed host state,
-        # 1. Bottom of hob is similar to the cbm in perfect.
-        # 2. Participation rations are small enough.
-        # 3. Energy of bottom of hob is close to or higher than supercell cbm.
-
-        # To determine the difference of perturbed host state (phs),
-        # the criterion is doubled from that of regular band edge.
-        elif (donor_phs_difference < phs_similarity_criterion
-              and participation_ratio[spin]["hob"] < localized_criterion
-              and perfect_supercell_cbm - band_edge_energies[spin]["hob"]["bottom"]
-              < near_edge_energy_criterion) or \
-                (band_edge_energies[spin]["hob"]["bottom"] - perfect_supercell_cbm > 0):
+        # 1. Participation rations are small enough.
+        # 2. Energy of bottom of hob is close to or higher than supercell cbm.
+        elif (participation_ratio[spin]["hob"] < localized_criterion
+              and hob_bottom_from_cbm + near_edge_energy_criterion > 0) \
+                or hob_bottom_from_cbm > 0:
             band_edges[spin] = BandEdgeState.donor_phs
 
-        elif (acceptor_phs_difference < phs_similarity_criterion
-              and participation_ratio[spin]["lub"] < localized_criterion
-              and band_edge_energies[spin]["lub"]["top"] - perfect_supercell_vbm
-              < near_edge_energy_criterion) or \
-                (band_edge_energies[spin]["lub"]["top"] - perfect_supercell_vbm < 0):
+        elif (participation_ratio[spin]["lub"] < localized_criterion
+              and lub_top_from_vbm - near_edge_energy_criterion < 0)  \
+                or lub_top_from_vbm < 0:
             band_edges[spin] = BandEdgeState.acceptor_phs
 
         else:

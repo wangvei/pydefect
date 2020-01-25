@@ -51,6 +51,13 @@ def calc_isotropy(structure: Structure,
 def sanitize_matrix(matrix: list) -> np.ndarray:
     """Sanitize the matrix component to 3x3 np array with int type.
 
+    Example1:  [1, 0, 0, 0, 1, 0, 0, 0, 1] -> [[1, 0, 0],
+                                               [0, 1, 0],
+                                               [0, 0, 1]]
+    Example2:  [1, 2, 3] -> [[1, 0, 0],
+                             [0, 2, 0],
+                             [0, 0, 3]]
+
     Args:
         matrix (list or np.array):
            The matrix to be used for expanding the structure.
