@@ -120,7 +120,7 @@ def initial_setting(args):
               "symprec": args.symprec,
               "angle_tolerance": args.angle_tolerance,
               "interstitial_sites": args.interstitials,
-              "complex_defect_names": args.complex_defect_names}
+              "cluster_defect_names": args.cluster_defect_names}
 
     if args.matrix:
         supercell = Supercell(structure=structure,
@@ -250,10 +250,10 @@ def interstitial(args):
 
 def cluster_defects(args):
     try:
-        complex_defects_obj = ClusterDefects.from_files(args.dposcar, args.yaml)
+        cluster_defects_obj = ClusterDefects.from_files(args.dposcar, args.yaml)
     except FileNotFoundError:
         structure = Structure.from_file(args.dposcar)
-        complex_defects_obj = ClusterDefects(structure=structure)
+        cluster_defects_obj = ClusterDefects(structure=structure)
 
     if (args.inserted_elements and not args.inserted_coords) or \
             (not args.inserted_elements and args.inserted_coords):
@@ -277,7 +277,7 @@ def cluster_defects(args):
     #     DefectInitialSetting.from_defect_in(poscar=args.dposcar,
     #                                         defect_in_file=args.defect_in)
 
-    complex_defects_obj.add_defect(
+    cluster_defects_obj.add_defect(
         removed_atom_indices=args.removed_atom_indices,
         inserted_atoms=inserted_atoms,
         name=args.name,
@@ -286,7 +286,7 @@ def cluster_defects(args):
         symprec=args.symprec,
         angle_tolerance=args.angle_tolerance)
 
-    complex_defects_obj.site_set_to_yaml_file(yaml_filename=args.yaml)
+    cluster_defects_obj.site_set_to_yaml_file(yaml_filename=args.yaml)
 
 
 def defect_vasp_set(args):

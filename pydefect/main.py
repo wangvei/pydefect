@@ -258,8 +258,8 @@ def main():
         default=is_defaults["interstitial_sites"],
         help="Interstitial site names.")
     parser_initial.add_argument(
-        "--complex_defect_names", dest="complex_defect_names", type=str,
-        nargs="+", default=is_defaults["complex_defect_names"],
+        "--cluster_defect_names", dest="cluster_defect_names", type=str,
+        nargs="+", default=is_defaults["cluster_defect_names"],
         help="Complex defect names.")
     parser_initial.add_argument(
         "--print_dopant", dest="print_dopant", type=str,
