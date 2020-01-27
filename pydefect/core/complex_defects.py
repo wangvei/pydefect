@@ -31,8 +31,8 @@ class ComplexDefect(MSONable):
     """Holds properties related to a complex defect. """
 
     def __init__(self,
-                 removed_atom_indices: list,
-                 inserted_atoms: List[dict],
+                 removed_atom_indices: Optional[list],
+                 inserted_atoms: Optional[List[dict]],
                  point_group: str,
                  multiplicity: int,
                  extreme_charge_state: int,
@@ -56,8 +56,9 @@ class ComplexDefect(MSONable):
             annotation (str):
                 Annotation used when analyzing results.
         """
-        self.removed_atom_indices = removed_atom_indices[:]
-        self.inserted_atoms = inserted_atoms[:]
+        self.removed_atom_indices = \
+            removed_atom_indices[:] if removed_atom_indices else []
+        self.inserted_atoms = inserted_atoms[:] if inserted_atoms else []
         self.point_group = point_group
         self.multiplicity = multiplicity
         self.extreme_charge_state = extreme_charge_state

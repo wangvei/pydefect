@@ -44,6 +44,14 @@ class ComplexDefectsTest(PydefectTest):
                               multiplicity=96,
                               extreme_charge_state=-1)
 
+        self.interstitial = \
+            ComplexDefect(removed_atom_indices=None,
+                          inserted_atoms=[{"element": "Cu",
+                                           "coords": [0.5, 0.5, 0.625]}],
+                          point_group="mm2",
+                          multiplicity=96,
+                          extreme_charge_state=-1)
+
         self.cu2o = \
             ComplexDefects(self.structure, OrderedDict({"split": self.split}))
 
@@ -78,6 +86,4 @@ class ComplexDefectsTest(PydefectTest):
             extreme_charge_state=-1)
 
         self.assertEqual(self.cu2o.as_dict(), self.cu2o_added.as_dict())
-
-
 

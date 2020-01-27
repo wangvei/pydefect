@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 from collections import defaultdict
-from typing import Union, List, Tuple
+from typing import Union, List, Tuple, Optional
 
 import numpy as np
 from pydefect.core.config import SYMMETRY_TOLERANCE, ANGLE_TOL
@@ -402,8 +402,8 @@ def get_neighboring_atom_indices(structure: Structure,
 
 
 def num_equivalent_clusters(structure: Structure,
-                            inserted_atom_coords: list,
-                            removed_atom_indices: list,
+                            inserted_atom_coords: Optional[list],
+                            removed_atom_indices: Optional[list],
                             symprec: float = SYMMETRY_TOLERANCE,
                             angle_tolerance: float = ANGLE_TOL
                             ) -> Tuple[int, str]:
@@ -422,6 +422,9 @@ def num_equivalent_clusters(structure: Structure,
     Returns:
         Tuple of (num_equivalent_clusters (int), point_group (str))
     """
+    inserted_atom_coords = inserted_atom_coords or []
+    removed_atom_indices = removed_atom_indices or []
+
     sga = SpacegroupAnalyzer(structure, symprec, angle_tolerance)
     num_symmop = len(sga.get_symmetry_operations())
 
