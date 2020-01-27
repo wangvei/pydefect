@@ -396,7 +396,7 @@ class DefectEnergies(MSONable):
             # Unfilled and filled circles for shallow and transition levels
             # Add unfilled circles for shallow defects.
             if max(charge_set) < 0:
-                ax.plot(x=x_min, y=y, marker="o", mec=color[i], mfc="white")
+                ax.plot(x_min, y, marker="o", mec=color[i], mfc="white")
 
             # Add points between x_min and x_max
             for cp, charges in zip(tl["cross_points"], tl["charges"]):
