@@ -250,7 +250,7 @@ class DefectInitialSettingTest(PydefectTest):
             dopants=["Al", "N"],
             is_antisite=True,
             interstitial_sites=["i1"],
-            cluster_defect_names=["divacancy"],
+            complex_defect_names=["divacancy"],
             en_diff=1.0,
             included=["Va_O1_-1", "Va_O1_-2"],
             excluded=["Va_O1_1", "Va_O1_2"],

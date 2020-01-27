@@ -18,7 +18,7 @@ from pydefect.analysis.defect_eigenvalues import DefectEigenvalue
 from pydefect.analysis.defect_energies import DefectEnergies
 from pydefect.analysis.defect_structure import (
     DefectStructure, defect_structure_matcher)
-from pydefect.core.cluster_defects import ClusterDefects
+from pydefect.core.complex_defects import ComplexDefects
 from pydefect.core.defect_entry import DefectEntry
 from pydefect.core.error_classes import StructureError
 from pydefect.core.interstitial_site import (
@@ -120,7 +120,7 @@ def initial_setting(args):
               "symprec": args.symprec,
               "angle_tolerance": args.angle_tolerance,
               "interstitial_sites": args.interstitials,
-              "cluster_defect_names": args.cluster_defect_names}
+              "complex_defect_names": args.complex_defect_names}
 
     if args.matrix:
         supercell = Supercell(structure=structure,
@@ -248,12 +248,12 @@ def interstitial(args):
         interstitial_set.site_set_to_yaml_file(yaml_filename=args.yaml)
 
 
-def cluster_defects(args):
+def complex_defects(args):
     try:
-        cluster_defects_obj = ClusterDefects.from_files(args.dposcar, args.yaml)
+        complex_defects_obj = ComplexDefects.from_files(args.dposcar, args.yaml)
     except FileNotFoundError:
         structure = Structure.from_file(args.dposcar)
-        cluster_defects_obj = ClusterDefects(structure=structure)
+        complex_defects_obj = ComplexDefects(structure=structure)
 
     if (args.inserted_elements and not args.inserted_coords) or \
             (not args.inserted_elements and args.inserted_coords):
@@ -277,7 +277,7 @@ def cluster_defects(args):
     #     DefectInitialSetting.from_defect_in(poscar=args.dposcar,
     #                                         defect_in_file=args.defect_in)
 
-    cluster_defects_obj.add_defect(
+    complex_defects_obj.add_defect(
         removed_atom_indices=args.removed_atom_indices,
         inserted_atoms=inserted_atoms,
         name=args.name,
@@ -286,7 +286,7 @@ def cluster_defects(args):
         symprec=args.symprec,
         angle_tolerance=args.angle_tolerance)
 
-    cluster_defects_obj.site_set_to_yaml_file(yaml_filename=args.yaml)
+    complex_defects_obj.site_set_to_yaml_file(yaml_filename=args.yaml)
 
 
 def defect_vasp_set(args):

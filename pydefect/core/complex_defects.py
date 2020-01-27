@@ -15,7 +15,7 @@ from pymatgen.core.structure import Structure
 __author__ = "Yu Kumagai"
 __maintainer__ = "Yu Kumagai"
 
-""" Module related to cluster defects.
+""" Module related to complex defects.
 
 The classes are similar to the interstitial ones.
 """
@@ -27,8 +27,8 @@ yaml.add_representer(OrderedDict, represent_odict)
 yaml.add_constructor('tag:yaml.org,2002:map', construct_odict)
 
 
-class ClusterDefect(MSONable):
-    """Holds properties related to a cluster defect. """
+class ComplexDefect(MSONable):
+    """Holds properties related to a complex defect. """
 
     def __init__(self,
                  removed_atom_indices: list,
@@ -48,7 +48,7 @@ class ClusterDefect(MSONable):
             point_group (str):
                 point group in Hermann–Mauguin notation.
             multiplicity (int):
-                Multiplicity of the cluster defect in supercell perfect
+                Multiplicity of the complex defect in supercell perfect
                 structure.
             extreme_charge_state (int):
                 Extreme charge state that is used for determining the default
@@ -75,54 +75,55 @@ class ClusterDefect(MSONable):
         return d
 
 
-class ClusterDefects(MSONable):
+class ComplexDefects(MSONable):
     """Holds set of ComplexDefect and have method to add it."""
 
     def __init__(self,
                  structure: Structure,
-                 cluster_defects: OrderedDict = None):
+                 complex_defects: OrderedDict = None):
         """
         Args:
             structure (Structure):
                 Supercell used for the defect calculations.
-            cluster_defects (OrderedDict):
+            complex_defects (OrderedDict):
                 OrderedDict with keys of defect names and values of
                 ComplexDefect objects.
         """
         self.structure = structure
-        if cluster_defects is not None:
-            self.cluster_defects = deepcopy(cluster_defects)
+        if complex_defects is not None:
+            self.complex_defects = deepcopy(complex_defects)
         else:
-            self.cluster_defects = OrderedDict()
+            self.complex_defects = OrderedDict()
 
     def set_as_dict(self):
         d = OrderedDict()
-        for k, v in self.cluster_defects.items():
+        for k, v in self.complex_defects.items():
             d[k] = v.as_dict()
 
         return d
 
     def site_set_to_yaml_file(self,
-                              yaml_filename: str = "cluster_defects.yaml"
+                              yaml_filename: str = "complex_defects.yaml"
                               ) -> None:
         with open(yaml_filename, "w") as f:
             f.write(yaml.dump(self.set_as_dict()))
 
-    def to_yaml_file(self, yaml_filename: str = "cluster_defects.yaml") -> None:
+    def to_yaml_file(self,
+                     yaml_filename: str = "complex_defects.yaml") -> None:
         with open(yaml_filename, "w") as f:
             f.write(yaml.dump(self.as_dict()))
 
     @classmethod
     def from_files(cls,
                    structure: Union[str, Structure] = "DPOSCAR",
-                   yaml_filename: str = "cluster_defects.yaml"):
+                   yaml_filename: str = "complex_defects.yaml"):
         if isinstance(structure, str):
             d = {"structure": Structure.from_file(structure)}
         else:
             d = {"structure": structure}
 
         with open(yaml_filename, "r") as f:
-            d["cluster_defects"] = yaml.load(f, Loader=yaml.FullLoader)
+            d["complex_defects"] = yaml.load(f)
 
         return cls.from_dict(d)
 
@@ -133,11 +134,11 @@ class ClusterDefects(MSONable):
         if isinstance(structure, dict):
             structure = Structure.from_dict(structure)
 
-        cluster_defects = OrderedDict()
-        for k, v in d["cluster_defects"].items():
-            cluster_defects[k] = ClusterDefect.from_dict(v)
+        complex_defects = OrderedDict()
+        for k, v in d["complex_defects"].items():
+            complex_defects[k] = ComplexDefect.from_dict(v)
 
-        return cls(structure=structure, cluster_defects=cluster_defects)
+        return cls(structure=structure, complex_defects=complex_defects)
 
     def add_defect(self,
                    removed_atom_indices: list,
@@ -159,11 +160,11 @@ class ClusterDefects(MSONable):
                                     symprec,
                                     angle_tolerance)
 
-        cluster_defect = \
-            ClusterDefect(removed_atom_indices, inserted_atoms,
+        complex_defect = \
+            ComplexDefect(removed_atom_indices, inserted_atoms,
                           point_group, multiplicity, extreme_charge_state,
                           annotation)
 
-        self.cluster_defects[name] = cluster_defect
+        self.complex_defects[name] = complex_defect
 
 
