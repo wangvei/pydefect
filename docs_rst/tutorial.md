@@ -723,14 +723,14 @@ Next to the convergence, we can see the band edge information at the spin up (UP
 Generally, point defects are divided into three types.
 
 (1) defects with deep localized states inside the band gap. 
-This type of defect is considered to be detrimental for device performances as the carriers are trapped by the localized states.
+This type of defect is generally considered to be detrimental for device performances as the carriers are trapped by the localized states.
 Therefore, in the theoretical researches, it is important to know the position of the localized state and its origin.
 
 (2) defects without any defect states, which should not affect the electronic properties as long as their concentrations are sufficiently low.
 
 (3) defects with hydrogenic carrier states, or perturbed host states (PHS), which are carriers locating at the band edges loosely trapped by the defects.
 An examples are the B-on-Si (p-type) and P-on-Si (n-type) in Si.
-This type of defect also do little harm for device performances, but introduce the carrier electrons.
+This type of defect also does little harm for device performances, but introduce the carrier electrons or holes or compensate other charged defects.
 The wavefunctions of the PHS widespread to several million atoms, so we need to calculate such supergiant supercells to estimate their thermodynamical transition levels.  
 Instead, we thus describe that `the defects have PHS and their transition energies locate near band edges` only qualitatively.
 See, for examples.
@@ -788,7 +788,7 @@ Here, we plot the defect formation energies as a function of the Fermi level wit
 python ~/my_bin/pydefect/pydefect/main.py pe --unitcell ../unitcell/unitcell.json --perfect perfect/dft_results.json --defect_dirs Va*_* --chem_pot_yaml ../competing_phases/vertices_*.yaml -x -1 8 -s energy_A.pdf
 ```
 which shows like,
-![](energy.png)
+![](energy.pdf)
 
 This command
 Once the calculation directories are parsed, `defect_energies.json` is automatically generated.
@@ -805,21 +805,35 @@ python ~/my_bin/pydefect/pydefect/main.py pe --unitcell ../unitcell/unitcell.jso
 ```
 
 ### 15. Show local structure information
-We also regularly check local structures around defects.
+We also regularly check the local structures around defects.
 `pydefect` can show the local structure information by text using the following command.
 ```
 python ~/my_bin/pydefect/pydefect/main.py ls
 ```
-which shows an example of V<sub>Se</sub><sup>-2</sup> in MgSe, e.g.,
+which shows e.g.,
 ```
-element initial   final   disp  angle            
- name   dist(A)  dist(A)  dist  (deg)   direction
-    Mg    2.57     3.72   1.15   180      outward
-    Mg    2.56     3.20   0.64   174      outward
-    Mg    2.56     3.20   0.64   174      outward
-    Mg    2.56     3.20   0.64   175      outward
+2020-01-27 12:28:22,556 INFO pydefect.main_functions parsing directory Va_Mg1_-1/...
+--------------------------------------------------------------------------------
+Is defect center atomic position?: False
+Defect center position: [0.5, 0.0, 0.0]
+Site symmetry: 1 <- m-3m
+    element  final <-initial   disp
+index name   dist(A)  dist(A)  dist   coordination (final) <- coordination (initial)
+  45     O    2.25 <-  2.12    0.12    0.00   0.00   2.25  <-   0.00   0.00   2.12
+  53     O    2.25 <-  2.12    0.13    0.00   2.25   0.00  <-   0.00   2.12   0.00
+  58     O    2.25 <-  2.12    0.12    0.00   0.00  -2.25  <-   0.00   0.00  -2.12
+  60     O    2.24 <-  2.12    0.12    0.00  -2.24  -0.00  <-   0.00  -2.12   0.00
+  61     O    2.25 <-  2.12    0.13    2.25   0.00   0.00  <-   2.12   0.00   0.00
+  62     O    2.24 <-  2.12    0.12   -2.24   0.01  -0.00  <-  -2.12   0.00   0.00
+
+...
 ```
-where the defect position is assumed to locate at the original Se atomic site. 
+where the defect position is assumed to locate at the original atomic site. 
+When `--cs` option is added, the grouped results are shown at the bottom as follows,
+```
+{'Va_Mg1': [[-1, -2, 0]], 'Va_O1': [[0], [1], [2]]}
+```
+
 
 ### 16. Calculate the carrier and defect concentrations 
 We can also calculate the carrier and defect concentrations using the defect formation energies using `pydefect`.

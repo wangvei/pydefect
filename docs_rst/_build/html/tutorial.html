@@ -699,15 +699,15 @@ To see whether the calculations are properly finished, one can use the <code cla
 Next to the convergence, we can see the band edge information at the spin up (UP) and down (DOWN) channels, which will be explained later.</p>
 </div>
 <div class="section" id="check-defect-eigenvalues">
-<h2>11. Check defect eigenvalues<a class="headerlink" href="#check-defect-eigenvalues" title="Permalink to this headline">¶</a></h2>
+<h2>13. Check defect eigenvalues<a class="headerlink" href="#check-defect-eigenvalues" title="Permalink to this headline">¶</a></h2>
 <p>Generally, point defects are divided into three types.</p>
 <p>(1) defects with deep localized states inside the band gap.
-This type of defect is considered to be detrimental for device performances as the carriers are trapped by the localized states.
+This type of defect is generally considered to be detrimental for device performances as the carriers are trapped by the localized states.
 Therefore, in the theoretical researches, it is important to know the position of the localized state and its origin.</p>
 <p>(2) defects without any defect states, which should not affect the electronic properties as long as their concentrations are sufficiently low.</p>
 <p>(3) defects with hydrogenic carrier states, or perturbed host states (PHS), which are carriers locating at the band edges loosely trapped by the defects.
 An examples are the B-on-Si (p-type) and P-on-Si (n-type) in Si.
-This type of defect also do little harm for device performances, but introduce the carrier electrons.
+This type of defect also does little harm for device performances, but introduce the carrier electrons or holes or compensate other charged defects.
 The wavefunctions of the PHS widespread to several million atoms, so we need to calculate such supergiant supercells to estimate their thermodynamical transition levels.<br />Instead, we thus describe that <code class="docutils literal notranslate"><span class="pre">the</span> <span class="pre">defects</span> <span class="pre">have</span> <span class="pre">PHS</span> <span class="pre">and</span> <span class="pre">their</span> <span class="pre">transition</span> <span class="pre">energies</span> <span class="pre">locate</span> <span class="pre">near</span> <span class="pre">band</span> <span class="pre">edges</span></code> only qualitatively.
 See, for examples.</p>
 <ul class="simple">
@@ -749,7 +749,7 @@ Therefore, please carefully check the band-edge states, and draw the band-decomp
 There are four supported states <code class="docutils literal notranslate"><span class="pre">donor_phs</span></code>, <code class="docutils literal notranslate"><span class="pre">acceptor_phs</span></code>, <code class="docutils literal notranslate"><span class="pre">localized_state</span></code>, <code class="docutils literal notranslate"><span class="pre">no_in_gap</span></code>, the former two are considered as shallow states, and omitted for energy plot by default.</p>
 </div>
 <div class="section" id="plot-defect-formation-energies">
-<h2>12. Plot defect formation energies<a class="headerlink" href="#plot-defect-formation-energies" title="Permalink to this headline">¶</a></h2>
+<h2>14. Plot defect formation energies<a class="headerlink" href="#plot-defect-formation-energies" title="Permalink to this headline">¶</a></h2>
 <p>Here, we show how to plot the defect formation energies.</p>
 <p>The plot of the defect formation energies requires a wide variety of information, namely
 band edges, chemical potentials of competing phases, total energy of perfect supercell.</p>
@@ -758,7 +758,7 @@ band edges, chemical potentials of competing phases, total energy of perfect sup
 </pre></div>
 </div>
 <p>which shows like,
-<img alt="_images/energy.png" src="_images/energy.png" /></p>
+<img alt="_images/energy.pdf" src="_images/energy.pdf" /></p>
 <p>This command
 Once the calculation directories are parsed, <code class="docutils literal notranslate"><span class="pre">defect_energies.json</span></code> is automatically generated.
 If one wants to regenerate the results, one needs to remove it.</p>
@@ -772,25 +772,38 @@ can use <code class="docutils literal notranslate"><span class="pre">--filtering
 </div>
 </div>
 <div class="section" id="show-local-structure-information">
-<h2>13. Show local structure information<a class="headerlink" href="#show-local-structure-information" title="Permalink to this headline">¶</a></h2>
-<p>We also regularly check local structures around defects.
+<h2>15. Show local structure information<a class="headerlink" href="#show-local-structure-information" title="Permalink to this headline">¶</a></h2>
+<p>We also regularly check the local structures around defects.
 <code class="docutils literal notranslate"><span class="pre">pydefect</span></code> can show the local structure information by text using the following command.</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="o">~/</span><span class="n">my_bin</span><span class="o">/</span><span class="n">pydefect</span><span class="o">/</span><span class="n">pydefect</span><span class="o">/</span><span class="n">main</span><span class="o">.</span><span class="n">py</span> <span class="n">ls</span>
 </pre></div>
 </div>
-<p>which shows an example of V<sub>Se</sub><sup>-2</sup> in MgSe, e.g.,</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">element</span> <span class="n">initial</span>   <span class="n">final</span>   <span class="n">disp</span>  <span class="n">angle</span>            
- <span class="n">name</span>   <span class="n">dist</span><span class="p">(</span><span class="n">A</span><span class="p">)</span>  <span class="n">dist</span><span class="p">(</span><span class="n">A</span><span class="p">)</span>  <span class="n">dist</span>  <span class="p">(</span><span class="n">deg</span><span class="p">)</span>   <span class="n">direction</span>
-    <span class="n">Mg</span>    <span class="mf">2.57</span>     <span class="mf">3.72</span>   <span class="mf">1.15</span>   <span class="mi">180</span>      <span class="n">outward</span>
-    <span class="n">Mg</span>    <span class="mf">2.56</span>     <span class="mf">3.20</span>   <span class="mf">0.64</span>   <span class="mi">174</span>      <span class="n">outward</span>
-    <span class="n">Mg</span>    <span class="mf">2.56</span>     <span class="mf">3.20</span>   <span class="mf">0.64</span>   <span class="mi">174</span>      <span class="n">outward</span>
-    <span class="n">Mg</span>    <span class="mf">2.56</span>     <span class="mf">3.20</span>   <span class="mf">0.64</span>   <span class="mi">175</span>      <span class="n">outward</span>
+<p>which shows e.g.,</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>2020-01-27 12:28:22,556 INFO pydefect.main_functions parsing directory Va_Mg1_-1/...
+--------------------------------------------------------------------------------
+Is defect center atomic position?: False
+Defect center position: [0.5, 0.0, 0.0]
+Site symmetry: 1 &lt;- m-3m
+    element  final &lt;-initial   disp
+index name   dist(A)  dist(A)  dist   coordination (final) &lt;- coordination (initial)
+  45     O    2.25 &lt;-  2.12    0.12    0.00   0.00   2.25  &lt;-   0.00   0.00   2.12
+  53     O    2.25 &lt;-  2.12    0.13    0.00   2.25   0.00  &lt;-   0.00   2.12   0.00
+  58     O    2.25 &lt;-  2.12    0.12    0.00   0.00  -2.25  &lt;-   0.00   0.00  -2.12
+  60     O    2.24 &lt;-  2.12    0.12    0.00  -2.24  -0.00  &lt;-   0.00  -2.12   0.00
+  61     O    2.25 &lt;-  2.12    0.13    2.25   0.00   0.00  &lt;-   2.12   0.00   0.00
+  62     O    2.24 &lt;-  2.12    0.12   -2.24   0.01  -0.00  &lt;-  -2.12   0.00   0.00
+
+...
 </pre></div>
 </div>
-<p>where the defect position is assumed to locate at the original Se atomic site.</p>
+<p>where the defect position is assumed to locate at the original atomic site.
+When <code class="docutils literal notranslate"><span class="pre">--cs</span></code> option is added, the grouped results are shown at the bottom as follows,</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">{</span><span class="s1">&#39;Va_Mg1&#39;</span><span class="p">:</span> <span class="p">[[</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">2</span><span class="p">,</span> <span class="mi">0</span><span class="p">]],</span> <span class="s1">&#39;Va_O1&#39;</span><span class="p">:</span> <span class="p">[[</span><span class="mi">0</span><span class="p">],</span> <span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="p">[</span><span class="mi">2</span><span class="p">]]}</span>
+</pre></div>
+</div>
 </div>
 <div class="section" id="calculate-the-carrier-and-defect-concentrations">
-<h2>14. Calculate the carrier and defect concentrations<a class="headerlink" href="#calculate-the-carrier-and-defect-concentrations" title="Permalink to this headline">¶</a></h2>
+<h2>16. Calculate the carrier and defect concentrations<a class="headerlink" href="#calculate-the-carrier-and-defect-concentrations" title="Permalink to this headline">¶</a></h2>
 <p>We can also calculate the carrier and defect concentrations using the defect formation energies using <code class="docutils literal notranslate"><span class="pre">pydefect</span></code>.
 For the calculations, <code class="docutils literal notranslate"><span class="pre">unitcell.json</span></code> and <code class="docutils literal notranslate"><span class="pre">defect_energies.json</span></code> are needed.
 When one wants to calculate the equilibrium carrier and defect concentrations at 1000K, use the <code class="docutils literal notranslate"><span class="pre">concentrations</span></code> (=<code class="docutils literal notranslate"><span class="pre">c</span></code>) sub-command as follows:</p>
@@ -863,10 +876,10 @@ In such case, we can check the selfconsistent iterations using the <code class="
 <li><a class="reference internal" href="#parsing-of-supercell-calculation-results">10. Parsing of supercell calculation results</a></li>
 <li><a class="reference internal" href="#corrections-of-defect-formation-energies-in-finite-size-supercells">11. Corrections of defect formation energies in finite-size supercells</a></li>
 <li><a class="reference internal" href="#organizing-defect-related-information">12. Organizing defect related information</a></li>
-<li><a class="reference internal" href="#check-defect-eigenvalues">11. Check defect eigenvalues</a></li>
-<li><a class="reference internal" href="#plot-defect-formation-energies">12. Plot defect formation energies</a></li>
-<li><a class="reference internal" href="#show-local-structure-information">13. Show local structure information</a></li>
-<li><a class="reference internal" href="#calculate-the-carrier-and-defect-concentrations">14. Calculate the carrier and defect concentrations</a></li>
+<li><a class="reference internal" href="#check-defect-eigenvalues">13. Check defect eigenvalues</a></li>
+<li><a class="reference internal" href="#plot-defect-formation-energies">14. Plot defect formation energies</a></li>
+<li><a class="reference internal" href="#show-local-structure-information">15. Show local structure information</a></li>
+<li><a class="reference internal" href="#calculate-the-carrier-and-defect-concentrations">16. Calculate the carrier and defect concentrations</a></li>
 </ul>
 </li>
 </ul>
