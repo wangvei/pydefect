@@ -154,29 +154,29 @@ class DefectInitialSettingTest(PydefectTest):
 
     def setUp(self):
         """ MgO 64atoms"""
-        self.structure = Structure.from_file("DPOSCAR-defect_initial_setting")
+        self.structure = self.get_structure_by_name("defect_initial_setting")
         space_group_symbol = "Fm-3m"
-        transformation_matrix = [2, 0, 0, 0, 2, 0, 0, 0, 2]
+        transformation_matrix = [-2, 2, 2, 2, -2, 2, 2, 2, -2]
         cell_multiplicity = 32
-        coordination_distances_mg = {"O": [2.12] * 6}
-        coordination_distances_o = {"Mg": [2.12] * 6}
+        coordination_distances_mg = {"O": [2.1] * 6}
+        coordination_distances_o = {"Mg": [2.1] * 6}
         mg1 = IrreducibleSite(irreducible_name="Mg1",
                               element="Mg",
                               first_index=0,
                               last_index=31,
-                              representative_coords=[0.0, 0.0, 0.0],
+                              representative_coords=[0.5, 0.0, 0.0],
                               wyckoff="a",
                               site_symmetry="m-3m",
-                              cutoff=2.76,
+                              cutoff=2.74,
                               coordination_distances=coordination_distances_mg)
         o1 = IrreducibleSite(irreducible_name="O1",
                              element="O",
                              first_index=32,
                              last_index=63,
-                             representative_coords=[0.25, 0.25, 0.25],
+                             representative_coords=[0.75, 0.25, 0.25],
                              wyckoff="b",
                              site_symmetry="m-3m",
-                             cutoff=2.76,
+                             cutoff=2.74,
                              coordination_distances=coordination_distances_o)
         irreducible_sites = [mg1, o1]
         dopant_configs = [["Al", "Mg"], ["N", "O"]]
@@ -185,7 +185,7 @@ class DefectInitialSettingTest(PydefectTest):
         complex_defect_names = ["divacancy"]
         included = ["Va_O1_-1", "Va_O1_-2"]
         excluded = ["Va_O1_1", "Va_O1_2"]
-        displacement_distance = 0.15
+        displacement_distance = 0.2
         symprec = 0.01
         angle_tolerance = 5
         oxidation_states = {"Mg": 2, "O": -2, "Al": 3, "N": -3}
@@ -245,7 +245,7 @@ class DefectInitialSettingTest(PydefectTest):
     def test_from_basic_settings(self):
         actual = DefectInitialSetting.from_basic_settings(
             structure=self.structure,
-            transformation_matrix=[2, 0, 0, 0, 2, 0, 0, 0, 2],
+            transformation_matrix=[-2, 2, 2, 2, -2, 2, 2, 2, -2],
             cell_multiplicity=32,
             dopants=["Al", "N"],
             is_antisite=True,
@@ -254,7 +254,7 @@ class DefectInitialSettingTest(PydefectTest):
             en_diff=1.0,
             included=["Va_O1_-1", "Va_O1_-2"],
             excluded=["Va_O1_1", "Va_O1_2"],
-            displacement_distance=0.15,
+            displacement_distance=0.2,
             symprec=0.01)
 
         actual.to(defect_in_file="defect_unittest.in",
@@ -276,8 +276,8 @@ class DefectInitialSettingTest(PydefectTest):
         # vacancies: 3 + 3 = 6
         # dopants: 3 + 3 = 6
         # interstitials: 3(Mg) + 3(O) + 5(Al) + 5(N) = 16
-        # divacancies: 3
-        self.assertEqual(31, len(mgo_all.defect_entries))
+        # divacancies: 1
+        self.assertEqual(29, len(mgo_all.defect_entries))
 
     def test_make_defect_set_keywords(self):
         mgo_interstitial = deepcopy(self.MgO)
@@ -309,15 +309,15 @@ class DefectInitialSettingTest(PydefectTest):
                     "perturbed_initial_structure": structure,
                     "removed_atoms": [{"element": "Mg",
                                        "index": 0,
-                                       "coords": [0.0, 0.0, 0.0]}],
+                                       "coords": [0.5, 0.0, 0.0]}],
                     "inserted_atoms": [{"element": "Al",
                                         "index": 0,
-                                        "coords": [0.0, 0.0, 0.0]}],
+                                        "coords": [0.5, 0.0, 0.0]}],
                     "changes_of_num_elements": {"Al": 1, "Mg": -1},
                     "charge": 5,
                     "initial_site_symmetry": "m-3m",
-                    "cutoff": 2.76,
-                    "neighboring_sites": [40, 44, 48, 50, 56, 57],
+                    "cutoff": 2.74,
+                    "neighboring_sites": [46, 54, 59, 61, 62, 63],
                     "annotation": None,
                     "multiplicity": 32}
 
