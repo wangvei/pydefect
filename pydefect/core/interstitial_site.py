@@ -168,7 +168,7 @@ class InterstitialSiteSet(MSONable):
             d = {"structure": dposcar}
 
         with open(yaml_filename, "r") as f:
-            d["interstitial_site_set"] = yaml.load(f, Loader=yaml.Loader)
+            d["interstitial_site_set"] = yaml.load(f, Loader=yaml.FullLoader)
 
         return cls.from_dict(d)
 
