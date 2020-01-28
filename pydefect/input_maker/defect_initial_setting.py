@@ -728,7 +728,7 @@ class DefectInitialSetting(MSONable):
             repr_coords = list(equiv_site[0].frac_coords)
             irreducible_name = element + str(num_irreducible_sites[element])
             wyckoff = sym_dataset["wyckoffs"][first_index]
-            site_symmetry = sym_dataset["site_symmetry_symbols"][i]
+            site_symmetry = sym_dataset["site_symmetry_symbols"][first_index]
 
             # get the minimum distance from the representative coordinates.
             min_dist = min_distance_from_coords(structure, repr_coords)
