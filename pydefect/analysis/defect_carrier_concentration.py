@@ -260,6 +260,8 @@ def calc_equilibrium_concentration(defect_energies: dict,
                     for annotation in defect_concentration[name][charge]:
                         concentration = \
                             defect_concentration[name][charge][annotation]
+                        if annotation is None:
+                            annotation = "None"
                         logger.info(f"{name:>8}  {charge:2d}  {annotation:>6}:"
                                     f"   {concentration:.1e} cm-3.")
 

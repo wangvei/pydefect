@@ -37,12 +37,13 @@ class ComplexDefectsTest(PydefectTest):
     def setUp(self):
         self.structure = self.get_structure_by_name("Cu2O48atoms")
 
-        self.split = ComplexDefect(removed_atom_indices=[9, 31],
-                              inserted_atoms=[{"element": "Cu",
-                                               "coords": [0.5, 0.5, 0.625]}],
-                              point_group="mm2",
-                              multiplicity=96,
-                              extreme_charge_state=-1)
+        self.split = \
+            ComplexDefect(removed_atom_indices=[9, 31],
+                          inserted_atoms=[{"element": "Cu",
+                                           "coords": [0.5, 0.5, 0.625]}],
+                          point_group="mm2",
+                          multiplicity=96,
+                          extreme_charge_state=-1)
 
         self.interstitial = \
             ComplexDefect(removed_atom_indices=None,

@@ -198,7 +198,7 @@ class DefectStructure(MSONable):
 
 
 def defect_structure_matcher(d_list: List[DefectStructure],
-                             stol: float = 0.03) -> dict:
+                             stol: float = 0.3) -> dict:
     """ A list of DefectStructure is grouped by structural equality.
 
     Args:

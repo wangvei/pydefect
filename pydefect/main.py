@@ -808,6 +808,9 @@ def main():
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
         aliases=['vps'])
 
+    vps_defaults = {"contcar": "CONTCAR"}
+    simple_override(vps_defaults, "contcar")
+
     parser_vasp_parchg_set.add_argument(
         "-rd", "--read_dir", dest="read_dir", type=str,
         help="Read directory name.")
@@ -820,6 +823,8 @@ def main():
     parser_vasp_parchg_set.add_argument(
         "-k", "--kpoints", dest="kpoint_indices", type=int, nargs='+',
         help="K-point indices.")
+    parser_vasp_parchg_set.add_argument(
+        "-c", dest="contcar", default=vps_defaults["contcar"], type=str)
 
     parser_vasp_parchg_set.set_defaults(func=vasp_parchg_set)
 

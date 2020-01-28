@@ -3,11 +3,13 @@
 import json
 from pathlib import Path
 from pprint import pformat
-from typing import Union, Tuple, Optional
+from typing import Union, Optional
 
 import numpy as np
+
 from monty.json import MontyEncoder, MSONable
 from monty.serialization import loadfn
+
 from pydefect.core.config import (
     DEFECT_SYMMETRY_TOLERANCE, ANGLE_TOL, CUTOFF_FACTOR)
 from pydefect.core.defect_entry import DefectEntry
@@ -20,11 +22,13 @@ from pydefect.util.tools import (
     mod_defaultdict)
 from pydefect.util.vasp_util import (
     calc_participation_ratio, calc_orbital_character)
+
 from pymatgen.core import Structure
 from pymatgen.electronic_structure.core import Spin
 from pymatgen.io.vasp.inputs import Poscar
 from pymatgen.io.vasp.outputs import Outcar, Vasprun, Procar
 from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
+
 from vise.analyzer.band_gap import band_gap_properties
 
 __author__ = "Yu Kumagai"

@@ -417,7 +417,7 @@ class DefectEnergies(MSONable):
             charge_set.add(charge)
             y_min, y_max = min([y, y_min]), max([y, y_max])
             if min(charge_set) > 0:
-                ax.plot(x=x_max, y=y, marker="o", mec=color[i], mfc="white")
+                ax.plot(x_max, y, marker="o", mec=color[i], mfc="white")
 
             # -----------------------------------------------------------------
             # set x and y arrays to be compatible with matplotlib style.
@@ -523,10 +523,11 @@ class DefectEnergies(MSONable):
         ax.tick_params(
             direction='in', bottom=True, top=True, left=True, right=True)
 
-        # change 0.0 to 0
-        from pydefect.util.matplotlib import formatter
-        ax.xaxis.set_major_formatter(formatter)
-        ax.yaxis.set_major_formatter(formatter)
+        # # change 0.0 to 0
+        # TODO: appear 0.10000000001 so fix it when uncomment them
+        # from pydefect.util.matplotlib import formatter
+        # ax.xaxis.set_major_formatter(formatter)
+        # ax.yaxis.set_major_formatter(formatter)
 
         if compile:
             return plt, ax2

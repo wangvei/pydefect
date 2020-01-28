@@ -498,8 +498,12 @@ def efnv_correction(args):
         logger.info(f"correcting {directory} ...")
         entry = DefectEntry.load_json(os.path.join(directory,
                                                    "defect_entry.json"))
-        defect_dft_data = SupercellCalcResults.load_json(
-            os.path.join(directory, "dft_results.json"))
+        try:
+            defect_dft_data = SupercellCalcResults.load_json(
+                os.path.join(directory, "dft_results.json"))
+        except IOError:
+            logger.warning(f"dft_results.json in {directory} does not exist.")
+            continue
 
         c = ExtendedFnvCorrection. \
             compute_correction(defect_entry=entry,
@@ -592,7 +596,6 @@ def plot_energy(args):
         chem_pot = ChemPotDiag.load_vertices_yaml(args.chem_pot_yaml)
 
         # First construct DefectEnergies class object.
-#        print(args.)
         defect_energies = \
             DefectEnergies.from_objects(unitcell=unitcell,
                                         perfect=perfect,
@@ -671,7 +674,8 @@ def vasp_parchg_set(args):
         sort_structure=False,
         standardize_structure=False,
         files_to_transfer={"WAVECAR": "L"},
-        user_incar_settings=user_incar_settings)
+        user_incar_settings=user_incar_settings,
+        contcar_filename=args.contcar)
 
     vasp_set.write_input(args.write_dir)
 
