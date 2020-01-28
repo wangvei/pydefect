@@ -334,9 +334,10 @@ class SupercellCalcResults(MSONable):
             else:
                 center = defect_coords = defect_entry.defect_center_coords
 
-            cutoff = (cutoff or
-                      round(min_distance_from_coords(final_structure, center)
-                            * CUTOFF_FACTOR, 2))
+            if cutoff is None:
+                min_d = min_distance_from_coords(final_structure, defect_coords)
+                cutoff = round(min_d * CUTOFF_FACTOR, 2)
+
             neighboring_sites = []
             for i, site in enumerate(final_structure):
                 # Calculate the distance between defect and site
