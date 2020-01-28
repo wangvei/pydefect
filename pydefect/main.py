@@ -5,7 +5,8 @@ import argparse
 from typing import Union
 
 from pydefect.core.defect_entry import DefectEntry
-from pydefect.core.interstitial_site import InterstitialSiteSet
+from pydefect.core.interstitial_site import (
+    InterstitialSiteSet, interstitials_from_charge_density)
 from pydefect.core.supercell_calc_results import SupercellCalcResults
 from pydefect.core.complex_defects import ComplexDefects
 from pydefect.input_maker.defect_initial_setting import DefectInitialSetting
@@ -35,6 +36,7 @@ def main():
     # The following keys can be set by pydefect.yaml
     setting_keys = ["symprec",
                     "defect_symprec",
+                    "interstitial_symprec",
                     "angle_tolerance",
                     "kpt_density",
                     "defect_kpt_density",
@@ -179,7 +181,8 @@ def main():
     is_defaults = get_default_args(DefectInitialSetting.from_basic_settings)
     is_defaults.update(get_default_args(Supercells))
     simple_override(is_defaults,
-                    ["symprec", "angle_tolerance", "displacement_distance"])
+                    ["defect_symprec", "angle_tolerance",
+                     "displacement_distance"])
 
     parser_initial.add_argument(
         "--symprec", dest="symprec", type=float,
@@ -278,9 +281,11 @@ def main():
 
     i_defaults = get_default_args(InterstitialSiteSet.add_sites)
     i_defaults.update(get_default_args(InterstitialSiteSet.from_files))
+    i_defaults.update(get_default_args(interstitials_from_charge_density))
 
     simple_override(i_defaults,
-                    ["vicinage_radius", "symprec", "angle_tolerance"])
+                    ["vicinage_radius", "defect_symprec",
+                     "interstitial_symprec", "angle_tolerance"])
 
     parser_interstitial.add_argument(
         "--yaml", dest="yaml", type=str, default=i_defaults["yaml_filename"],
@@ -307,8 +312,14 @@ def main():
              "too close to other atoms.")
     parser_interstitial.add_argument(
         "--symprec", dest="symprec", type=float,
-        default=i_defaults["symprec"],
-        help="Set length precision used for symmetry analysis [A].")
+        default=i_defaults["defect_symprec"],
+        help="Set length precision used for determining the defect site "
+             "symmetry [A].")
+    parser_interstitial.add_argument(
+        "--interstitial_symprec", dest="interstitial_symprec", type=float,
+        default=i_defaults["interstitial_symprec"],
+        help="Set length precision used for determining the site symmetry used"
+             "in CHGCAR analysis [A].")
     parser_interstitial.add_argument(
         "--angle_tolerance", dest="angle_tolerance", type=float,
         default=i_defaults["angle_tolerance"],

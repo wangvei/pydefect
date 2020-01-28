@@ -11,6 +11,8 @@ DISPLACEMENT_DISTANCE = 0.2
 SYMMETRY_TOLERANCE = 0.01
 # The following must be used after structure optimization anytime.
 DEFECT_SYMMETRY_TOLERANCE = 0.07
+# For seeking inequivalent interstitial sites.
+INTERSTITIAL_SYMPREC = 0.15
 
 ANGLE_TOL = 5
 

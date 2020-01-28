@@ -203,7 +203,7 @@ def interstitial(args):
     if args.chgcar:
         interstitials_from_charge_density(
             chgcar_filename=args.chgcar,
-            symprec=args.symprec,
+            interstitial_symprec=args.interstitial_symprec,
             angle_tolerance=args.angle_tolerance)
 
     else:
@@ -238,11 +238,10 @@ def interstitial(args):
         # TODO: understand the reason why inv_trans_mat must be multiplied from
         #  right.
         supercell_coords = [np.dot(c, inv_trans_mat).tolist() for c in coords]
-#        print(supercell_coords)
 
         interstitial_set.add_sites(frac_coords=supercell_coords,
                                    vicinage_radius=args.radius,
-                                   symprec=args.symprec,
+                                   defect_symprec=args.symprec,
                                    angle_tolerance=args.angle_tolerance)
 
         interstitial_set.site_set_to_yaml_file(yaml_filename=args.yaml)

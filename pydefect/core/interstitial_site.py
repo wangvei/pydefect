@@ -6,7 +6,8 @@ from typing import Union, Optional, Dict, List
 
 import yaml
 from monty.json import MSONable
-from pydefect.core.config import SYMMETRY_TOLERANCE, ANGLE_TOL, CUTOFF_FACTOR
+from pydefect.core.config import (
+    DEFECT_SYMMETRY_TOLERANCE, INTERSTITIAL_SYMPREC, ANGLE_TOL, CUTOFF_FACTOR)
 from pydefect.database.symmetry import num_symmetry_operation
 from pydefect.util.logger import get_logger
 from pydefect.util.structure_tools import (
@@ -175,7 +176,7 @@ class InterstitialSiteSet(MSONable):
     def add_sites(self,
                   frac_coords: list,
                   vicinage_radius: float = 0.3,
-                  symprec: float = SYMMETRY_TOLERANCE,
+                  defect_symprec: float = DEFECT_SYMMETRY_TOLERANCE,
                   angle_tolerance: float = ANGLE_TOL,
                   method: str = "manual") -> None:
         """ Add interstitial sites
@@ -189,7 +190,7 @@ class InterstitialSiteSet(MSONable):
                 Added fractional coords in the self.structure.
             vicinage_radius (float):
                 Radius in which atoms are considered too close.
-            symprec (float):
+            defect_symprec (float):
                 Precision used for symmetry analysis in angstrom.
             angle_tolerance (float):
                 Angle tolerance for symmetry analysis in degree
@@ -203,13 +204,14 @@ class InterstitialSiteSet(MSONable):
                 structure=self.structure,
                 inserted_atom_coords=total_coords,
                 dist_tol=vicinage_radius,
-                symprec=symprec,
+                symprec=defect_symprec,
                 angle_tolerance=angle_tolerance)
 
         min_dist = min_distance_from_coords(self.structure, total_coords)
         cutoff = round(min_dist * CUTOFF_FACTOR, 2)
 
-        sga = SpacegroupAnalyzer(saturated_structure, symprec, angle_tolerance)
+        sga = SpacegroupAnalyzer(saturated_structure, defect_symprec,
+                                 angle_tolerance)
         symmetry_dataset = sga.get_symmetry_dataset()
         num_symmop = len(sga.get_symmetry_operations())
 
@@ -257,13 +259,9 @@ def interstitials_from_charge_density(
         min_dist: float = 0.5,
         tol: float = 0.2,
         radius: float = 0.4,
-        symprec: float = SYMMETRY_TOLERANCE,
+        interstitial_symprec: float = INTERSTITIAL_SYMPREC,
         angle_tolerance: float = ANGLE_TOL) -> None:
     """ Print interstitial sites determined from charge density local minimum
-
-    Note that symprec must be the same as that used for
-    DefectInitialSetting to keep the symmetry consistency such as
-    point group, multiplicity and so on.
 
     Args:
         chgcar_filename (str):
@@ -278,7 +276,7 @@ def interstitials_from_charge_density(
             See docstrings of ChargeDensityAnalyzer.
         radius:
             See docstrings of ChargeDensityAnalyzer.
-        symprec (float):
+        interstitial_symprec (float):
             Precision used for symmetry analysis in angstrom.
         angle_tolerance (float):
             Angle tolerance for symmetry analysis in degree
@@ -303,15 +301,23 @@ def interstitials_from_charge_density(
     coords = cda.extrema_coords
     for c in coords:
         structure.append(DummySpecie(), c)
-    sga = SpacegroupAnalyzer(structure, symprec, angle_tolerance)
+    sga = SpacegroupAnalyzer(structure, interstitial_symprec, angle_tolerance)
     sym_db = sga.get_symmetry_dataset()
     equiv_atoms = sym_db["equivalent_atoms"]
 
+    sym_struct = sga.get_symmetrized_structure()
+
     print("")
     print("++ Inequivalent indices and site symmetries ++")
+    orig_num_atoms = len(chgcar.structure)
     for i, ii in enumerate(interstitial_indices):
         if ii == equiv_atoms[ii]:
-            print(i, sym_db["site_symmetry_symbols"][ii])
+            idx = orig_num_atoms + i
+            coords = sym_struct[idx].coords
+            idx_coords = \
+                f"{i:>3} {coords[0]:8.4f} {coords[1]:8.4f} {coords[2]:8.4f}"
+
+            print(idx_coords, sym_db["site_symmetry_symbols"][ii])
 
     # Change coords from unitcell to supercell
     # multiply inverse of trans_mat to coords
