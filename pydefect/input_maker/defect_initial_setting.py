@@ -938,7 +938,8 @@ class DefectInitialSetting(MSONable):
 
             # need to evaluate min_dist using the atom removed structure
             center = defect_center_from_coords(coords, removed_structure)
-            min_dist = min_distance_from_coords(removed_structure, coords)
+            min_dist = min_distance_from_coords(removed_structure, center)
+
             cutoff = round(min_dist * CUTOFF_FACTOR, 2)
 
             charges = default_charge_set(complex_defect.extreme_charge_state)
