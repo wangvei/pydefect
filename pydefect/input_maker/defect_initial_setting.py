@@ -691,9 +691,11 @@ class DefectInitialSetting(MSONable):
         sga = SpacegroupAnalyzer(structure, symprec, angle_tolerance)
         symmetrized_structure = sga.get_symmetrized_structure()
         equiv_sites = symmetrized_structure.equivalent_sites
-        sym_dataset = sga.get_symmetry_dataset()
         sorted_structure = \
             Structure.from_sites(reduce(lambda a, b: a + b, equiv_sites))
+
+        sga = SpacegroupAnalyzer(sorted_structure, symprec, angle_tolerance)
+        sym_dataset = sga.get_symmetry_dataset()
 
         species = [str(s) for s in sorted_structure.species]
         # unique_justseen https://docs.python.org/ja/3/library/itertools.html
