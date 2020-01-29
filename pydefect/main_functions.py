@@ -387,6 +387,8 @@ def defect_entry(args):
 
 
 def supercell_calc_results(args):
+    print(args)
+
     if args.print:
         print(SupercellCalcResults.load_json(args.json))
         return
@@ -701,7 +703,7 @@ def local_structure(args):
 
     if args.compare_structure:
         print("-" * 80)
-        print(defect_structure_matcher(d_list))
+        print(defect_structure_matcher(d_list, args.site_tolerance))
         print("")
 
 

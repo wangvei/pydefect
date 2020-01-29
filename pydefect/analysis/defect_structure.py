@@ -198,20 +198,23 @@ class DefectStructure(MSONable):
 
 
 def defect_structure_matcher(d_list: List[DefectStructure],
-                             stol: float = 0.3) -> dict:
+                             site_tolerance: float = 0.05) -> dict:
     """ A list of DefectStructure is grouped by structural equality.
 
     Args:
         d_list ([DefectStructure]): List of DefectStructure to be grouped
-        stol: See docstrings of StructureMatcher in
-              pymatgen.analysis.structure_matcher.
+        site_tolerance: Defined as the fraction of the average free length per
+            atom := ( V / Nsites ) ** (1/3) Default in pymatgen is 0.3.
+            See docstrings of StructureMatcher in
+            pymatgen.analysis.structure_matcher.
     Returns:
         A list of lists of matched structures
         Assumption: if s1 == s2 but s1 != s3, than s2 and s3 will be put
         in different groups without comparison.
     """
-    sm = StructureMatcher(stol=stol, primitive_cell=False, scale=False)
-
+    sm = StructureMatcher(stol=site_tolerance,
+                          primitive_cell=False,
+                          scale=False)
     group = {}
     # Pre-grouped by name
     d_list.sort(key=attrgetter("name"))

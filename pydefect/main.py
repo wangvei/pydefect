@@ -22,6 +22,7 @@ from pydefect.util.main_tools import (
     get_default_args)
 from vise.util.main_tools import get_user_settings, dict2list
 from pydefect.corrections.efnv_corrections import Ewald
+from pydefect.analysis.defect_structure import defect_structure_matcher
 
 __author__ = "Yu Kumagai"
 __maintainer__ = "Yu Kumagai"
@@ -37,6 +38,7 @@ def main():
     setting_keys = ["symprec",
                     "defect_symprec",
                     "interstitial_symprec",
+                    "site_tolerance",
                     "angle_tolerance",
                     "kpt_density",
                     "defect_kpt_density",
@@ -835,6 +837,9 @@ def main():
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
         aliases=['ls'])
 
+    ls_defaults = get_default_args(defect_structure_matcher)
+    simple_override(ls_defaults, "site_tolerance")
+
     parser_local_structure.add_argument(
         "--d", dest="defect", type=str, default="defect.json")
     parser_local_structure.add_argument(
@@ -842,6 +847,11 @@ def main():
     parser_local_structure.add_argument(
         "--cs", dest="compare_structure", action="store_true",
         help="Compare the structures between different charge states.")
+    parser_local_structure.add_argument(
+        "--st", dest="site_tolerance", type=float,
+        default=ls_defaults["site_tolerance"],
+        help=" Site tolerance. Defined as the fraction of the average free "
+             "length per atom := ( V / Nsites ) ** (1/3).")
     parser_local_structure.add_argument(
         "--defect_dirs", dest="defect_dirs", type=str, default=None, nargs="+",
         help="Directory names for the defect supercell result."
