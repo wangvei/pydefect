@@ -313,7 +313,7 @@ def interstitials_from_charge_density(
     for i, ii in enumerate(interstitial_indices):
         if ii == equiv_atoms[ii]:
             idx = orig_num_atoms + i
-            coords = sym_struct[idx].coords
+            coords = sym_struct[idx].frac_coords
             idx_coords = \
                 f"{i:>3} {coords[0]:8.4f} {coords[1]:8.4f} {coords[2]:8.4f}"
 
