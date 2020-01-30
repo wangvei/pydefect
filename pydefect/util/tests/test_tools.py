@@ -20,7 +20,7 @@ class DefaultdictToDictTest(PydefectTest):
         print(defaultdict_to_dict(self.d))
 
 
-class AllCombinationTest(PydefectTest):
+class FlattenDictTest(PydefectTest):
     def setUp(self) -> None:
         d = {"a": defaultdict(dict)}
         d["a"]["b"] = {"c": 1}
@@ -32,7 +32,7 @@ class AllCombinationTest(PydefectTest):
         self.assertEqual([['a', 'b', 'c', 1]], flatten_dict(self.d))
 
 
-class DefaultDictTest(PydefectTest):
+class ModDefaultDictTest(PydefectTest):
     def test(self):
         d = mod_defaultdict(depth=2)
         self.assertEqual(d[0][0], None)

@@ -1,17 +1,28 @@
 # -*- coding: utf-8 -*-
 from collections import defaultdict
-from typing import Optional, Callable, Union
+from typing import Optional, Callable, Union, Any
 from xml.etree.ElementTree import ParseError
 from copy import deepcopy
 
-import numpy as np
 from pydefect.util.logger import get_logger
 from pymatgen import Spin
 
 logger = get_logger(__name__)
 
+"""
+This module provides supporting functions that are used for various purposes.
+"""
+
 
 def is_str_digit(n: str) -> bool:
+    """Check whether the given string is a digit or not.
+
+    Args:
+        n (str): The checked string.
+
+    Returns:
+        Bool.
+    """
     try:
         float(n)
         return True
@@ -20,6 +31,14 @@ def is_str_digit(n: str) -> bool:
 
 
 def is_str_int(n: str) -> bool:
+    """Check whether the given string is an integer or not.
+
+    Args:
+        n (str): The checked string.
+
+    Returns:
+        Bool.
+    """
     try:
         if int(n) - float(n) < 1e-5:
             return True
@@ -30,10 +49,18 @@ def is_str_int(n: str) -> bool:
 
 
 def spin_key_to_str(arg: Optional[dict],
-                    value_to_str=False) -> Optional[dict]:
-    """ Change Spin object in key to int.
+                    value_to_str: bool = False) -> Optional[dict]:
+    """Change Spin object in key to int.
 
-    Optionally, value is also changed to str.
+    Args:
+        arg (dict):
+            The dict in which the key is changed to int. When it is None, None
+            is returned.
+        value_to_str (bool):
+            Whether value is converted to string.
+
+    Returns:
+         dict or None
     """
     if arg is not None:
         if value_to_str:
@@ -45,14 +72,26 @@ def spin_key_to_str(arg: Optional[dict],
 
 
 def str_key_to_spin(arg: Optional[dict],
-                    method_from_str_for_value=None) -> Optional[dict]:
-    """ Change int key to Spin object. """
+                    classmethod_from_str_for_value: Callable = None
+                    ) -> Optional[dict]:
+    """Change Spin object in key to int.
+
+    Args:
+        arg (dict):
+            The dict in which the key is changed to string. When it is None,
+            None is returned.
+        classmethod_from_str_for_value (Callable):
+            Whether value is converted to an object using the given classmethod.
+
+    Returns:
+         dict or None
+    """
     if arg is not None:
         x = {}
         for spin, value in arg.items():
             x[Spin(int(spin))] = value
-            if method_from_str_for_value:
-                x[Spin(int(spin))] = method_from_str_for_value(value)
+            if classmethod_from_str_for_value:
+                x[Spin(int(spin))] = classmethod_from_str_for_value(value)
             else:
                 x[Spin(int(spin))] = value
         return x
@@ -60,21 +99,33 @@ def str_key_to_spin(arg: Optional[dict],
         return
 
 
-def parse_file(classmethod_name: Callable, parsed_filename: str):
-    """Check filename and parse and return cls via __init__ or classmethod """
+def parse_file(classmethod_name: Callable, parsed_filename: str) -> Any:
+    """Check filename and parse and return cls via __init__ or classmethod.
+
+    Args:
+         classmethod_name (Callable):
+            Method to parse the given file. E.g., CLASS.from_file
+        parsed_filename (str):
+            Parsed file name.
+
+    Return:
+         Return of the classmethod.
+    """
     try:
-        logger.info("Parsing {}...".format(parsed_filename))
+        logger.info(f"Parsing {parsed_filename}...")
         return classmethod_name(parsed_filename)
     except ParseError:
-        logger.warning("Parsing {} failed.".format(parsed_filename))
+        logger.warning(f"Parsing {parsed_filename} failed.")
         raise ParseError
     except FileNotFoundError:
-        logger.warning("File {} doesn't exist.".format(parsed_filename))
+        logger.warning(f"File {parsed_filename} not found.")
         raise FileNotFoundError
 
 
 def defaultdict_to_dict(d: dict) -> dict:
-    """Recursively change defaultdict to dict"""
+    """Recursively change defaultdict to dict.
+
+    """
     if isinstance(d, defaultdict):
         d = dict(d)
     if isinstance(d, dict):
@@ -116,7 +167,7 @@ def make_symmetric_matrix(d: Union[list, float]) -> list:
 
 
 def sanitize_keys_in_dict(d: dict) -> dict:
-    """ Recursively sanitize keys in dict from str to int, float and None.
+    """Recursively sanitize keys in dict from str to int, float and None.
     Args
         d (dict):
             d[name][charge][annotation]
@@ -158,7 +209,13 @@ def construct_obj_in_dict(d: dict, cls: Callable) -> dict:
 
 
 def flatten_dict(d: dict, depth: int = None) -> list:
-    """ Flatten keys and values in dic
+    """Flatten keys and values in dict to list.
+
+    Args:
+        d (dict):
+            Dict to be converted to list.
+        depth:
+            Depth to be
 
     d[a][b][c] = x -> [a, b, c, x]
     """
@@ -175,6 +232,14 @@ def flatten_dict(d: dict, depth: int = None) -> list:
 
 
 def mod_defaultdict(depth: int) -> Optional[defaultdict]:
+    """Create Nested default dict.
+
+    Args:
+        depth (int): Depth of the nest.
+
+    Return:
+        None or nested default dict.
+    """
     if depth == 0:
         return None
     else:
