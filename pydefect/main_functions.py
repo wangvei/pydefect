@@ -717,7 +717,7 @@ def local_structure(args):
 
 
 def concentration(args):
-    defect_energies = DefectEnergies.load_json(args.energies)
+    defect_energies = DefectEnergies.load_json(args.energies).defect_energies
     unitcell = UnitcellCalcResults.load_json(args.unitcell)
 
     defect_concentration = DefectConcentration.from_calc_results(

@@ -233,6 +233,7 @@ class DefectConcentrationTest(PydefectTest):
         self.defect_concentration = \
             DefectConcentration.from_calc_results(self.defect_energies,
                                                   self.unitcell)
+
         self.defect_concentration.calc_equilibrium_concentration(
             temperature=10000, verbose=False)
         self.defect_concentration.calc_quenched_equilibrium_concentration(
@@ -250,8 +251,15 @@ class DefectConcentrationTest(PydefectTest):
 
     def test_dict(self):
         expected = self.defect_concentration.as_dict()
-        actual = DefectConcentration.from_dict(d).as_dict()
-        self.assertEqual(expected, actual)
+        actual = DefectConcentration.from_dict(expected).as_dict()
+        for k, v in expected.items():
+            print(k)
+            print(v)
+            print("++++++++++++++++++++++++++++")
+            print(actual[k])
+            print("----------------------------")
+
+            self.assertEqual(v, actual[k])
 
     def test_json(self):
         """ round trip test of to_json and from_json """

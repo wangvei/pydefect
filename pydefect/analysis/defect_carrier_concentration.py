@@ -403,15 +403,19 @@ class DefectConcentration(MSONable):
                    vbm=unitcell.band_edge[0],
                    cbm=unitcell.band_edge[1],
                    total_dos=unitcell.total_dos)
+
     @classmethod
     def from_dict(cls, d):
         """Construct a class object from a dictionary. """
-
         d["defect_energies"] = sanitize_keys_in_dict(d["defect_energies"])
         d["equilibrium_concentration"] = \
             sanitize_keys_in_dict(d["equilibrium_concentration"])
         d["quenched_equilibrium_concentration"] = \
             sanitize_keys_in_dict(d["quenched_equilibrium_concentration"])
+
+        d.pop("@module", None)
+        d.pop("@class", None)
+        d.pop("@version", None)
 
         return cls(**d)
 
@@ -582,6 +586,9 @@ class DefectConcentration(MSONable):
                 Specifies the y-axis limits. None for automatic determination.
             set_vbm_zero (bool):
                 Set VBM to zero.
+
+        Returns:
+            pyplot.
         """
         fig = plt.figure()
         ax = fig.add_subplot(111)
@@ -605,8 +612,7 @@ class DefectConcentration(MSONable):
         else:
             max_y = max([con for concentration in self.concentrations
                          for d in ("p", "n")
-                         for c in concentration[d]
-                         for con in concentration[d][c].values()])
+                         for c, con in concentration[d].items()])
             ylim = [10 ** 10, max_y * 2]
 
         plt.ylim(ylim[0], ylim[1])
