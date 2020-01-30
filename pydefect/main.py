@@ -746,7 +746,7 @@ def main():
         default=pe_defaults["chem_pot_yaml"],
         help="Yaml file name for the chemical potential.")
     parser_plot_energy.add_argument(
-        "--chem_pot_label", dest="chem_pot_label", type=str, default="A",
+        "-l", "--chem_pot_label", dest="chem_pot_label", type=str, default="A",
         help="Label indicating the equilibrium point in the chemical potential"
              "diagram.")
     parser_plot_energy.add_argument(
@@ -760,6 +760,12 @@ def main():
     parser_plot_energy.add_argument(
         "-sa", "--show_all", dest="show_all", action="store_true",
         help="Show all the energy lines.")
+    parser_plot_energy.add_argument(
+        "-r", "--reload_defects", dest="reload", action="store_true",
+        help="Remove defect_energies.json and reload defect.json files.")
+    parser_plot_energy.add_argument(
+        "--print", dest="print", action="store_true",
+        help="Print information on defect formation energies.")
     # parser_plot_energy.add_argument(
     #     "-u", dest="u", action="store_true",
     #     help="Calculate the U values at given defect name and three charges")

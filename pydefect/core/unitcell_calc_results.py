@@ -32,10 +32,13 @@ class UnitcellCalcResults(MSONable):
         Args:
             band_edge (list): [VBM, CBM].
             static_dielectric_tensor (3x3 list):
+                Electronic part of dielectric tensol.
             ionic_dielectric_tensor (3x3 list):
+                Ionic part of dielectric tensol.
             total_dos (list):
-                [[energy1, energy2, ...], [dos1, dos2, ...]]
-            volume (float): Volume in A-3.
+                Total DOS,  [[dos1, dos2, ...], [energy1, energy2, ...]]
+            volume (float):
+                Volume in A-3.
         """
         self._band_edge = band_edge[:] if band_edge else None
         self._static_dielectric_tensor = static_dielectric_tensor

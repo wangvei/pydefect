@@ -4,7 +4,7 @@ import json
 from itertools import combinations
 from itertools import groupby
 from operator import itemgetter, attrgetter
-from typing import List, Tuple, Dict, Union
+from typing import List, Tuple, Dict, Union, Optional
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -32,7 +32,7 @@ logger = get_logger(__name__)
 class DefectEnergy(MSONable):
     def __init__(self,
                  defect_energy: float,
-                 annotation: str,
+                 annotation: Optional[str],
                  multiplicity: int,
                  magnetization: float,
                  convergence: bool,
@@ -111,7 +111,7 @@ class DefectEnergies(MSONable):
         All the energies are calculated at 0 eV in the absolute scale.
 
         Note: When there are multiple defects for the same defect and same
-              charge states with different annotations, only the lowest energy
+              charge states with *different annotations*, only the lowest energy
               one is drawn.
 
         Args:

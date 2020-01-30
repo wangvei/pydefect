@@ -6,6 +6,8 @@ import tempfile
 from pydefect.analysis.defect_carrier_concentration import *
 from pydefect.core.unitcell_calc_results import UnitcellCalcResults
 from pydefect.util.testing import PydefectTest
+from pydefect.analysis.defect_energies import DefectEnergy
+
 from scipy.constants import physical_constants
 
 __author__ = "Yu Kumagai"
@@ -13,17 +15,6 @@ __maintainer__ = "Yu Kumagai"
 
 test_dir = os.path.join(os.path.dirname(__file__), "..", "..", "..",
                         "test_files", "core")
-
-EV = physical_constants['Boltzmann constant in eV/K'][0]
-
-
-class AllCombinationTest(PydefectTest):
-    def test(self):
-        # a = {'Va_O1': {0: {None: {'energy': 1.362400134999998, 'convergence': True, 'is_shallow': False}}, 1: {None: {'energy': -4.2058905866258645, 'convergence': True, 'is_shallow': False}}, 2: {None: {'energy': -7.983747657760918, 'convergence': True, 'is_shallow': False}, 'inward': {'energy': -6.016447897493341, 'convergence': True, 'is_shallow': False}}}}
-        # print(all_combination(a))
-        b = {0: {None: {'energy': 1.362400134999998, 'convergence': True, 'is_shallow': False}}, 1: {None: {'energy': -4.2058905866258645, 'convergence': True, 'is_shallow': False}}, 2: {None: {'energy': -7.983747657760918, 'convergence': True, 'is_shallow': False}, 'inward': {'energy': -6.016447897493341, 'convergence': True, 'is_shallow': False}}}
-        # print(all_combination(a))
-        print(flatten_dict(b))
 
 
 class CalcCarrierConcentrationTest(PydefectTest):
@@ -33,12 +24,12 @@ class CalcCarrierConcentrationTest(PydefectTest):
 
         self.vbm = 0
         self.cbm = 10
-        energies = np.linspace(-1, 11, num=121)
+        energies = np.linspace(-1, 11, num=121).tolist()
         # Dos is halved at the boundaries.
         # dos -> 0.5 at -0.2, 0, 10, and 10.2, and 1 at -0.1 and 10.1
         dos = [0.0] * 8 + [0.5] + [1.0] + [0.5] + [0.0] * 99 + [0.5] + [1.0] + \
               [0.5] + [0.0] * 8
-        self.total_dos = np.array([dos, energies])
+        self.total_dos = [dos, energies]
         self.volume = 100
         self.temperature = 10000
         # [3.0036, 7.4934]
@@ -72,38 +63,30 @@ class CalcCarrierConcentrationTest(PydefectTest):
 
 class CalcConcentrationTest(PydefectTest):
     def setUp(self):
-        self.defect_energies = defaultdict(dict)
-        self.defect_energies["Va_O1"][0] = {None: 4.0}
-        self.defect_energies["Va_O1"][1] = {None: 3.0}
-        self.defect_energies["Va_O1"][2] = {None: 1.0}
-#        self.energies["Va_Mg1"][0] = {None: 4.0}
-#        self.energies["Va_Mg1"][-1] = {None: 5.0}
-        self.defect_energies["Va_Mg1"][-2] = {None: 6.0}
+        self.defect_energies = {"Va_O1": {}, "Va_Mg1": {}}
+
+        self.defect_energies["Va_O1"][0] = \
+            DefectEnergy(defect_energy=4.0,
+                         annotation=None,
+                         multiplicity=1,
+                         magnetization=0.0,
+                         convergence=True,
+                         shallow=False)
+        self.defect_energies["Va_O1"][1] = \
+            DefectEnergy(3.0, None, 1, 1.0, True, False)
+        self.defect_energies["Va_O1"][2] = \
+            DefectEnergy(1.0, None, 2, 1.0, True, False)
+        self.defect_energies["Va_Mg1"][-2] = \
+            DefectEnergy(4.0, None, 1, 0.0, True, False)
 
         self.vbm = 0
         self.cbm = 10
-        energies = np.linspace(-1, 11, num=121)
-        # Dos is halved at the boundaries.
+        energies = np.linspace(-1, 11, num=121).tolist()
+        # DOS is halved at the boundaries.
         # dos -> 0.5 at -0.2, 0, 10, and 10.2, and 1 at -0.1 and 10.1
         dos = [0.0] * 8 + [0.5] + [1.0] + [0.5] + [0.0] * 99 + [0.5] + [1.0] + \
               [0.5] + [0.0] * 8
-        self.total_dos = np.array([dos, energies])
-
-        self.multiplicity = defaultdict(dict)
-        self.multiplicity["Va_O1"][0] = {None: 1}
-        self.multiplicity["Va_O1"][1] = {None: 1}
-        self.multiplicity["Va_O1"][2] = {None: 2}
-#        self.multiplicity["Va_Mg1"][0] = {None: 1}
-#        self.multiplicity["Va_Mg1"][-1] = {None: 1}
-        self.multiplicity["Va_Mg1"][-2] = {None: 1}
-
-        self.magnetization = defaultdict(dict)
-        self.magnetization["Va_O1"][0] = {None: 0}
-        self.magnetization["Va_O1"][1] = {None: 1}
-        self.magnetization["Va_O1"][2] = {None: 1}
-#        self.magnetization["Va_Mg1"][0] = {None: 2}
-#        self.magnetization["Va_Mg1"][-1] = {None: 1}
-        self.magnetization["Va_Mg1"][-2] = {None: 0}
+        self.total_dos = [dos, energies]
 
         self.temperature = 10000
         self.volume = 100
@@ -118,25 +101,31 @@ class CalcConcentrationTest(PydefectTest):
                                total_dos=self.total_dos,
                                volume=self.volume)
 
-        va_o1_2_expected = np.exp(-9 / (10000 * 8.6173303e-05)) * 2 * 2
+        # Boltzmann distribution
+        energy = 1 + 4 * 2
+        t = 10000
+        t_to_ev = 8.6173303e-05
+        multiplicity = 2
+        spin_deg = 2
+        va_o1_2_expected = \
+            np.exp(-energy / (t * t_to_ev)) * multiplicity * spin_deg
         va_o1_2_expected /= (100 / 10 ** 24)
-        va_mg1_m2_expected = np.exp(-(6.0 - 2*4) / (10000 * 8.6173303e-05)) * 1 * 1
+
+        energy = 4 - 4 * 2
+        va_mg1_m2_expected = \
+            np.exp(-energy / (t * t_to_ev)) * 1 * 1
         va_mg1_m2_expected /= (100 / 10 ** 24)
 
+        print(concentration["Va_O1"])
+
         self.assertAlmostEqual(
-            concentration["Va_O1"][2][None] / va_o1_2_expected, 1, places=5)
+            concentration["Va_O1"][2] / va_o1_2_expected, 1, places=5)
         self.assertAlmostEqual(
-            concentration["Va_Mg1"][-2][None] / va_mg1_m2_expected, 1, places=5)
+            concentration["Va_Mg1"][-2] / va_mg1_m2_expected, 1, places=5)
 
     def test_ref_concentration(self):
-        ref = defaultdict(dict)
-        #        self.energies["Va_O1"][0] = {None: 4.0}
-        #        self.energies["Va_O1"][1] = {None: 3.0}
-        ref["Va_O1"][2] = {None: 1e+20}
-        ref["Va_O1"][1] = {None: 1.5e+20}
-        ref["Va_O1"][0] = {None: 0.5e+20}
-        ref["Va_Mg1"][2] = {None: 1e+20}
-        #        self.energies["Va_Mg1"][0] = {None: 4.0}
+        ref = {"Va_O1": {2: 1e+20, 1: 1.5e+20, 0: 0.5e+20},
+               "Va_Mg1": {2: 1e+20}}
 
         concentration = \
             calc_concentration(defect_energies=self.defect_energies,
@@ -148,10 +137,49 @@ class CalcConcentrationTest(PydefectTest):
                                volume=self.volume,
                                ref_concentration=ref)
 
-        print(concentration)
+        va_o_expected = 3.0e+20
+        actual = (concentration["Va_O1"][0]
+                  + concentration["Va_O1"][1]
+                  + concentration["Va_O1"][2])
+        self.assertAlmostEqual(actual / va_o_expected, 1, places=5)
+
+        va_o_0_expected = (va_o_expected * 96.402441 /
+                           (96.402441 + 5.931767 + 1.164818))
+        actual = concentration["Va_O1"][0]
+        self.assertAlmostEqual(actual / va_o_0_expected, 1, places=5)
 
 
-    def test2(self):
+class CalcEquilibriumConcentrationTest(PydefectTest):
+    def setUp(self):
+        self.defect_energies = {"Va_O1": {}, "Va_Mg1": {}}
+
+        self.defect_energies["Va_O1"][0] = \
+            DefectEnergy(defect_energy=4.0,
+                         annotation=None,
+                         multiplicity=1,
+                         magnetization=0.0,
+                         convergence=True,
+                         shallow=False)
+        self.defect_energies["Va_O1"][1] = \
+            DefectEnergy(3.0, None, 1, 1.0, True, False)
+        self.defect_energies["Va_O1"][2] = \
+            DefectEnergy(1.0, None, 2, 1.0, True, False)
+        self.defect_energies["Va_Mg1"][-2] = \
+            DefectEnergy(4.0, None, 1, 0.0, True, False)
+
+        self.vbm = 0
+        self.cbm = 10
+        energies = np.linspace(-1, 11, num=121).tolist()
+        # DOS is halved at the boundaries.
+        # dos -> 0.5 at -0.2, 0, 10, and 10.2, and 1 at -0.1 and 10.1
+        dos = [0.0] * 8 + [0.5] + [1.0] + [0.5] + [0.0] * 99 + [0.5] + [1.0] + \
+              [0.5] + [0.0] * 8
+        self.total_dos = [dos, energies]
+
+        self.temperature = 10000
+        self.volume = 100
+
+    def test(self):
         equiv_concentration = \
             calc_equilibrium_concentration(defect_energies=self.defect_energies,
                                            temperature=self.temperature,
@@ -167,96 +195,78 @@ class CalcConcentrationTest(PydefectTest):
 class DefectConcentrationTest(PydefectTest):
 
     def setUp(self):
-        """ """
-        file = os.path.join(test_dir, "MgO/defects/defect_energies.json")
-        defect_energies = DefectEnergies.load_json(file)
-        unitcell_file = os.path.join(test_dir, "MgO/defects/unitcell.json")
-        unitcell = UnitcellCalcResults.load_json(unitcell_file)
+        self.defect_energies = {"Va_O1": {}, "Va_Mg1": {}}
+
+        self.defect_energies["Va_O1"][0] = \
+            DefectEnergy(defect_energy=4.0,
+                         annotation=None,
+                         multiplicity=1,
+                         magnetization=0.0,
+                         convergence=True,
+                         shallow=False)
+        self.defect_energies["Va_O1"][1] = \
+            DefectEnergy(3.0, None, 1, 1.0, True, False)
+        self.defect_energies["Va_O1"][2] = \
+            DefectEnergy(1.0, None, 2, 1.0, True, False)
+        self.defect_energies["Va_Mg1"][-2] = \
+            DefectEnergy(4.0, None, 1, 0.0, True, False)
+        energies = np.linspace(-1, 11, num=121).tolist()
+        # Dos is halved at the boundaries.
+        # dos -> 0.5 at -0.2, 0, 10, and 10.2, and 1 at -0.1 and 10.1
+        dos = [0.0] * 8 + [0.5] + [1.0] + [0.5] + [0.0] * 99 + [0.5] + [1.0] + \
+              [0.5] + [0.0] * 8
+        total_dos = [dos, energies]
+
+        self.unitcell = UnitcellCalcResults(band_edge=[0, 10],
+                                            static_dielectric_tensor=None,
+                                            ionic_dielectric_tensor=None,
+                                            total_dos=total_dos,
+                                            volume=100)
+
+        self.unitcell_no_band_edge = \
+            UnitcellCalcResults(band_edge=None,
+                                static_dielectric_tensor=None,
+                                ionic_dielectric_tensor=None,
+                                total_dos=total_dos,
+                                volume=100)
 
         self.defect_concentration = \
-            DefectConcentration.from_calc_results(
-                defect_energies=defect_energies, unitcell=unitcell)
+            DefectConcentration.from_calc_results(self.defect_energies,
+                                                  self.unitcell)
+        self.defect_concentration.calc_equilibrium_concentration(
+            temperature=10000, verbose=False)
+        self.defect_concentration.calc_quenched_equilibrium_concentration(
+            temperature=298, verbose=False)
 
-    def test(self):
-        # print(self.defect_concentration.energies)
-        # print(self.defect_concentration.multiplicity)
-        # print(self.defect_concentration.magnetization)
-        # print(self.defect_concentration.volume)
-        # print(self.defect_concentration.vbm)
-        # print(self.defect_concentration.cbm)
-        # print(self.defect_concentration.total_dos)
+    def test_unset_band_edge(self):
+        with self.assertRaises(ValueError):
+            DefectConcentration.from_calc_results(self.defect_energies,
+                                                  self.unitcell_no_band_edge)
 
-        # print(self.defect_concentration.temperature)
-        # print(self.defect_concentration.concentrations)
-
-        self.defect_concentration.calc_equilibrium_concentration(temperature=1000, verbose=False)
-        print(self.defect_concentration.equilibrium_concentration)
-        self.defect_concentration.calc_quenched_equilibrium_concentration(temperature=298, verbose=False)
-        print(self.defect_concentration.quenched_equilibrium_concentration)
-
-        self.defect_concentration.calc_concentrations(temperature=1000)
-        print(self.defect_concentration)
-#        self.defect_concentration.plot_carrier_concentrations()
-#        print(self.defect_concentration.concentrations)
-#         print(self.defect_concentration.equilibrium_concentration)
-#         print("-----------------------------------------")
-#        print(self.defect_concentration.concentrations)
-
-    # def test_from_defect_energies(self):
-    #     temperature = 10000
-    #     num_sites_filename = os.path.join(test_dir,
-    #                                       "MgO/defects/num_sites.yaml")
-
-        # dc1 = DefectConcentration.from_defect_energies(
-        #     energies=self.energies,
-        #     temperature=temperature,
-        #     unitcell=self.unitcell,
-        #     num_sites_filename=num_sites_filename)
-
-        # print(dc1.energies)
-        # print(dc1.temperature)
-        # print(dc1.e_f)
-        # print(p)
-        # print(n)
-        # print(dc1.concentration)
-
-        # temperature2 = 1000
-
-#         # dc2 = DefectConcentration.from_defect_energies(
-#         #     energies=self.energies,
-#         #     temperature=temperature2,
-#         #     unitcell=self.unitcell,
-#         #     num_sites_filename=num_sites_filename,
-#         #     previous_concentration=dc1,
-#         #     verbose=True)
-
-#         # print("-------------------------------")
-#         # print(dc2.energies)
-#         # print(dc2.temperature)
-#         # print(dc2.e_f)
-#         # print(dc2.p)
-#         # print(dc2.n)
-#         # print(dc2.concentration)
+    def test_concentration(self):
+        expected = 9.663733208235955e+20
+        actual = self.defect_concentration.equilibrium_concentration["Va_O1"][2]
+        self.assertEqual(expected, actual)
 
     def test_dict(self):
-        """ round trip test of to_json and from_json """
-        self.defect_concentration.calc_equilibrium_concentration(temperature=1000, verbose=False)
-        self.defect_concentration.calc_quenched_equilibrium_concentration(temperature=298, verbose=False)
-        self.defect_concentration.calc_concentrations(temperature=1000)
-
-        d = self.defect_concentration.as_dict()
-        defect_concentration_from_dict = DefectConcentration.from_dict(d)
-        self.assertEqual(defect_concentration_from_dict.as_dict(), d)
+        expected = self.defect_concentration.as_dict()
+        actual = DefectConcentration.from_dict(d).as_dict()
+        self.assertEqual(expected, actual)
 
     def test_json(self):
         """ round trip test of to_json and from_json """
 
-        tmp_file = tempfile.NamedTemporaryFile().name
-        self.defect_concentration.to_json_file(tmp_file)
-        defect_concentration_from_json = DefectConcentration.load_json(tmp_file)
-        print("")
-        print(defect_concentration_from_json.as_dict())
-        print(self.defect_concentration.as_dict())
-        self.assertEqual(defect_concentration_from_json.as_dict(),
-                         self.defect_concentration.as_dict())
+        self.defect_concentration.to_json_file()
+        expected = self.defect_concentration.as_dict()
+        defect_concentration = \
+            DefectConcentration.load_json("defect_concentrations.json")
+        actual = defect_concentration.as_dict()
+        for k, v in expected.items():
+            print(k)
+            print(v)
+            print("++++++++++++++++++++++++++++")
+            print(actual[k])
+            print("----------------------------")
+
+            self.assertEqual(v, actual[k])
 

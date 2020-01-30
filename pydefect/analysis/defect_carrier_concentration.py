@@ -2,30 +2,31 @@
 
 from collections import defaultdict
 from copy import deepcopy
-from typing import Optional, Tuple
+from typing import Optional, Tuple, Dict
+import json
+
+from matplotlib import pyplot as plt
+
+from monty.serialization import loadfn
+from monty.json import MontyEncoder, MSONable
 
 import numpy as np
-from matplotlib import pyplot as plt
-from monty.json import MSONable
-from pydefect.analysis.defect_energies import DefectEnergies
+
 from pydefect.core.defect_name import DefectName
 from pydefect.core.error_classes import NoConvergenceError
 from pydefect.core.unitcell_calc_results import UnitcellCalcResults
-from pydefect.util.distribution_function \
-    import maxwell_boltzmann_distribution, fermi_dirac_distribution
+from pydefect.util.distribution_function import (
+    maxwell_boltzmann_distribution, fermi_dirac_distribution)
 from pydefect.util.logger import get_logger
 from pydefect.util.tools import (
-    flatten_dict, defaultdict_to_dict, mod_defaultdict)
-
-__author__ = "Yu Kumagai"
-__maintainer__ = "Yu Kumagai"
+    flatten_dict, sanitize_keys_in_dict)
 
 logger = get_logger(__name__)
 
 
 def hole_concentration(temperature: float,
                        e_f: float,
-                       total_dos: np.array,
+                       total_dos: list,
                        vbm: float,
                        volume: float,
                        threshold: float = 0.05) -> float:
@@ -36,7 +37,7 @@ def hole_concentration(temperature: float,
             Temperature in K.
         e_f (float):
             Fermi level in the absolute scale.
-        total_dos (np.array):
+        total_dos (list):
             Total density of states as a function of absolute energy.
                 [[dos1, dos2, ...], [energy1, energy2, ...]]
             The units of energy and dos are [eV] and [1/eV], respectively.
@@ -66,7 +67,7 @@ def hole_concentration(temperature: float,
 
 def electron_concentration(temperature: float,
                            e_f: float,
-                           total_dos: np.array,
+                           total_dos: list,
                            cbm: float,
                            volume: float,
                            threshold: float = 0.05) -> float:
@@ -77,7 +78,7 @@ def electron_concentration(temperature: float,
             Temperature in K.
         e_f (float):
             Fermi level in the absolute scale.
-        total_dos (np.array):
+        total_dos (list):
             Total density of states as a function of absolute energy.
                 [[dos1, dos2, ...], [energy1, energy2, ...]]
         cbm (float):
@@ -104,12 +105,12 @@ def electron_concentration(temperature: float,
     return electron * energy_interval / (volume / 10 ** 24)
 
 
-def calc_concentration(defect_energies: Optional[dict],
+def calc_concentration(defect_energies: Optional[Dict],
                        temperature: float,
                        e_f: float,
                        vbm: float,
                        cbm: float,
-                       total_dos: np.array,
+                       total_dos: list,
                        volume: float,
                        ref_concentration: Optional[dict] = None) -> dict:
     """ Calculate concentrations at given temperature & Fermi level
@@ -119,7 +120,8 @@ def calc_concentration(defect_energies: Optional[dict],
 
     Args:
         defect_energies (dict):
-            Defect formation energies. energies[name][charge]
+            Defect formation energies.
+            defect_energies[name][charge] = DefectEnergy object.
         temperature (float):
             Temperature in K.
         e_f (float):
@@ -128,7 +130,7 @@ def calc_concentration(defect_energies: Optional[dict],
             Valence band maximum in the unitcell in the absolute scale.
         cbm (float):
             Conduction band minimum in the unitcell in the absolute scale.
-        total_dos (2xN numpy array):
+        total_dos (list):
                 [[dos1, dos2, ...], [energy1, energy2, ...]]
         volume (float):
             Volume in A-3.
@@ -143,51 +145,47 @@ def calc_concentration(defect_energies: Optional[dict],
         Note that "p" and "n" have special meaning as the carrier hole and
         electron concentration in cm-3, respectively.
     """
-    concentrations = mod_defaultdict(depth=2)
+    concentrations = defaultdict(dict)
 
     concentrations["p"][1] = \
-        {None: hole_concentration(temperature, e_f, total_dos, vbm, volume)}
+        hole_concentration(temperature, e_f, total_dos, vbm, volume)
     concentrations["n"][-1] = \
-        {None: electron_concentration(temperature, e_f, total_dos, cbm, volume)}
+        electron_concentration(temperature, e_f, total_dos, cbm, volume)
 
     if defect_energies is None:
         return dict(concentrations)
 
     for name in defect_energies:
-        concentration_by_name = defaultdict(dict)
-        for charge, de in flatten_dict(defect_energies[name]):
+        concentration_by_name = {}
+        for charge, de in defect_energies[name].items():
 
             num_mag_conf = abs(de.magnetization) + 1
             degree_of_freedom = de.multiplicity * num_mag_conf
 
             energy = de.defect_energy + e_f * charge
             # volume unit conversion from [A^3] to [cm^3]
-            c = (maxwell_boltzmann_distribution(energy, temperature)
+            concentration_by_name[charge] = \
+                (maxwell_boltzmann_distribution(energy, temperature)
                  * degree_of_freedom / (volume / 10 ** 24))
 
-            concentration_by_name[charge] = {de.annotation: c}
-
         if ref_concentration:
-            reference_total_concentration = \
-                sum(sum(c.values()) for c in ref_concentration[name].values())
-            total_concentration = \
-                sum(sum(c.values()) for c in concentration_by_name.values())
-            factor = (reference_total_concentration / total_concentration)
+            ref_total_concentration = sum(ref_concentration[name].values())
+            total_concentration = sum(concentration_by_name.values())
+            factor = (ref_total_concentration / total_concentration)
 
-            for charge, annotation, _ \
-                    in flatten_dict(concentration_by_name):
-                concentration_by_name[charge][annotation] *= factor
+            concentration_by_name = \
+                {k: v * factor for k, v in concentration_by_name.items()}
 
         concentrations[name] = concentration_by_name
 
-    return defaultdict_to_dict(concentrations)
+    return dict(concentrations)
 
 
 def calc_equilibrium_concentration(defect_energies: dict,
                                    temperature: float,
                                    vbm: float,
                                    cbm: float,
-                                   total_dos: np.array,
+                                   total_dos: list,
                                    volume: float,
                                    ref_concentration: Optional[dict] = None,
                                    verbose: bool = False,
@@ -209,9 +207,8 @@ def calc_equilibrium_concentration(defect_energies: dict,
             Valence band maximum in the unitcell in the absolute scale.
         cbm (float):
             Conduction band minimum in the unitcell in the absolute scale.
-        total_dos (2xN numpy array):
-            Total density of states.
-            total_dos[[energy1, dos1], [energy2, dos2],...]
+        total_dos (list):
+            Total density of states, [[dos1, dos2, ..], [energy1, energy2, ..]]
         volume (float):
             Volume in A-3.
         ref_concentration (dict):
@@ -248,8 +245,7 @@ def calc_equilibrium_concentration(defect_energies: dict,
 
         total_charge = \
             sum([energy * charge for name in defect_concentration
-                 for charge in defect_concentration[name]
-                 for energy in defect_concentration[name][charge].values()])
+                 for charge, energy in defect_concentration[name].items()])
 
         if verbose:
             logger.info(f"- {iteration}th iteration ----")
@@ -257,13 +253,9 @@ def calc_equilibrium_concentration(defect_energies: dict,
 
             for name in defect_concentration:
                 for charge in defect_concentration[name]:
-                    for annotation in defect_concentration[name][charge]:
-                        concentration = \
-                            defect_concentration[name][charge][annotation]
-                        if annotation is None:
-                            annotation = "None"
-                        logger.info(f"{name:>8}  {charge:2d}  {annotation:>6}:"
-                                    f"   {concentration:.1e} cm-3.")
+                    concentration = defect_concentration[name][charge]
+                    logger.info(f"{name:>8}  {charge:2d}:"
+                                f"   {concentration:.1e} cm-3.")
 
             logger.info(f"Charge sum: {total_charge:.1e} cm-3.")
 
@@ -271,9 +263,7 @@ def calc_equilibrium_concentration(defect_energies: dict,
         e_f = e_f + np.sign(total_charge) * interval
 
         max_concentration = \
-            np.amax([concentration for d in defect_concentration
-                     for c in defect_concentration[d]
-                     for concentration in defect_concentration[d][c].values()])
+            np.amax([v[-1] for v in flatten_dict(defect_concentration)])
 
         # This part controls the accuracy.
         if np.abs(total_charge / max_concentration) < threshold:
@@ -290,7 +280,7 @@ class DefectConcentration(MSONable):
                  volume: float,
                  vbm: float,
                  cbm: float,
-                 total_dos: np.array,
+                 total_dos: list,
                  temperature: float = None,
                  fermi_mesh: list = None,
                  concentrations: list = None,
@@ -304,7 +294,7 @@ class DefectConcentration(MSONable):
         Args:
             defect_energies (dict):
                 DefectEnergy as a function of name, charge, and annotation.
-                energies[name][charge][annotation] = DefectEnergy object
+                energies[name][charge] = DefectEnergy object
             volume (float):
                 Volume in A^3.
             vbm (float):
@@ -319,7 +309,7 @@ class DefectConcentration(MSONable):
             fermi_mesh (list):
                 List of calculated Fermi levels in the absolute scale.
             concentrations (list):
-                A set of Carrier and defect concentrations in cm-3 as a
+                A set of carrier and defect concentrations in cm-3 as a
                 function of the Fermi level
                 concentrations[Fermi index][name][charge][annotation]
                 * Carrier electron: concentrations[Fermi index]["e"][-1][None]
@@ -366,95 +356,78 @@ class DefectConcentration(MSONable):
 
     @classmethod
     def from_calc_results(cls,
-                          defect_energies: DefectEnergies,
+                          defect_energies: dict,
                           unitcell: UnitcellCalcResults,
-                          fractional_magnetization_to_one: bool = False,
-                          fractional_criterion: float = 0.1):
-        """ Prepare object from DefectEnergies and UnitcellCalcResults objects
+                          round_magnetization: bool = False,
+                          fractional_criterion: float = 0.1
+                          ) -> "DefectConcentration":
+        """Create instance object from DefectEnergies and UnitcellCalcResults
 
         Args:
-            defect_energies (DefectEnergies):
-                DefectEnergies object used for calculating concentration.
+            defect_energies (dict):
+                DefectEnergy as a function of name, charge, and annotation.
+                energies[name][charge] = DefectEnergy object
             unitcell (UnitcellCalcResults):
-                UnitcellDftResults object for volume and total_dos
-            fractional_magnetization_to_one (bool)
-                Whether to set the fractional magnetization to 1.
+                UnitcellDftResults object for volume, band edges and total_dos
+            round_magnetization (bool)
+                Whether to round the fractional magnetization.
             fractional_criterion (float):
                 The criterion to determine if magnetization is fractional.
+
+        Returns:
+            DefectConcentration object.
         """
-        energies = deepcopy(defect_energies.defect_energies)
+        defect_energies = deepcopy(defect_energies)
 
-        for name, charge, defect_energy \
-                in flatten_dict(defect_energies.defect_energies):
-            n = DefectName(name, charge, defect_energy.annotation)
+        for name, charge, defect_energy in flatten_dict(defect_energies):
+            defect_name = DefectName(name, charge, defect_energy.annotation)
             mag = defect_energy.magnetization
-
-            if abs(mag - round(mag)) > fractional_criterion:
-                logger.warning(f"The total_magnetization of {n} "
+            rounded_mag = round(mag)
+            if abs(mag - rounded_mag) > fractional_criterion:
+                logger.warning(f"The total_magnetization of {defect_name} "
                                f"is {mag}, and not integer")
 
-                if fractional_magnetization_to_one:
-                    logger.warning(f"The magnetization of {n} is set to 1.")
-                    energies[name][charge].magnetization = 1.0
+                if round_magnetization:
+                    logger.warning(f"The magnetization of {defect_name} is "
+                                   f"rounded to {rounded_mag}.")
+                    defect_energies[name][charge].magnetization = rounded_mag
 
-        return cls(defect_energies=energies,
+        for attr in ["volume", "band_edge", "total_dos"]:
+            if unitcell.__getattribute__(attr) is None:
+                logger.critical(f"{attr} needs to be set for the calculation of"
+                                f" carrier/defect concentrations.")
+                raise ValueError
+
+        return cls(defect_energies=defect_energies,
                    volume=unitcell.volume,  # [A^3]
-                   vbm=defect_energies.vbm,
-                   cbm=defect_energies.cbm,
+                   vbm=unitcell.band_edge[0],
+                   cbm=unitcell.band_edge[1],
                    total_dos=unitcell.total_dos)
+    @classmethod
+    def from_dict(cls, d):
+        """Construct a class object from a dictionary. """
 
-    # @classmethod
-    # def from_dict(cls, d):
-    #     """ Construct a class object from a dictionary. """
-    #     defect_energies = sanitize_keys_in_dict(d["defect_energies"])
-    #     equilibrium_concentration = \
-    #         sanitize_keys_in_dict(d["equilibrium_concentration"])
-    #     quenched_equilibrium_concentration = \
-    #         sanitize_keys_in_dict(d["quenched_equilibrium_concentration"])
+        d["defect_energies"] = sanitize_keys_in_dict(d["defect_energies"])
+        d["equilibrium_concentration"] = \
+            sanitize_keys_in_dict(d["equilibrium_concentration"])
+        d["quenched_equilibrium_concentration"] = \
+            sanitize_keys_in_dict(d["quenched_equilibrium_concentration"])
 
-        # if d["concentrations"] is not None:
-        #     concentrations = \
-        #         [sanitize_keys_in_dict(d) for d in d["concentrations"]]
-        # else:
-        #     concentrations = None
+        return cls(**d)
 
-        # if d["quenched_carrier_concentrations"] is not None:
-        #     quenched_carrier_concentrations = \
-        #         [sanitize_keys_in_dict(d)
-        #          for d in d["quenched_carrier_concentrations"]]
-        # else:
-        #     quenched_carrier_concentrations = None
+    def to_json_file(self, filename: str = "defect_concentrations.json"):
+        with open(filename, 'w') as fw:
+            json.dump(self.as_dict(), fw, indent=2, cls=MontyEncoder)
 
-        # return cls(defect_energies=defect_energies,
-        #            volume=d["volume"],
-        #            vbm=d["vbm"],
-        #            cbm=d["cbm"],
-        #            total_dos=d["total_dos"],
-        #            temperature=d["temperature"],
-        #            fermi_mesh=d["fermi_mesh"],
-        #            concentrations=concentrations,
-        #            equilibrium_ef=d["equilibrium_ef"],
-        #            equilibrium_concentration=equilibrium_concentration,
-        #            quenched_temperature=d["quenched_temperature"],
-        #            quenched_ef=d["quenched_ef"],
-        #            quenched_equilibrium_concentration=
-        #            quenched_equilibrium_concentration,
-        #            quenched_carrier_concentrations=
-        #            quenched_carrier_concentrations)
-
-    # def to_json_file(self, filename="defect_concentrations.json"):
-    #     with open(filename, 'w') as fw:
-    #         json.dump(self.as_dict(), fw, indent=2, cls=MontyEncoder)
-
-    # @classmethod
-    # def load_json(cls, filename):
-    #     return loadfn(filename)
+    @classmethod
+    def load_json(cls, filename: str) -> "DefectConcentration":
+        return loadfn(filename)
 
     def __repr__(self):
 
-        outs = [f"volume: {round(self.volume, 2)}",
-                f"vbm, cbm: {round(self.vbm, 2)}, {round(self.cbm, 2)}",
-                f"band gap: {round(self.cbm - self.vbm, 2)}",
+        outs = [f"volume (A^3): {round(self.volume, 2)}",
+                f"vbm, cbm (eV): {round(self.vbm, 2)}, {round(self.cbm, 2)}",
+                f"band gap (eV): {round(self.cbm - self.vbm, 2)}",
                 ""]
 
         for i, c in enumerate([self.equilibrium_concentration,
@@ -469,8 +442,8 @@ class DefectConcentration(MSONable):
                     t = self.quenched_temperature
                     ef = self.quenched_ef - self.vbm
 
-                p = c["p"][1][None]
-                n = c["n"][-1][None]
+                p = c["p"][1]
+                n = c["n"][-1]
                 out = [f"Temperature: {t} K.",
                        f"Fermi level from vbm: {round(ef, 2)} eV.",
                        f"{'p':>13}: {p:.1e} cm-3.",
@@ -482,10 +455,11 @@ class DefectConcentration(MSONable):
                     if name in ("p", "n"):
                         continue
                     outs.append("---")
-                    for charge in c[name]:
-                        for annotation, con in c[name][charge].items():
-                            n = DefectName(name, charge, annotation)
-                            outs.append(f"{str(n):>13}: {con:.1e} cm-3.")
+                    for charge, concentration in c[name].items():
+                        annotation = \
+                            self.defect_energies[name][charge].annotation
+                        n = DefectName(name, charge, annotation)
+                        outs.append(f"{str(n):>13}: {concentration:.1e} cm-3.")
                 outs.append("")
 
         return "\n".join(outs)

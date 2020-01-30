@@ -387,7 +387,6 @@ def defect_entry(args):
 
 
 def supercell_calc_results(args):
-    print(args)
 
     if args.print:
         print(SupercellCalcResults.load_json(args.json))
@@ -577,6 +576,9 @@ def defects(args):
 
 def plot_energy(args):
 
+    if args.reload:
+        os.remove(args.energies)
+
     try:
         defect_energies = DefectEnergies.load_json(args.energies)
     except FileNotFoundError:
@@ -606,6 +608,10 @@ def plot_energy(args):
                                         filtering_words=args.filtering,
                                         chem_pot_label=args.chem_pot_label,
                                         system=args.name)
+
+    if args.print:
+        print(defect_energies)
+        return
 
     defect_energies.to_json_file(filename=args.energies)
 
@@ -694,15 +700,18 @@ def local_structure(args):
             d_list.append(defect)
         except FileNotFoundError:
             logger.warning(f"Parsing {filename} failed.")
+            print("")
+            print("")
             continue
 
         defect_structure = DefectStructure.from_defect(defect)
-        print("-" * 80)
+        print("-" * 82)
         print(defect_structure.show_displacements(all_atoms=args.show_all))
+        print("")
         print("")
 
     if args.compare_structure:
-        print("-" * 80)
+        print("-" * 82)
         print(defect_structure_matcher(d_list, args.site_tolerance))
         print("")
 
@@ -714,7 +723,7 @@ def concentration(args):
     defect_concentration = DefectConcentration.from_calc_results(
         defect_energies=defect_energies,
         unitcell=unitcell,
-        fractional_magnetization_to_one=args.fmto)
+        round_magnetization=args.fmto)
 
     defect_concentration.calc_equilibrium_concentration(
         temperature=args.temperature, verbose=args.verbose)
