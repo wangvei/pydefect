@@ -650,7 +650,7 @@ where the charge is assumed to be -1.
 
 <p> We recommend the users to use &Gamma; version of vasp if the k-point sampling is only &Gamma; point for very large supercells.</p>
 
-### 10. Parsing supercell calculation results
+### 10. Parsing of supercell calculation results
 After (partly) finishing the vasp calculations, we next generate the `dft_results.json` 
 that contains the first-principles calculation results related to the defect properties.
 
@@ -690,7 +690,7 @@ and their differences at each atomic site as shown below.
 The width and height of the horizontal line indicate the averaged region and ∆VPC, q/b|far, respectively. 
 When performing the corrections, I strongly recommend you to check all the potential.eps files of your calculated defects so as to reduce careless mistakes as much as possible.
 
-### 12. Gathering defect related information
+### 12. Organizing defect related information
 Then, we need to generate `defect.json` files in all the defect directories.
 For this purpose, type,
 ```
@@ -759,13 +759,13 @@ Filled circles inside the figures are eigenenergies in the defect supercells.
 There are also five lines, namely VBM and CBM in the unitcell (**blue**), those in the perfect supercell (**red**), and the Fermi level in the defect supercells.
 The numbers in the figure indicate the band indices, which are shown discretely.
 
-The filled circles are categorized into blue, green, and orange ones 
-which mean the occupied, partially occupied (from 0.1 to 0.9), and unoccupied eigenstates in the defect supercell, respectively. 
+The filled circles are categorized into blue, green, orange ones which mean the occupied, partially occupied (from 0.1 to 0.9), unoccupied eigenstates in the defect supercell, respectively. 
+The  
 
 We emphasize that the automatically determined band-edge states could be incorrect as it is difficult to determine them.
 Therefore, please carefully check the band-edge states, and draw the band-decomposed charge density states if the band-edge states are not so obvious.
 
-If you find automatically determined band-edge states are incorrect, you can modify them by
+If you find the automatically determined band-edge states are incorrect, you can modify it by
 ```
 python ~/my_bin/pydefect/pydefect/main.py sr -be up acceptor_phs --dirs .
 ```
@@ -794,8 +794,8 @@ This command
 Once the calculation directories are parsed, `defect_energies.json` is automatically generated.
 If one wants to regenerate the results, one needs to remove it.
 
-When changing the condition for chemical potential, namely the position of vertex in
-the chemical potential diagram, please use the `--chem_pot_label` option.
+If one wants to change the condition for chemical potential, namely the position of vertex in
+the chemical potential diagram, use `--chem_pot_label` option.
 
 There are many options for this sub-command.
 For instance, if one wants to restrict the plot only for the nitrogen vacancies, one 
@@ -805,7 +805,7 @@ python ~/my_bin/pydefect/pydefect/main.py pe --unitcell ../unitcell/unitcell.jso
 ```
 
 ### 15. Show local structure information
-We also regularly check the local structures around defects as they show various information.
+We also regularly check the local structures around defects.
 `pydefect` can show the local structure information by text using the following command.
 ```
 python ~/my_bin/pydefect/pydefect/main.py ls
@@ -833,7 +833,6 @@ When `--cs` option is added, the grouped results are shown at the bottom as foll
 ```
 {'Va_Mg1': [[-1, -2, 0]], 'Va_O1': [[0], [1], [2]]}
 ```
-In this case, the Mg vacancies in three charge states have the same structure, indicating two of them are shallow states.
 
 
 ### 16. Calculate the carrier and defect concentrations 
