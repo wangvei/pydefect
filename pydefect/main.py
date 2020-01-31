@@ -13,8 +13,8 @@ from pydefect.input_maker.defect_initial_setting import DefectInitialSetting
 from pydefect.input_maker.supercell_maker import Supercells
 from pydefect.core.config import DEFECT_KPT_DENSITY
 from pydefect.main_functions import (
-    initial_setting, interstitial, complex_defects,
-    defect_vasp_set, defect_entry, supercell_calc_results,
+    initial_setting, interstitial, complex_defects, defect_vasp_set,
+    vertical_transition_input_maker,  defect_entry, supercell_calc_results,
     unitcell_calc_results, efnv_correction, defects, plot_energy,
     parse_eigenvalues, vasp_parchg_set, local_structure, concentration)
 from pydefect.util.logger import get_logger
@@ -473,6 +473,30 @@ def main():
 
     parser_defect_vasp_set.set_defaults(func=defect_vasp_set)
 
+    # -- vertical_transition_input_maker ---------------------------------------
+    parser_vertical_transition_input_maker = subparsers.add_parser(
+        name="vertical_transition_input_maker ",
+        description="Tools for configuring vasp for the vertical transition "
+                    "calculation. One needs to set .pydefect.yaml for potcar "
+                    "setup.",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+        aliases=['vtim'])
+
+    vtim_defaults = {"contcar": "CONTCAR"}
+    simple_override(vtim_defaults, "contcar")
+
+    parser_vertical_transition_input_maker.add_argument(
+        "-c", dest="additional_charge", type=int,
+        help=".")
+    parser_vertical_transition_input_maker.add_argument(
+        "-d", dest="initial_dir_name", type=str,
+        help=".")
+    parser_vertical_transition_input_maker.add_argument(
+        "-contcar", dest="contcar", default=vtim_defaults["contcar"], type=str)
+
+    parser_vertical_transition_input_maker.set_defaults(
+        func=vertical_transition_input_maker)
+
     # -- defect_entry ---------------------------------------------------------
     parser_defect_entry = subparsers.add_parser(
         name="defect_entry",
@@ -901,7 +925,6 @@ def main():
     del c_defaults
 
     parser_concentration.set_defaults(func=concentration)
-
 
     args = parser.parse_args()
     args.func(args)

@@ -288,6 +288,21 @@ def complex_defects(args):
     complex_defects_obj.site_set_to_yaml_file(yaml_filename=args.yaml)
 
 
+def make_dir(name: str, vis: ViseInputSet, force_overwrite: bool) -> None:
+    """Helper function"""
+    if force_overwrite and os.path.exists(name):
+        logger.warning(f"{name:>10} is being removed.")
+        shutil.rmtree(name)
+
+    if os.path.exists(name):
+        logger.warning(f"{name:>10} already exists, so nothing is done.")
+    else:
+        logger.warning(f"{name:>10} is being constructed.")
+        os.makedirs(name)
+        vis.write_input(name)
+        vis.to_json_file("/".join([name, "vise.json"]))
+
+
 def defect_vasp_set(args):
 
     flags = [str(s) for s in list(Element)]
@@ -312,20 +327,6 @@ def defect_vasp_set(args):
     user_incar_settings = list2dict(args.incar_setting, flags)
     user_incar_settings.update({"LWAVE": not args.no_wavecar})
 
-    def make_dir(name: str, vis: ViseInputSet) -> None:
-        """Helper function"""
-        if args.force_overwrite and os.path.exists(name):
-            logger.warning(f"{name:>10} is being removed.")
-            shutil.rmtree(name)
-
-        if os.path.exists(name):
-            logger.warning(f"{name:>10} already exists, so nothing is done.")
-        else:
-            logger.warning(f"{name:>10} is being constructed.")
-            os.makedirs(name)
-            vis.write_input(name)
-            vis.to_json_file("/".join([name, "vise.json"]))
-
     defect_initial_setting = DefectInitialSetting.from_defect_in(
         poscar=args.dposcar, defect_in_file=args.defect_in)
 
@@ -340,7 +341,7 @@ def defect_vasp_set(args):
             user_incar_settings=perfect_incar_setting,
             **kwargs)
 
-        make_dir("perfect", vise_set)
+        make_dir("perfect", vise_set, args.force_overwrite)
 
     for de in defect_initial_setting.defect_entries:
         defect_name = "_".join([de.name, str(de.charge)])
@@ -352,7 +353,7 @@ def defect_vasp_set(args):
             user_incar_settings=user_incar_settings,
             **kwargs)
 
-        make_dir(defect_name, vise_set)
+        make_dir(defect_name, vise_set, args.force_overwrite)
         de.to_json_file(json_file_name)
 
         if de.neighboring_sites:
@@ -366,6 +367,36 @@ def defect_vasp_set(args):
             with open(poscar_name, "w") as f:
                 for line in lines:
                     f.write(line)
+
+
+def vertical_transition_input_maker(args):
+    if abs(args.additional_charge) != 1:
+        raise ValueError(f"{args.additional_charge} is invalid.")
+
+    initial_dirname = Path(args.initial_dir_name)
+    de_filename = initial_dirname / "defect_entry.json"
+    de = DefectEntry.load_json(de_filename)
+    src_filename = initial_dirname / "dft_results.json"
+    src = SupercellCalcResults.load_json(src_filename)
+
+    new_charge = de.charge + args.additional_charge
+    vis = ViseInputSet.from_prev_calc(
+        initial_dirname,
+        user_incar_settings={"NSW": 0},
+        parse_calc_results=False,
+        contcar_filename=args.contcar,
+        charge=new_charge)
+
+    de.charge += args.additional_charge
+    de.initial_structure = src.final_structure
+    de.perturbed_initial_structure = src.final_structure
+    de.initial_site_symmetry = src.site_symmetry
+
+    new_dirname = initial_dirname / f"add_charge_{args.additional_charge}"
+    make_dir(str(new_dirname), vis, force_overwrite=False)
+
+    new_de_filename = new_dirname / "defect_entry.json"
+    de.to_json_file(new_de_filename)
 
 
 def defect_entry(args):
