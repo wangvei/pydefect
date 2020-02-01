@@ -18,7 +18,6 @@ from numpy.linalg import norm
 from pydefect.core.config import COLOR
 from pydefect.core.defect_entry import DefectEntry
 from pydefect.core.supercell_calc_results import SupercellCalcResults
-from pydefect.core.unitcell_calc_results import UnitcellCalcResults
 from pydefect.corrections.corrections import Correction
 from pydefect.util.logger import get_logger
 
@@ -300,14 +299,18 @@ class ExtendedFnvCorrection(Correction, MSONable):
 
     def __init__(self,
                  ewald_json: str,
+                 charge: int,
                  lattice_matrix: np.array,
                  lattice_energy: float,
                  ave_pot_diff: float,
                  alignment_correction_energy: float,
                  symbols_without_defect: list,
+                 defect_center_coords: list,
+                 atomic_coords_without_defect: list,
                  distances_from_defect: list,
                  difference_electrostatic_pot: list,
                  model_pot: list,
+                 defect_region_radius: float,
                  manual_correction_energy: float = 0.0):
         """
         Args:
@@ -316,6 +319,7 @@ class ExtendedFnvCorrection(Correction, MSONable):
             lattice_energy (float):
             ave_pot_diff (float):
             alignment_correction_energy (float):
+            defect_center_coords (list):
             symbols_without_defect (list of str):
             distances_from_defect (list of float):
             model_pot (list of float):
@@ -334,14 +338,18 @@ class ExtendedFnvCorrection(Correction, MSONable):
                 f"electrostat_pot({pot_len}), model_pot({model_len}) differ.")
 
         self.ewald_json = ewald_json
+        self.charge = charge
         self.lattice_matrix = lattice_matrix
         self.lattice_energy = lattice_energy
         self.ave_pot_diff = ave_pot_diff
         self.alignment_correction_energy = alignment_correction_energy
+        self.defect_center_coords = defect_center_coords
         self.symbols_without_defect = symbols_without_defect
+        self.atomic_coords_without_defect = atomic_coords_without_defect
         self.distances_from_defect = distances_from_defect[:]
         self.difference_electrostatic_pot = difference_electrostatic_pot[:]
         self.model_pot = model_pot[:]
+        self.defect_region_radius = defect_region_radius
         self.manual_correction_energy = manual_correction_energy
 
     def __repr__(self):
@@ -435,7 +443,7 @@ class ExtendedFnvCorrection(Correction, MSONable):
                            defect_entry: DefectEntry,
                            defect_dft: SupercellCalcResults,
                            perfect_dft: SupercellCalcResults,
-                           unitcell_dft: UnitcellCalcResults,
+                           dielectric_tensor: np.ndarray,
                            defect_center: list = None,
                            ewald: Union[str, Ewald] = None,
                            to_filename: str = "ewald.json"):
@@ -448,8 +456,8 @@ class ExtendedFnvCorrection(Correction, MSONable):
                 Calculated defect DFT results of the considering defect.
             perfect_dft (SupercellCalcResults):
                 Calculated defect DFT results for perfect supercell.
-            unitcell_dft (UnitcellCalcResults):
-                UnitcellCalcResults object of the considering host.
+            dielectric_tensor (np.ndarray):
+                Dielectric tensor
             defect_center (list):
                 Defect center in fractional coordinates.
             ewald (str / Ewald):
@@ -462,7 +470,7 @@ class ExtendedFnvCorrection(Correction, MSONable):
         elif ewald is None:
             ewald = \
                 Ewald.from_optimization(defect_dft.final_structure,
-                                        unitcell_dft.total_dielectric_tensor)
+                                        dielectric_tensor)
             ewald.to_json_file(to_filename)
 
         relative_potential = calc_relative_potential(defect=defect_dft,
@@ -474,23 +482,22 @@ class ExtendedFnvCorrection(Correction, MSONable):
 
         defective_structure = defect_dft.final_structure
 
-        atomic_position_without_defect = []
+        atomic_coords_without_defect = []
         symbols_without_defect = []
         for i, j in enumerate(defect_entry.atom_mapping_to_perfect):
             if j is not None:
-                atomic_position_without_defect.append(
+                atomic_coords_without_defect.append(
                     defective_structure.frac_coords[i])
                 symbols_without_defect.append(
                     defective_structure.sites[i].specie.symbol)
 
         charge = defect_entry.charge
         lattice = defect_dft.final_structure.lattice
-        volume = lattice.volume
         if defect_center:
             logger.warning(f"Defect center {defect_center} is explicitly set."
                            f"User needs to know what's going on.")
         else:
-            defect_coords = defect_entry.defect_center_coords
+            defect_center = defect_entry.defect_center_coords
 
         distances_from_defect = \
             deepcopy(defect_dft.displacements["final_distances"])
@@ -500,31 +507,14 @@ class ExtendedFnvCorrection(Correction, MSONable):
         for i in sorted(inserted_atom_indices, reverse=True):
             del distances_from_defect[i]
 
-        coeff, diff_pot, mod_ewald_param, root_det_epsilon = \
-            constants_for_anisotropic_ewald_sum(charge, ewald, volume)
-
-        # model potential and lattice energy
-        model_pot = []
-        for r in atomic_position_without_defect:
-            # Ewald real part
-            # \sum erfc(ewald*\sqrt(R*\epsilon_inv*R))
-            # / \sqrt(det(\epsilon)) / \sqrt(R*\epsilon_inv*R) [1/A]
-            shift = lattice.get_cartesian_coords(r - defect_coords)
-
-            real_part, reciprocal_part = \
-                calc_ewald_sum(ewald=ewald,
-                               mod_ewald_param=mod_ewald_param,
-                               root_det_epsilon=root_det_epsilon,
-                               volume=volume,
-                               include_self=True,
-                               shift=shift)
-
-            model_pot.append((real_part + reciprocal_part + diff_pot) * coeff)
-
-        lattice_energy = point_charge_energy(charge, ewald, volume)
-
+        lattice_energy, model_pot = \
+            calc_lattice_energy_and_pot(atomic_coords_without_defect,
+                                        charge,
+                                        defect_center,
+                                        ewald,
+                                        lattice)
         # calc ave_pot_diff
-        distance_threshold = calc_max_sphere_radius(np.array(lattice.matrix))
+        defect_region_radius = calc_max_sphere_radius(np.array(lattice.matrix))
         pot_diff = []
 
         # error check just in case (should be removed in the future)
@@ -536,18 +526,54 @@ class ExtendedFnvCorrection(Correction, MSONable):
                 f"model_pot({len(model_pot)}) differ.")
 
         for (d, a, m) in zip(distances_from_defect, diff_potential, model_pot):
-            if d > distance_threshold:
+            if d > defect_region_radius:
                 pot_diff.append(a - m)
         ave_pot_diff = float(mean(pot_diff))
         alignment = -ave_pot_diff * charge
 
-        return cls(ewald, lattice.matrix, lattice_energy, ave_pot_diff,
-                   alignment, symbols_without_defect, distances_from_defect,
-                   diff_potential, model_pot)
+        return cls(ewald_json=ewald,
+                   charge=charge,
+                   lattice_matrix=lattice.matrix,
+                   lattice_energy=lattice_energy,
+                   ave_pot_diff=ave_pot_diff,
+                   alignment_correction_energy=alignment,
+                   symbols_without_defect=symbols_without_defect,
+                   defect_center_coords=defect_center,
+                   atomic_coords_without_defect=atomic_coords_without_defect,
+                   distances_from_defect=distances_from_defect,
+                   difference_electrostatic_pot=diff_potential,
+                   model_pot=model_pot,
+                   defect_region_radius=defect_region_radius)
 
 
-# Need to be after Ewald class for annotation
-def point_charge_energy(charge: int, ewald: Ewald, volume: float) -> float:
+def calc_lattice_energy_and_pot(atomic_coords_without_defect, charge,
+                                defect_center, ewald, lattice):
+
+    volume = lattice.volume
+    coeff, diff_pot, mod_ewald_param, root_det_epsilon = \
+        constants_for_anisotropic_ewald_sum(charge, ewald, volume)
+    # model potential and lattice energy
+    model_pot = []
+    for r in atomic_coords_without_defect:
+        # Ewald real part
+        # \sum erfc(ewald*\sqrt(R*\epsilon_inv*R))
+        # / \sqrt(det(\epsilon)) / \sqrt(R*\epsilon_inv*R) [1/A]
+        shift = lattice.get_cartesian_coords(r - defect_center)
+
+        real_part, reciprocal_part = \
+            calc_ewald_sum(ewald=ewald,
+                           mod_ewald_param=mod_ewald_param,
+                           root_det_epsilon=root_det_epsilon,
+                           volume=volume,
+                           include_self=True,
+                           shift=shift)
+
+        model_pot.append((real_part + reciprocal_part + diff_pot) * coeff)
+    lattice_energy = point_charge_energy(charge, ewald, volume)
+    return lattice_energy, model_pot
+
+
+def point_charge_energy(charge: int, ewald: "Ewald", volume: float) -> float:
     """Return point-charge energy under periodic boundary condition."""
     if charge == 0:
         return 0.0
@@ -567,7 +593,7 @@ def point_charge_energy(charge: int, ewald: Ewald, volume: float) -> float:
     return lattice_energy
 
 
-def calc_ewald_sum(ewald: Ewald,
+def calc_ewald_sum(ewald: "Ewald",
                    mod_ewald_param: float,
                    root_det_epsilon: np.ndarray,
                    volume: float,
@@ -600,7 +626,7 @@ def calc_ewald_sum(ewald: Ewald,
 
 def constants_for_anisotropic_ewald_sum(
         charge: int,
-        ewald: Ewald,
+        ewald: "Ewald",
         volume: float
 ) -> Tuple[float, float, float, np.ndarray]:
     """Derive some constants used for anisotropic Ewald sum.

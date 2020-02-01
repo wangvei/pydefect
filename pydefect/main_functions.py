@@ -391,7 +391,7 @@ def vertical_transition_input_maker(args):
     de.initial_structure = src.final_structure
     de.perturbed_initial_structure = src.final_structure
     de.initial_site_symmetry = src.site_symmetry
-
+    # FIX MAGNETIZATION?
     new_dirname = initial_dirname / f"add_charge_{args.additional_charge}"
     make_dir(str(new_dirname), vis, force_overwrite=False)
 
@@ -500,7 +500,8 @@ def efnv_correction(args):
         return
 
     try:
-        unitcell_dft_data = UnitcellCalcResults.load_json(args.unitcell_json)
+        ucr = UnitcellCalcResults.load_json(args.unitcell_json)
+        dielectric_tensor = ucr.total_dielectric_tensor
     except IOError:
         raise FileNotFoundError("JSON for the unitcell info is not found.")
 
@@ -514,7 +515,7 @@ def efnv_correction(args):
         logger.info("optimizing ewald...")
         ewald = Ewald.from_optimization(
             structure=perfect_dft_data.final_structure,
-            dielectric_tensor=unitcell_dft_data.total_dielectric_tensor,
+            dielectric_tensor=dielectric_tensor,
             initial_ewald_param=args.ewald_initial_param,
             convergence=args.ewald_convergence,
             prod_cutoff_fwhm=args.ewald_accuracy)
@@ -541,7 +542,7 @@ def efnv_correction(args):
             compute_correction(defect_entry=entry,
                                defect_dft=defect_dft_data,
                                perfect_dft=perfect_dft_data,
-                               unitcell_dft=unitcell_dft_data,
+                               dielectric_tensor=dielectric_tensor,
                                defect_center=args.defect_center,
                                ewald=args.ewald_json)
 
@@ -589,7 +590,6 @@ def defects(args):
         classes = [DefectEntry, SupercellCalcResults, ExtendedFnvCorrection]
         input_objects = generate_objects_from_json_files(d, files, classes,
                                                          raise_error=False)
-
         if input_objects:
             try:
                 defect = Defect.from_objects(defect_entry=input_objects[0],

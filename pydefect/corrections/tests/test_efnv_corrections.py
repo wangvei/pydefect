@@ -133,7 +133,7 @@ class ExtendedFnvCorrectionTest(PydefectTest):
                 defect_entry=defect_entry,
                 defect_dft=defect,
                 perfect_dft=perfect,
-                unitcell_dft=unitcell,
+                dielectric_tensor=unitcell.total_dielectric_tensor,
                 ewald=ewald)
 
         self.correction.manual_correction_energy = 0.1
