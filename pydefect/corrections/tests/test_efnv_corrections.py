@@ -136,7 +136,7 @@ class ExtendedFnvCorrectionTest(PydefectTest):
                 dielectric_tensor=unitcell.total_dielectric_tensor,
                 ewald=ewald)
 
-        self.correction.manual_correction_energy = 0.1
+        self.correction.manually_added_correction_energy = 0.1
 
     def test_dict(self):
         d = self.correction.as_dict()
@@ -163,16 +163,16 @@ class ExtendedFnvCorrectionTest(PydefectTest):
         expected = -0.30850273890854724
         self.assertAlmostEqual(expected, actual, 3)
 
-        actual = len(self.correction.model_pot)
+        actual = len(self.correction.pc_pot)
         expected = 63
         self.assertEqual(expected, actual)
 
-        actual = self.correction.difference_electrostatic_pot[0]
+        actual = self.correction.electrostatic_pot[0]
         expected = 0.2263
         self.assertAlmostEqual(expected, actual, 7)
 
     def test_manual_energy(self):
-        actual = self.correction.manual_correction_energy
+        actual = self.correction.manually_added_correction_energy
         expected = 0.1
         self.assertAlmostEqual(expected, actual, 7)
 

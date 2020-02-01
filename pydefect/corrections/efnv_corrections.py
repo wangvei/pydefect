@@ -309,8 +309,7 @@ class ExtendedFnvCorrection(Correction, MSONable):
                  distances_from_defect: list,
                  electrostatic_pot: list,
                  pc_pot: list,
-                 defect_region_radius: float,
-                 manual_correction_energy: float = 0.0):
+                 defect_region_radius: float):
         """
         Args:
             ewald_json (str):
@@ -337,11 +336,11 @@ class ExtendedFnvCorrection(Correction, MSONable):
                 List of electrostatic potential w.r.t that of perfect one from
                 a defect for all the atomic sites.
             pc_pot (list of float):
-                List of model point-charg potential w.r.t that of perfect one from
+                List of point-charge potential w.r.t that of perfect one from
                 a defect for all the atomic sites.
             defect_region_radius (float):
-
-            manual_correction_energy (float):
+                Maximum radius of a sphere touching to the lattice plane, which
+                is used for defining outside region of the defect.
         """
 
         # error check just in case (should be removed in the future)
@@ -366,13 +365,13 @@ class ExtendedFnvCorrection(Correction, MSONable):
         self.electrostatic_pot = electrostatic_pot[:]
         self.pc_pot = pc_pot[:]
         self.defect_region_radius = defect_region_radius
-        self.manual_correction_energy = manual_correction_energy
+        self._manually_added_correction_energy = None
 
     def __repr__(self):
         outs = \
             [f"Point-charge correction: {self.point_charge_correction_energy}",
              f"Alignment-like correction: {self.alignment_correction_energy}",
-             f"Manually added correction: {self.manual_correction_energy}",
+             f"Manually added correction: {self.manually_added_correction_energy}",
              f"Total correction energy (eV): {self.correction_energy}"]
         return "\n".join(outs)
 
@@ -385,18 +384,18 @@ class ExtendedFnvCorrection(Correction, MSONable):
         return -self.ave_pot_diff * self.charge
 
     @property
-    def manual_correction_energy(self) -> float:
-        return self._manual_correction_energy
+    def manually_added_correction_energy(self) -> float:
+        return self._manually_added_correction_energy
 
-    @manual_correction_energy.setter
-    def manual_correction_energy(self, correction_energy: float) -> None:
-        self._manual_correction_energy = correction_energy
+    @manually_added_correction_energy.setter
+    def manually_added_correction_energy(self, corr_energy: float) -> None:
+        self._manually_added_correction_energy = corr_energy
 
     @property
     def correction_energy(self) -> float:
         return (self.point_charge_correction_energy
                 + self.alignment_correction_energy
-                + self.manual_correction_energy)
+                + self.manually_added_correction_energy)
 
     @property
     def max_sphere_radius(self) -> float:
@@ -518,8 +517,8 @@ class ExtendedFnvCorrection(Correction, MSONable):
                    defect_center_coords=defect_center,
                    atomic_coords_without_defect=atomic_coords_without_defect,
                    distances_from_defect=distances_from_defect,
-                   difference_electrostatic_pot=diff_potential,
-                   model_pot=model_pot,
+                   electrostatic_pot=diff_potential,
+                   pc_pot=model_pot,
                    defect_region_radius=defect_region_radius)
 
 
