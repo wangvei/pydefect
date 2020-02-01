@@ -64,6 +64,6 @@ def generate_objects_from_json_files(
                 raise
             else:
                 logger.warning(f"Parsing {filename} in {directory} failed.")
-                return
+                objects.append(None)
 
     return objects
