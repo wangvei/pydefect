@@ -180,5 +180,5 @@ class ExtendedFnvCorrectionTest(PydefectTest):
         actual = self.correction.max_sphere_radius
         expected = 8.419456 / 2
         self.assertAlmostEqual(actual, expected)
-        self.correction.plot_distance_vs_potential("pot.pdf")
+        self.correction.plot_potential("pot.pdf")
 

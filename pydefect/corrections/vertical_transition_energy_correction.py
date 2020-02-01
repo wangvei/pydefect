@@ -102,17 +102,13 @@ class VerticalTransitionEnergyCorrection(Correction, MSONable):
         atom_coords = initial_efnv_cor.atomic_coords_without_defect
         center_coords = initial_efnv_cor.defect_center_coords
         lattice = final_calc_results.final_structure.lattice
-        ele_pc_energy, model_pot = calc_lattice_energy_and_pot(atom_coords,
-                                                               added_charge,
-                                                               center_coords,
-                                                               ewald,
-                                                               lattice)
-        relative_potential = []
+        ele_pc_energy, model_pot = calc_lattice_energy_and_pot(
+            atom_coords, added_charge, center_coords, ewald, lattice)
+
         initial_pot = initial_calc_results.electrostatic_potential
         final_pot = initial_calc_results.electrostatic_potential
-        for i, j in zip(initial_pot, final_pot):
-            # Need to reverse vasp potential.
-            relative_potential.append(-(j - i))
+        # Need to reverse vasp potential.
+        relative_potential = [-(f - i) for i, f in zip(initial_pot, final_pot)]
 
         distances = initial_efnv_cor.distances_from_defect
         pot_diff = []

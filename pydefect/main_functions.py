@@ -488,9 +488,9 @@ def efnv_correction(args):
         for directory in dirs:
             json_file = os.path.join(directory, "correction.json")
             c = ExtendedFnvCorrection.load_json(json_file)
-            c.plot_distance_vs_potential(os.path.join(directory,
+            c.plot_potential(os.path.join(directory,
                                                       "potential.pdf"),
-                                         args.y_range)
+                             args.y_range)
         return
 
     if args.nocorr:
@@ -546,8 +546,8 @@ def efnv_correction(args):
                                defect_center=args.defect_center,
                                ewald=args.ewald_json)
 
-        c.plot_distance_vs_potential(os.path.join(directory, "potential.pdf"),
-                                     args.y_range)
+        c.plot_potential(os.path.join(directory, "potential.pdf"),
+                         args.y_range)
         c.to_json_file(os.path.join(directory, "correction.json"))
 
 

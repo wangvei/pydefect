@@ -136,7 +136,7 @@ class Ewald(MSONable):
             lattice (Lattice):
                 The given lattice.
             dielectric_tensor (3x3 np.array):
-                Static dielectric tensor where the directions are compatible
+                Static dielectic tensor where the directions are compatible
                 with the lattice.
             ewald_param (float):
                 A parameter used for evaluating Ewald sum.
@@ -300,38 +300,55 @@ class ExtendedFnvCorrection(Correction, MSONable):
     def __init__(self,
                  ewald_json: str,
                  charge: int,
-                 lattice_matrix: np.array,
+                 lattice_matrix: np.ndarray,
                  lattice_energy: float,
                  ave_pot_diff: float,
-                 alignment_correction_energy: float,
                  symbols_without_defect: list,
                  defect_center_coords: list,
                  atomic_coords_without_defect: list,
                  distances_from_defect: list,
-                 difference_electrostatic_pot: list,
-                 model_pot: list,
+                 electrostatic_pot: list,
+                 pc_pot: list,
                  defect_region_radius: float,
                  manual_correction_energy: float = 0.0):
         """
         Args:
             ewald_json (str):
                 Since size of Ewald attributes is large, filename is stored.
+            charge (int):
+                Defect charge state.
+            lattice_matrix (np.ndarray):
+                3x3 lattice matrix [[a_x, a_y, a_z], [b_x,..], [c_x,..]].
             lattice_energy (float):
+                Lattice energy at a given charge and lattice_matrix.
             ave_pot_diff (float):
-            alignment_correction_energy (float):
-            defect_center_coords (list):
+                Average potential difference at outside of defect_region_radius.
             symbols_without_defect (list of str):
+                List of element symbols for all the atomic sites except defect.
+                e.g., ["Mg", "Mg", ..., "O", "O", ..]
+            defect_center_coords (list):
+                Defect center fractional coordinates.
+            atomic_coords_without_defect (list):
+                List of frac coordinates for all the atomic sites except defect.
+                e.g., [[0.0, 0.0, 0.0], [0.1, 0.1, 0.1], ...]
             distances_from_defect (list of float):
-            model_pot (list of float):
-            difference_electrostatic_pot (list of float):
+                List of distances from a defect for all the atomic sites
+            electrostatic_pot (list of float):
+                List of electrostatic potential w.r.t that of perfect one from
+                a defect for all the atomic sites.
+            pc_pot (list of float):
+                List of model point-charg potential w.r.t that of perfect one from
+                a defect for all the atomic sites.
+            defect_region_radius (float):
+
             manual_correction_energy (float):
         """
 
         # error check just in case (should be removed in the future)
         symbol_len = len(symbols_without_defect)
         dist_len = len(distances_from_defect)
-        pot_len = len(difference_electrostatic_pot)
-        model_len = len(model_pot)
+        pot_len = len(electrostatic_pot)
+        model_len = len(pc_pot)
         if not (symbol_len == dist_len == pot_len == model_len):
             raise IndexError(
                 f"Lengths of symbols({symbol_len}), distances({dist_len}),  "
@@ -342,13 +359,12 @@ class ExtendedFnvCorrection(Correction, MSONable):
         self.lattice_matrix = lattice_matrix
         self.lattice_energy = lattice_energy
         self.ave_pot_diff = ave_pot_diff
-        self.alignment_correction_energy = alignment_correction_energy
         self.defect_center_coords = defect_center_coords
         self.symbols_without_defect = symbols_without_defect
         self.atomic_coords_without_defect = atomic_coords_without_defect
         self.distances_from_defect = distances_from_defect[:]
-        self.difference_electrostatic_pot = difference_electrostatic_pot[:]
-        self.model_pot = model_pot[:]
+        self.electrostatic_pot = electrostatic_pot[:]
+        self.pc_pot = pc_pot[:]
         self.defect_region_radius = defect_region_radius
         self.manual_correction_energy = manual_correction_energy
 
@@ -363,6 +379,10 @@ class ExtendedFnvCorrection(Correction, MSONable):
     @property
     def point_charge_correction_energy(self) -> float:
         return - self.lattice_energy
+
+    @property
+    def alignment_correction_energy(self) -> float:
+        return -self.ave_pot_diff * self.charge
 
     @property
     def manual_correction_energy(self) -> float:
@@ -382,59 +402,18 @@ class ExtendedFnvCorrection(Correction, MSONable):
     def max_sphere_radius(self) -> float:
         return calc_max_sphere_radius(self.lattice_matrix)
 
-    def plot_distance_vs_potential(self,
-                                   file_name: str,
-                                   yrange: Optional[list] = None) -> None:
+    def plot_potential(self,
+                       file_name: str,
+                       yrange: Optional[list] = None) -> None:
         """Plotter for the potential as a function of distance."""
-        property_without_defect = list(zip(self.symbols_without_defect,
-                                           self.distances_from_defect,
-                                           self.difference_electrostatic_pot))
-        # E.g. points_dictionary = {'Mg': [(3.67147, -0.7019),  ..], 'O': [..]}
-        points_dictionary = {}
-        for element, properties in \
-                groupby(property_without_defect, key=itemgetter(0)):
-            points_dictionary[element] = [(x, y) for _, x, y in properties]
 
-        fig = plt.figure()
-        ax = fig.add_subplot(111)
-
-        # DFT electrostatic potential
-        for i, (symbol, points) in enumerate(points_dictionary.items()):
-            x_set = np.array([point[0] for point in points])
-            y_set = np.array([point[1] for point in points])
-            ax.scatter(x_set, y_set, c=COLOR[i], marker="x", label=symbol)
-
-        # PC model potential
-        ax.scatter(self.distances_from_defect, self.model_pot,
-                   marker=".", label="model potential", color=COLOR[-1])
-
-        # difference between PC model potential and DFT electrostatic potential
-        diff_model_electrostatic = (np.array(self.difference_electrostatic_pot)
-                                    - np.array(self.model_pot))
-
-        ax.scatter(self.distances_from_defect, diff_model_electrostatic,
-                   marker="o", label="potential diff",
-                   facecolors='none', edgecolors=COLOR[-2])
-
-        # potential difference
-        point_x = [self.max_sphere_radius, max(self.distances_from_defect)]
-        point_y = [self.ave_pot_diff, self.ave_pot_diff]
-
-        ax.set_xlabel(r"Distance from a defect (${\rm \AA}$)", fontsize=15)
-        ax.set_ylabel("Electrostatic potential (V)", fontsize=15)
-
-        ax.plot(point_x, point_y, c=(0, 0, 0), label="potential difference")
-        ax.legend(bbox_to_anchor=(1, 0.5), loc='center left')
-        ax.tick_params(
-            direction='in', bottom=True, top=True, left=True, right=True)
-
-        # change 0.0 to 0
-        from pydefect.util.matplotlib import formatter
-        ax.xaxis.set_major_formatter(formatter)
-#        ax.yaxis.set_major_formatter(formatter)
-
-        if yrange:
-            plt.ylim(yrange[0], yrange[1])
+        plot_distance_vs_potential(self.symbols_without_defect,
+                                   self.distances_from_defect,
+                                   self.electrostatic_pot,
+                                   self.pc_pot,
+                                   self.max_sphere_radius,
+                                   self.ave_pot_diff,
+                                   yrange)
 
         plt.savefig(file_name, format="pdf", transparent=True)
 
@@ -529,14 +508,12 @@ class ExtendedFnvCorrection(Correction, MSONable):
             if d > defect_region_radius:
                 pot_diff.append(a - m)
         ave_pot_diff = float(mean(pot_diff))
-        alignment = -ave_pot_diff * charge
 
         return cls(ewald_json=ewald,
                    charge=charge,
                    lattice_matrix=lattice.matrix,
                    lattice_energy=lattice_energy,
                    ave_pot_diff=ave_pot_diff,
-                   alignment_correction_energy=alignment,
                    symbols_without_defect=symbols_without_defect,
                    defect_center_coords=defect_center,
                    atomic_coords_without_defect=atomic_coords_without_defect,
@@ -658,3 +635,63 @@ def constants_for_anisotropic_ewald_sum(
     diff_pot = -0.25 / volume / mod_ewald_param ** 2  # [1/A]
 
     return coeff, diff_pot, mod_ewald_param, root_det_epsilon
+
+
+def plot_distance_vs_potential(symbols_without_defect,
+                               distances_from_defect,
+                               difference_electrostatic_pot,
+                               model_pot,
+                               max_sphere_radius,
+                               ave_pot_diff,
+                               yrange: Optional[list] = None) -> None:
+    """Plotter for the potential as a function of distance."""
+    property_without_defect = list(zip(symbols_without_defect,
+                                       distances_from_defect,
+                                       difference_electrostatic_pot))
+    # E.g. points_dictionary = {'Mg': [(3.67147, -0.7019),  ..], 'O': [..]}
+    points_dictionary = {}
+    for element, properties in \
+            groupby(property_without_defect, key=itemgetter(0)):
+        points_dictionary[element] = [(x, y) for _, x, y in properties]
+
+    fig = plt.figure()
+    ax = fig.add_subplot(111)
+
+    # DFT electrostatic potential
+    for i, (symbol, points) in enumerate(points_dictionary.items()):
+        x_set = np.array([point[0] for point in points])
+        y_set = np.array([point[1] for point in points])
+        ax.scatter(x_set, y_set, c=COLOR[i], marker="x", label=symbol)
+
+    # PC model potential
+    ax.scatter(distances_from_defect, model_pot,
+               marker=".", label="model potential", color=COLOR[-1])
+
+    # difference between PC model potential and DFT electrostatic potential
+    diff_model_electrostatic = (np.array(difference_electrostatic_pot)
+                                - np.array(model_pot))
+
+    ax.scatter(distances_from_defect, diff_model_electrostatic,
+               marker="o", label="potential diff",
+               facecolors='none', edgecolors=COLOR[-2])
+
+    # potential difference
+    point_x = [max_sphere_radius, max(distances_from_defect)]
+    point_y = [ave_pot_diff, ave_pot_diff]
+
+    ax.set_xlabel(r"Distance from a defect (${\rm \AA}$)", fontsize=15)
+    ax.set_ylabel("Electrostatic potential (V)", fontsize=15)
+
+    ax.plot(point_x, point_y, c=(0, 0, 0), label="potential difference")
+    ax.legend(bbox_to_anchor=(1, 0.5), loc='center left')
+    ax.tick_params(
+        direction='in', bottom=True, top=True, left=True, right=True)
+
+    # change 0.0 to 0
+    from pydefect.util.matplotlib import formatter
+    ax.xaxis.set_major_formatter(formatter)
+    # ax.yaxis.set_major_formatter(formatter)
+
+    if yrange:
+        plt.ylim(yrange[0], yrange[1])
+
