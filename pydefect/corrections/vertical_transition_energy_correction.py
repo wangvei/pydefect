@@ -190,7 +190,7 @@ class VerticalTransitionEnergyCorrection(Correction, MSONable):
              f"Alignment 2nd: {self.align_second}",
              f"Alignment 3rd: {self.align_third}",
              f"Alignment contribution: {self.alignment_correction_energy}", "",
-             f"Total correction: {self.correction_energy}",
+             f"Total correction: {self.correction_energy}", "",
              ]
 
         return "\n".join(outs)

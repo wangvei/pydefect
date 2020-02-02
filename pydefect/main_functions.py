@@ -27,6 +27,8 @@ from pydefect.core.supercell_calc_results import SupercellCalcResults
 from pydefect.core.unitcell_calc_results import UnitcellCalcResults
 from pydefect.corrections.corrections import ManualCorrection
 from pydefect.corrections.efnv_corrections import ExtendedFnvCorrection, Ewald
+from pydefect.corrections.vertical_transition_energy_correction import (
+    VerticalTransitionEnergyCorrection)
 from pydefect.input_maker.defect_initial_setting import (
     dopant_info, DefectInitialSetting)
 from pydefect.input_maker.supercell_maker import Supercell, Supercells
@@ -549,6 +551,57 @@ def efnv_correction(args):
         c.plot_potential(os.path.join(directory, "potential.pdf"),
                          args.y_range)
         c.to_json_file(os.path.join(directory, "correction.json"))
+
+
+def vertical_transition_energy(args):
+
+    initial_dir = Path(args.initial_dir)
+    initial_calc_results = \
+        SupercellCalcResults.load_json(initial_dir / "dft_results.json")
+    final_dir = Path(args.dir)
+    final_calc_results = \
+        SupercellCalcResults.load_json(final_dir / "dft_results.json")
+    unitcell = UnitcellCalcResults.load_json(args.unitcell_json)
+
+    if args.print:
+        vtec = VerticalTransitionEnergyCorrection.load_json(args.json)
+        print(vtec)
+        if vtec.additional_charge == 1:
+            cbm = unitcell.band_edge[1]
+            print(f"CBM position (eV): {cbm}")
+            band_edge_related_energy = cbm
+
+        else:
+            vbm = unitcell.band_edge[0]
+            print(f"CBM position (eV): {vbm}")
+            band_edge_related_energy = -vbm
+
+        vte_wo_corr = (final_calc_results.total_energy
+                       - initial_calc_results.total_energy
+                       + band_edge_related_energy)
+        vte = vte_wo_corr + vtec.correction_energy
+        print(f"Vertical transition energy w/o correction (eV): {vte_wo_corr}")
+        print(f"Vertical transition energy w/  correction (eV): {vte}")
+        return
+
+    dielectric_tensor = unitcell.total_dielectric_tensor
+    static_dielectric_tensor = unitcell.static_dielectric_tensor
+
+    initial_efnv = \
+        ExtendedFnvCorrection.load_json(initial_dir / "correction.json")
+    initial_calc_results = \
+        SupercellCalcResults.load_json(initial_dir / "dft_results.json")
+
+    final_defect_entry = DefectEntry.load_json(final_dir / "defect_entry.json")
+
+    c = VerticalTransitionEnergyCorrection.from_files(dielectric_tensor,
+                                                      static_dielectric_tensor,
+                                                      initial_efnv,
+                                                      initial_calc_results,
+                                                      final_defect_entry,
+                                                      final_calc_results)
+    c.to_json_file(args.json)
+    print(c)
 
 
 def defects(args):

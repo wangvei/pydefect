@@ -15,8 +15,9 @@ from pydefect.core.config import DEFECT_KPT_DENSITY
 from pydefect.main_functions import (
     initial_setting, interstitial, complex_defects, defect_vasp_set,
     vertical_transition_input_maker,  defect_entry, supercell_calc_results,
-    unitcell_calc_results, efnv_correction, defects, plot_energy,
-    parse_eigenvalues, vasp_parchg_set, local_structure, concentration)
+    unitcell_calc_results, efnv_correction, vertical_transition_energy,
+    defects, plot_energy, parse_eigenvalues, vasp_parchg_set, local_structure,
+    concentration)
 from pydefect.util.logger import get_logger
 from pydefect.util.main_tools import (
     get_default_args)
@@ -480,10 +481,10 @@ def main():
                     "calculation. One needs to set .pydefect.yaml for potcar "
                     "setup.",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-        aliases=['vtim'])
+        aliases=['vteim'])
 
-    vtim_defaults = {"contcar": "CONTCAR"}
-    simple_override(vtim_defaults, "contcar")
+    vteim_defaults = {"contcar": "CONTCAR"}
+    simple_override(vteim_defaults, "contcar")
 
     parser_vertical_transition_input_maker.add_argument(
         "-c", dest="additional_charge", type=int,
@@ -492,7 +493,7 @@ def main():
         "-d", dest="initial_dir_name", type=str,
         help=".")
     parser_vertical_transition_input_maker.add_argument(
-        "-contcar", dest="contcar", default=vtim_defaults["contcar"], type=str)
+        "-contcar", dest="contcar", default=vteim_defaults["contcar"], type=str)
 
     parser_vertical_transition_input_maker.set_defaults(
         func=vertical_transition_input_maker)
@@ -592,7 +593,7 @@ def main():
         default=sr_defaults["defect_symprec"],
         help="Set length precision used for symmetry analysis [A].")
     parser_supercell_results.add_argument(
-        "--angle_toleranec", dest="angle_tolerance", type=float,
+        "--angle_tolerance", dest="angle_tolerance", type=float,
         default=sr_defaults["angle_tolerance"],
         help="Set angle precision used for symmetry analysis.")
     parser_supercell_results.add_argument(
@@ -677,6 +678,45 @@ def main():
     del efc_defaults
 
     parser_correction.set_defaults(func=efnv_correction)
+
+    # -- vertical_transition_energy --------------------------------------------
+    parser_vte = subparsers.add_parser(
+        name="vertical_transition_energy",
+        description="Tools for evaluating defect-involving vertical transition "
+                    "energy using the GKFO correction method.",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+        aliases=['vte'])
+
+    vte_defaults = {"unitcell_json": "../unitcell/unitcell.json"}
+    simple_override(vte_defaults, "unitcell_json")
+
+    # needed files
+    parser_vte.add_argument(
+        "--unitcell_json", dest="unitcell_json",
+        default=vte_defaults["unitcell_json"], type=str)
+    parser_vte.add_argument(
+        "-i", "--initial_dir", dest="initial_dir", type=str,
+        help="Directory name for the initial charge state.")
+    parser_vte.add_argument(
+        "--dir", dest="dir", type=str, help="Directory name.")
+    parser_vte.add_argument(
+        "--print", dest="print", action="store_true",
+        help="Print correction information.")
+    parser_vte.add_argument(
+        "-y", "--y_range", dest="y_range", type=float, nargs='+', default=None,
+        help="Two float values for the y-range of the plot.")
+
+    parser_vte.add_argument(
+        "--json", dest="json", type=str, default="vte_correction.json",
+        help="vte_correction.json type file name.")
+
+    parser_vte.add_argument(
+        "-e", "--show", dest="show", action="store_true",
+        help="Show vertical transition energy.")
+
+    del vte_defaults
+
+    parser_vte.set_defaults(func=vertical_transition_energy)
 
     # -- defects -------------------------------------------------------------
     parser_defects = subparsers.add_parser(
