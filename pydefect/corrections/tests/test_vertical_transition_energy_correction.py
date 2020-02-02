@@ -14,6 +14,8 @@ __maintainer__ = "Yu Kumagai"
 class VerticalTransitionEnergyCorrectionTest(PydefectTest):
     def setUp(self) -> None:
         unitcell = UnitcellCalcResults.load_json("MgO_unitcell.json")
+        dielectric_tensor = unitcell.total_dielectric_tensor
+        static_dielectric_tensor = unitcell.static_dielectric_tensor
         initial_efnv_cor = \
             ExtendedFnvCorrection.load_json("MgO_Va_O_1_correction.json")
         initial_calc_results = \
@@ -24,15 +26,17 @@ class VerticalTransitionEnergyCorrectionTest(PydefectTest):
             SupercellCalcResults.load_json("MgO_Va_O_1-added_dft_results.json")
 
         self.vertical_correction = \
-            VerticalTransitionEnergyCorrection.from_files(unitcell,
-                                                          initial_efnv_cor,
-                                                          initial_calc_results,
-                                                          final_defect_entry,
-                                                          final_calc_results,
-                                                          8)
+            VerticalTransitionEnergyCorrection.from_files(
+                dielectric_tensor,
+                static_dielectric_tensor,
+                initial_efnv_cor,
+                initial_calc_results,
+                final_defect_entry,
+                final_calc_results,
+                8)
 
     def test(self):
-        print(self.vertical_correction.correction_energy)
-        print(self.vertical_correction.pc_correction_energy)
-        print(self.vertical_correction.alignment_correction_energy)
+        print(self.vertical_correction)
+        self.vertical_correction.plot_potential()
+
 

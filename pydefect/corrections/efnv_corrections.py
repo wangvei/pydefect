@@ -136,11 +136,14 @@ class Ewald(MSONable):
             lattice (Lattice):
                 The given lattice.
             dielectric_tensor (3x3 np.array):
-                Static dielectic tensor where the directions are compatible
+                Static dielectric tensor where the directions are compatible
                 with the lattice.
             ewald_param (float):
                 A parameter used for evaluating Ewald sum.
             prod_cutoff_fwhm (float):
+                product of cutoff radius of G-vector and gaussian FWHM.
+                Increasing this value, calculation will be more accurate, but
+                slower.
             real_neighbor_lattices (list):
                 List of lattice vectors in real space.
             reciprocal_neighbor_lattices (list):
@@ -303,17 +306,18 @@ class ExtendedFnvCorrection(Correction, MSONable):
                  lattice_matrix: np.ndarray,
                  lattice_energy: float,
                  ave_pot_diff: float,
-                 symbols_without_defect: list,
-                 defect_center_coords: list,
-                 atomic_coords_without_defect: list,
-                 distances_from_defect: list,
-                 electrostatic_pot: list,
-                 pc_pot: list,
+                 symbols_without_defect: List[str],
+                 defect_center_coords: List[float],
+                 atomic_coords_without_defect: List[np.ndarray],
+                 distances_from_defect: List[float],
+                 electrostatic_pot: List[float],
+                 pc_pot: List[float],
                  defect_region_radius: float):
         """
         Args:
             ewald_json (str):
-                Since size of Ewald attributes is large, filename is stored.
+                Since size of Ewald class instance object is large, filename is
+                stored instead.
             charge (int):
                 Defect charge state.
             lattice_matrix (np.ndarray):
@@ -321,37 +325,40 @@ class ExtendedFnvCorrection(Correction, MSONable):
             lattice_energy (float):
                 Lattice energy at a given charge and lattice_matrix.
             ave_pot_diff (float):
-                Average potential difference at outside of defect_region_radius.
+                Averaged potential difference at atoms outside of
+                defect_region_radius.
             symbols_without_defect (list of str):
-                List of element symbols for all the atomic sites except defect.
+                List of element symbols for all the atomic sites except for the
+                defect.
                 e.g., ["Mg", "Mg", ..., "O", "O", ..]
             defect_center_coords (list):
-                Defect center fractional coordinates.
+                Defect center position in fractional coordinates.
             atomic_coords_without_defect (list):
-                List of frac coordinates for all the atomic sites except defect.
+                List of fractional coordinates for all the atomic sites except
+                for the defect.
                 e.g., [[0.0, 0.0, 0.0], [0.1, 0.1, 0.1], ...]
             distances_from_defect (list of float):
-                List of distances from a defect for all the atomic sites
+                List of distances from the defect for all the atomic sites
             electrostatic_pot (list of float):
-                List of electrostatic potential w.r.t that of perfect one from
-                a defect for all the atomic sites.
+                List of electrostatic potential w.r.t the perfect one from
+                the defect for all the atomic sites.
             pc_pot (list of float):
-                List of point-charge potential w.r.t that of perfect one from
-                a defect for all the atomic sites.
+                List of point-charge potential from the defect for all the
+                atomic sites.
             defect_region_radius (float):
-                Maximum radius of a sphere touching to the lattice plane, which
-                is used for defining outside region of the defect.
+                Maximum radius of a sphere touching to the lattice plane, used
+                for defining the outside region of the defect.
         """
-
-        # error check just in case (should be removed in the future)
+        # error check
         symbol_len = len(symbols_without_defect)
         dist_len = len(distances_from_defect)
-        pot_len = len(electrostatic_pot)
-        model_len = len(pc_pot)
-        if not (symbol_len == dist_len == pot_len == model_len):
+        ele_pot_len = len(electrostatic_pot)
+        pc_pot_len = len(pc_pot)
+        if not (symbol_len == dist_len == ele_pot_len == pc_pot_len):
             raise IndexError(
                 f"Lengths of symbols({symbol_len}), distances({dist_len}),  "
-                f"electrostat_pot({pot_len}), model_pot({model_len}) differ.")
+                f"electrostatic_pot({ele_pot_len}), model_pot({pc_pot_len}) "
+                f"differ.")
 
         self.ewald_json = ewald_json
         self.charge = charge
@@ -365,13 +372,16 @@ class ExtendedFnvCorrection(Correction, MSONable):
         self.electrostatic_pot = electrostatic_pot[:]
         self.pc_pot = pc_pot[:]
         self.defect_region_radius = defect_region_radius
-        self._manually_added_correction_energy = None
+        self._manually_added_correction_energy = 0.0
 
     def __repr__(self):
         outs = \
-            [f"Point-charge correction: {self.point_charge_correction_energy}",
-             f"Alignment-like correction: {self.alignment_correction_energy}",
-             f"Manually added correction: {self.manually_added_correction_energy}",
+            [f"Point-charge correction (eV): "
+             f"{self.point_charge_correction_energy}",
+             f"Alignment-like correction (eV): "
+             f"{self.alignment_correction_energy}",
+             f"Manually added correction (eV): "
+             f"{self.manually_added_correction_energy}",
              f"Total correction energy (eV): {self.correction_energy}"]
         return "\n".join(outs)
 
@@ -381,7 +391,7 @@ class ExtendedFnvCorrection(Correction, MSONable):
 
     @property
     def alignment_correction_energy(self) -> float:
-        return -self.ave_pot_diff * self.charge
+        return - self.ave_pot_diff * self.charge
 
     @property
     def manually_added_correction_energy(self) -> float:
@@ -405,7 +415,6 @@ class ExtendedFnvCorrection(Correction, MSONable):
                        file_name: str,
                        yrange: Optional[list] = None) -> None:
         """Plotter for the potential as a function of distance."""
-
         plot_distance_vs_potential(self.symbols_without_defect,
                                    self.distances_from_defect,
                                    self.electrostatic_pot,
@@ -424,7 +433,8 @@ class ExtendedFnvCorrection(Correction, MSONable):
                            dielectric_tensor: np.ndarray,
                            defect_center: list = None,
                            ewald: Union[str, Ewald] = None,
-                           to_filename: str = "ewald.json"):
+                           to_filename: str = "ewald.json"
+                           ) -> "ExtendedFnvCorrection":
         """ Estimate correction energy for point defect formation energy.
 
         Args:
@@ -435,13 +445,16 @@ class ExtendedFnvCorrection(Correction, MSONable):
             perfect_dft (SupercellCalcResults):
                 Calculated defect DFT results for perfect supercell.
             dielectric_tensor (np.ndarray):
-                Dielectric tensor
+                Dielectric tensor.
             defect_center (list):
                 Defect center in fractional coordinates.
             ewald (str / Ewald):
                 Ewald object or ewald.json filename.
             to_filename (str):
                 Filename to jump json data.
+
+        Returns
+            ExtendedFnvCorrection class instance object.
         """
         if isinstance(ewald, str):
             ewald = Ewald.load_json(ewald)
@@ -522,8 +535,30 @@ class ExtendedFnvCorrection(Correction, MSONable):
                    defect_region_radius=defect_region_radius)
 
 
-def calc_lattice_energy_and_pot(atomic_coords_without_defect, charge,
-                                defect_center, ewald, lattice):
+def calc_lattice_energy_and_pot(atomic_coords_without_defect: List[np.ndarray],
+                                charge: int,
+                                defect_center_coords: List[float],
+                                ewald: "Ewald",
+                                lattice: Lattice) -> Tuple[float, List[float]]:
+    """
+
+    Args:
+        atomic_coords_without_defect (List):
+            List of fractional coordinates for all the atomic sites except
+            for the defect.
+            e.g., [[0.0, 0.0, 0.0], [0.1, 0.1, 0.1], ...]
+        charge:
+            Defect charge state.
+        defect_center_coords:
+            Defect center position in fractional coordinates.
+        ewald:
+            Ewald object.
+        lattice:
+            Lattice object for the supercell.
+
+    Returns:
+        Tuple of the lattice energy and list of the model potential.
+    """
 
     volume = lattice.volume
     coeff, diff_pot, mod_ewald_param, root_det_epsilon = \
@@ -534,7 +569,7 @@ def calc_lattice_energy_and_pot(atomic_coords_without_defect, charge,
         # Ewald real part
         # \sum erfc(ewald*\sqrt(R*\epsilon_inv*R))
         # / \sqrt(det(\epsilon)) / \sqrt(R*\epsilon_inv*R) [1/A]
-        shift = lattice.get_cartesian_coords(r - defect_center)
+        shift = lattice.get_cartesian_coords(r - defect_center_coords)
 
         real_part, reciprocal_part = \
             calc_ewald_sum(ewald=ewald,
@@ -549,7 +584,9 @@ def calc_lattice_energy_and_pot(atomic_coords_without_defect, charge,
     return lattice_energy, model_pot
 
 
-def point_charge_energy(charge: int, ewald: "Ewald", volume: float) -> float:
+def point_charge_energy(charge: int,
+                        ewald: "Ewald",
+                        volume: float) -> float:
     """Return point-charge energy under periodic boundary condition."""
     if charge == 0:
         return 0.0
@@ -600,11 +637,12 @@ def calc_ewald_sum(ewald: "Ewald",
     return real_part, reciprocal_part
 
 
-def constants_for_anisotropic_ewald_sum(
-        charge: int,
-        ewald: "Ewald",
-        volume: float
-) -> Tuple[float, float, float, np.ndarray]:
+def constants_for_anisotropic_ewald_sum(charge: int,
+                                        ewald: "Ewald",
+                                        volume: float) -> Tuple[float,
+                                                                float,
+                                                                float,
+                                                                np.ndarray]:
     """Derive some constants used for anisotropic Ewald sum.
 
     YK2014: Kumagai and Oba, PRB 89, 195205 (2014)
