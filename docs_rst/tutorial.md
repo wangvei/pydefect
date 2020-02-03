@@ -42,7 +42,7 @@ We recommend the users to follow the same directory structure as the default of 
 Details of the process are examined step by step using an example of MgO calculated using the PBEsol functional, which is a default of `pydefect`.
 Other examples are also shown in the subsequent tutorials.
 
-### 1. Relaxation of unit cell
+### 1. Relaxation of the unit cell
 Point-defect calculations are generally performed at a fully relaxed structures by the given functional and projector augmented wave (PAW) potentials,
 as it avoids the artificial strain and stress which could be responsible for the unwanted supercell size dependence. 
 Therefore, one usually begins with optimizing lattice constants and fractional coordinates of the atomic positions in the unitcell. 
@@ -618,13 +618,12 @@ With this command, `Va_O1_-1/` is created.
 
 ### 9. Generation of defect_entry.json
 
-We often want to calculate complex defects, peculiar defects such as DX centers, defects with different initial structures, and in such cases, need to construct `POSCAR`s by hand.
-Additionally, some researchers already finished the defect calculations, but want to use `pydefect` for the post-processing.
-For these purposes, `pydefect` can generate `defect_entry.json` by parsing the `POSCAR` and `INCAR` files for the defect.
+We often want to calculate complex defects, peculiar defects such as DX centers, defects with different initial structures, constructed by hand.
+Or, researchers already finished the defect calculations, but want to use `pydefect` for the post-processing.
+For these purposes, `pydefect` generate `defect_entry.json` by parsing the `POSCAR` and `INCAR` files for the defects.
 
 When `defect_entry.json` is generated, the directory name is parsed.
 If one wants to calculate the same defect but with different atomic structure, we can use the `annotation`.
-
 The directory name is parsed as follows.
 ```
  AA_BB_CC_2_XX_YY_ZZ/ -> name='AA_BB_CC', charge=2, annotation='XX_YY_ZZ'
@@ -636,7 +635,7 @@ For example,
 Mg_i+Va_O1*2_2_coord1/ -> name = "Mg_i+Va_O1*2", charge =  2, annotation = "coord1"
 ```
 
-Therefore, one needs to create the directory following this rule and then, type, with `POSCAR` one wants to calculate,
+Therefore, one needs to create the directory following this rule and then, type, 
 ```
 python ~/my_bin/pydefect/pydefect/main.py de --make_defect_entry
 ```
@@ -648,10 +647,11 @@ python ~/my_bin/vise/vise/main.py vs -t defect --charge -1
 ```
 where the charge is assumed to be -1.
 
+### 10. Parsing supercell calculation results
+Then, let's run the vasp calculations.
 <p> We recommend the users to use &Gamma; version of vasp if the k-point sampling is only &Gamma; point for very large supercells.</p>
 
-### 10. Parsing supercell calculation results
-After (partly) finishing the vasp calculations, we next generate the `dft_results.json` 
+After (partly) finishing the vasp calculations, we generate the `dft_results.json` 
 that contains the first-principles calculation results related to the defect properties.
 
 By using the `supercell_results` (=`sr`) sub-command like,
@@ -659,12 +659,12 @@ By using the `supercell_results` (=`sr`) sub-command like,
 python ~/my_bin/pydefect/pydefect/main.py sr --dir_all
 ```
 you can generate `dft_results.json` in all the directories.
-When you want to parse some particular directories, *e.g.*, Va_O1_0, type
+When you want to generate `dft_results.json` for some particular directories, *e.g.*, Va_O1_0, type
 ```
 python ~/my_bin/pydefect/pydefect/main.py sr --dirs Va_O1_0
 ```
 
-Here, the name of `perfect/` has special meaning, so users **must** use this name for the supercells without defects.
+Here, the name of `perfect/` has special meaning, so users **must** use `perfect/` for the supercells without defects.
 
 ### 11. Corrections of defect formation energies in finite-size supercells 
 When the supercell method is adopted, the total energies for **charged defects** are not properly estimated due to interaction between a defect, its images, and background charge. 
@@ -675,20 +675,20 @@ The corrections are attained using the `extended_fnv_correction` (=`efc`) sub-co
 python ~/my_bin/pydefect/pydefect/main.py efc --unitcell_json ../unitcell/unitcell.json --perfect_json perfect/dft_results.json
 ```
 
-For the corrections, we need the dielectric constants and atomic site potential of perfect supercell.
+For the corrections, we need the dielectric constants and atomic site potentials in the perfect supercell.
 Therefore, the paths to `unitcell.json` and `dft_results.json` of `perfect` must be assigned.
 Bear also in mind that this command takes some time, so we recommend the users to prepare coffee or go on a walk outside during this process.
 
-The correction method adopted in pydefect at this moment is the so-called extended Freysoldt-Neugebauer-Van de Walle (eFNV) method.
+The correction method adopted in `pydefect` at this moment is the so-called extended Freysoldt-Neugebauer-Van de Walle (eFNV) method.
 so if one uses the corrections, please cite the following papers.
 - [Y. Kumagai*, and F. Oba, Electrostatics-based finite-size corrections for first-principles point defect calculations, Phys. Rev. B, 89 195205 (2014).](https://journals.aps.org/prb/abstract/10.1103/PhysRevB.89.195205)
 - [C. Freysoldt, J. Neugebauer, C. Van de Walle, Fully Ab Initio Finite-Size Corrections for Charged-Defect Supercell Calculations, Phys. Rev. Lett., 102 016402 (2009).](https://journals.aps.org/prl/abstract/10.1103/PhysRevLett.102.016402)
 
-You obtain potential.eps file, which contains information about defect-induced and point-charge potential, 
+You obtain `potential.eps` file, which contains information about defect-induced and point-charge potential, 
 and their differences at each atomic site as shown below.
 
 The width and height of the horizontal line indicate the averaged region and ∆VPC, q/b|far, respectively. 
-When performing the corrections, I strongly recommend you to check all the potential.eps files of your calculated defects so as to reduce careless mistakes as much as possible.
+When performing the corrections, I strongly recommend you to check all the `potential.eps` files for your calculated defects so as to reduce careless mistakes as much as possible.
 
 ### 12. Gathering defect related information
 Then, we need to generate `defect.json` files in all the defect directories.
@@ -717,22 +717,23 @@ which shows like
    Va_Sn1_0/  convergence : T    band edge : UP  :    No in-gap state  DOWN  :    Localized state
 ```
 If the convergences at the electronic and/or ionic steps are not attained, convergence is shown as `F`.
-Next to the convergence, we can see the band edge information at the spin up (UP) and down (DOWN) channels, which will be explained later.
+Further, we can see the band edge information at the spin up (UP) and down (DOWN) channels, which will be explained later.
 
 ### 13. Check defect eigenvalues
 Generally, point defects are divided into three types.
 
-(1) defects with deep localized states inside the band gap. 
+(1) Defects with deep localized states inside the band gap. 
 This type of defect is generally considered to be detrimental for device performances as the carriers are trapped by the localized states.
-Therefore, in the theoretical researches, it is important to know the position of the localized state and its origin.
+Furthermore, they could act as color centers, as represented by vacancies in NaCl.
+Therefore, it is important to know the position of the localized state and its origin.
 
-(2) defects without any defect states, which should not affect the electronic properties as long as their concentrations are sufficiently low.
+(2) Defects without any defect states inside the band gap, which would not affect the electronic properties as long as their concentrations are sufficiently low.
 
-(3) defects with hydrogenic carrier states, or perturbed host states (PHS), which are carriers locating at the band edges loosely trapped by the defects.
-An examples are the B-on-Si (p-type) and P-on-Si (n-type) in Si.
+(3) Defects with hydrogenic carrier states, or perturbed host states (PHS), where carriers locate at the band edges with loosely trapped by the defects.
+An examples are the B-on-Si (p-type) and P-on-Si (n-type) substitutional dopants in Si.
 This type of defect also does little harm for device performances, but introduce the carrier electrons or holes or compensate other charged defects.
-The wavefunctions of the PHS widespread to several million atoms, so we need to calculate such supergiant supercells to estimate their thermodynamical transition levels.  
-Instead, we thus describe that `the defects have PHS and their transition energies locate near band edges` only qualitatively.
+The wavefunctions of the PHS widespread to several million atoms, so to estimate their thermodynamical transition levels, we need to calculate such supergiant supercells.  
+Instead, we usually avoid calculating these quantities and describe `the defects have PHS and their transition energies locate near band edges` only qualitatively.
 See, for examples.
 - [Y. Kumagai*, M. Choi, Y. Nose, and F. Oba, First-principles study of point defects in chalcopyrite ZnSnP2, Phys. Rev. B, 90 125202 (2014).](https://link.aps.org/pdf/10.1103/PhysRevB.90.125202)
 - [Y. Kumagai*, L. A. Burton, A. Walsh, and F. Oba, Electronic structure and defect physics of tin sulfides: SnS, Sn2S3, and SnS2, Phys. Rev. Applied, 6 014009 (2016).](https://link.aps.org/doi/10.1103/PhysRevApplied.6.014009)
@@ -740,7 +741,7 @@ See, for examples.
 - [Y. Kumagai*, N. Tsunoda, and F. Oba, Point defects and p-type doping in ScN from first principles, Phys. Rev. Applied, 9 034019 (2018).](https://journals.aps.org/prapplied/abstract/10.1103/PhysRevApplied.9.034019)
 - [N. Tsunoda, Y. Kumagai*, A. Takahashi, and F. Oba, Electrically benign defect behavior in ZnSnN2 revealed from first principles, Phys. Rev. Applied, 10 011001 (2018).](https://journals.aps.org/prapplied/abstract/10.1103/PhysRevApplied.10.011001)
 
-Due to such a situation, it is important to see the defect levels and judge if the carriers create the PHS or defect localized states.
+Therefore, it is important to see the defect levels and judge if the carriers create the PHS or defect localized states.
 pydefect show the calculated eigenvalues and the band-edge states by the `eigenvalues` (=`eig`) sub-command
 ```
 python ~/my_bin/pydefect/pydefect/main.py eig --defect_dir . --unitcell ../../unitcell/unitcell.json --perfect ../perfect/dft_results.json -s eig.png
@@ -794,7 +795,7 @@ This command
 Once the calculation directories are parsed, `defect_energies.json` is automatically generated.
 If one wants to regenerate the results, one needs to remove it.
 
-When changing the condition for chemical potential, namely the position of vertex in
+When changing the condition for chemical potential, namely the position of the vertex in
 the chemical potential diagram, please use the `--chem_pot_label` option.
 
 There are many options for this sub-command.
