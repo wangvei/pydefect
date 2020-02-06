@@ -11,7 +11,9 @@ from pydefect.core.supercell_calc_results import SupercellCalcResults
 from pydefect.core.complex_defects import ComplexDefects
 from pydefect.input_maker.defect_initial_setting import DefectInitialSetting
 from pydefect.input_maker.supercell_maker import Supercells
-from pydefect.core.config import DEFECT_KPT_DENSITY
+from pydefect.core.config import (
+    DEFECT_KPT_DENSITY, SYMMETRY_TOLERANCE, DEFECT_SYMMETRY_TOLERANCE, ANGLE_TOL
+)
 from pydefect.main_functions import (
     initial_setting, interstitial, complex_defects, defect_vasp_set,
     vertical_transition_input_maker,  defect_entry, supercell_calc_results,
@@ -19,11 +21,11 @@ from pydefect.main_functions import (
     defects, plot_energy, parse_eigenvalues, vasp_parchg_set, local_structure,
     concentration)
 from pydefect.util.logger import get_logger
-from pydefect.util.main_tools import (
-    get_default_args)
-from vise.util.main_tools import get_user_settings, dict2list
 from pydefect.corrections.efnv_corrections import Ewald
 from pydefect.analysis.defect_structure import defect_structure_matcher
+
+from vise.main import user_settings as vise_user_settings
+from vise.util.main_tools import dict2list, get_default_args, get_user_settings
 
 __author__ = "Yu Kumagai"
 __maintainer__ = "Yu Kumagai"
@@ -33,40 +35,47 @@ logger = get_logger(__name__)
 __version__ = '0.0.1'
 __date__ = 'will be inserted'
 
+# The following keys can be set by pydefect.yaml
+setting_keys = ["defect_symprec",
+                "interstitial_symprec",
+                "site_tolerance",
+                "defect_kpt_density",
+                "defect_incar_setting",
+                "defect_vise_kwargs",
+                "outcar",
+                "contcar",
+                "vasprun",
+                "procar",
+                "vicinage_radius",
+                "displacement_distance",
+                "volume_dir",
+                "static_diele_dir",
+                "ionic_diele_dir",
+                "band_edge_dir",
+                "dos_dir",
+                "unitcell_json",
+                "perfect_json",
+                "chem_pot_yaml"]
+
+user_settings = get_user_settings(yaml_filename="pydefect.yaml",
+                                  setting_keys=setting_keys)
+
+# The following keys can be set by vise.yaml
+vise_setting_keys = ["symprec",
+                     "angle_tolerance",
+                     "xc",
+                     "kpt_density",
+                     "ldauu",
+                     "ldaul",
+                     "potcar_set"]
+
+
+for k in vise_setting_keys:
+    if k in vise_user_settings:
+        user_settings[k] = vise_user_settings[k]
+
 
 def main():
-    # The following keys can be set by pydefect.yaml
-    setting_keys = ["symprec",
-                    "defect_symprec",
-                    "interstitial_symprec",
-                    "site_tolerance",
-                    "angle_tolerance",
-                    "kpt_density",
-                    "defect_kpt_density",
-                    "defect_incar_setting",
-                    "defect_vise_kwargs",
-                    "ldauu",
-                    "ldaul",
-                    "xc",
-                    "no_wavecar",
-                    "potcar_set",
-                    "outcar",
-                    "contcar",
-                    "vasprun",
-                    "procar",
-                    "vicinage_radius",
-                    "displacement_distance",
-                    "volume_dir",
-                    "static_diele_dir",
-                    "ionic_diele_dir",
-                    "band_edge_dir",
-                    "dos_dir",
-                    "unitcell_json",
-                    "perfect_json",
-                    "chem_pot_yaml"]
-
-    user_settings = get_user_settings(yaml_filename="pydefect.yaml",
-                                      setting_keys=setting_keys)
 
     def simple_override(d: dict, overridden_keys: Union[list, str]) -> None:
         """Override dict if keys exist in user_settings.
@@ -94,6 +103,40 @@ def main():
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
     subparsers = parser.add_subparsers()
+
+    # -- parent parser: symprec
+    prec = {"symprec": SYMMETRY_TOLERANCE,
+            "defect_symprec": DEFECT_SYMMETRY_TOLERANCE,
+            "angle_tolerance": ANGLE_TOL}
+    simple_override(prec, ["symprec", "defect_symprec", "angle_tolerance"])
+
+    ang_tol_parser = argparse.ArgumentParser(
+        description="symprec-related parser", add_help=False)
+    ang_tol_parser.add_argument(
+        "--angle_tolerance", dest="angle_tolerance", type=float,
+        default=prec["angle_tolerance"],
+        help="Set angle precision used for symmetry analysis.")
+
+    # -- parent parser: prec
+    prec_parser = argparse.ArgumentParser(
+        description="symprec-related parser",
+        parents=[ang_tol_parser],
+        add_help=False)
+    prec_parser.add_argument(
+        "--symprec", dest="symprec", type=float,
+        default=prec["symprec"],
+        help="Set length precision used for symmetry analysis [A].")
+
+    # -- parent parser: defect_prec
+    defect_prec_parser = argparse.ArgumentParser(
+        description="symprec-related parser",
+        parents=[ang_tol_parser],
+        add_help=False)
+    defect_prec_parser.add_argument(
+        "--defect_symprec", dest="defect_symprec", type=float,
+        default=prec["defect_symprec"],
+        help="Set length precision used for determining the defect site "
+             "symmetry [A].")
 
     # -- unitcell_calc_results ------------------------------------------------
     parser_unitcell_results = subparsers.add_parser(
@@ -175,6 +218,7 @@ def main():
     # -- initial_setting ------------------------------------------------------
     parser_initial = subparsers.add_parser(
         name="initial_setting",
+        parents=[prec_parser],
         description="Tools for recommending an optimal supercell(s) and "
                     "configuring initial settings for a standard set "
                     "of point-defect calculations.",
@@ -183,14 +227,7 @@ def main():
 
     is_defaults = get_default_args(DefectInitialSetting.from_basic_settings)
     is_defaults.update(get_default_args(Supercells))
-    simple_override(is_defaults,
-                    ["defect_symprec", "angle_tolerance",
-                     "displacement_distance"])
-
-    parser_initial.add_argument(
-        "--symprec", dest="symprec", type=float,
-        default=is_defaults["symprec"],
-        help="Set length precision used for symmetry analysis [A].")
+    simple_override(is_defaults, "displacement_distance")
 
     # supercell
     parser_initial.add_argument(
@@ -256,10 +293,6 @@ def main():
         help="Displacement distance. 0 means that random displacement is not "
              "considered.")
     parser_initial.add_argument(
-        "--angle_tolerance", dest="angle_tolerance", type=float,
-        default=is_defaults["angle_tolerance"],
-        help="Set angle precision used for symmetry analysis.")
-    parser_initial.add_argument(
         "--interstitial_sites", dest="interstitials", type=str, nargs="+",
         default=is_defaults["interstitial_sites"],
         help="Interstitial site names.")
@@ -278,6 +311,7 @@ def main():
     # -- interstitial ---------------------------------------------------------
     parser_interstitial = subparsers.add_parser(
         name="interstitial",
+        parents=[defect_prec_parser],
         description="Tools for handling the interstitial sites.",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
         aliases=['i'])
@@ -314,19 +348,10 @@ def main():
         help="Set if the interstitial site is forcibly added, although it is "
              "too close to other atoms.")
     parser_interstitial.add_argument(
-        "--symprec", dest="symprec", type=float,
-        default=i_defaults["defect_symprec"],
-        help="Set length precision used for determining the defect site "
-             "symmetry [A].")
-    parser_interstitial.add_argument(
         "--interstitial_symprec", dest="interstitial_symprec", type=float,
         default=i_defaults["interstitial_symprec"],
         help="Set length precision used for determining the site symmetry used"
              "in CHGCAR analysis [A].")
-    parser_interstitial.add_argument(
-        "--angle_tolerance", dest="angle_tolerance", type=float,
-        default=i_defaults["angle_tolerance"],
-        help="Set angle precision used for symmetry analysis.")
     parser_interstitial.add_argument(
         "--method", dest="method", type=str, default=i_defaults["method"],
         help="Name of method determining the interstitial site.")
@@ -341,13 +366,14 @@ def main():
     # -- complex_defects -------------------------------------------------------
     parser_complex_defects = subparsers.add_parser(
         name="complex_defects",
+        parents=[defect_prec_parser],
         description="Tools for handling the complex defects.",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
         aliases=['cd'])
 
     cd_defaults = get_default_args(ComplexDefects.add_defect)
     cd_defaults.update(get_default_args(ComplexDefects.from_files))
-    simple_override(cd_defaults, ["symprec", "angle_tolerance"])
+    simple_override(cd_defaults, ["defect_symprec", "angle_tolerance"])
 
     parser_complex_defects.add_argument(
         "--yaml", dest="yaml", type=str, default=cd_defaults["yaml_filename"],
@@ -380,14 +406,6 @@ def main():
     parser_complex_defects.add_argument(
         "--annotation", dest="annotation", type=str, default=None,
         help="Annotation of the complex defect.")
-    parser_complex_defects.add_argument(
-        "--symprec", dest="symprec", type=float,
-        default=cd_defaults["symprec"],
-        help="Set length precision used for symmetry analysis [A].")
-    parser_complex_defects.add_argument(
-        "--angle_tolerance", dest="angle_tolerance", type=float,
-        default=cd_defaults["angle_tolerance"],
-        help="Set angle precision used for symmetry analysis.")
 
     del cd_defaults
 
@@ -421,8 +439,7 @@ def main():
 
     dvs_defaults["dvs_kwargs"].update(
         user_settings.get("defect_vise_kwargs", {}))
-    simple_override(
-        dvs_defaults["dvs_kwargs"], ["symprec", "angle_tolerance"])
+    simple_override(dvs_defaults, "dvs_kwargs")
     dvs_defaults["dvs_kwargs"] = dict2list(dvs_defaults["dvs_kwargs"])
 
     parser_defect_vasp_set.add_argument(
@@ -481,19 +498,20 @@ def main():
                     "calculation. One needs to set .pydefect.yaml for potcar "
                     "setup.",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-        aliases=['vteim'])
+        aliases=['vtim'])
 
-    vteim_defaults = {"contcar": "CONTCAR"}
-    simple_override(vteim_defaults, "contcar")
+    vtim_defaults = {"contcar": "CONTCAR"}
+    simple_override(vtim_defaults, "contcar")
 
     parser_vertical_transition_input_maker.add_argument(
         "-c", dest="additional_charge", type=int,
-        help=".")
+        help="Charge added, so must be 1 or -1.")
     parser_vertical_transition_input_maker.add_argument(
         "-d", dest="initial_dir_name", type=str,
-        help=".")
+        help="Directory name for the initial state.")
     parser_vertical_transition_input_maker.add_argument(
-        "-contcar", dest="contcar", default=vteim_defaults["contcar"], type=str)
+        "-contcar", dest="contcar", default=vtim_defaults["contcar"], type=str,
+        help="Atom relaxed CONTCAR file for the initial state.")
 
     parser_vertical_transition_input_maker.set_defaults(
         func=vertical_transition_input_maker)
@@ -546,6 +564,7 @@ def main():
     # -- supercell_calc_results -----------------------------------------------
     parser_supercell_results = subparsers.add_parser(
         name="supercell_results",
+        parents=[defect_prec_parser],
         description="Tools for analyzing vasp supercell results",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
         aliases=['sr'])
@@ -588,14 +607,6 @@ def main():
     parser_supercell_results.add_argument(
         "--cutoff", dest="cutoff", type=float, default=sr_defaults["cutoff"],
         help="Cutoff radius to determine the neighboring atoms.")
-    parser_supercell_results.add_argument(
-        "--defect_symprec", dest="symprec", type=float,
-        default=sr_defaults["defect_symprec"],
-        help="Set length precision used for symmetry analysis [A].")
-    parser_supercell_results.add_argument(
-        "--angle_tolerance", dest="angle_tolerance", type=float,
-        default=sr_defaults["angle_tolerance"],
-        help="Set angle precision used for symmetry analysis.")
     parser_supercell_results.add_argument(
         "--print", dest="print", action="store_true",
         help="Print SupercellCalcResults class object information.")
@@ -693,12 +704,14 @@ def main():
     # needed files
     parser_vte.add_argument(
         "--unitcell_json", dest="unitcell_json",
-        default=vte_defaults["unitcell_json"], type=str)
+        default=vte_defaults["unitcell_json"], type=str,
+        help="UnitcellCalcResults class object json file name.")
     parser_vte.add_argument(
         "-i", "--initial_dir", dest="initial_dir", type=str,
         help="Directory name for the initial charge state.")
     parser_vte.add_argument(
-        "--dir", dest="dir", type=str, help="Directory name.")
+        "--dir", dest="dir", type=str,
+        help="Directory name for the final charge state.")
     parser_vte.add_argument(
         "--print", dest="print", action="store_true",
         help="Print correction information.")

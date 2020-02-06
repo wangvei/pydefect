@@ -119,7 +119,7 @@ def initial_setting(args):
               "included": args.included,
               "excluded": args.excluded,
               "displacement_distance": args.displacement_distance,
-              "symprec": args.symprec,
+              "symprec": args.defect_symprec,
               "angle_tolerance": args.angle_tolerance,
               "interstitial_sites": args.interstitials,
               "complex_defect_names": args.complex_defect_names}
@@ -284,7 +284,7 @@ def complex_defects(args):
         name=args.name,
         extreme_charge_state=args.extreme_charge_state,
         annotation=args.annotation,
-        symprec=args.symprec,
+        symprec=args.defect_symprec,
         angle_tolerance=args.angle_tolerance)
 
     complex_defects_obj.site_set_to_yaml_file(yaml_filename=args.yaml)
@@ -467,7 +467,7 @@ def supercell_calc_results(args):
                             procar=args.procar,
                             cutoff=args.cutoff,
                             defect_entry=de,
-                            defect_symprec=args.symprec,
+                            defect_symprec=args.defect_symprec,
                             angle_tolerance=args.angle_tolerance)
                 except IOError:
                     logger.warning(f"Parsing data in {d} failed.")
@@ -565,6 +565,7 @@ def vertical_transition_energy(args):
 
     if args.print:
         vtec = VerticalTransitionEnergyCorrection.load_json(args.json)
+        vtec.plot_potential()
         print(vtec)
         if vtec.additional_charge == 1:
             cbm = unitcell.band_edge[1]
@@ -573,7 +574,7 @@ def vertical_transition_energy(args):
 
         else:
             vbm = unitcell.band_edge[0]
-            print(f"CBM position (eV): {vbm}")
+            print(f"VBM position (eV): {vbm}")
             band_edge_related_energy = -vbm
 
         vte_wo_corr = (final_calc_results.total_energy
