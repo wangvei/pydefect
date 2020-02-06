@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
-from inspect import signature, _empty
+
 from os.path import join
-from typing import Callable, Optional, List
+from typing import Optional, List
 
 from pydefect.util.logger import get_logger
 
@@ -9,27 +9,6 @@ __author__ = "Yu Kumagai"
 __maintainer__ = "Yu Kumagai"
 
 logger = get_logger(__name__)
-
-
-def get_default_args(function: Callable) -> dict:
-    """Get the default values of the arguments in the method/function.
-
-    inspect._empty means no default.
-
-    Args:
-        function (Callable):
-            Method or function. when class is inserted, cls.__init__ is called.
-
-    Return:
-        default dict
-    """
-    defaults = {}
-    signature_obj = signature(function)
-    for name, param in signature_obj.parameters.items():
-        if param.default != _empty:
-            defaults[name] = param.default
-
-    return defaults
 
 
 def generate_objects_from_json_files(

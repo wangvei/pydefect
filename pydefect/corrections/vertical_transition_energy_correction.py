@@ -42,7 +42,7 @@ class VerticalTransitionEnergyCorrection(Correction, MSONable):
                  pc_pot: List[float],
                  max_sphere_radius: float,
                  ):
-        """Calculate the correction energy for the vertical transition
+        """Calculate the correction energy for the vertical transition.
 
         [Gake, Kumagai, Freysoldt and Oba, PRB 101, 020102 (2020)] for details.
         Here, "GKFO" means the correction energy of Eq. (13) in this paper.
@@ -101,7 +101,7 @@ class VerticalTransitionEnergyCorrection(Correction, MSONable):
                    final_calc_results: SupercellCalcResults,
                    prod_cutoff_fwhm: float = 25.0
                    ) -> "VerticalTransitionEnergyCorrection":
-        """
+        """Create instance object by extracting data from several objects.
 
         Args:
             dielectric_tensor (np.ndarray):
@@ -166,7 +166,7 @@ class VerticalTransitionEnergyCorrection(Correction, MSONable):
                    max_sphere_radius=initial_efnv.max_sphere_radius)
 
     def plot_potential(self,
-                       file_name: str = "vertical_correction.json",
+                       file_name: str = "vertical_correction.pdf",
                        yrange: Optional[list] = None) -> None:
         """Plotter for the potential as a function of distance."""
         plot_distance_vs_potential(self.symbols_without_defect,
@@ -177,7 +177,6 @@ class VerticalTransitionEnergyCorrection(Correction, MSONable):
                                    self.ave_pot_diff,
                                    yrange)
         plt.savefig(file_name, format="pdf", transparent=True)
-#        plt.show(transparent=True)
 
     def __repr__(self):
         outs = \

@@ -21,6 +21,9 @@ from pydefect.util.logger import get_logger
 from pydefect.util.tools import (
     flatten_dict, sanitize_keys_in_dict)
 
+__author__ = "Yu Kumagai"
+__maintainer__ = "Yu Kumagai"
+
 logger = get_logger(__name__)
 
 
@@ -30,7 +33,7 @@ def hole_concentration(temperature: float,
                        vbm: float,
                        volume: float,
                        threshold: float = 0.05) -> float:
-    """ hole carrier concentration at the given absolute fermi_level.
+    """Hole carrier concentration at the given absolute fermi_level.
 
     Args:
         temperature (float):
@@ -71,7 +74,7 @@ def electron_concentration(temperature: float,
                            cbm: float,
                            volume: float,
                            threshold: float = 0.05) -> float:
-    """ electron carrier concentration at the given absolute fermi_level.
+    """Electron carrier concentration at the given absolute fermi_level.
 
     Args:
         temperature (float):
@@ -113,10 +116,11 @@ def calc_concentration(defect_energies: Optional[Dict],
                        total_dos: list,
                        volume: float,
                        ref_concentration: Optional[dict] = None) -> dict:
-    """ Calculate concentrations at given temperature & Fermi level
+    """Calculate defect/carrier concentrations at a temperature & a Fermi level.
 
-    When the reference_concentration is provided, each defect specie
-    concentration is fixed.
+    When the reference_concentration is provided, each defect concentration is
+    fixed. For example, n(Va_Mg) = n(Va_Mg_0) + n(Va_Mg_-1) + n(Va_Mg_-2) is
+    kept fixed even the temperature is quenched.
 
     Args:
         defect_energies (dict):
@@ -193,7 +197,7 @@ def calc_equilibrium_concentration(defect_energies: dict,
                                    interval_decay_parameter: float = 0.7,
                                    threshold: float = 1e-5
                                    ) -> Tuple[float, dict]:
-    """ Calculates equilibrium carrier & defect concentration at a temperature
+    """Calculates equilibrium carrier & defect concentration at a temperature.
 
     When the ref_concentration is set, the total defect concentration with the
     same name is kept fixed.
@@ -273,7 +277,7 @@ def calc_equilibrium_concentration(defect_energies: dict,
 
 
 class DefectConcentration(MSONable):
-    """ A class related to a set of carrier and defect concentration """
+    """Class related to a set of carrier and defect concentration."""
 
     def __init__(self,
                  defect_energies: dict,
@@ -361,7 +365,7 @@ class DefectConcentration(MSONable):
                           round_magnetization: bool = False,
                           fractional_criterion: float = 0.1
                           ) -> "DefectConcentration":
-        """Create instance object from DefectEnergies and UnitcellCalcResults
+        """Create instance object from DefectEnergies and UnitcellCalcResults.
 
         Args:
             defect_energies (dict):
@@ -372,7 +376,7 @@ class DefectConcentration(MSONable):
             round_magnetization (bool)
                 Whether to round the fractional magnetization.
             fractional_criterion (float):
-                The criterion to determine if magnetization is fractional.
+                The criterion to determine if the magnetization is fractional.
 
         Returns:
             DefectConcentration object.
@@ -431,13 +435,12 @@ class DefectConcentration(MSONable):
 
         outs = [f"volume (A^3): {round(self.volume, 2)}",
                 f"vbm, cbm (eV): {round(self.vbm, 2)}, {round(self.cbm, 2)}",
-                f"band gap (eV): {round(self.cbm - self.vbm, 2)}",
-                ""]
+                f"band gap (eV): {round(self.cbm - self.vbm, 2)}", ""]
 
-        for i, c in enumerate([self.equilibrium_concentration,
-                               self.quenched_equilibrium_concentration]):
-            if c:
-                if i == 0:
+        for equil_c, quenched_c in enumerate([self.equilibrium_concentration,
+                                     self.quenched_equilibrium_concentration]):
+            if quenched_c:
+                if equil_c == 0:
                     outs.append("++ Equilibrium concentration")
                     t = self.temperature
                     ef = self.equilibrium_ef - self.vbm
@@ -446,8 +449,8 @@ class DefectConcentration(MSONable):
                     t = self.quenched_temperature
                     ef = self.quenched_ef - self.vbm
 
-                p = c["p"][1]
-                n = c["n"][-1]
+                p = quenched_c["p"][1]
+                n = quenched_c["n"][-1]
                 out = [f"Temperature: {t} K.",
                        f"Fermi level from vbm: {round(ef, 2)} eV.",
                        f"{'p':>13}: {p:.1e} cm-3.",
@@ -455,11 +458,11 @@ class DefectConcentration(MSONable):
                        f"{'p - n':>13}: {p - n:.1e} cm-3."]
                 outs.extend(out)
 
-                for name in c:
+                for name in quenched_c:
                     if name in ("p", "n"):
                         continue
                     outs.append("---")
-                    for charge, concentration in c[name].items():
+                    for charge, concentration in quenched_c[name].items():
                         annotation = \
                             self.defect_energies[name][charge].annotation
                         n = DefectName(name, charge, annotation)
@@ -472,7 +475,9 @@ class DefectConcentration(MSONable):
                             temperature: float,
                             fermi_range: list = None,
                             num_mesh: int = 100) -> None:
-        """ Calculates defect formation energies from some files.
+        """Calculate carrier & defect concentrations as function of Fermi level.
+
+        Quenched concentrations are also calculated by default.
 
         Args:
             temperature (list):
@@ -481,6 +486,9 @@ class DefectConcentration(MSONable):
                 Range of Fermi level, [lower_limit, upper_limit]
             num_mesh (float):
                 Number of mesh for Fermi level including boundary.
+
+        Returns:
+            None
         """
         fermi_range = fermi_range or [self.vbm, self.cbm]
         self.fermi_mesh = np.linspace(fermi_range[0], fermi_range[1], num_mesh)
@@ -516,8 +524,7 @@ class DefectConcentration(MSONable):
     def calc_equilibrium_concentration(self,
                                        temperature: Optional[float] = None,
                                        verbose: bool = True) -> None:
-        """
-        Calculate equilibrium defect concentrations at given temperature.
+        """Calculate equilibrium defect concentrations at a given temperature.
 
         Args:
             temperature (list):
@@ -525,10 +532,13 @@ class DefectConcentration(MSONable):
             verbose (book):
                 Whether print the carrier and defect concentration during the
                 seek of the selfconsistent results.
+
+        Returns:
+            None
         """
-        if temperature:
+        if temperature is not None:
             self.temperature = temperature
-        elif self.temperature is None:
+        else:
             raise ValueError("Temperature is not defined.")
 
         self.equilibrium_ef, self.equilibrium_concentration = \
@@ -551,11 +561,14 @@ class DefectConcentration(MSONable):
             verbose (book):
                 Whether print the carrier and defect concentration during the
                 seek of the selfconsistent results.
+
+        Returns:
+            None
         """
         if self.equilibrium_concentration is None:
-            raise ValueError("To calculate the quenched equilibrium "
-                             "concentrations, the equilibrium concentrations "
-                             "are needed.")
+            raise ValueError(
+                "To calculate the quenched equilibrium concentrations, the "
+                "equilibrium concentrations are needed.")
 
         self.quenched_temperature = temperature
 
@@ -574,7 +587,7 @@ class DefectConcentration(MSONable):
                                     title: str = None,
                                     xlim: list = None,
                                     ylim: list = None,
-                                    set_vbm_zero=True):
+                                    set_vbm_zero=True) -> plt:
         """Get a matplotlib plot.
 
         Args:
@@ -588,7 +601,7 @@ class DefectConcentration(MSONable):
                 Set VBM to zero.
 
         Returns:
-            pyplot.
+            Matplotlib pyplot.
         """
         fig = plt.figure()
         ax = fig.add_subplot(111)

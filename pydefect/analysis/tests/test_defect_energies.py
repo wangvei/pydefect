@@ -59,11 +59,11 @@ class DefectEnergiesTest(PydefectTest):
 
         with self.assertRaises(ValueError):
             DefectEnergies.from_objects(unitcell=self.unitcell,
-                                    perfect=self.perfect,
-                                    defects=defects,
-                                    chem_pot=self.chem_pot,
-                                    chem_pot_label=self.chem_pot_label,
-                                    system="MgO")
+                                        perfect=self.perfect,
+                                        defects=defects,
+                                        chem_pot=self.chem_pot,
+                                        chem_pot_label=self.chem_pot_label,
+                                        system="MgO")
 
     def test_msonable(self):
         self.assertMSONable(self.defect_energies)
@@ -76,16 +76,12 @@ class DefectEnergiesTest(PydefectTest):
         de = DefectEnergies.from_dict(d)
         dd = de.as_dict()
         self.assertEqual(d, dd)
-        print(d)
-        print(dd)
 
     def test_json(self):
         """ round trip test of to_json and from_json """
         tmp_file = tempfile.NamedTemporaryFile()
         self.defect_energies.to_json_file(tmp_file.name)
         defect_entry_from_json = DefectEntry.load_json(tmp_file.name)
-        print(defect_entry_from_json.as_dict())
-        print(self.defect_energies.as_dict())
         self.assertEqual(defect_entry_from_json.as_dict(),
                          self.defect_energies.as_dict())
 

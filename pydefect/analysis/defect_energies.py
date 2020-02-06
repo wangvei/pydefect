@@ -69,6 +69,7 @@ class DefectEnergies(MSONable):
                  cbm: float,
                  supercell_vbm: float,
                  supercell_cbm: float,
+                 include_corrections: bool,
                  title: str = None):
         """A class related to a set of defect formation energies.
 
@@ -84,6 +85,8 @@ class DefectEnergies(MSONable):
                 Valence band maximum in the perfect supercell.
             supercell_cbm (float):
                 Conduction band minimum in the perfect supercell.
+            include_corrections (bool):
+                The energies include the corrections or not.
             title (str):
                 Title of the system.
         """
@@ -93,6 +96,7 @@ class DefectEnergies(MSONable):
         self.cbm = cbm
         self.supercell_vbm = supercell_vbm
         self.supercell_cbm = supercell_cbm
+        self.include_corrections = include_corrections
         self.title = title
 
     @classmethod
@@ -105,6 +109,7 @@ class DefectEnergies(MSONable):
                      filtering_words: list = None,
                      exclude_unconverged_defects: bool = True,
                      exclude_shallow_defects: bool = True,
+                     include_corrections: bool = True,
                      system: str = None):
         """Calculates defect formation energies from several objects.
 
@@ -133,6 +138,8 @@ class DefectEnergies(MSONable):
                 Whether to exclude the unconverged defects from the plot.
             exclude_shallow_defects (bool):
                 Whether to exclude the shallow defects from the plot.
+            include_corrections (bool):
+                Whether to include corrections to defect formation energies.
             system (str):
                 System name used for the title.
         """
@@ -175,16 +182,17 @@ class DefectEnergies(MSONable):
                         logger.info(f"{n} is unconverged, so omitted.")
                         continue
 
-                    energy_by_annotation[d] = \
-                        d.relative_total_energy + d.correction_energy
+                    energy_by_annotation[d] = d.relative_total_energy
+                    if include_corrections:
+                        energy_by_annotation[d] += d.correction_energy
 
                 # skip if no defect exists for this defect
                 if not energy_by_annotation:
                     continue
 
                 # get the lowest energy defect
-                defect, defect_energy = \
-                    min(energy_by_annotation.items(), key=itemgetter(1))
+                defect, defect_energy = min(energy_by_annotation.items(),
+                                            key=itemgetter(1))
 
                 for el, diff in defect.changes_of_num_elements.items():
                     relative_e = relative_chem_pot.coords[Element(el)]
@@ -234,6 +242,7 @@ class DefectEnergies(MSONable):
                    cbm=cbm,
                    supercell_vbm=perfect.vbm,
                    supercell_cbm=perfect.cbm,
+                   include_corrections=include_corrections,
                    title=title)
 
     @classmethod
@@ -249,6 +258,7 @@ class DefectEnergies(MSONable):
                    cbm=d["cbm"],
                    supercell_vbm=d["supercell_vbm"],
                    supercell_cbm=d["supercell_cbm"],
+                   include_corrections=d["include_corrections"],
                    title=d["title"])
 
     def to_json_file(self, filename="defect_energies.json"):
@@ -437,7 +447,7 @@ class DefectEnergies(MSONable):
                     s = f"{round(cp[0], 2)}, {round(cp[1], 2)}"
                     pos_x = cp[0]
                     pos_y = cp[1] - margin_y
-                    ax.annotate(x=s, y=(pos_x, pos_y),
+                    ax.annotate(s, (pos_x, pos_y),
                                 color=color[i], fontsize=fs["transition"])
 
             # Arrange the charge states at the middle of the transition levels.
