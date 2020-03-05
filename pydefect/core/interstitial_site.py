@@ -3,7 +3,7 @@
 from collections import OrderedDict
 from copy import deepcopy
 from typing import Union, Dict, List
-from ruamel import yaml
+import yaml
 
 from monty.json import MSONable
 

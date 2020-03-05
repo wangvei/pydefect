@@ -9,9 +9,6 @@ from pydefect.util.structure_tools import (
 from pymatgen.core.structure import Structure
 from pydefect.util.testing import PydefectTest
 
-__author__ = "Yu Kumagai"
-__maintainer__ = "Yu Kumagai"
-
 
 class PerturbNeighborsTest(PydefectTest):
 
@@ -19,7 +16,7 @@ class PerturbNeighborsTest(PydefectTest):
         self.structure = self.get_structure_by_name("MgO64atoms")
         # Mg at [0, 0, 0] is assumed to be inserted
         center = [0.5, 0.5, 0.5]
-        cutoff = self.structure.lattice.a / 4
+        cutoff = self.structure.lattice.a / 4 + 0.01
         self.distance = 0.2
         inserted_atom_indices = [7]
 
@@ -34,13 +31,13 @@ class PerturbNeighborsTest(PydefectTest):
                                       self.distance, inserted_atom_indices)
 
     def test_perturbed_sites_smaller(self):
-        expected = {43, 47, 53, 55, 62, 63}
-        self.assertEqual(expected, set(self.perturbed_sites))
+        expected = {35, 39, 54, 55, 61, 63}
+        self.assertEqual(sorted(expected), sorted(set(self.perturbed_sites)))
 
     def test_perturbed_sites_larger(self):
-        expected = {12, 13, 14, 15, 18, 19, 22, 23, 25, 27, 29, 31, 43, 47, 53,
-                    55, 62, 63}
-        self.assertEqual(expected, set(self.perturbed_sites_2))
+        expected = {12, 13, 14, 15, 18, 19, 22, 23, 25, 27, 29, 31, 35, 39, 54,
+                    55, 61, 63}
+        self.assertEqual(sorted(expected), sorted(set(self.perturbed_sites_2)))
 
     def test_displacement_distance(self):
         distances = []
@@ -130,7 +127,7 @@ class GetNeighboringAtomIndicesTest(PydefectTest):
         coords_2 = [0.125, 0.0, 0.0]
         actual_2 = get_neighboring_atom_indices(self.structure,
                                                 coords_2, cutoff=1.07)
-        expected_2 = ([0, 40], [1.06172325, 1.06172325])
+        expected_2 = ([0, 32], [1.052432, 1.052432])
         self.assertEqual(expected_2, actual_2)
 
 
@@ -139,7 +136,7 @@ class CountEquivalentClustersTest(PydefectTest):
     def setUp(self):
         self.structure = self.get_structure_by_name("MgO64atoms")
         self.inserted_atom_coords = [[0.125, 0.125, 0.125]]
-        self.removed_atom_indices = [0, 32]
+        self.removed_atom_indices = [0, 40]
 
     def test(self):
         num_sites, point_group = \

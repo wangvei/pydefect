@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import tempfile
 from copy import deepcopy
+from pathlib import Path
 
 from pydefect.core.defect_entry import DefectType
 from pydefect.core.irreducible_site import IrreducibleSite
@@ -9,8 +10,11 @@ from pydefect.input_maker.defect_initial_setting import (
     dopant_info, get_distances_from_string, insert_atoms, select_defects,
     DefectInitialSetting)
 from pydefect.util.testing import PydefectTest
-from pymatgen.core.structure import Structure
 from pydefect.core.defect_name import DefectName
+
+from pymatgen.core.structure import Structure
+
+parent = Path(__file__).parent
 
 
 class CandidateChargeSetTest(PydefectTest):
@@ -204,7 +208,9 @@ class DefectInitialSettingTest(PydefectTest):
             symprec=symprec,
             angle_tolerance=angle_tolerance,
             oxidation_states=oxidation_states,
-            electronegativity=electronegativity)
+            electronegativity=electronegativity,
+            interstitials_yaml=str(parent / "interstitials.yaml"),
+            complex_defect_yaml=str(parent / "complex_defects.yaml"))
 
     def test_dict(self):
         expected = self.MgO.as_dict()
@@ -227,17 +233,19 @@ class DefectInitialSettingTest(PydefectTest):
 
     def test_from_defect_in(self):
         actual = DefectInitialSetting.from_defect_in(
-            poscar="DPOSCAR-defect_initial_setting",
-            defect_in_file="defect_unittest.in")
+            poscar=str(parent / "DPOSCAR-defect_initial_setting"),
+            defect_in_file=str(parent / "defect_unittest.in"),
+            interstitials_yaml=str(parent / "interstitials.yaml"),
+            complex_defect_yaml=str(parent / "complex_defects.yaml"))
 
         self.assertEqual(self.MgO.structure.lattice, actual.structure.lattice)
 
         actual = actual.as_dict()
 
         for key, expected in self.MgO.as_dict().items():
-            if key == "structure":
-                continue
-            self.assertEqual(expected, actual[key])
+            if key not in \
+                    ["structure", "interstitials_yaml", "complex_defect_yaml"]:
+                self.assertEqual(expected, actual[key])
 
     def test_from_basic_settings(self):
         actual = DefectInitialSetting.from_basic_settings(
@@ -252,19 +260,20 @@ class DefectInitialSettingTest(PydefectTest):
             included=["Va_O1_-1", "Va_O1_-2"],
             excluded=["Va_O1_1", "Va_O1_2"],
             displacement_distance=0.2,
-            symprec=0.01)
+            symprec=0.01,
+            interstitials_yaml=str(parent / "interstitials.yaml"),
+            complex_defect_yaml=str(parent / "complex_defects.yaml"))
 
-        actual.to(defect_in_file="defect_unittest.in",
-                  poscar_file="DPOSCAR-defect_initial_setting")
+        actual.to(defect_in_file=str(parent / "defect_unittest.in"),
+                  poscar_file=str(parent / "DPOSCAR-defect_initial_setting"))
         self.assertEqual(self.MgO.structure, actual.structure)
 
         actual = actual.as_dict()
 
         for key, expected in self.MgO.as_dict().items():
-            print(key)
-            if key == "structure":
-                continue
-            self.assertEqual(expected, actual[key])
+            if key not in \
+                    ["structure", "interstitials_yaml", "complex_defect_yaml"]:
+                self.assertEqual(expected, actual[key])
 
     def test_make_all_defect_set(self):
         mgo_all = deepcopy(self.MgO)
@@ -298,7 +307,8 @@ class DefectInitialSettingTest(PydefectTest):
 
         actual = mgo_specified.defect_entries[0].as_dict()
 
-        structure = Structure.from_file("DPOSCAR-defect_initial_setting")
+        structure = Structure.from_file(
+            parent / "DPOSCAR-defect_initial_setting")
         structure.replace(0, "Al")
         expected = {"name": "Al_Mg1",
                     "defect_type": str(DefectType.substituted),

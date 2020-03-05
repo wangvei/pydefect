@@ -3,12 +3,12 @@
 import filecmp
 import tempfile
 from collections import OrderedDict
-
+from pathlib import Path
 from pydefect.core.complex_defects import ComplexDefect, ComplexDefects
 from pydefect.util.testing import PydefectTest
 
-__author__ = "Yu Kumagai"
-__maintainer__ = "Yu Kumagai"
+
+parent = Path(__file__).parent
 
 
 class ComplexDefectTest(PydefectTest):
@@ -66,7 +66,8 @@ class ComplexDefectsTest(PydefectTest):
     def test_yaml(self):
         tmp_file = tempfile.NamedTemporaryFile().name
         self.cu2o.site_set_to_yaml_file(tmp_file)
-        self.assertTrue(filecmp.cmp("expected_complex_defects.yaml", tmp_file))
+        self.assertTrue(filecmp.cmp(parent / "expected_complex_defects.yaml",
+                                    tmp_file))
 
     def test_msonable(self):
         self.assertMSONable(self.cu2o)
@@ -74,7 +75,7 @@ class ComplexDefectsTest(PydefectTest):
     def test_from_files(self):
         actual = ComplexDefects.from_files(
             structure=self.structure,
-            yaml_filename="expected_complex_defects.yaml").as_dict()
+            yaml_filename=parent / "expected_complex_defects.yaml").as_dict()
         expected = self.cu2o.as_dict()
         self.assertEqual(expected, actual)
 

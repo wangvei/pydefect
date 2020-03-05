@@ -440,7 +440,9 @@ class DefectInitialSetting(MSONable):
     @classmethod
     def from_defect_in(cls,
                        poscar: str = "DPOSCAR",
-                       defect_in_file: str = "defect.in"
+                       defect_in_file: str = "defect.in",
+                       interstitials_yaml: str = "interstitials.yaml",
+                       complex_defect_yaml: str = "complex_defects.yaml",
                        ) -> "DefectInitialSetting":
         """Class object construction with defect.in file.
 
@@ -620,7 +622,9 @@ class DefectInitialSetting(MSONable):
                    symprec=symprec,
                    angle_tolerance=angle_tolerance,
                    oxidation_states=oxidation_states,
-                   electronegativity=electronegativity)
+                   electronegativity=electronegativity,
+                   interstitials_yaml=interstitials_yaml,
+                   complex_defect_yaml=complex_defect_yaml)
 
     # @property
     # def are_atoms_perturbed(self) -> bool:
@@ -642,7 +646,9 @@ class DefectInitialSetting(MSONable):
                             symprec: float = SYMMETRY_TOLERANCE,
                             angle_tolerance: float = ANGLE_TOL,
                             interstitial_sites: list = None,
-                            complex_defect_names: list = None
+                            complex_defect_names: list = None,
+                            interstitials_yaml: str = "interstitials.yaml",
+                            complex_defect_yaml: str = "complex_defects.yaml",
                             ) -> "DefectInitialSetting":
         """ Generates object with some default settings.
 
@@ -802,7 +808,9 @@ class DefectInitialSetting(MSONable):
                    symprec=symprec,
                    angle_tolerance=angle_tolerance,
                    oxidation_states=oxidation_states,
-                   electronegativity=electronegativity)
+                   electronegativity=electronegativity,
+                   interstitials_yaml=interstitials_yaml,
+                   complex_defect_yaml=complex_defect_yaml)
 
     def to_yaml_file(self, filename: str = "defect.yaml") -> None:
         """Dump to yaml file. """

@@ -2,7 +2,6 @@
 import os
 import tempfile
 import numpy as np
-from pydefect.util.testing import PydefectTest
 
 from pydefect.corrections.efnv_corrections import (
     calc_max_sphere_radius, create_lattice_set, calc_relative_potential,
@@ -179,4 +178,5 @@ class ExtendedFnvCorrectionTest(PydefectTest):
         expected = 8.419456 / 2
         self.assertAlmostEqual(actual, expected)
         self.correction.plot_potential("pot.pdf")
+        os.remove("pot.pdf")
 

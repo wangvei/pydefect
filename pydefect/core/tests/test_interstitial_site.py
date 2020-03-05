@@ -1,13 +1,15 @@
 # -*- coding: utf-8 -*-
-import filecmp
 import tempfile
 from collections import OrderedDict
 from copy import deepcopy
 import filecmp
+from pathlib import Path
 
 from pydefect.core.interstitial_site import (
     InterstitialSiteSet, InterstitialSite)
 from pydefect.util.testing import PydefectTest
+
+parent = Path(__file__).parent
 
 
 class InterstitialSiteTest(PydefectTest):
@@ -108,7 +110,8 @@ class InterstitialSiteSetTest(PydefectTest):
         self.interstitial_site_set.site_set_to_yaml_file(tmp_file)
         with open(tmp_file) as f:
             print(f.read())
-        self.assertTrue(filecmp.cmp("expected_interstitials.yaml", tmp_file))
+        self.assertTrue(filecmp.cmp(parent / "expected_interstitials.yaml",
+                                    tmp_file))
 
     def test_str(self):
         actual = str(self.interstitial_site_set.interstitial_sites["i1"])
@@ -129,7 +132,7 @@ method: manual"""
     def test_from_files(self):
         actual = InterstitialSiteSet.from_files(
             dposcar=self.structure,
-            yaml_filename="expected_interstitials.yaml").as_dict()
+            yaml_filename=parent / "expected_interstitials.yaml").as_dict()
         expected = self.interstitial_site_set.as_dict()
         self.assertEqual(expected, actual)
 
