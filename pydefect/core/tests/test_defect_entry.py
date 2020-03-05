@@ -8,9 +8,6 @@ from pydefect.core.defect_entry import (
 from pydefect.util.testing import PydefectTest
 from pydefect.core.config import CUTOFF_FACTOR
 
-__author__ = "Yu Kumagai"
-__maintainer__ = "Yu Kumagai"
-
 
 class DefectTypeTest(PydefectTest):
 

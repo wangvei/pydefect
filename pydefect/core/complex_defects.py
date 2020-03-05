@@ -96,7 +96,7 @@ class ComplexDefects(MSONable):
         else:
             self.complex_defects = OrderedDict()
 
-    def set_as_dict(self):
+    def set_as_dict(self) -> OrderedDict:
         d = OrderedDict()
         for k, v in self.complex_defects.items():
             d[k] = v.as_dict()
@@ -129,7 +129,7 @@ class ComplexDefects(MSONable):
         return cls.from_dict(d)
 
     @classmethod
-    def from_dict(cls, d: dict):
+    def from_dict(cls, d: dict) -> "ComplexDefects":
         # orderedDict disables MSONable.
         structure = d["structure"]
         if isinstance(structure, dict):

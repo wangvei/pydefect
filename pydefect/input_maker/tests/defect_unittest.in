@@ -1,0 +1,46 @@
+  Space group: Fm-3m
+
+Transformation matrix: -2 2 2 2 -2 2 2 2 -2
+Cell multiplicity: 32
+
+   Irreducible element: Mg1
+        Wyckoff letter: a
+         Site symmetry: m-3m
+         Cutoff radius: 2.74
+          Coordination: O: 2.1 2.1 2.1 2.1 2.1 2.1
+      Equivalent atoms: 0..31
+Fractional coordinates: 0.5000000  0.0000000  0.0000000
+     Electronegativity: 1.31
+       Oxidation state: 2
+
+   Irreducible element: O1
+        Wyckoff letter: b
+         Site symmetry: m-3m
+         Cutoff radius: 2.74
+          Coordination: Mg: 2.1 2.1 2.1 2.1 2.1 2.1
+      Equivalent atoms: 32..63
+Fractional coordinates: 0.7500000  0.2500000  0.2500000
+     Electronegativity: 3.44
+       Oxidation state: -2
+
+Interstitials: i1
+Complex defects: divacancy
+Antisite defects: 
+
+   Dopant element: N
+Electronegativity: 3.04
+  Oxidation state: -3
+
+   Dopant element: Al
+Electronegativity: 1.61
+  Oxidation state: 3
+
+Substituted defects: Al_Mg N_O
+
+Maximum Displacement: 0.2
+
+Exceptionally included: Va_O1_-1 Va_O1_-2
+Exceptionally excluded: Va_O1_1 Va_O1_2
+
+Symprec: 0.01
+Angle tolerance: 5

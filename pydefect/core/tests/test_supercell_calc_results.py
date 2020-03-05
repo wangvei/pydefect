@@ -11,14 +11,11 @@ from pymatgen.electronic_structure.core import Spin
 from pydefect.util.testing import PydefectTest
 from pydefect.util.tools import flatten_dict
 
-__author__ = "Yu Kumagai"
-__maintainer__ = "Yu Kumagai"
-
 
 class ProcarDefectPropertyTest(PydefectTest):
     def setUp(self) -> None:
         """ Va_O in the 2+ charge state in 64-atom supercells"""
-        # TODO: Fix the hob_index to 123 and change related values.
+        # TODO: Fix the hob_index toss123 and change related values.
         #       The true hob_index is 123 but is fine for unittest.
         hob_index = {Spin.up: 124, Spin.down: 124}
         procar = self.get_object_by_name(

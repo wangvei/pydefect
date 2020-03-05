@@ -2,7 +2,7 @@
 
 import tempfile
 
-from chempotdiag.chem_pot_diag import ChemPotDiag
+
 from pydefect.analysis.defect import Defect
 from pydefect.analysis.defect_energies import DefectEnergies
 from pydefect.core.defect_entry import DefectEntry
@@ -11,8 +11,7 @@ from pydefect.core.unitcell_calc_results import UnitcellCalcResults
 from pydefect.util.testing import PydefectTest
 from pydefect.util.tools import sanitize_keys_in_dict
 
-__author__ = "Yu Kumagai"
-__maintainer__ = "Yu Kumagai"
+from vise.chempotdiag.chem_pot_diag import ChemPotDiag
 
 
 class ConvertStrKeysTest(PydefectTest):
@@ -40,9 +39,9 @@ class DefectEnergiesTest(PydefectTest):
             defects.append(self.get_object_by_name(Defect.load_json, filename))
 
         # temporary insert values
-        filename = ["defects", "MgO", "vertices_MgO.yaml"]
+        filename = ["defects", "MgO", "cpd.json"]
         self.chem_pot = self.get_object_by_name(
-            ChemPotDiag.load_vertices_yaml, filename)
+            ChemPotDiag.load_json, filename)
         self.chem_pot_label = "A"
 
         self.defect_energies = \

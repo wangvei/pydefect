@@ -26,9 +26,6 @@ from pymatgen.core.periodic_table import Element
 from pymatgen.core.structure import Structure
 from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
 
-__author__ = "Yu Kumagai"
-__maintainer__ = "Yu Kumagai"
-
 logger = get_logger(__name__)
 
 

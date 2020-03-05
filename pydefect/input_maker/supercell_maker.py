@@ -10,7 +10,7 @@ from pydefect.core.error_classes import CellSizeError
 from pydefect.util.logger import get_logger
 from pymatgen.core.structure import Structure
 from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
-from pydefect.database.symmetry import tm_from_primitive_to_standard
+from pydefect.database.symmetry import transmat_primitive2standard
 
 from vise.util.structure_handler import (
     find_spglib_primitive, get_symmetry_dataset)
@@ -196,7 +196,7 @@ class Supercells:
         lattice = sga.get_lattice_type()
         centering = symmetry_dataset["international"][0]
         if conventional_base:
-            to_unitcell_mat = tm_from_primitive_to_standard(centering)
+            to_unitcell_mat = transmat_primitive2standard(centering)
             rhombohedral = False
             tetragonal = lattice == "tetragonal"
         else:

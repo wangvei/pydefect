@@ -8,41 +8,40 @@ from pydefect.analysis.defect_eigenvalues import DefectEigenvalue
 from pydefect.core.defect_entry import DefectEntry
 from pydefect.core.supercell_calc_results import SupercellCalcResults
 from pydefect.core.unitcell_calc_results import UnitcellCalcResults
-from pydefect.corrections.corrections import ExtendedFnvCorrection
-
-__author__ = "Yu Kumagai"
-__maintainer__ = "Yu Kumagai"
-
-test_dir = os.path.join(os.path.dirname(__file__), "..", "..", "..",
-                        "test_files", "core")
+from pydefect.corrections.efnv_corrections import ExtendedFnvCorrection
+from pydefect.util.testing import PydefectTest
 
 
-class DefectEigenvalueTest(unittest.TestCase):
+class DefectEigenvalueTest(PydefectTest):
 
     def setUp(self):
         """ """
-        unitcell_file = os.path.join(test_dir, "MgO/defects/unitcell.json")
-        unitcell = UnitcellCalcResults.load_json(unitcell_file)
-        perfect_file = os.path.join(test_dir,
-                                    "MgO/defects/perfect/dft_results.json")
-        perfect = SupercellCalcResults.load_json(perfect_file)
+        filename = ["defects", "MgO", "unitcell.json"]
+        unitcell = self.get_object_by_name(
+            UnitcellCalcResults.load_json, filename)
 
-        d = os.path.join(test_dir, "MgO/defects/Mg_i1_1")
-#        d = os.path.join(test_dir, "MgO/defects/Va_O1_2")
-        defect_entry = \
-            DefectEntry.load_json(os.path.join(d, "defect_entry.json"))
-        dft_results = \
-            SupercellCalcResults.load_json(
-                os.path.join(d, "dft_results.json"))
-        correction = \
-            ExtendedFnvCorrection.load_json(os.path.join(d, "correction.json"))
+        filename = ["defects", "MgO", "perfect", "dft_results.json"]
+        perfect = self.get_object_by_name(
+            SupercellCalcResults.load_json, filename)
 
-        defect = Defect(defect_entry=defect_entry,
-                        dft_results=dft_results,
-                        correction=correction)
+        filename = ["defects", "MgO", "Mg_i1_2", "dft_results.json"]
+        dft_results = self.get_object_by_name(
+            SupercellCalcResults.load_json, filename)
+
+        filename = ["defects", "MgO", "Mg_i1_2", "defect_entry.json"]
+        defect_entry = self.get_object_by_name(
+            DefectEntry.load_json, filename)
+
+        filename = ["defects", "MgO", "Mg_i1_2", "correction.json"]
+        correction = self.get_object_by_name(
+            ExtendedFnvCorrection.load_json, filename)
+
+        defect = Defect.from_objects(defect_entry=defect_entry,
+                                     dft_results=dft_results,
+                                     perfect_dft_results=perfect,
+                                     correction=correction)
 
         self.defect_eigenvalues = DefectEigenvalue.from_files(unitcell=unitcell,
-                                                              perfect=perfect,
                                                               defect=defect)
 
     def test(self):
@@ -50,8 +49,4 @@ class DefectEigenvalueTest(unittest.TestCase):
 
     def test_plot(self):
         self.defect_eigenvalues.plot()
-
-
-if __name__ == "__main__":
-    unittest.main()
 

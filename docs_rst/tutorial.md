@@ -83,7 +83,7 @@ from the current working directory to the parent directly up to the home or root
 Therefore, when `pydefect.yaml` is located at the top directory of the project as shown above directory tree,
 the parameters are always used for the `pydefect` commands.
 There are so many keys for `pydefect.yaml`, which is written at the top of the `main.py` file.
-For example, one can use
+For example, one can write in `vise.yaml` 
 ```
 xc: hse
 ```
@@ -108,13 +108,13 @@ while the dielectric constant, a sum of electronic and ionic dielectric tensors,
 
 First, we create `band/`, `dos/` and `dielectric/` in `unitcell/` and copy POSCAR from `unitcell/structure_opt` and type the following command in each directory,
 ```
-python $PATH_TO_VISE/vise/vise/main.py vos -t band
+python $PATH_TO_VISE/vise/vise/main.py vs -t band
 ```
 ```
-python $PATH_TO_VISE/vise/vise/main.py vos -t dos
+python $PATH_TO_VISE/vise/vise/main.py vs -t dos
 ```
 ```
-python $PATH_TO_VISE/vise/vise/main.py vos -t dielectric_dfpt
+python $PATH_TO_VISE/vise/vise/main.py vs -t dielectric_dfpt
 ```
 and run the vasp calculations.
 

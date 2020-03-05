@@ -1,9 +1,6 @@
 # -*- coding: utf-8 -*-
-__author__ = "Yu Kumagai"
-__maintainer__ = "Yu Kumagai"
+"""Defaults that determine condition of automatic defect calculations. """
 
-
-# Following defaults determine the condition of automatic defect calculations.
 # electronegativity difference for antisites and substitutional impurities
 ELECTRONEGATIVITY_DIFFERENCE = 1.0
 # Maximum displacement displacement_distance

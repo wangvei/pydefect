@@ -1,12 +1,11 @@
 # -*- coding: utf-8 -*-
+import os
+
 import numpy as np
 from pydefect.input_maker.supercell_maker import (
     Supercell, Supercells, calc_isotropy, sanitize_matrix)
 from pydefect.util.testing import PydefectTest
 from pymatgen.core import IStructure, Lattice
-
-__author__ = "Yu Kumagai"
-__maintainer__ = "Yu Kumagai"
 
 
 class CalcIsotropyTest(PydefectTest):
@@ -115,6 +114,8 @@ class SupercellTest(PydefectTest):
                               trans_mat=multi,
                               check_unitcell=True)
         supercell.to("POSCAR")
+        os.remove("POSCAR")
+        os.remove("UPOSCAR")
         actual = supercell.structure
         expected = IStructure.from_str(
         """trans_mat: [3.9999999999999996, 0.0, 0.0, 0.0, 1.9999999999999998, 0.0, 0.0, 0.0, 1.9999999999999998], multi: 16, isotropy: (0.5333, 59.99999999999999)
@@ -149,7 +150,7 @@ class SupercellsTest(PydefectTest):
         supercell_mgo = supercells_mgo.sorted_supercells_by_num_atoms[0]
         actual = supercell_mgo.structure
         supercell_mgo.to("POSCAR-MgO")
-#        unitcell = supercells_mgo.unitcell
+        os.remove("POSCAR-MgO")
         expected = IStructure.from_str(
             """trans_mat: -1 1 1 1 -1 1 1 1 -1, multi: 4.0, isotropy: 0.0
             1.0
@@ -215,6 +216,7 @@ class SupercellsTest(PydefectTest):
         supercell = supercells_kzn4p3.sorted_supercells_by_num_atoms[0]
         actual = supercell.structure
         actual.to(fmt="poscar", filename="POSCAR")
+        os.remove("POSCAR")
         expected = IStructure.from_str(
             """K16 Zn64 P48
             1.0
@@ -364,6 +366,7 @@ class SupercellsTest(PydefectTest):
         supercell = supercells_zn3p2.sorted_supercells_by_isotropy[0]
         actual = supercell.structure
         supercell.to("POSCAR-Zn3P2")
+        os.remove("POSCAR-Zn3P2")
         expected = IStructure.from_str(
             """trans_mat: [1, 1, 0, -1, 1, 0, 0, 0, 1], multi: 2, isotropy: (0.0007, 90.0)
             1.0

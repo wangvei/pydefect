@@ -2,26 +2,25 @@
 
 from collections import OrderedDict
 from copy import deepcopy
-from typing import Union, Optional, Dict, List
+from typing import Union, Dict, List
+from ruamel import yaml
 
-import yaml
 from monty.json import MSONable
+
 from pydefect.core.config import (
     DEFECT_SYMMETRY_TOLERANCE, INTERSTITIAL_SYMPREC, ANGLE_TOL, CUTOFF_FACTOR)
 from pydefect.database.symmetry import num_symmetry_operation
 from pydefect.util.logger import get_logger
 from pydefect.util.structure_tools import (
-    create_saturated_interstitial_structure)
-from pydefect.util.structure_tools import get_coordination_distances
+    create_saturated_interstitial_structure, get_coordination_distances,
+    min_distance_from_coords)
+
 from pymatgen.analysis.defects.utils import ChargeDensityAnalyzer
 from pymatgen.core.periodic_table import DummySpecie
 from pymatgen.core.structure import Structure
 from pymatgen.io.vasp.outputs import Chgcar
 from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
-from pydefect.util.structure_tools import min_distance_from_coords
 
-__author__ = "Yu Kumagai"
-__maintainer__ = "Yu Kumagai"
 
 logger = get_logger(__name__)
 

@@ -2,12 +2,18 @@
 import numpy as np
 from numpy.linalg import inv
 
-__author__ = "Yu Kumagai"
-__maintainer__ = "Yu Kumagai"
 
+def num_symmetry_operation(point_group: str) -> int:
+    """ Return number of symmetry operations from Hermann–Mauguin notation.
 
-def num_symmetry_operation(point_group):
-    """ Return number of symmetry operations from Hermann–Mauguin notation. """
+    Args:
+         point_group (str):
+            Point group in Hermann–Mauguin notation.
+            "." will be removed, e.g., ..6 -> 6.
+
+    Returns:
+         Number of symmetry operation.
+    """
     d = {"1":     1,
          "-1":    2,
          "2":     2,
@@ -45,12 +51,21 @@ def num_symmetry_operation(point_group):
          "-43m":  24,
          "m-3m":  48}
 
+    # remove "." from the given point_group
     point_group = "".join([s for s in point_group if s != "."])
 
     return d[point_group]
 
 
-def tm_from_standard_to_primitive(centering):
+def transmat_standard2primitive(centering: str) -> np.ndarray:
+    """Transformation matrix from standardized cell to primitive cell
+
+    Args:
+        centering (str):
+            Centering in one character.
+    Return:
+        Transformation matrix in numpy.ndarray.
+     """
 
     if centering == "P":
         matrix = np.eye(3)
@@ -83,8 +98,16 @@ def tm_from_standard_to_primitive(centering):
     return matrix
 
 
-def tm_from_primitive_to_standard(centering):
-    matrix = inv(tm_from_standard_to_primitive(centering))
+def transmat_primitive2standard(centering: str) -> np.ndarray:
+    """Transformation matrix from primitive cell to standardized cell
+
+    Args:
+        centering (str):
+            Centering in one character.
+    Return:
+        Transformation matrix in numpy.ndarray.
+    """
+    matrix = inv(transmat_standard2primitive(centering))
     return matrix.astype(int)
 
 

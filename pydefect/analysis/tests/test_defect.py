@@ -8,9 +8,6 @@ from pydefect.corrections.efnv_corrections import (
     ExtendedFnvCorrection)
 from pydefect.util.testing import PydefectTest
 
-__author__ = "Yu Kumagai"
-__maintainer__ = "Yu Kumagai"
-
 
 class TooCloseAtomPairsTest(PydefectTest):
     def setUp(self) -> None:

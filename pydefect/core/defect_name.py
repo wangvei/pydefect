@@ -4,26 +4,20 @@ from typing import Union
 
 from monty.json import MSONable
 
-__author__ = "Yu Kumagai"
-__maintainer__ = "Yu Kumagai"
-
 
 class DefectName(MSONable):
-    def __init__(self,
-                 name: str,
-                 charge: int,
-                 annotation: str = None):
+    def __init__(self, name: str, charge: int, annotation: str = None) -> None:
 
         self.name = name
         self.charge = charge
         self.annotation = annotation
 
     @property
-    def name_str(self):
+    def name_str(self) -> str:
         return self.name
 
     def is_name_matched(self,
-                        keywords: Union[str, list, None]):
+                        keywords: Union[str, list, None]) -> bool:
         """ Return True if name is matched by the selected_keywords.
 
         Args:
@@ -80,16 +74,16 @@ class DefectName(MSONable):
         return hash(self.name_str)
 
     @classmethod
-    def from_str(cls, string):
+    def from_str(cls, string) -> "DefectName":
         s = string.split("_")
         try:
             charge = int(s[-1])
             name = "_".join(s[:-1])
-            return cls(name=name, charge=charge, annotation=None)
+            annotation = None
         except ValueError:
             charge = int(s[-2])
             name = "_".join(s[:-2])
             annotation = s[-1]
-            return cls(name=name, charge=charge, annotation=annotation)
+        return cls(name=name, charge=charge, annotation=annotation)
 
 

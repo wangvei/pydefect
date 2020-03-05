@@ -293,6 +293,7 @@ oxidation_state_dict = {
     'Pb': 2,
     'Bi': 3}
 
+# core radius used for detecting too close atomic pairs.
 rcore = {
     'H': 0.582,
     'He': 0.582,

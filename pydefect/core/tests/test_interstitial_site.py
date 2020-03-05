@@ -9,9 +9,6 @@ from pydefect.core.interstitial_site import (
     InterstitialSiteSet, InterstitialSite)
 from pydefect.util.testing import PydefectTest
 
-__author__ = "Yu Kumagai"
-__maintainer__ = "Yu Kumagai"
-
 
 class InterstitialSiteTest(PydefectTest):
     def setUp(self):
@@ -120,7 +117,7 @@ wyckoff: c
 site symmetry: -43m
 multiplicity: 64
 coordination distances: {'Mg': [1.84, 1.84, 1.84, 1.84], 'O': [1.84, 1.84, 1.84, 1.84]}
-cutoff: 2.37,
+cutoff: 2.37
 method: manual"""
         self.assertEqual(expected, actual)
 

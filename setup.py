@@ -1,37 +1,41 @@
-from setuptools import setup, find_packages
-from distutils.extension import Extension
+import os
 
-try:
-    from Cython.Distutils import build_ext
-except ImportError:
-    use_cython = False
-else:
-    use_cython = True
+from setuptools import setup, find_packages
+
+from pydefect import __version__
 
 cmdclass = {}
 ext_modules = []
+
+module_dir = os.path.dirname(os.path.abspath(__file__))
+reqs_raw = open(os.path.join(module_dir, "requirements.txt")).read()
+reqs_list = [r.replace("==", "~=") for r in reqs_raw.split("\n")]
 
 with open("README.md", "r") as fh:
     long_description = fh.read()
 
 setup(
-    name='pydefect-yuuukuma',
-    version='0.1.dev0',
+    name='pydefect',
+    version=__version__,
     author='Yu Kumagai',
     author_email='yuuukuma@gmail.com',
-    url='https://github.com/oba-group/pydefect"',
+    url='https://github.com/kumagai-group/pydefect',
     packages=find_packages(),
     license='MIT license',
-    description="Integrated enveironment for first-principles point-defect "
+    description="Integrated environment for first-principles point-defect "
                 "calculations using vasp",
     long_description=long_description,
     classifiers=[
         'Programming Language :: Python :: 3.6',
         "License :: OSI Approved :: MIT License",
     ],
-    install_requires=['numpy', 'pymatgen', 'monty', 'matplotlib', 'argcomplete',
-                      'seekpath', 'spglib', 'scipy', 'ase', 'tqdm', 'pyyaml','atomate',
-                      'chempotdiag'],
-    cmdclass = cmdclass,
+    install_requires=reqs_list,
+    cmdclass=cmdclass,
     ext_modules=ext_modules,
+    include_package_data=True,
+    entry_points={
+        'console_scripts': [
+            'pydefect = pydefect.cli.main:main',
+        ]
+    }
 )

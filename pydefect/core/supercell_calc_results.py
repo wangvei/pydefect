@@ -18,7 +18,7 @@ from pydefect.util.logger import get_logger
 from pydefect.util.structure_tools import (
     get_displacements, min_distance_from_coords)
 from pydefect.util.tools import (
-    spin_key_to_str, str_key_to_spin, parse_file, defaultdict_to_dict,
+    spin_key_to_str, str_key_to_spin, defaultdict_to_dict,
     mod_defaultdict)
 from pydefect.util.vasp_util import (
     calc_participation_ratio, calc_orbital_character)
@@ -30,9 +30,7 @@ from pymatgen.io.vasp.outputs import Outcar, Vasprun, Procar
 from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
 
 from vise.analyzer.band_gap import band_gap_properties
-
-__author__ = "Yu Kumagai"
-__maintainer__ = "Yu Kumagai"
+from vise.util.tools import parse_file
 
 logger = get_logger(__name__)
 
@@ -277,10 +275,9 @@ class SupercellCalcResults(MSONable):
                         angle_tolerance: float = ANGLE_TOL):
         """ Constructs class object from vasp output files.
 
-        Never analyze the data here, but in Defect.from_object classmethod.
-
-        Do not change "defect_symprec" to "symprec" as the attribute defaults
-        are used in main.py
+        Note1: Do not analyze data here, but in Defect.from_object classmethod.
+        Note2: Do not change "defect_symprec" to "symprec" as the attribute
+               defaults are used in main.py
 
         Args:
             directory_path (str):

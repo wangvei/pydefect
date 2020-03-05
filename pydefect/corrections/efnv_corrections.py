@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-
 import json
 from copy import deepcopy
 from functools import reduce
@@ -32,9 +31,6 @@ from scipy.stats import mstats
 This module provides functions used to correct defect formation energies
 with finite supercell-size dependencies.
 """
-
-__author__ = "Yu Kumagai, Akira Takahashi"
-__maintainer__ = "Yu Kumagai"
 
 logger = get_logger(__name__)
 

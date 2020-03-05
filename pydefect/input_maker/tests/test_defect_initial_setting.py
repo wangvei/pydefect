@@ -12,9 +12,6 @@ from pydefect.util.testing import PydefectTest
 from pymatgen.core.structure import Structure
 from pydefect.core.defect_name import DefectName
 
-__author__ = "Yu Kumagai"
-__maintainer__ = "Yu Kumagai"
-
 
 class CandidateChargeSetTest(PydefectTest):
     def test_range1(self):

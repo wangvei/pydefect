@@ -3,9 +3,6 @@ from typing import Optional
 
 from monty.json import MSONable
 
-__author__ = "Yu Kumagai"
-__maintainer__ = "Yu Kumagai"
-
 
 class IrreducibleSite(MSONable):
     """ Container class related to the symmetrically equivalent atom set.

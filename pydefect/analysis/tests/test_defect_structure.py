@@ -5,9 +5,6 @@ from pydefect.analysis.defect_structure import (
     DefectStructure, defect_structure_matcher)
 from pydefect.util.testing import PydefectTest
 
-__author__ = "Yu Kumagai"
-__maintainer__ = "Yu Kumagai"
-
 
 class DefectStructureTest(PydefectTest):
 

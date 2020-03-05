@@ -1,5 +1,6 @@
-import json
+# -*- coding: utf-8 -*-
 from abc import ABC, abstractmethod
+import json
 
 from monty.json import MSONable, MontyEncoder
 from monty.serialization import loadfn

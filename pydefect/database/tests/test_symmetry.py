@@ -1,44 +1,40 @@
 # -*- coding: utf-8 -*-
 import numpy as np
-from numpy.linalg import det
-from pydefect.database.symmetry import (
-    tm_from_standard_to_primitive, tm_from_primitive_to_standard)
+
+from pydefect.database.symmetry import transmat_primitive2standard
 from pydefect.util.testing import PydefectTest
 
-__author__ = "Yu Kumagai"
-__maintainer__ = "Yu Kumagai"
 
-
-class TmFromPrimitiveToStandardTest(PydefectTest):
+class TransmatPrimitive2StandardTest(PydefectTest):
     def test(self):
         expected = np.array([[ 1,  0,  0],
                              [ 0,  1,  1],
                              [ 0, -1,  1]], dtype=int)
-        actual = tm_from_primitive_to_standard("A")
+        actual = transmat_primitive2standard("A")
         self.assertArrayEqual(expected, actual)
 
         expected = np.array([[ 1, -1,  0],
                              [ 1,  1,  0],
                              [ 0,  0,  1]], dtype=int)
-        actual = tm_from_primitive_to_standard("C")
+        actual = transmat_primitive2standard("C")
         self.assertArrayEqual(expected, actual)
 
-        expected = np.array([[ 1,  0,  1],
-                             [-1,  1,  1],
-                             [ 0, -1,  1]], dtype=int)
-        actual = tm_from_primitive_to_standard("R")
+        expected = np.array([[ 1, -1,  0],
+                             [ 0,  1, -1],
+                             [ 1,  1,  1]], dtype=int)
+        actual = transmat_primitive2standard("R")
         self.assertArrayEqual(expected, actual)
 
         expected = np.array([[ 0,  1,  1],
                              [ 1,  0,  1],
                              [ 1,  1,  0]], dtype=int)
-        actual = tm_from_primitive_to_standard("I")
+        actual = transmat_primitive2standard("I")
         self.assertArrayEqual(expected, actual)
 
         expected = np.array([[-1,  1,  1],
                              [ 1, -1,  1],
                              [ 1,  1, -1]], dtype=int)
-        actual = tm_from_primitive_to_standard("F")
+        actual = transmat_primitive2standard("F")
         self.assertArrayEqual(expected, actual)
 
 

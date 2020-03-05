@@ -2,9 +2,6 @@
 from pydefect.core.defect_name import DefectName
 from pydefect.util.testing import PydefectTest
 
-__author__ = "Yu Kumagai"
-__maintainer__ = "Yu Kumagai"
-
 
 class DefectNameTest(PydefectTest):
 

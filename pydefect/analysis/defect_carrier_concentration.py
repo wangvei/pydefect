@@ -21,9 +21,6 @@ from pydefect.util.logger import get_logger
 from pydefect.util.tools import (
     flatten_dict, sanitize_keys_in_dict)
 
-__author__ = "Yu Kumagai"
-__maintainer__ = "Yu Kumagai"
-
 logger = get_logger(__name__)
 
 

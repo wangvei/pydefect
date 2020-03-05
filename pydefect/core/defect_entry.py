@@ -14,7 +14,7 @@ from pydefect.util.logger import get_logger
 from pydefect.util.structure_tools import (
     num_equivalent_clusters, defect_center_from_coords, distance_list,
     get_min_distance)
-from pydefect.util.tools import is_str_digit
+from vise.util.tools import is_str_digit
 from pydefect.util.vasp_util import element_diff_from_structures
 from pymatgen.core.structure import Structure
 

@@ -20,9 +20,6 @@ This module provides classes used for correcting vertical transition levels
 estimated from the total energies.
 """
 
-__author__ = "Yu Kumagai"
-__maintainer__ = "Yu Kumagai"
-
 
 class VerticalTransitionEnergyCorrection(Correction, MSONable):
     method = "gkfo"

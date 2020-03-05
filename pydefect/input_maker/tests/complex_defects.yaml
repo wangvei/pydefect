@@ -1,0 +1,9 @@
+divacancy:
+  removed_atom_indices:
+  - 0
+  - 63
+  inserted_atoms: []
+  point_group: 4mm
+  multiplicity: 192
+  extreme_charge_state: 0
+  annotation: null

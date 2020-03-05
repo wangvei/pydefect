@@ -1,55 +1,57 @@
-# Python CircleCI 2.0 configuration file
-#
-# Check https://circleci.com/docs/2.0/language-python/ for more details
-#
 version: 2
+
 jobs:
   build:
+    branches:
+      only:
+        - master
+        - develop
+    working_directory: ~/pydefect
     docker:
-      # specify the version you desire here
-      # use `-browsers` prefix for selenium tests, e.g. `3.6.1-browsers`
-      - image: circleci/python:3.6.8
-
-      # Specify service dependencies here if necessary
-      # CircleCI maintains a library of pre-built images
-      # documented at https://circleci.com/docs/2.0/circleci-images/
-      # - image: circleci/postgres:9.4
-
-    working_directory: ~/repo
-
+      - image: circleci/python:3.6.9
+        user: root
     steps:
       - checkout
-
-      # Download and cache dependencies
-      - restore_cache:
-          keys:
-            - v1-dependencies-{{ checksum "requirements.txt" }}
-            # fallback to using the latest cache if no exact match is found
-            - v1-dependencies-
-
       - run:
-          name: install dependencies
           command: |
-            python3 -m venv venv
-            . venv/bin/activate
-            pip install -r requirements.txt
-
-      - save_cache:
-          paths:
-            - ./venv
-          key: v1-dependencies-{{ checksum "requirements.txt" }}
-
-      # run tests!
-      # this example uses Django's built-in test-runner
-      # other common Python testing frameworks include pytest and nose
-      # https://pytest.org
-      # https://nose.readthedocs.io
+            echo 'PMG_VASP_PSP_DIR: ~/vise/vise/test_files/potcars' > $HOME/.pmgrc.yaml
+            echo 'PMG_DEFAULT_FUNCTIONAL: PBE_54' >> $HOME/.pmgrc.yaml
+            echo "PMG_MAPI_KEY: ${PMG_MAPI_KEY}" >> $HOME/.pmgrc.yaml
       - run:
-          name: run tests
           command: |
-            . venv/bin/activate
-            python manage.py test
+            sudo pip install --upgrade pip
+            sudo pip install -r requirements.txt
+            sudo pip install --quiet pytest pytest-cov
+            pytest vise --cov=vise --cov-report html:coverage_reports vise
 
-      - store_artifacts:
-          path: test-reports
-          destination: test-reports
+
+#      - deploy:
+#          name: pypi deploy
+#          command: |
+#            if [[ $CIRCLE_BRANCH == "master" ]]; then
+#                echo "Deploy to the pypi and its test"
+#                sudo pip install wheel twine
+
+#                sudo touch ~/.pypirc
+#                sudo echo "[distutils]" >> ~/.pypirc
+#                sudo echo "index-servers = pypi pypi-test" >> ~/.pypirc
+
+#                sudo echo "[pypi]" >> ~/.pypirc
+#                sudo echo "username: ${PYPI_USERNAME}" >> ~/.pypirc
+#                sudo echo "password: ${PYPI_PASSWORD}" >> ~/.pypirc
+
+#                sudo echo "[pypi-test]" >> ~/.pypirc
+#                sudo echo "repository: https://test.pypi.org/legacy/" >> ~/.pypirc
+#                sudo echo "username: ${PYPI_USERNAME}" >> ~/.pypirc
+#                sudo echo "password: ${PYPI_PASSWORD}" >> ~/.pypirc
+
+#                sudo python setup.py sdist bdist_wheel
+#                sudo twine upload --repository pypi-test dist/*
+#                sudo twine upload --repository pypi dist/*
+#            fi
+
+
+#            pytest vise --cov=vise --cov-report=xml --cov=vise tests/
+#       - codecov/upload:
+#          file: ./coverage.out
+

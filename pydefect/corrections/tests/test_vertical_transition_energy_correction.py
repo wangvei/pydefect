@@ -1,14 +1,11 @@
+# -*- coding: utf-8 -*-
 from pydefect.util.testing import PydefectTest
-from pymatgen.core.structure import Structure
 from pydefect.corrections.vertical_transition_energy_correction import \
     VerticalTransitionEnergyCorrection
 from pydefect.corrections.efnv_corrections import ExtendedFnvCorrection
 from pydefect.core.unitcell_calc_results import UnitcellCalcResults
 from pydefect.core.supercell_calc_results import SupercellCalcResults
 from pydefect.core.defect_entry import DefectEntry
-
-__author__ = "Yu Kumagai"
-__maintainer__ = "Yu Kumagai"
 
 
 class VerticalTransitionEnergyCorrectionTest(PydefectTest):

@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import os
 import tempfile
 import numpy as np
@@ -11,9 +12,6 @@ from pydefect.core.supercell_calc_results import SupercellCalcResults
 from pydefect.core.unitcell_calc_results import UnitcellCalcResults
 from pydefect.core.defect_entry import DefectEntry
 from pydefect.util.testing import PydefectTest
-
-__author__ = "Yu Kumagai"
-__maintainer__ = "Yu Kumagai"
 
 
 class CalcMaxSphereRadiusTest(PydefectTest):

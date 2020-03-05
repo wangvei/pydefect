@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 from collections import defaultdict
-from typing import Optional, Callable, Union, Any
-from xml.etree.ElementTree import ParseError
+from typing import Optional, Callable, Union
 from copy import deepcopy
 
 from pydefect.util.logger import get_logger
@@ -12,40 +11,6 @@ logger = get_logger(__name__)
 """
 This module provides supporting functions that are used for various purposes.
 """
-
-
-def is_str_digit(n: str) -> bool:
-    """Check whether the given string is a digit or not.
-
-    Args:
-        n (str): The checked string.
-
-    Returns:
-        Bool.
-    """
-    try:
-        float(n)
-        return True
-    except ValueError:
-        return False
-
-
-def is_str_int(n: str) -> bool:
-    """Check whether the given string is an integer or not.
-
-    Args:
-        n (str): The checked string.
-
-    Returns:
-        Bool.
-    """
-    try:
-        if int(n) - float(n) < 1e-5:
-            return True
-        else:
-            return False
-    except ValueError:
-        return False
 
 
 def spin_key_to_str(arg: Optional[dict],
@@ -97,29 +62,6 @@ def str_key_to_spin(arg: Optional[dict],
         return x
     else:
         return
-
-
-def parse_file(classmethod_name: Callable, parsed_filename: str) -> Any:
-    """Check filename and parse and return cls via __init__ or classmethod.
-
-    Args:
-         classmethod_name (Callable):
-            Method to parse the given file. E.g., CLASS.from_file
-        parsed_filename (str):
-            Parsed file name.
-
-    Return:
-         Return of the classmethod.
-    """
-    try:
-        logger.info(f"Parsing {parsed_filename}...")
-        return classmethod_name(parsed_filename)
-    except ParseError:
-        logger.warning(f"Parsing {parsed_filename} failed.")
-        raise ParseError
-    except FileNotFoundError:
-        logger.warning(f"File {parsed_filename} not found.")
-        raise FileNotFoundError
 
 
 def defaultdict_to_dict(d: dict) -> dict:

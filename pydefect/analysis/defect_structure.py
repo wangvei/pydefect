@@ -11,9 +11,6 @@ from pydefect.util.logger import get_logger
 from pymatgen.analysis.structure_matcher import StructureMatcher
 from pymatgen.core.structure import Structure
 
-__author__ = "Yu Kumagai"
-__maintainer__ = "Yu Kumagai"
-
 logger = get_logger(__name__)
 
 """

@@ -23,8 +23,7 @@ from pydefect.util.tools import (
     construct_obj_in_dict, sanitize_keys_in_dict, defaultdict_to_dict,
     flatten_dict)
 
-__author__ = "Yu Kumagai"
-__maintainer__ = "Yu Kumagai"
+from vise.chempotdiag.chem_pot_diag import ChemPotDiag
 
 logger = get_logger(__name__)
 
@@ -104,7 +103,7 @@ class DefectEnergies(MSONable):
                      unitcell: UnitcellCalcResults,
                      perfect: SupercellCalcResults,
                      defects: List[Defect],
-                     chem_pot: tuple,
+                     chem_pot: ChemPotDiag,
                      chem_pot_label: str,
                      filtering_words: list = None,
                      exclude_unconverged_defects: bool = True,
@@ -128,10 +127,11 @@ class DefectEnergies(MSONable):
             defects (list of Defect objects):
                 List of Defect objects, each of which has "defect_entry",
                 "dft_results", and "correction" attributes,
-            chem_pot (tuple):
-                Return of ChemPotDiag.load_vertices_yaml method
+            chem_pot (ChemPotDiag):
+                ChemPotDiag object.
             chem_pot_label (str):
-                Equilibrium point specified in ChemPot.
+                Equilibrium point specified in target_comp_chempot attr in
+                ChemPotDiag.
             filtering_words (list):
                 List of words used for filtering the defects
             exclude_unconverged_defects (bool):
@@ -150,13 +150,13 @@ class DefectEnergies(MSONable):
         title = f"{system} at condition {chem_pot_label}"
 
         # Chemical potentials
-        relative_chem_pots, standard_e = chem_pot
-        for rcp in relative_chem_pots:
-            if rcp.label == chem_pot_label:
-                relative_chem_pot = rcp
-                break
-        else:
-            raise ValueError(f"chem_pot_label {chem_pot_label} is invalid.")
+        try:
+            abs_chem_pot = \
+                dict(zip(chem_pot.elements,
+                         chem_pot.target_comp_chempot[chem_pot_label]))
+        except KeyError as e:
+            msg = f"chem_pot_label {chem_pot_label} is invalid."
+            raise Exception(msg) from e
 
         # defect_energies[name][charge] = DefectEnergy
         defect_energies = {}
@@ -195,9 +195,7 @@ class DefectEnergies(MSONable):
                                             key=itemgetter(1))
 
                 for el, diff in defect.changes_of_num_elements.items():
-                    relative_e = relative_chem_pot.coords[Element(el)]
-                    standard = standard_e[Element(el)]
-                    defect_energy -= diff * (relative_e + standard)
+                    defect_energy -= diff * abs_chem_pot[Element(el)]
 
                 energy_by_charge[charge] = \
                     DefectEnergy(defect_energy=defect_energy,
@@ -378,7 +376,7 @@ class DefectEnergies(MSONable):
         ax.set_xlabel("Fermi level (eV)", fontsize=fs["label"])
         ax.set_ylabel("Formation energy (eV)", fontsize=fs["label"])
 
-        x_min, x_max = x_range if x_range else (0, self.band_gap)
+        x_min, x_max = x_range or (0, self.band_gap)
         y_min, y_max = float("inf"), -float("inf")
 
         def min_e_at_ef(ec: Dict[int, DefectEnergy], ef):
@@ -538,6 +536,8 @@ class DefectEnergies(MSONable):
         # from pydefect.util.matplotlib import formatter
         # ax.xaxis.set_major_formatter(formatter)
         # ax.yaxis.set_major_formatter(formatter)
+
+        plt.tight_layout()
 
         if compile:
             return plt, ax2

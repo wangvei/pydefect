@@ -1,27 +1,18 @@
 # -*- coding: utf-8 -*-
 
 import os
-import tempfile
+import numpy as np
 
-from pydefect.analysis.defect_carrier_concentration import *
+from pydefect.analysis.defect_carrier_concentration import (
+    hole_concentration, electron_concentration, calc_concentration,
+    calc_equilibrium_concentration, DefectConcentration)
+from pydefect.analysis.defect_energies import DefectEnergy
 from pydefect.core.unitcell_calc_results import UnitcellCalcResults
 from pydefect.util.testing import PydefectTest
-from pydefect.analysis.defect_energies import DefectEnergy
-
-from scipy.constants import physical_constants
-
-__author__ = "Yu Kumagai"
-__maintainer__ = "Yu Kumagai"
-
-test_dir = os.path.join(os.path.dirname(__file__), "..", "..", "..",
-                        "test_files", "core")
 
 
 class CalcCarrierConcentrationTest(PydefectTest):
     def setUp(self):
-        # unitcell_file = os.path.join(test_dir, "MgO/defects/unitcell.json")
-        # unitcell = UnitcellCalcResults.load_json(unitcell_file)
-
         self.vbm = 0
         self.cbm = 10
         energies = np.linspace(-1, 11, num=121).tolist()
@@ -46,7 +37,7 @@ class CalcCarrierConcentrationTest(PydefectTest):
         expected = sum(fd_part)
         expected *= 0.1 / (100 / 10 ** 24)
         # expected = 1.707781233296676e+19
-        self.assertAlmostEqual(actual / expected, 1, places=6)
+        self.assertAlmostEqual(actual / expected, 1, places=4)
 
     def test_electron_concentration(self):
         actual = electron_concentration(temperature=self.temperature, e_f=4,
@@ -58,7 +49,7 @@ class CalcCarrierConcentrationTest(PydefectTest):
         expected = sum(fd_part)
         expected *= 0.1 / (100 / 10 ** 24)
         # expected = 1.6898803452706716e+18
-        self.assertAlmostEqual(actual / expected, 1, places=6)
+        self.assertAlmostEqual(actual / expected, 1, places=4)
 
 
 class CalcConcentrationTest(PydefectTest):
@@ -245,9 +236,9 @@ class DefectConcentrationTest(PydefectTest):
                                                   self.unitcell_no_band_edge)
 
     def test_concentration(self):
-        expected = 9.663733208235955e+20
+        expected = 9.663745575119449e+20
         actual = self.defect_concentration.equilibrium_concentration["Va_O1"][2]
-        self.assertEqual(expected, actual)
+        self.assertAlmostEqual(expected, actual)
 
     def test_dict(self):
         expected = self.defect_concentration.as_dict()
@@ -265,9 +256,10 @@ class DefectConcentrationTest(PydefectTest):
         """ round trip test of to_json and from_json """
 
         self.defect_concentration.to_json_file()
-        expected = self.defect_concentration.as_dict()
         defect_concentration = \
             DefectConcentration.load_json("defect_concentrations.json")
+        os.remove("defect_concentrations.json")
+        expected = self.defect_concentration.as_dict()
         actual = defect_concentration.as_dict()
         for k, v in expected.items():
             print(k)
