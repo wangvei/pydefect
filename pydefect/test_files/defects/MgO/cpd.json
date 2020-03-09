@@ -1,0 +1,132 @@
+{
+  "@module": "vise.chempotdiag.chem_pot_diag",
+  "@class": "ChemPotDiag",
+  "@version": "0.1.7",
+  "elements": [
+    {
+      "@module": "pymatgen.core.periodic_table",
+      "@class": "Element",
+      "element": "Mg"
+    },
+    {
+      "@module": "pymatgen.core.periodic_table",
+      "@class": "Element",
+      "element": "O"
+    }
+  ],
+  "el_ref_list": [
+    {
+      "composition": {
+        "Mg": 3.0
+      },
+      "total_energy": -5.18827492,
+      "zero_point_vib": null,
+      "free_e_shift": null,
+      "name": "Mg",
+      "data": null,
+      "attribute": null
+    },
+    {
+      "composition": {
+        "O": 2.0
+      },
+      "total_energy": -9.20808429,
+      "zero_point_vib": null,
+      "free_e_shift": null,
+      "name": "O2",
+      "data": null,
+      "attribute": null
+    }
+  ],
+  "dim": 2,
+  "vertices": [
+    [
+      0.0,
+      -6.1789557217
+    ],
+    [
+      -6.5100372117,
+      0.0
+    ],
+    [
+      -5.8478742317,
+      -0.33108149
+    ]
+  ],
+  "qhull_entries": [
+    {
+      "composition": {
+        "Mg": 1.0,
+        "O": 1.0
+      },
+      "total_energy": -12.51242284,
+      "zero_point_vib": null,
+      "free_e_shift": null,
+      "name": "MgO",
+      "data": null,
+      "attribute": null
+    },
+    {
+      "composition": {
+        "Mg": 4.0,
+        "O": 8.0
+      },
+      "total_energy": -69.7901859,
+      "zero_point_vib": null,
+      "free_e_shift": null,
+      "name": "MgO2",
+      "data": null,
+      "attribute": null
+    },
+    {
+      "composition": {
+        "O": 2.0
+      },
+      "total_energy": -9.20808429,
+      "zero_point_vib": null,
+      "free_e_shift": null,
+      "name": "O2",
+      "data": null,
+      "attribute": null
+    },
+    {
+      "composition": {
+        "Mg": 3.0
+      },
+      "total_energy": -5.18827492,
+      "zero_point_vib": null,
+      "free_e_shift": null,
+      "name": "Mg",
+      "data": null,
+      "attribute": null
+    }
+  ],
+  "comp_facets": [
+    [
+      0,
+      2
+    ],
+    [
+      1,
+      2
+    ],
+    [
+      1
+    ],
+    [
+      0
+    ]
+  ],
+  "target_comp": "MgO",
+  "target_comp_chempot": {
+    "A": [
+      0.0,
+      -6.1789557217
+    ],
+    "B": [
+      -5.8478742317,
+      -0.33108149
+    ]
+  },
+  "unstable_energy": null
+}
