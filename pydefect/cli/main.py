@@ -157,10 +157,10 @@ def parse_args(args):
         "--json_file", default="unitcell.json", type=str,
         help="Json file for the unitcell info.")
     parser_unitcell_results.add_argument(
-        "--static_diele", default=None, type=float, nargs="+",
+        "--static_diele", type=float, nargs="+",
         help="Set static (electronic) dielectric constant.")
     parser_unitcell_results.add_argument(
-        "--ionic_diele", default=None, type=float, nargs="+",
+        "--ionic_diele", type=float, nargs="+",
         help="Set ionic dielectric constant.")
 
     parser_unitcell_results.add_argument(
@@ -217,7 +217,7 @@ def parse_args(args):
         "-p", "--poscar", type=str, default="POSCAR",
         help="Input poscar file name.")
     parser_initial.add_argument(
-        "--matrix", type=int, nargs="+", default=None,
+        "--matrix", type=int, nargs="+",
         help="Generate the supercell based on the Transformation matrix."
              "1, 3, or 9 components are accepted..")
     parser_initial.add_argument(
@@ -388,8 +388,7 @@ def parse_args(args):
              "of V_Na + V_O, the extreme charge state would be "
              "(-1) + (+2) = 1.")
     parser_complex_defects.add_argument(
-        "--annotation", type=str, default=None,
-        help="Annotation of the complex defect.")
+        "--annotation", type=str, help="Annotation of the complex defect.")
 
     del cd_defaults
 
@@ -425,10 +424,9 @@ def parse_args(args):
         "--dposcar", default="DPOSCAR", type=str,
         help="DPOSCAR-type file name.")
     parser_defect_vasp_set.add_argument(
-        "-kw", "--keywords", type=str, default=None,
-        nargs="+", help="Filtering keywords.")
+        "-kw", "--keywords", type=str, nargs="+", help="Filtering keywords.")
     parser_defect_vasp_set.add_argument(
-        "-d", dest="specified_defects", type=str, default=None, nargs="+",
+        "-d", dest="specified_defects", type=str, nargs="+",
         help="Particularly specified defect names to be added.")
     parser_defect_vasp_set.add_argument(
         "--force_overwrite", action="store_true",
@@ -462,7 +460,7 @@ def parse_args(args):
         "--make_defect_entry", action="store_true",
         help="Make defect_entry.json from yaml file.")
     parser_defect_entry.add_argument(
-        "--yaml", type=str, default=None,
+        "--yaml", type=str,
         help="defect_entry.yaml-type file name to be read.")
     parser_defect_entry.add_argument(
         "--json", type=str, default="defect_entry.json",
@@ -589,7 +587,7 @@ def parse_args(args):
         "--force_overwrite", action="store_true",
         help="Overwrite already existing correction.json.")
     parser_correction.add_argument(
-        "--center", dest="defect_center", nargs="+", type=float, default=None,
+        "--center", dest="defect_center", nargs="+", type=float,
         help="Set defect center in fractional coordinates.")
     parser_correction.add_argument(
         "--json_file", default="correction.json", type=str,
@@ -603,7 +601,7 @@ def parse_args(args):
         "--plot_potential", action="store_true",
         help="Only replot the potential profile.")
     parser_correction.add_argument(
-        "-y", "--y_range", type=float, nargs='+', default=None,
+        "-y", "--y_range", type=float, nargs='+',
         help="Two float values for the y-range of the plot.")
 
     del efc_defaults
@@ -658,7 +656,7 @@ def parse_args(args):
     parser_vte.add_argument(
         "--print", action="store_true", help="Print correction information.")
     parser_vte.add_argument(
-        "-y", "--y_range", type=float, nargs='+', default=None,
+        "-y", "--y_range", type=float, nargs='+',
         help="Two float values for the y-range of the plot.")
 
     parser_vte.add_argument(
@@ -706,7 +704,7 @@ def parse_args(args):
     parser_defects.add_argument(
         "--dft_results", type=str, default="dft_results.json")
     parser_defects.add_argument(
-        "-be", "--band_edge", type=str, nargs="+", default=None,
+        "-be", "--band_edge", type=str, nargs="+",
         help="Set band edge state manually. Literal is '-be up in-gap'")
 
     del d_defaults
@@ -728,16 +726,15 @@ def parse_args(args):
                     ["unitcell_json", "perfect_json", "chem_pot_json"])
 
     parser_plot_energy.add_argument(
-        "--name", type=str, default="",
-        help="System name that is written in the title.")
+        "--name", type=str, help="System name written in the title.")
     parser_plot_energy.add_argument(
-        "-x", "--x_range", type=float, nargs='+', default=None,
+        "-x", "--x_range", type=float, nargs='+',
         help="Two float values for the x-range of the plot wrt the VBM.")
     parser_plot_energy.add_argument(
-        "-y", "--y_range", type=float, nargs='+', default=None,
+        "-y", "--y_range", type=float, nargs='+',
         help="Two float values for the y-range of the plot.")
     parser_plot_energy.add_argument(
-        "-s", "--save_file", type=str, default=None,
+        "-s", "--save_file", type=str,
         help="File name to save the plot.")
     parser_plot_energy.add_argument(
         "--energies", type=str, default="defect_energies.json",
@@ -750,8 +747,6 @@ def parse_args(args):
         default=pe_defaults["perfect_json"],
         help="Json file name for the SupercellCalcResults class object of the "
              "perfect supercell result.")
-    parser_plot_energy.add_argument(
-        "-d", "--defect", type=str, default="defect.json")
     parser_plot_energy.add_argument(
         "--defect_dirs", nargs="+", type=str,
         help="Directory names for the defect supercell results. "
@@ -803,16 +798,14 @@ def parse_args(args):
         "--title", type=str, default="",
         help="Title of the plot.")
     parser_parse_eigenvalues.add_argument(
-        "-y", "--y_range", type=float, nargs='+', default=None,
+        "-y", "--y_range", type=float, nargs='+',
         help="Two float values for the y-range of the plot.")
     parser_parse_eigenvalues.add_argument(
-        "-s", "--save_file", type=str, default=None,
+        "-s", "--save_file", type=str,
         help="File name to save the plot.")
     parser_parse_eigenvalues.add_argument(
         "--unitcell", type=str, default=eig_defaults["unitcell_json"],
         help="UnitcellCalcResults class object json file name.")
-    parser_parse_eigenvalues.add_argument(
-        "-d", "--defect", type=str, default="defect.json")
     parser_parse_eigenvalues.add_argument(
         "--defect_dir", type=str,
         help="Directory name for the defect supercell result. "
@@ -834,18 +827,21 @@ def parse_args(args):
     simple_override(vps_defaults, "contcar")
 
     parser_vasp_parchg_set.add_argument(
-        "-rd", "--read_dir", type=str, help="Read directory name.")
+        "-rd", "--read_dir", type=str, required=True,
+        help="Original directory name to be read.")
     parser_vasp_parchg_set.add_argument(
         "-wd", "--write_dir", type=str, default=".",
-        help="Write directory name.")
+        help="Directory name to create vasp set for partial charge density.")
     parser_vasp_parchg_set.add_argument(
-        "-b", "--band_indices", type=int, nargs='+',
-        help="Band indices.")
+        "-b", "--band_indices", type=int, nargs='+', required=True,
+        help="Band indices to draw the partial charge density.")
     parser_vasp_parchg_set.add_argument(
         "-k", "--kpoint_indices", type=int, nargs='+',
-        help="K-point indices.")
+        help="K-point indices to draw the partial charge density. When it is"
+             "not set, the weight-averaged charge density will be calculated.")
     parser_vasp_parchg_set.add_argument(
-        "-c", "--contcar", default=vps_defaults["contcar"], type=str)
+        "-c", "--contcar", default=vps_defaults["contcar"], type=str,
+        help="Atom relaxed CONTCAR file for the initial state.")
 
     parser_vasp_parchg_set.set_defaults(func=vasp_parchg_set)
 
@@ -860,19 +856,19 @@ def parse_args(args):
     simple_override(ls_defaults, "site_tolerance")
 
     parser_local_structure.add_argument(
-        "-d", "--defect", type=str, default="defect.json")
-    parser_local_structure.add_argument(
-        "--show_all", action="store_true")
+        "--show_all", action="store_true",
+        help="Show the displacements of all atoms in the supercell.")
     parser_local_structure.add_argument(
         "-cs", "--compare_structure", action="store_true",
         help="Compare the structures between different charge states.")
     parser_local_structure.add_argument(
         "-st", "--site_tolerance", type=float,
         default=ls_defaults["site_tolerance"],
-        help=" Site tolerance. Defined as the fraction of the average free "
-             "length per atom := ( V / Nsites ) ** (1/3).")
+        help="Site tolerance used for grouping defects with the same local "
+             "structures defined as the fraction of the average free length "
+             "per atom := (V / Nsites) ** (1/3).")
     parser_local_structure.add_argument(
-        "--defect_dirs", type=str, default=None, nargs="+",
+        "--defect_dirs", type=str, nargs="+",
         help="Directory names for the defect supercell result."
              "defect_entry.json, dft_results.json, and correction.json files "
              "are required in the directory.")

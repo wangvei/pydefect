@@ -12,9 +12,6 @@ from pydefect.core.unitcell_calc_results import UnitcellCalcResults
 from pydefect.util.logger import get_logger
 from pydefect.core.defect_name import DefectName
 
-__author__ = "Yu Kumagai"
-__maintainer__ = "Yu Kumagai"
-
 logger = get_logger(__name__)
 
 

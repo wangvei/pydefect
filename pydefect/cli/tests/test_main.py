@@ -624,14 +624,13 @@ class MainPlotEnergyTest(PydefectTest):
     def test_plot_energy_wo_options(self):
         actual = parse_args(["pe"])
         expected = Namespace(
-            name="",
+            name=None,
             x_range=None,
             y_range=None,
             save_file=None,
             energies="defect_energies.json",
             unitcell="../unitcell/unitcell.json",
             perfect="perfect/dft_results.json",
-            defect="defect.json",
             defect_dirs=None,
             chem_pot_json="../competing_phases/cpd.json",
             chem_pot_label="A",
@@ -654,7 +653,6 @@ class MainPlotEnergyTest(PydefectTest):
                              "--energies", "c",
                              "--unitcell", "d",
                              "--perfect", "e",
-                             "--defect", "f",
                              "--defect_dirs", "g", "h",
                              "--chem_pot_json", "i",
                              "--chem_pot_label", "j",
@@ -673,7 +671,6 @@ class MainPlotEnergyTest(PydefectTest):
             energies="c",
             unitcell="d",
             perfect="e",
-            defect="f",
             defect_dirs=["g", "h"],
             chem_pot_json="i",
             chem_pot_label="j",
@@ -696,7 +693,6 @@ class MainParseEigenvaluesTest(PydefectTest):
             y_range=None,
             save_file=None,
             unitcell="../unitcell/unitcell.json",
-            defect="defect.json",
             defect_dir=None,
             func=actual.func,
         )
@@ -708,7 +704,6 @@ class MainParseEigenvaluesTest(PydefectTest):
                              "--y_range", "0.1", "0.2",
                              "--save_file", "b",
                              "--unitcell", "c",
-                             "--defect", "d",
                              "--defect_dir", "e",
                              ])
         expected = Namespace(
@@ -716,7 +711,6 @@ class MainParseEigenvaluesTest(PydefectTest):
             y_range=[0.1, 0.2],
             save_file="b",
             unitcell="c",
-            defect="d",
             defect_dir="e",
             func=actual.func,
         )
@@ -725,11 +719,14 @@ class MainParseEigenvaluesTest(PydefectTest):
 
 class MainVaspParchgSetTest(PydefectTest):
     def test_vasp_parchg_set_wo_options(self):
-        actual = parse_args(["vps"])
+        actual = parse_args(["vps",
+                             "--read_dir", "a",
+                             "--band_indices", "1", "2", "3",
+                             ])
         expected = Namespace(
-            read_dir=None,
+            read_dir="a",
             write_dir=".",
-            band_indices=None,
+            band_indices=[1, 2, 3],
             kpoint_indices=None,
             contcar="CONTCAR",
             func=actual.func,
@@ -761,7 +758,6 @@ class MainLocalStructureTest(PydefectTest):
         d = get_default_args(defect_structure_matcher)
 
         expected = Namespace(
-            defect="defect.json",
             show_all=False,
             compare_structure=False,
             site_tolerance=d["site_tolerance"],
@@ -772,14 +768,12 @@ class MainLocalStructureTest(PydefectTest):
 
     def test_local_structure_w_options(self):
         actual = parse_args(["ls",
-                             "--defect", "a",
                              "--show_all",
                              "--compare_structure",
                              "--site_tolerance", "0.1",
                              "--defect_dirs", "b", "c"
                              ])
         expected = Namespace(
-            defect="a",
             show_all=True,
             compare_structure=True,
             site_tolerance=0.1,

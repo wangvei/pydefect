@@ -661,8 +661,8 @@ def plot_energy(args):
 
         defect_list = []
         for d in defects_dirs:
-            filename = os.path.join(d, args.defect)
-            logger.info(f"parsing directory {d}...")
+            filename = Path(d) / 'defect.json'
+            logger.info(f"parsing directory {filename}...")
             try:
                 defect_list.append(Defect.load_json(filename))
             except FileNotFoundError:
@@ -728,8 +728,7 @@ def parse_eigenvalues(args):
 
     # TODO: Modify here to run w/o correction
     logger.info(f"parsing directory {args.defect_dir}...")
-    filename = os.path.join(args.defect_dir, args.defect)
-    defect = Defect.load_json(filename)
+    defect = Defect.load_json(Path(args.defect_dir) / "defect.json")
 
     defect_eigenvalues = DefectEigenvalue.from_files(unitcell=unitcell,
                                                      defect=defect)
@@ -762,11 +761,11 @@ def vasp_parchg_set(args):
 
 
 def local_structure(args):
-    defects_dirs = args.defect_dirs if args.defect_dirs else glob('*[0-9]/')
+    defects_dirs = args.defect_dirs or glob('*[0-9]/')
 
     d_list = []
     for d in defects_dirs:
-        filename = os.path.join(d, args.defect)
+        filename = Path(d) / "defect.json"
         logger.info(f"parsing directory {d}...")
         try:
             defect = Defect.load_json(filename)
