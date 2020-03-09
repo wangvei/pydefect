@@ -492,17 +492,24 @@ class DefectEnergies(MSONable):
         supercell_vbm = self.supercell_vbm - self.vbm
         supercell_cbm = self.supercell_cbm - self.vbm
 
-#        if supercell_vbm < - 0.05:
-        plt.axvline(x=supercell_vbm, linewidth=1.0, linestyle='-', color='r')
-        ax.annotate("supercell VBM",
-                    (supercell_vbm, y_min * 0.8 + y_max * 0.2),
-                    fontsize=fs["energy"], color='r')
+        if self.vbm > supercell_vbm + 0.01:
+            logger.critical(f"Supercell VBM {supercell_vbm} is higher than "
+                            f"unitcell VBM {self.vbm}.")
+        if self.cbm < supercell_cbm - 0.01:
+            logger.critical(f"Supercell CBM {supercell_cbm} is lower than "
+                            f"unitcell CBM {self.cbm}.")
 
-#        if supercell_cbm > self.band_gap + 0.05:
-        plt.axvline(x=supercell_cbm, linewidth=1.0, linestyle='-', color='r')
-        ax.annotate("supercell CBM",
-                    (supercell_cbm, y_min * 0.8 + y_max * 0.2),
-                    fontsize=fs["energy"], color='r')
+        if supercell_vbm < - 0.01:
+            plt.axvline(x=supercell_vbm, linewidth=1.0, linestyle='-', color='r')
+            ax.annotate("supercell VBM",
+                        (supercell_vbm, y_min * 0.8 + y_max * 0.2),
+                        fontsize=fs["energy"], color='r')
+
+        if supercell_cbm > self.band_gap + 0.01:
+            plt.axvline(x=supercell_cbm, linewidth=1.0, linestyle='-', color='r')
+            ax.annotate("supercell CBM",
+                        (supercell_cbm, y_min * 0.8 + y_max * 0.2),
+                        fontsize=fs["energy"], color='r')
 
         plt.axhline(y=0, linewidth=1.0, linestyle='dashed')
 
