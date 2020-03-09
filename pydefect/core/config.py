@@ -13,9 +13,7 @@ INTERSTITIAL_SYMPREC = 0.15
 
 ANGLE_TOL = 5
 
-PERFECT_KPT_DENSITY = 3
 DEFECT_KPT_DENSITY = 2
-ENCUT_FACTOR_STR_OPT = 1.3
 
 # Factor multiplied with the minimum distance, of which distance determine
 # the coordination environment and in which atoms are perturbed. 1.3 is less

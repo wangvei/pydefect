@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import os
 from pathlib import Path
 
 from pydefect.util.testing import PydefectTest
@@ -39,5 +40,5 @@ class VerticalTransitionEnergyCorrectionTest(PydefectTest):
     def test(self):
         print(self.vertical_correction)
         self.vertical_correction.plot_potential()
-
+        os.remove("vertical_correction.pdf")
 

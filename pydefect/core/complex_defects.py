@@ -116,12 +116,12 @@ class ComplexDefects(MSONable):
 
     @classmethod
     def from_files(cls,
-                   structure: Union[str, Structure] = "DPOSCAR",
+                   dposcar: Union[str, Structure] = "DPOSCAR",
                    yaml_filename: str = "complex_defects.yaml"):
-        if isinstance(structure, str):
-            d = {"structure": Structure.from_file(structure)}
+        if isinstance(dposcar, str):
+            d = {"structure": Structure.from_file(dposcar)}
         else:
-            d = {"structure": structure}
+            d = {"structure": dposcar}
 
         with open(yaml_filename, "r") as f:
             d["complex_defects"] = yaml.load(f, Loader=yaml.FullLoader)

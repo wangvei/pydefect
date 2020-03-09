@@ -418,7 +418,7 @@ class ExtendedFnvCorrection(Correction, MSONable):
                                    self.max_sphere_radius,
                                    self.ave_pot_diff,
                                    yrange)
-
+        plt.tight_layout()
         plt.savefig(file_name, format="pdf", transparent=True)
 
     @classmethod

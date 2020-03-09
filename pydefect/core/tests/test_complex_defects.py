@@ -74,7 +74,7 @@ class ComplexDefectsTest(PydefectTest):
 
     def test_from_files(self):
         actual = ComplexDefects.from_files(
-            structure=self.structure,
+            dposcar=self.structure,
             yaml_filename=parent / "expected_complex_defects.yaml").as_dict()
         expected = self.cu2o.as_dict()
         self.assertEqual(expected, actual)
