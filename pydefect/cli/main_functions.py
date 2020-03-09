@@ -10,8 +10,6 @@ from pathlib import Path
 
 import numpy as np
 
-from chempotdiag.chem_pot_diag import ChemPotDiag
-
 from pydefect.analysis.defect import Defect
 from pydefect.analysis.defect_carrier_concentration import DefectConcentration
 from pydefect.analysis.defect_eigenvalues import DefectEigenvalue
@@ -41,8 +39,9 @@ from pymatgen.core.periodic_table import Element
 
 from vise.input_set.incar import incar_flags
 from vise.input_set.input_set import ViseInputSet
+from vise.cli.main_function import vasp_settings_from_args
 from vise.cli.main_tools import potcar_str2dict, list2dict
-
+from vise.chempotdiag.chem_pot_diag import ChemPotDiag
 logger = get_logger(__name__)
 
 
@@ -100,6 +99,7 @@ def unitcell_calc_results(args):
             raise FileNotFoundError(args.total_dos_dir, "not appropriate.")
 
     dft_results.to_json_file(args.json_file)
+    print(UnitcellCalcResults.load_json(filename=args.json_file))
 
 
 def initial_setting(args):
@@ -108,15 +108,14 @@ def initial_setting(args):
         return
 
     structure = Structure.from_file(args.poscar)
-    is_conventional_base = not args.primitive
 
     kwargs = {"dopants": args.dopants,
-              "is_antisite": args.is_antisite,
+              "is_antisite": args.antisite,
               "en_diff": args.en_diff,
               "included": args.included,
               "excluded": args.excluded,
               "displacement_distance": args.displacement_distance,
-              "symprec": args.defect_symprec,
+              "symprec": args.symprec,
               "angle_tolerance": args.angle_tolerance,
               "interstitial_sites": args.interstitials,
               "complex_defect_names": args.complex_defect_names}
@@ -138,7 +137,7 @@ def initial_setting(args):
         return
 
     supercells = Supercells(structure=structure,
-                            conventional_base=is_conventional_base,
+                            conventional_base=args.conventional_base,
                             max_num_atoms=args.max_num_atoms,
                             min_num_atoms=args.min_num_atoms,
                             criterion=args.isotropy_criterion,
@@ -153,12 +152,12 @@ def initial_setting(args):
     unitcell = supercells.unitcell
     if unitcell != structure:
         logger.warning(
-            "The unitcell is different from input, so generate UPOSCAR.")
+            "Unitcell is different from input structure, so generate UPOSCAR.")
         supercells.to_uposcar(uposcar="UPOSCAR")
     else:
         logger.info("Input structure is the primitive cell.")
 
-    if not args.set:
+    if not args.supercell_set:
         if args.most_isotropic:
             supercell = supercells.most_isotropic_supercell
         else:
@@ -188,7 +187,7 @@ def initial_setting(args):
 
             os.mkdir(name)
             p = Path(name)
-            supercell.to_poscar(poscar_filename=p / "DPOSCAR")
+            supercell.to(poscar=p / "DPOSCAR")
             defect_setting = \
                 DefectInitialSetting.from_basic_settings(
                     structure=supercell.structure,
@@ -304,27 +303,17 @@ def make_dir(name: str, vis: ViseInputSet, force_overwrite: bool) -> None:
 
 def defect_vasp_set(args):
 
-    flags = [str(s) for s in list(Element)]
-    ldauu = list2dict(args.ldauu, flags)
-    ldaul = list2dict(args.ldaul, flags)
-    potcar_set = potcar_str2dict(args.potcar_set)
-    kwargs = {
-        "standardize_structure": False,
-        "task": "defect",
-        "xc": args.xc,
-        "override_potcar_set": potcar_set,
-        "sort_structure": False,
-        "kpt_mode": "manual_set",
-        "kpt_density": args.kpt_density,
-        "only_even": False,
-        "ldauu": ldauu,
-        "ldaul": ldaul}
-
-    flags = list(signature(ViseInputSet.make_input).parameters.keys())
-    kwargs.update(list2dict(args.vos_kwargs, flags))
-    flags = list(chain.from_iterable(incar_flags.values()))
-    user_incar_settings = list2dict(args.incar_setting, flags)
-    user_incar_settings.update({"LWAVE": not args.no_wavecar})
+    user_incar_settings, vis_kwargs = vasp_settings_from_args(args)
+    user_incar_settings["LWAVE"] = args.wavecar
+    vis_kwargs.update(
+        {"xc": args.xc,
+         "task": "defect",
+         "kpt_density": args.kpt_density,
+         "kpt_mode": "manual_set",
+         "only_even": False,
+         "sort_structure": False,
+         "standardize_structure": False,
+         })
 
     defect_initial_setting = DefectInitialSetting.from_defect_in(
         poscar=args.dposcar, defect_in_file=args.defect_in)
@@ -334,13 +323,15 @@ def defect_vasp_set(args):
 
     if not args.specified_defects:
         perfect_incar_setting = deepcopy(user_incar_settings)
-        perfect_incar_setting.update({"ISPIN": 1})
         vise_set = ViseInputSet.make_input(
             structure=defect_initial_setting.structure,
             user_incar_settings=perfect_incar_setting,
-            **kwargs)
+            **vis_kwargs)
 
         make_dir("perfect", vise_set, args.force_overwrite)
+
+    if args.spin_polarize:
+        user_incar_settings["ISPIN"] = 2
 
     for de in defect_initial_setting.defect_entries:
         defect_name = "_".join([de.name, str(de.charge)])
@@ -350,7 +341,7 @@ def defect_vasp_set(args):
             structure=de.perturbed_initial_structure,
             charge=de.charge,
             user_incar_settings=user_incar_settings,
-            **kwargs)
+            **vis_kwargs)
 
         make_dir(defect_name, vise_set, args.force_overwrite)
         de.to_json_file(json_file_name)
@@ -622,7 +613,7 @@ def defects(args):
         print(f"{args.perfect} not found.")
         raise
 
-    defects_dirs = args.defect_dirs if args.defect_dirs else glob('*[0-9]/')
+    defects_dirs = args.defect_dirs or glob('*[0-9]/')
     for d in defects_dirs:
         filename = os.path.join(d, args.json)
         if args.diagnose:
@@ -657,7 +648,7 @@ def defects(args):
 
 def plot_energy(args):
 
-    if args.reload:
+    if args.reload_defects:
         os.remove(args.energies)
 
     try:
@@ -666,7 +657,7 @@ def plot_energy(args):
         unitcell = UnitcellCalcResults.load_json(args.unitcell)
         perfect = SupercellCalcResults.load_json(args.perfect)
 
-        defects_dirs = args.dirs if args.dirs else glob('*[0-9]/')
+        defects_dirs = args.defect_dirs or glob('*[0-9]/')
 
         defect_list = []
         for d in defects_dirs:
@@ -678,7 +669,7 @@ def plot_energy(args):
                 logger.warning(f"Parsing {filename} failed.")
                 continue
 
-        chem_pot = ChemPotDiag.load_vertices_yaml(args.chem_pot_yaml)
+        chem_pot = ChemPotDiag.load_json(args.chem_pot_json)
 
         # First construct DefectEnergies class object.
         defect_energies = \
@@ -686,8 +677,8 @@ def plot_energy(args):
                                         perfect=perfect,
                                         defects=defect_list,
                                         chem_pot=chem_pot,
-                                        filtering_words=args.filtering,
                                         chem_pot_label=args.chem_pot_label,
+                                        filtering_words=args.filtering,
                                         system=args.name)
 
     if args.print:
@@ -704,7 +695,7 @@ def plot_energy(args):
     #             unitcell=unitcell,
     #             num_sites_filename=args.num_site_file)
 
-    #     if len(args.temperature) == 2:
+ #  #     if len(args.temperature) == 2:
     #         defect_concentration = \
     #             DefectConcentration.from_defect_energies(
     #                 energies=energies,
@@ -713,17 +704,18 @@ def plot_energy(args):
     #                 num_sites_filename=args.num_site_file,
     #                 previous_concentration=defect_concentration)
     # else:
-#        defect_concentration = None
+#         defect_concentration = None
 
     # plt = defect_energies.plot_energy(filtering_words=args.filtering,
     #                                   x_range=args.x_range,
     #                                   y_range=args.y_range,
-    #                                   show_transition_levels=args.show_tl,
-    #                                   show_all_energies=args.show_all)
-    plt = defect_energies.plot_energy(x_range=args.x_range,
-                                      y_range=args.y_range,
-                                      show_transition_levels=args.show_tl,
-                                      show_all_energies=args.show_all)
+   #                                   show_transition_levels=args.show_tl,
+   #                                   show_all_energies=args.show_all)
+    plt = defect_energies.plot_energy(
+        x_range=args.x_range,
+        y_range=args.y_range,
+        show_transition_levels=args.show_transition_level,
+        show_all_energies=args.show_all)
 
     if args.save_file:
         plt.savefig(args.save_file, format="pdf", transparent=True)
