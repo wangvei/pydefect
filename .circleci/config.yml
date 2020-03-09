@@ -14,7 +14,6 @@ jobs:
       - checkout
       - run:
           command: |
-            echo 'PMG_VASP_PSP_DIR: ~/vise/vise/test_files/potcars' > $HOME/.pmgrc.yaml
             echo 'PMG_DEFAULT_FUNCTIONAL: PBE_54' >> $HOME/.pmgrc.yaml
             echo "PMG_MAPI_KEY: ${PMG_MAPI_KEY}" >> $HOME/.pmgrc.yaml
       - run:
@@ -22,7 +21,7 @@ jobs:
             sudo pip install --upgrade pip
             sudo pip install -r requirements.txt
             sudo pip install --quiet pytest pytest-cov
-            pytest vise --cov=vise --cov-report html:coverage_reports vise
+            pytest pydefect --cov=vise --cov-report html:coverage_reports pydefect
 
 
 #      - deploy:
