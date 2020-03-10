@@ -3,6 +3,7 @@
 from collections import OrderedDict
 from copy import deepcopy
 from typing import Union, Dict, List
+
 import yaml
 
 from monty.json import MSONable
@@ -328,3 +329,5 @@ def interstitials_from_charge_density(
 
     # self.add_sites(supercell_coords, symprec=symprec, angle_tol=angle_tol,
     #                method="charge", **kwargs)
+
+

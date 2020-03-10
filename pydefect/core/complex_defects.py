@@ -12,13 +12,7 @@ from pydefect.util.logger import get_logger
 from pydefect.util.structure_tools import num_equivalent_clusters
 from pymatgen.core.structure import Structure
 
-__author__ = "Yu Kumagai"
-__maintainer__ = "Yu Kumagai"
-
-""" Module related to complex defects.
-
-The classes are similar to the interstitial ones.
-"""
+""" Module related to complex defects, similar to the interstitial ones. """
 
 logger = get_logger(__name__)
 

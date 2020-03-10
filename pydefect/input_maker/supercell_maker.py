@@ -45,7 +45,7 @@ def calc_isotropy(structure: Structure,
     average_abc = np.mean(super_abc)
 
     isotropy = np.sum(np.abs(super_abc - average_abc) / average_abc) / 3
-    return round(isotropy, 4), angle
+    return round(isotropy, 4), round(angle, 2)
 
 
 def sanitize_matrix(matrix: list) -> np.ndarray:
@@ -97,7 +97,7 @@ class Supercell:
 
         Args:
             structure (Structure):
-                Primitive ell structure to be expanded.
+                Primitive cell structure to be expanded.
             trans_mat (3x3 np.array, 3 np.array or a scalar):
                 The matrix to be used for expanding the structure.
             multiplicity (int):

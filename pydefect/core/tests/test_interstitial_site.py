@@ -7,6 +7,7 @@ from pathlib import Path
 
 from pydefect.core.interstitial_site import (
     InterstitialSiteSet, InterstitialSite)
+from pydefect.input_maker.add_interstitials import add_interstitials
 from pydefect.util.testing import PydefectTest
 
 parent = Path(__file__).parent
@@ -154,3 +155,5 @@ method: manual"""
 
     def test_msonable(self):
         self.assertMSONable(self.interstitial_site_set)
+
+

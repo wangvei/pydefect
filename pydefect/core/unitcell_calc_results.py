@@ -59,13 +59,26 @@ class UnitcellCalcResults(MSONable):
 
         is_total_dos = "Exists" if self._total_dos else "None"
 
-        static_dielectric = "\n ".join([str([round(i, 2) for i in j])
-                                        for j in self.static_dielectric_tensor])
-        ionic_dielectric = "\n ".join([str([round(i, 2) for i in j])
-                                       for j in self.ionic_dielectric_tensor])
+        if isinstance(self.static_dielectric_tensor, list):
+            static_dielectric = "\n ".join(
+                [str([round(i, 2) for i in j])
+                 for j in self.static_dielectric_tensor])
+        else:
+            static_dielectric = "None"
 
-        total_dielectric = "\n ".join([str([round(i, 2) for i in j])
-                                      for j in self.total_dielectric_tensor])
+        if isinstance(self.static_dielectric_tensor, list):
+            ionic_dielectric = "\n ".join(
+                [str([round(i, 2) for i in j])
+                 for j in self.ionic_dielectric_tensor])
+        else:
+            ionic_dielectric = "None"
+
+        if isinstance(self.total_dielectric_tensor, list):
+            total_dielectric = "\n ".join(
+                [str([round(i, 2) for i in j])
+                 for j in self.total_dielectric_tensor])
+        else:
+            total_dielectric = "None"
 
         outs = [f"vbm (eV): {band_edge[0]}",
                 f"cbm (eV): {band_edge[1]}",
@@ -166,7 +179,7 @@ class UnitcellCalcResults(MSONable):
                                                ) -> None:
         outcar = Outcar(os.path.join(directory_path, outcar_name))
         outcar.read_lepsilon()
-        self._static_dielectric_tensor = np.array(outcar.dielectric_tensor)
+        self._static_dielectric_tensor = outcar.dielectric_tensor
 
     def set_ionic_dielectric_tensor_from_vasp(self,
                                               directory_path: str,
@@ -174,21 +187,18 @@ class UnitcellCalcResults(MSONable):
                                               ) -> None:
         outcar = Outcar(os.path.join(directory_path, outcar_name))
         outcar.read_lepsilon_ionic()
-        self._ionic_dielectric_tensor = np.array(outcar.dielectric_ionic_tensor)
+        self._ionic_dielectric_tensor = outcar.dielectric_ionic_tensor
 
-    def set_total_dos_from_vasp(self,
-                                directory_path: str,
-                                vasprun_name: str = "vasprun.xml") -> None:
+    def set_total_dos_and_volume_from_vasp(self,
+                                           directory_path: str,
+                                           vasprun_name: str = "vasprun.xml"
+                                           ) -> None:
         vasprun = Vasprun(os.path.join(directory_path, vasprun_name))
-        dos, energies = vasprun.tdos.densities, vasprun.tdos.energies
-        # only non-magnetic
-        self._total_dos = [list(dos[Spin.up]), list(energies)]
-
-    def set_volume_from_vasp(self,
-                             directory_path: str,
-                             contcar_name: str = "CONTCAR") -> None:
-        contcar = Poscar.from_file(os.path.join(directory_path, contcar_name))
-        self._volume = contcar.structure.volume
+        # DOS of the sum of all spins.
+        dos = list(vasprun.tdos.get_densities())
+        energies = list(vasprun.tdos.energies)
+        self._total_dos = [dos, energies]
+        self._volume = vasprun.final_structure.volume
 
     def to_json_file(self, filename: str = "unitcell.json") -> None:
         with open(filename, 'w') as fw:

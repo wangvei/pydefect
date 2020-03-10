@@ -1,11 +1,8 @@
 # -*- coding: utf-8 -*-
 
 import os
-import shutil
 from copy import deepcopy
 from glob import glob
-from inspect import signature
-from itertools import chain
 from pathlib import Path
 
 import numpy as np
@@ -19,8 +16,8 @@ from pydefect.analysis.defect_structure import (
 from pydefect.core.complex_defects import ComplexDefects
 from pydefect.core.defect_entry import DefectEntry
 from pydefect.core.error_classes import StructureError
-from pydefect.core.interstitial_site import (
-    InterstitialSiteSet, interstitials_from_charge_density)
+from pydefect.core.interstitial_site import interstitials_from_charge_density
+from pydefect.input_maker.add_interstitials import add_interstitials
 from pydefect.core.supercell_calc_results import SupercellCalcResults
 from pydefect.core.unitcell_calc_results import UnitcellCalcResults
 from pydefect.corrections.corrections import ManualCorrection
@@ -35,13 +32,12 @@ from pydefect.cli.main_tools import (
     generate_objects_from_json_files)
 
 from pymatgen import Structure, Spin
-from pymatgen.core.periodic_table import Element
 
-from vise.input_set.incar import incar_flags
 from vise.input_set.input_set import ViseInputSet
 from vise.cli.main_function import vasp_settings_from_args
-from vise.cli.main_tools import potcar_str2dict, list2dict
 from vise.chempotdiag.chem_pot_diag import ChemPotDiag
+
+
 logger = get_logger(__name__)
 
 
@@ -61,7 +57,7 @@ def unitcell_calc_results(args):
                                                 vasprun_name=args.vasprun,
                                                 outcar_name=args.outcar)
         except IOError:
-            raise FileNotFoundError(args.band_edge_dir, "is not appropriate.")
+            raise FileNotFoundError(f"{args.band_edge_dir} is not appropriate.")
 
     if args.static_diele:
         dft_results.static_dielectric_tensor = args.static_diele
@@ -84,17 +80,10 @@ def unitcell_calc_results(args):
         except IOError:
             raise FileNotFoundError(args.ionic_diele_dir, "not appropriate.")
 
-    if args.volume_dir:
-        try:
-            dft_results.set_volume_from_vasp(
-                args.volume_dir, contcar_name=args.contcar)
-        except IOError:
-            raise FileNotFoundError(args.volume_dir, "not appropriate.")
-
     if args.total_dos_dir:
         try:
-            dft_results.set_total_dos_from_vasp(args.total_dos_dir,
-                                                vasprun_name=args.vasprun)
+            dft_results.set_total_dos_and_volume_from_vasp(
+                args.total_dos_dir, vasprun_name=args.vasprun)
         except IOError:
             raise FileNotFoundError(args.total_dos_dir, "not appropriate.")
 
@@ -146,7 +135,7 @@ def initial_setting(args):
                             angle_tolerance=args.angle_tolerance)
 
     if not supercells.supercells:
-        logger.warning("No supercell satisfies the criterion.")
+        logger.critical("Any supercell does not satisfy the criterion.")
         return False
 
     unitcell = supercells.unitcell
@@ -164,11 +153,11 @@ def initial_setting(args):
             supercell = supercells.smallest_supercell
 
         supercell.to("DPOSCAR")
-        defect_setting = \
-            DefectInitialSetting.from_basic_settings(
-                structure=supercell.structure,
-                transformation_matrix=supercell.trans_mat.tolist(),
-                cell_multiplicity=supercell.multiplicity, **kwargs)
+        defect_setting = DefectInitialSetting.from_basic_settings(
+            structure=supercell.structure,
+            transformation_matrix=supercell.trans_mat.tolist(),
+            cell_multiplicity=supercell.multiplicity,
+            **kwargs)
         defect_setting.to()
 
     else:
@@ -203,46 +192,14 @@ def interstitial(args):
             chgcar_filename=args.chgcar,
             interstitial_symprec=args.interstitial_symprec,
             angle_tolerance=args.angle_tolerance)
-
     else:
-        try:
-            interstitial_set = \
-                InterstitialSiteSet.from_files(args.dposcar, args.yaml)
-        except FileNotFoundError:
-            structure = Structure.from_file(args.dposcar)
-            interstitial_set = InterstitialSiteSet(structure=structure)
-
-        coords = args.interstitial_coords
-        if len(coords) == 3:
-            coords = [coords]
-        elif len(coords) % 3 == 0:
-            n_coords = int(len(coords) / 3)
-            coords = \
-                [[coords[3 * i + j] for j in range(3)] for i in range(n_coords)]
-        else:
-            raise ValueError(f"Interstitial coordinates "
-                             f"{args.interstitial_coords} are invalid")
-
-        defect_initial_setting = \
-            DefectInitialSetting.from_defect_in(poscar=args.dposcar,
-                                                defect_in_file=args.defect_in)
-        # To change coords from unitcell to supercell, multiply inverse of
-        # trans_mat to coords.
-        tm_list = defect_initial_setting.transformation_matrix
-        trans_mat = [[tm_list[3 * i + j] for j in range(3)] for i in range(3)]
-        inv_trans_mat = np.linalg.inv(trans_mat)
-#        supercell_coords = [np.dot(inv_trans_mat, c).tolist() for c in coords]
-#        print(supercell_coords)
-        # TODO: understand the reason why inv_trans_mat must be multiplied from
-        #  right.
-        supercell_coords = [np.dot(c, inv_trans_mat).tolist() for c in coords]
-
-        interstitial_set.add_sites(frac_coords=supercell_coords,
-                                   vicinage_radius=args.radius,
-                                   defect_symprec=args.symprec,
-                                   angle_tolerance=args.angle_tolerance)
-
-        interstitial_set.site_set_to_yaml_file(yaml_filename=args.yaml)
+        add_interstitials(uc_coords=args.interstitial_coords,
+                          dposcar=args.dposcar,
+                          interstitial_site_yaml=args.yaml,
+                          defect_in_file=args.defect_in,
+                          vicinage_radius=args.radius,
+                          defect_symprec=args.defect_symprec,
+                          angle_tolerance=args.angle_tolerance)
 
 
 def complex_defects(args):
@@ -260,11 +217,10 @@ def complex_defects(args):
             len(args.inserted_elements) * 3 != len(args.inserted_coords):
         raise ValueError(f"The numbers of inserted elements "
                          f"{args.inserted_elements} and coords "
-                         f"{args.inserted_coords} are invalid")
+                         f"{args.inserted_coords} are inconsistent.")
 
-    inserted_elements = args.inserted_elements if args.inserted_elements else []
-    inserted_coords = args.inserted_coords if args.inserted_coords else []
-
+    inserted_elements = args.inserted_elements or []
+    inserted_coords = args.inserted_coords or []
     inserted_atoms = []
     for i, e in enumerate(inserted_elements):
         coords = [inserted_coords[3 * i + j] for j in range(3)]
@@ -286,19 +242,20 @@ def complex_defects(args):
     complex_defects_obj.site_set_to_yaml_file(yaml_filename=args.yaml)
 
 
-def make_dir(name: str, vis: ViseInputSet, force_overwrite: bool) -> None:
+def make_dir(dirname: str, vis: ViseInputSet, force_overwrite: bool) -> None:
     """Helper function"""
-    if force_overwrite and os.path.exists(name):
-        logger.warning(f"{name:>10} is being removed.")
-        shutil.rmtree(name)
+    dirname = Path(dirname)
+    if force_overwrite and dirname.exists():
+        logger.critical(f"{dirname:>10} is being removed.")
+        dirname.rmdir()
 
-    if os.path.exists(name):
-        logger.warning(f"{name:>10} already exists, so nothing is done.")
+    if os.path.exists(dirname):
+        logger.warning(f"{dirname:>10} already exists, so nothing is done.")
     else:
-        logger.warning(f"{name:>10} is being constructed.")
-        os.makedirs(name)
-        vis.write_input(name)
-        vis.to_json_file("/".join([name, "vise.json"]))
+        logger.info(f"{dirname:>10} is being constructed.")
+        dirname.mkdir()
+        vis.write_input(dirname)
+        vis.to_json_file(Path(dirname) / "vise.json")
 
 
 def defect_vasp_set(args):
@@ -330,12 +287,14 @@ def defect_vasp_set(args):
 
         make_dir("perfect", vise_set, args.force_overwrite)
 
-    if args.spin_polarize:
+    # set ISPIN = 2 if "ISPIN" is not explicitly set.
+    if args.spin_polarize and not hasattr(user_incar_settings, "ISPIN"):
         user_incar_settings["ISPIN"] = 2
 
     for de in defect_initial_setting.defect_entries:
         defect_name = "_".join([de.name, str(de.charge)])
-        json_file_name = os.path.join(defect_name, "defect_entry.json")
+        d = Path(defect_name)
+        json_file_name = d / "defect_entry.json"
 
         vise_set = ViseInputSet.make_input(
             structure=de.perturbed_initial_structure,
@@ -347,7 +306,7 @@ def defect_vasp_set(args):
         de.to_json_file(json_file_name)
 
         if de.neighboring_sites:
-            poscar_name = os.path.join(defect_name, "POSCAR")
+            poscar_name = d / "POSCAR"
             with open(poscar_name, "r") as f:
                 lines = f.readlines()
                 for index, line in enumerate(lines.copy()):
@@ -404,7 +363,7 @@ def defect_entry(args):
 
         defect_entry_from_yaml.to_json_file(args.json)
     else:
-        logger.warning("Set make_defect_entry or print option.")
+        logger.critical("Set make_defect_entry or print option.")
 
 
 def supercell_calc_results(args):
@@ -443,26 +402,22 @@ def supercell_calc_results(args):
                     raise IOError("Parsing data in perfect failed.")
             else:
                 try:
-                    de = DefectEntry.load_json(
-                        os.path.join(d, args.defect_entry_name))
-
-                    dft_results = \
-                        SupercellCalcResults.from_vasp_files(
-                            directory_path=d,
-                            vasprun=args.vasprun,
-                            contcar=args.contcar,
-                            outcar=args.outcar,
-                            procar=args.procar,
-                            cutoff=args.cutoff,
-                            defect_entry=de,
-                            defect_symprec=args.defect_symprec,
-                            angle_tolerance=args.angle_tolerance)
+                    de = DefectEntry.load_json(Path(d) / args.defect_entry_name)
+                    dft_results = SupercellCalcResults.from_vasp_files(
+                        directory_path=d,
+                        vasprun=args.vasprun,
+                        contcar=args.contcar,
+                        outcar=args.outcar,
+                        procar=args.procar,
+                        cutoff=args.cutoff,
+                        defect_entry=de,
+                        defect_symprec=args.defect_symprec,
+                        angle_tolerance=args.angle_tolerance)
                 except IOError:
                     logger.warning(f"Parsing data in {d} failed.")
                     continue
 
-            dft_results.to_json_file(
-                filename=os.path.join(d, "dft_results.json"))
+            dft_results.to_json_file(filename=Path(d) / "dft_results.json")
         else:
             logger.warning(f"{d} does not exist, so nothing is done.")
 
@@ -476,16 +431,15 @@ def efnv_correction(args):
 
     if args.plot_potential:
         for directory in dirs:
-            json_file = os.path.join(directory, "correction.json")
-            c = ExtendedFnvCorrection.load_json(json_file)
-            c.plot_potential(os.path.join(directory, "potential.pdf"),
-                             args.y_range)
+            d = Path(directory)
+            c = ExtendedFnvCorrection.load_json(d / "correction.json")
+            c.plot_potential(d / "potential.pdf", args.y_range)
         return
 
     if args.nocorr:
         for directory in dirs:
             c = ManualCorrection(manual_correction_energy=args.manual)
-            c.to_json_file(os.path.join(directory, "correction.json"))
+            c.to_json_file(Path(directory) / "correction.json")
         return
 
     try:
@@ -511,18 +465,18 @@ def efnv_correction(args):
         ewald.to_json_file(args.ewald_json)
 
     for directory in dirs:
-        json_to_make = os.path.join(directory, "correction.json")
+        d = Path(directory)
+        json_to_make = d / "correction.json"
 
-        if os.path.exists(json_to_make) and not args.force_overwrite:
+        if json_to_make.exists() and not args.force_overwrite:
             logger.warning(f"{json_to_make} already exists, so nothing done.")
             continue
 
         logger.info(f"correcting {directory} ...")
-        entry = DefectEntry.load_json(os.path.join(directory,
-                                                   "defect_entry.json"))
+        entry = DefectEntry.load_json(d / "defect_entry.json")
         try:
-            defect_dft_data = SupercellCalcResults.load_json(
-                os.path.join(directory, "dft_results.json"))
+            defect_dft_data = \
+                SupercellCalcResults.load_json(d / "dft_results.json")
         except IOError:
             logger.warning(f"dft_results.json in {directory} does not exist.")
             continue
@@ -535,9 +489,8 @@ def efnv_correction(args):
                                defect_center=args.defect_center,
                                ewald=args.ewald_json)
 
-        c.plot_potential(os.path.join(directory, "potential.pdf"),
-                         args.y_range)
-        c.to_json_file(os.path.join(directory, "correction.json"))
+        c.plot_potential(d / "potential.pdf", args.y_range)
+        c.to_json_file(d / "correction.json")
 
 
 def vertical_transition_energy(args):

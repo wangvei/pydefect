@@ -132,24 +132,20 @@ def parse_args(args):
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
         aliases=['ur'])
 
-    ur_defaults = {"volume_dir": None,
-                   "static_diele_dir": None,
+    ur_defaults = {"static_diele_dir": None,
                    "ionic_diele_dir": None,
                    "band_edge_dir": None,
                    "dos_dir": None,
                    "unitcell_json": "unitcell.json",
-                   "contcar": "CONTCAR",
                    "outcar": "OUTCAR",
                    "vasprun": "vasprun.xml"}
 
     simple_override(ur_defaults,
-                    ["volume_dir",
-                     "static_diele_dir",
+                    ["static_diele_dir",
                      "ionic_diele_dir",
                      "band_edge_dir",
                      "dos_dir",
                      "unitcell_json",
-                     "contcar",
                      "outcar",
                      "vasprun"])
 
@@ -175,15 +171,8 @@ def parse_args(args):
         help="Set ionic dielectric constant from an OUTCAR file")
 
     parser_unitcell_results.add_argument(
-        "--volume_dir", default=ur_defaults["volume_dir"], type=str,
-        help="Set volume from a POSCAR file")
-
-    parser_unitcell_results.add_argument(
         "--total_dos_dir", default=ur_defaults["dos_dir"], type=str,
         help="Set total density of states from a vasprun.xml file")
-    parser_unitcell_results.add_argument(
-        "-c", "--contcar", type=str, default=ur_defaults["contcar"],
-        help="CONTCAR file name.")
     parser_unitcell_results.add_argument(
         "-o", "--outcar", type=str, default=ur_defaults["outcar"],
         help="OUTCAR file name.")
@@ -240,15 +229,15 @@ def parse_args(args):
              "this flag has no meaning.")
     parser_initial.add_argument(
         "-i", "--most_isotropic", action="store_true",
-        help="Generate the supercell with the smallest isotropy instead of the "
-             "smallest supercell.")
+        help="Generate the supercell with the smallest anisotropy instead of "
+             "the smallest supercell.")
 
     # defect.in
     parser_initial.add_argument(
         "--rhombohedral_angle", type=float,
         default=is_defaults["rhombohedral_angle"],
         help="Only the supercells with rhombohedral_angle <= lattice angle <= "
-             "180 - rhombohedral_angle are returned. ")
+             "(180 - rhombohedral_angle) are returned. ")
     parser_initial.add_argument(
         "--supercell_set", action="store_true",
         help="Output all the supercells satisfying the criterion.")
@@ -271,16 +260,16 @@ def parse_args(args):
     parser_initial.add_argument(
         "--displacement_distance", type=float,
         default=is_defaults["displacement_distance"],
-        help="Displacement distance. 0 means that random displacement is not "
-             "considered.")
+        help="Displacement distance. 0 means that random displacement is "
+             "switched off.")
     parser_initial.add_argument(
         "--interstitial_sites", dest="interstitials", type=str, nargs="+",
         default=is_defaults["interstitial_sites"],
-        help="Interstitial site names.")
+        help="Interstitial site names to be considered.")
     parser_initial.add_argument(
         "--complex_defect_names", type=str, nargs="+",
         default=is_defaults["complex_defect_names"],
-        help="Complex defect names.")
+        help="Complex defect names to be considered.")
     parser_initial.add_argument(
         "--print_dopant", type=str,
         help="Print the designated dopant information that can be added to "

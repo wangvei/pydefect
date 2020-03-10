@@ -15,6 +15,9 @@ class UnitcellDftResultsTest(PydefectTest):
                                             total_dos=None,
                                             volume=None)
 
+    def test_print(self):
+        print(self.unitcell)
+
     def test_static_dielectric_tensor(self):
         self.unitcell.set_static_dielectric_tensor_from_vasp(
             directory_path=self.unitcell_dir, outcar_name="dielectric_OUTCAR")
@@ -29,13 +32,6 @@ class UnitcellDftResultsTest(PydefectTest):
         actual = self.unitcell.ionic_dielectric_tensor
         self.assertArrayAlmostEqual(expected, actual, 5)
 
-    def test_volume(self):
-        self.unitcell.set_volume_from_vasp(
-            directory_path=self.unitcell_dir, contcar_name="CONTCAR")
-        expected = 168.72742284380834
-        actual = self.unitcell.volume
-        self.assertEqual(expected, actual)
-
     def test_band_edge(self):
         self.unitcell.set_band_edge_from_vasp(
             directory_path=self.unitcell_dir,
@@ -46,7 +42,11 @@ class UnitcellDftResultsTest(PydefectTest):
         self.assertArrayAlmostEqual(expected, actual, 3)
 
     def test_total_dos(self):
-        self.unitcell.set_total_dos_from_vasp(
+        self.unitcell.set_total_dos_and_volume_from_vasp(
             directory_path=self.unitcell_dir, vasprun_name="dos_vasprun.xml")
+        expected = 168.72742284380834
+        actual = self.unitcell.volume
+        self.assertEqual(expected, actual)
 
+    def test_msonable(self):
         self.assertMSONable(self.unitcell)
