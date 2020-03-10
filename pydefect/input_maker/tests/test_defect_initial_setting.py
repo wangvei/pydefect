@@ -2,6 +2,7 @@
 import tempfile
 from copy import deepcopy
 from pathlib import Path
+import os
 
 from pydefect.core.defect_entry import DefectType
 from pydefect.core.irreducible_site import IrreducibleSite
@@ -183,7 +184,7 @@ class DefectInitialSettingTest(PydefectTest):
         dopant_configs = [["Al", "Mg"], ["N", "O"]]
         antisite_configs = []
         interstitial_sites = ["i1"]
-        complex_defect_names = ["divacancy"]
+        complex_defect_names = []
         included = ["Va_O1_-1", "Va_O1_-2"]
         excluded = ["Va_O1_1", "Va_O1_2"]
         displacement_distance = 0.2
@@ -256,7 +257,7 @@ class DefectInitialSettingTest(PydefectTest):
             dopants=["Al", "N"],
             is_antisite=True,
             interstitial_sites=["i1"],
-            complex_defect_names=["divacancy"],
+            complex_defect_names=[],
             en_diff=1.0,
             included=["Va_O1_-1", "Va_O1_-2"],
             excluded=["Va_O1_1", "Va_O1_2"],
@@ -265,8 +266,8 @@ class DefectInitialSettingTest(PydefectTest):
             interstitials_yaml=str(parent / "test_interstitials.yaml"),
             complex_defect_yaml=str(parent / "complex_defects.yaml"))
 
-        actual.to(defect_in_file=str(parent / "defect_unittest.in"),
-                  poscar_file=str(parent / "DPOSCAR-defect_initial_setting"))
+        actual.to(defect_in_file="defect.in",
+                  poscar_file="DPOSCAR")
         self.assertEqual(self.MgO.structure, actual.structure)
 
         actual = actual.as_dict()
@@ -284,8 +285,7 @@ class DefectInitialSettingTest(PydefectTest):
         # vacancies: 3 + 3 = 6
         # dopants: 3 + 3 = 6
         # interstitials: 3(Mg) + 3(O) + 5(Al) + 5(N) = 16
-        # divacancies: 1
-        self.assertEqual(29, len(mgo_all.defect_entries))
+        self.assertEqual(28, len(mgo_all.defect_entries))
 
     def test_make_defect_set_keywords(self):
         mgo_interstitial = deepcopy(self.MgO)
@@ -339,6 +339,15 @@ class DefectInitialSettingTest(PydefectTest):
             else:
                 self.assertEqual(value, actual[key])
 
+    def tearDown(self) -> None:
+        try:
+            os.remove("defect.in")
+        except FileNotFoundError:
+            pass
+        try:
+            os.remove("DPOSCAR")
+        except FileNotFoundError:
+            pass
 
 # class DefectInitialSettingTest2(PydefectTest):
 
