@@ -209,7 +209,7 @@ class DefectInitialSettingTest(PydefectTest):
             angle_tolerance=angle_tolerance,
             oxidation_states=oxidation_states,
             electronegativity=electronegativity,
-            interstitials_yaml=str(parent / "interstitials.yaml"),
+            interstitials_yaml=str(parent / "test_interstitials.yaml"),
             complex_defect_yaml=str(parent / "complex_defects.yaml"))
 
     def test_dict(self):
@@ -235,7 +235,7 @@ class DefectInitialSettingTest(PydefectTest):
         actual = DefectInitialSetting.from_defect_in(
             poscar=str(parent / "DPOSCAR-defect_initial_setting"),
             defect_in_file=str(parent / "defect_unittest.in"),
-            interstitials_yaml=str(parent / "interstitials.yaml"),
+            interstitials_yaml=str(parent / "test_interstitials.yaml"),
             complex_defect_yaml=str(parent / "complex_defects.yaml"))
 
         self.assertEqual(self.MgO.structure.lattice, actual.structure.lattice)
@@ -243,8 +243,9 @@ class DefectInitialSettingTest(PydefectTest):
         actual = actual.as_dict()
 
         for key, expected in self.MgO.as_dict().items():
-            if key not in \
-                    ["structure", "interstitials_yaml", "complex_defect_yaml"]:
+            if key not in ["structure",
+                           "test_interstitials_yaml",
+                           "complex_defect_yaml"]:
                 self.assertEqual(expected, actual[key])
 
     def test_from_basic_settings(self):
@@ -261,7 +262,7 @@ class DefectInitialSettingTest(PydefectTest):
             excluded=["Va_O1_1", "Va_O1_2"],
             displacement_distance=0.2,
             symprec=0.01,
-            interstitials_yaml=str(parent / "interstitials.yaml"),
+            interstitials_yaml=str(parent / "test_interstitials.yaml"),
             complex_defect_yaml=str(parent / "complex_defects.yaml"))
 
         actual.to(defect_in_file=str(parent / "defect_unittest.in"),
@@ -271,8 +272,9 @@ class DefectInitialSettingTest(PydefectTest):
         actual = actual.as_dict()
 
         for key, expected in self.MgO.as_dict().items():
-            if key not in \
-                    ["structure", "interstitials_yaml", "complex_defect_yaml"]:
+            if key not in ["structure",
+                           "test_interstitials_yaml",
+                           "complex_defect_yaml"]:
                 self.assertEqual(expected, actual[key])
 
     def test_make_all_defect_set(self):

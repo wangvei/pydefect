@@ -195,7 +195,7 @@ def interstitial(args):
     else:
         add_interstitials(uc_coords=args.interstitial_coords,
                           dposcar=args.dposcar,
-                          interstitial_site_yaml=args.yaml,
+                          interstitials_yaml=args.yaml,
                           defect_in_file=args.defect_in,
                           vicinage_radius=args.radius,
                           defect_symprec=args.defect_symprec,

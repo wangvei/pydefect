@@ -12,7 +12,7 @@ from pymatgen import Structure
 def add_interstitials(uc_coords: List[float],
                       vicinage_radius: float,
                       dposcar: str = "DPOSCAR",
-                      interstitial_site_yaml: str = "interstitials.yaml",
+                      interstitials_yaml: str = "interstitials.yaml",
                       defect_in_file: str = "defect.in",
                       defect_symprec: float = DEFECT_SYMMETRY_TOLERANCE,
                       angle_tolerance: float = ANGLE_TOL) -> None:
@@ -27,8 +27,10 @@ def add_interstitials(uc_coords: List[float],
                          f"cell are invalid.")
 
     defect_initial_setting = \
-        DefectInitialSetting.from_defect_in(poscar=dposcar,
-                                            defect_in_file=defect_in_file)
+        DefectInitialSetting.from_defect_in(
+            poscar=dposcar,
+            interstitials_yaml=interstitials_yaml,
+            defect_in_file=defect_in_file)
 
     tm_list = defect_initial_setting.transformation_matrix
     trans_mat = [[tm_list[3 * i + j] for j in range(3)] for i in range(3)]
@@ -45,7 +47,8 @@ def add_interstitials(uc_coords: List[float],
 
     try:
         interstitial_set = \
-            InterstitialSiteSet.from_files(dposcar, interstitial_site_yaml)
+            InterstitialSiteSet.from_files(dposcar=dposcar,
+                                           yaml_filename=interstitials_yaml)
     except FileNotFoundError:
         structure = Structure.from_file(dposcar)
         interstitial_set = InterstitialSiteSet(structure=structure)
@@ -54,4 +57,4 @@ def add_interstitials(uc_coords: List[float],
                                vicinage_radius=vicinage_radius,
                                defect_symprec=defect_symprec,
                                angle_tolerance=angle_tolerance)
-    interstitial_set.site_set_to_yaml_file(yaml_filename=interstitial_site_yaml)
+    interstitial_set.site_set_to_yaml_file(yaml_filename=interstitials_yaml)
