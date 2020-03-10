@@ -205,7 +205,7 @@ class SupercellsTest(PydefectTest):
             0.750000 0.750000 0.750000 O""", fmt="poscar")
         self.assertEqual(expected, actual)
         actual_comment = supercell_mgo.comment
-        expected_comment = "trans_mat: [2, 0, 0, 0, 2, 0, 0, 0, 2], multi: 8, isotropy: (0.0, 59.99999999999999)"
+        expected_comment = "trans_mat: [2, 0, 0, 0, 2, 0, 0, 0, 2], multi: 8, isotropy: (0.0, 60.0)"
         self.assertEqual(expected_comment, actual_comment)
 
     def test_recommended_supercell_rhombo(self):
@@ -356,7 +356,7 @@ class SupercellsTest(PydefectTest):
             0.250000 -0.000000 0.750000 P""", fmt="poscar")
         self.assertEqual(expected, actual)
         actual_comment = supercell.comment
-        expected_comment = "trans_mat: [-1, 3, -1, -1, -1, 3, 3, -1, -1], multi: 16, isotropy: (0.0, 66.43340130273333)"
+        expected_comment = "trans_mat: [-1, 3, -1, -1, -1, 3, 3, -1, -1], multi: 16, isotropy: (0.0, 66.43)"
         self.assertEqual(expected_comment, actual_comment)
 
     def test_recommended_supercell_tetra(self):

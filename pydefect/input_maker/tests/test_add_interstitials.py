@@ -19,7 +19,7 @@ class AddInterstitialsTest(PydefectTest):
                           vicinage_radius=1.0,
                           dposcar=str(self.POSCARS_DIR / "POSCAR-MgO64atoms"),
                           interstitial_site_yaml="test_interstitial.yaml",
-                          defect_in_file="defect_unittest.in")
+                          defect_in_file=parent / "defect_unittest.in")
 
     def tearDown(self) -> None:
         try:
