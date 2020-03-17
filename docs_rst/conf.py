@@ -1,21 +1,18 @@
 # -*- coding: utf-8 -*-
 #
-# import os
-# import sys
-# sys.path.insert(0, os.path.abspath('.'))
+import os
+import sys
+from pydefect import __version__
 
+sys.path.insert(0, os.path.abspath('.'))
+sys.path.insert(0, os.path.abspath('..'))
 
 # -- Project information -----------------------------------------------------
 
 project = 'pydefect'
-copyright = '2019, Yu Kumagai'
+copyright = '2020, Yu Kumagai'
 author = 'Yu Kumagai'
-
-# The short X.Y version
-version = '0.0.1'
-# The full version, including alpha/beta/rc tags
-release = 'beta'
-
+version = __version__
 
 # -- General configuration ---------------------------------------------------
 
@@ -27,8 +24,8 @@ release = 'beta'
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = [
+    'sphinx.ext.autodoc',
     'sphinx.ext.napoleon',
-    'sphinx.ext.todo',
     'sphinx.ext.githubpages',
 ]
 
@@ -38,18 +35,10 @@ templates_path = ['_templates']
 # The suffix(es) of source filenames.
 # You can specify multiple suffix as a list of string:
 #
-source_suffix = ['.rst', '.md']
+#source_suffix = ['.rst', '.md']
 #source_suffix = '.rst'
 
-from recommonmark.parser import CommonMarkParser
-
-source_parsers = {
-    '.md': CommonMarkParser,
-}
-
-source_suffix = ['.rst', '.md']
-
-
+source_suffix = ['.rst']
 
 # The master toctree document.
 master_doc = 'index'
@@ -96,6 +85,9 @@ html_static_path = ['_static']
 # 'searchbox.html']``.
 #
 # html_sidebars = {}
-import corlab_theme
-html_theme      = 'corlab_theme'
-html_theme_path = [ corlab_theme.get_theme_dir() ]
+# import corlab_theme
+# html_theme      = 'corlab_theme'
+# html_theme_path = [ corlab_theme.get_theme_dir() ]
+#---sphinx-themes-----
+from jupyter_sphinx_theme import *
+init_theme()

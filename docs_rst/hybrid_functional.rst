@@ -1,5 +1,5 @@
-# Tips for hybrid functional calculations
------------------------
+Tips for hybrid functional calculations
+----------------------------------------------
 
 Hybrid functionals, especially HSE06 functional and that with different exchange mixing parameter or screening distance, have
 been regularly used for point-defect calculations.
@@ -12,7 +12,8 @@ calculations. The reason is because site symmetry of a defect estimated by GGA c
 Furthermore, electronic structures of defects could also be different.)
 
 One can create the INCAR file for generating WAVECAR files using the GGA with the following command, for instance.
-```
-grep -v LHFCALC INCAR | grep -v ALGO | sed s/"NSW     =  50"/"NSW     =   1"/ > INCAR-pre
-```
+
+::
+    grep -v LHFCALC INCAR | grep -v ALGO | sed s/"NSW     =  50"/"NSW     =   1"/ > INCAR-pre
+
 
