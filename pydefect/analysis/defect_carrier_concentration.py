@@ -643,10 +643,10 @@ class DefectConcentration(MSONable):
         plt.axvline(x=vbm, linewidth=1.0, linestyle='dashed')
         plt.axvline(x=cbm, linewidth=1.0, linestyle='dashed')
 
-        hole1 = [v["p"][1][None] for v in self.concentrations]
-        elec1 = [v["n"][-1][None] for v in self.concentrations]
-        hole2 = [v["p"][1][None] for v in self.quenched_carrier_concentrations]
-        elec2 = [v["n"][-1][None] for v in self.quenched_carrier_concentrations]
+        hole1 = [v["p"][1] for v in self.concentrations]
+        elec1 = [v["n"][-1] for v in self.concentrations]
+        hole2 = [v["p"][1] for v in self.quenched_carrier_concentrations]
+        elec2 = [v["n"][-1] for v in self.quenched_carrier_concentrations]
 
         ax.plot(fermi_mesh, hole1, '-', color="blue", label="p")
         ax.plot(fermi_mesh, elec1, '-', color="red", label="n")
