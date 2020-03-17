@@ -182,9 +182,10 @@ class DefectStructure(MSONable):
         return "\n".join(lines)
 
     def comparator(self,
-                   defect_structure,
+                   defect_structure: "DefectStructure",
                    stol: float = 0.03,
                    **kwargs) -> bool:
+        """Compare the defect structure with another defect structure """
 
         compared_structure = defect_structure.final_local_structure
         return self.final_local_structure.matches(other=compared_structure,
@@ -195,15 +196,22 @@ class DefectStructure(MSONable):
 
 
 def defect_structure_matcher(d_list: List[DefectStructure],
-                             site_tolerance: float = 0.05) -> dict:
-    """ A list of DefectStructure is grouped by structural equality.
+                             site_tolerance: float = 0.05,
+                             pretty_print: bool = True) -> dict:
+    """A list of DefectStructure is grouped by structural equality.
 
     Args:
-        d_list ([DefectStructure]): List of DefectStructure to be grouped
-        site_tolerance: Defined as the fraction of the average free length per
-            atom := ( V / Nsites ) ** (1/3) Default in pymatgen is 0.3.
+        d_list ([DefectStructure]):
+            List of DefectStructure to be grouped
+        site_tolerance (float):
+            Defined as the fraction of the average free length per atom
+            := ( V / Nsites ) ** (1/3).
+            Default in pymatgen is 0.3.
             See docstrings of StructureMatcher in
             pymatgen.analysis.structure_matcher.
+        pretty_print (bool):
+            Whether to return the pretty print format string.
+
     Returns:
         A list of lists of matched structures
         Assumption: if s1 == s2 but s1 != s3, than s2 and s3 will be put
@@ -231,5 +239,10 @@ def defect_structure_matcher(d_list: List[DefectStructure],
                          if i not in inds]
             group[name].append(matches)
 
-    return group
+    if pretty_print is False:
+        return group
+
+    lines = []
+    for name, charges in group.items():
+        lines
 

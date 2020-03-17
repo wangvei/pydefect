@@ -30,18 +30,18 @@ class DetermineDefectTypeTest(PydefectTest):
 
     def setUp(self) -> None:
         self.vacancy = determine_defect_type(
-            inserted_atoms=[], removed_atoms=[{"coords":[0, 0, 0]}])
+            inserted_atoms=[], removed_atoms=[{"coords": [0, 0, 0]}])
         self.interstitial = determine_defect_type(
-            inserted_atoms=[{"coords":[0, 0, 0]}], removed_atoms=[])
+            inserted_atoms=[{"coords": [0, 0, 0]}], removed_atoms=[])
         self.substituted = determine_defect_type(
-            inserted_atoms=[{"coords":[0, 0, 0]}],
-            removed_atoms=[{"coords":[0, 0, 0]}])
+            inserted_atoms=[{"coords": [0, 0, 0]}],
+            removed_atoms=[{"coords": [0, 0, 0]}])
         self.complex = determine_defect_type(
-            inserted_atoms=[{"coords":[0, 0, 0.5]}],
-            removed_atoms=[{"coords":[0, 0, 0]}])
+            inserted_atoms=[{"coords": [0, 0, 0.5]}],
+            removed_atoms=[{"coords": [0, 0, 0]}])
         self.complex2 = determine_defect_type(
-            inserted_atoms=[{"coords":[0, 0, 0]}],
-            removed_atoms=[{"coords":[0, 0, 0]}, {"coords": [0, 0, 0.5]}])
+            inserted_atoms=[{"coords": [0, 0, 0]}],
+            removed_atoms=[{"coords": [0, 0, 0]}, {"coords": [0, 0, 0.5]}])
 
     def test(self):
         self.assertEqual(DefectType.vacancy, self.vacancy)

@@ -787,6 +787,7 @@ class MainConcentrationsTest(PydefectTest):
             frac_mag_to_one=False,
             verbose=False,
             temperature=None,
+            quenched_temperature=298,
             func=actual.func,
         )
         self.assertEqual(expected, actual)
@@ -798,7 +799,8 @@ class MainConcentrationsTest(PydefectTest):
                              "--filtering", "c",
                              "--frac_mag_to_one",
                              "--verbose",
-                             "--temperature", "1.1", "2.1",
+                             "--temperature", "1.1",
+                             "--quenched_temperature", "2.1",
                              ])
         expected = Namespace(
             energies="a",
@@ -806,7 +808,8 @@ class MainConcentrationsTest(PydefectTest):
             filtering="c",
             frac_mag_to_one=True,
             verbose=True,
-            temperature=[1.1, 2.1],
+            temperature=1.1,
+            quenched_temperature=2.1,
             func=actual.func,
         )
         self.assertEqual(expected, actual)

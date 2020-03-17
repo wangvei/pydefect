@@ -20,8 +20,8 @@ from pydefect.core.irreducible_site import IrreducibleSite
 from pydefect.database.atom import electronegativity_list, oxidation_state_dict
 from pydefect.util.logger import get_logger
 from pydefect.util.structure_tools import (
-    get_min_distance, first_appearing_index, perturb_neighboring_atoms,
-    defect_center_from_coords, get_coordination_distances, min_distance_from_coords)
+    first_appearing_index, perturb_neighboring_atoms, defect_center_from_coords,
+    get_coordination_distances, min_distance_from_coords)
 from pymatgen.core.periodic_table import Element
 from pymatgen.core.structure import Structure
 from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
@@ -41,7 +41,7 @@ def default_charge_set(i: int) -> set:
     Args:
         i (int): an integer
 
-    Return:
+    Returns:
         Set of candidate charges
     """
     if i >= 0:
@@ -64,8 +64,8 @@ def get_electronegativity(element: Union[str, Element]) -> float:
     Args:
          element (str/ Element): Input element
 
-    Return:
-         Electronegativity
+    Returns:
+         Electronegativity of the element.
     """
     try:
         return electronegativity_list[str(element)]
@@ -83,7 +83,7 @@ def get_oxidation_state(element: Union[str, Element]) -> int:
          element (str/ Element): Input element
 
     Return:
-         Oxidation state
+         Oxidation state of the element.
      """
     try:
         return oxidation_state_dict[str(element)]
@@ -98,9 +98,12 @@ def get_oxidation_states(dopants: list,
     """Get oxidation states.
 
     Args:
-        dopants (list): Dopant element list ["Al", "N"]
-        oxidation_states (dict): Dopant element list {"Al": 3, "N": -3, ..}
-        structure (Structure): Host structure.
+        dopants (list):
+            Dopant element list ["Al", "N"]
+        oxidation_states (dict):
+            Dopant element list {"Al": 3, "N": -3, ..}
+        structure (Structure):
+            Host structure.
 
      The oxidation states are determined in the following order.
         1. Specified oxidation states in oxidation_states. If an element
@@ -145,7 +148,7 @@ def dopant_info(dopant: Union[str, Element]) -> Union[str, None]:
     Args:
         dopant (str): Dopant element name e.g., Mg
 
-    Return:
+    Returns:
         String of dopant information.
     """
     dopant = str(dopant)

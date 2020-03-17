@@ -2,6 +2,7 @@
 
 import json
 from collections import defaultdict
+from fractions import Fraction
 from typing import Optional
 
 import matplotlib.pyplot as plt
@@ -143,7 +144,16 @@ class DefectEigenvalue(MSONable):
 
         last_k_index = self._add_eigenvalues_to_plot(axs)
 
-        x_labels = ["\n".join([str(i) for i in k]) for k in self.kpoint_coords]
+        x_labels = []
+        for k in self.kpoint_coords:
+            x_label = []
+            for i in k:
+                frac = Fraction(i).limit_denominator(10)
+                if frac.numerator == 0:
+                    x_label.append("0")
+                else:
+                    x_label.append(f"{frac.numerator}/{frac.denominator}")
+            x_labels.append("\n".join(x_label))
 
         for i, s in enumerate(self.band_edge_states):
             # show band-edge states

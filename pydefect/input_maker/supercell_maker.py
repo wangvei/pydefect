@@ -2,28 +2,28 @@
 
 from collections import Iterable
 from copy import deepcopy
-from typing import Union, Optional, List
+from typing import Union, Optional, List, Tuple
 
 import numpy as np
+
 from pydefect.core.config import SYMMETRY_TOLERANCE, ANGLE_TOL
 from pydefect.core.error_classes import CellSizeError
+from pydefect.database.symmetry import transmat_primitive2standard
 from pydefect.util.logger import get_logger
+
 from pymatgen.core.structure import Structure
 from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
-from pydefect.database.symmetry import transmat_primitive2standard
 
 from vise.util.structure_handler import (
     find_spglib_primitive, get_symmetry_dataset)
 
-__author__ = "Yu Kumagai"
-__maintainer__ = "Yu Kumagai"
 
 logger = get_logger(__name__)
 
 
 def calc_isotropy(structure: Structure,
-                  trans_mat: np.array) -> tuple:
-    """Return mean absolute deviation of lattice constants from their average.
+                  trans_mat: np.array) -> Tuple[float, float]:
+    """Evaluate mean absolute deviation of lattice constants from their average.
 
     Args:
         structure (Structure):
@@ -31,7 +31,7 @@ def calc_isotropy(structure: Structure,
         trans_mat (3x3 np.array):
            The matrix to be used for expanding the unitcell.
 
-    Return
+    Returns:
         isotropy (float):
            Defined as the mean absolute deviation of the lattice constants
            from the averaged lattice constant
@@ -62,7 +62,7 @@ def sanitize_matrix(matrix: list) -> np.ndarray:
         matrix (list or np.array):
            The matrix to be used for expanding the structure.
 
-    Return:
+    Returns:
         np.ndarray (3x3)
     """
     if len(matrix) == 1:
