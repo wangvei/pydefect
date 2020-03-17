@@ -4,6 +4,7 @@ import os
 from copy import deepcopy
 from glob import glob
 from pathlib import Path
+from typing import Optional
 
 import numpy as np
 
@@ -242,20 +243,41 @@ def complex_defects(args):
     complex_defects_obj.site_set_to_yaml_file(yaml_filename=args.yaml)
 
 
-def make_dir(dirname: str, vis: ViseInputSet, force_overwrite: bool) -> None:
+def make_dir(dirname: str,
+             vis: ViseInputSet,
+             force_overwrite: bool,
+             defect_entry_obj: Optional[DefectEntry],
+             add_neighbor: bool = True) -> None:
     """Helper function"""
     dirname = Path(dirname)
     if force_overwrite and dirname.exists():
-        logger.critical(f"{dirname:>10} is being removed.")
+        logger.critical(f"{dirname} is being removed.")
         dirname.rmdir()
 
-    if os.path.exists(dirname):
-        logger.warning(f"{dirname:>10} already exists, so nothing is done.")
+    if dirname.exists():
+        logger.warning(f"{dirname} already exists, so nothing is done.")
     else:
-        logger.info(f"{dirname:>10} is being constructed.")
+        logger.info(f"{dirname} is being constructed.")
         dirname.mkdir()
         vis.write_input(dirname)
         vis.to_json_file(Path(dirname) / "vise.json")
+
+        if defect_entry_obj is None:
+            return
+
+        defect_entry_obj.to_json_file(dirname / "defect_entry.json")
+
+        if add_neighbor and defect_entry_obj.neighboring_sites:
+            poscar_name = dirname / "POSCAR"
+            with open(poscar_name, "r") as f:
+                lines = f.readlines()
+                for index, line in enumerate(lines.copy()):
+                    if index - 8 in defect_entry_obj.neighboring_sites:
+                        lines[index] = line.strip() + "  Neighbor\n"
+
+            with open(poscar_name, "w") as f:
+                for line in lines:
+                    f.write(line)
 
 
 def defect_vasp_set(args):
@@ -285,7 +307,7 @@ def defect_vasp_set(args):
             user_incar_settings=perfect_incar_setting,
             **vis_kwargs)
 
-        make_dir("perfect", vise_set, args.force_overwrite)
+        make_dir("perfect", vise_set, args.force_overwrite, None)
 
     # set ISPIN = 2 if "ISPIN" is not explicitly set.
     if args.spin_polarize and not hasattr(user_incar_settings, "ISPIN"):
@@ -293,29 +315,12 @@ def defect_vasp_set(args):
 
     for de in defect_initial_setting.defect_entries:
         defect_name = "_".join([de.name, str(de.charge)])
-        d = Path(defect_name)
-        json_file_name = d / "defect_entry.json"
-
         vise_set = ViseInputSet.make_input(
             structure=de.perturbed_initial_structure,
             charge=de.charge,
             user_incar_settings=user_incar_settings,
             **vis_kwargs)
-
-        make_dir(defect_name, vise_set, args.force_overwrite)
-        de.to_json_file(json_file_name)
-
-        if de.neighboring_sites:
-            poscar_name = d / "POSCAR"
-            with open(poscar_name, "r") as f:
-                lines = f.readlines()
-                for index, line in enumerate(lines.copy()):
-                    if index - 8 in de.neighboring_sites:
-                        lines[index] = line.strip() + "  Neighbor\n"
-
-            with open(poscar_name, "w") as f:
-                for line in lines:
-                    f.write(line)
+        make_dir(defect_name, vise_set, args.force_overwrite, de)
 
 
 def vertical_transition_input_maker(args):
@@ -342,8 +347,8 @@ def vertical_transition_input_maker(args):
     de.initial_site_symmetry = src.site_symmetry
     # FIX MAGNETIZATION?
     new_dirname = initial_dirname / f"add_charge_{args.additional_charge}"
-    make_dir(str(new_dirname), vis, force_overwrite=False)
-
+    make_dir(str(new_dirname), vis, force_overwrite=False, defect_entry_obj=de,
+             add_neighbor=False)
     new_de_filename = new_dirname / "defect_entry.json"
     de.to_json_file(new_de_filename)
 
@@ -413,8 +418,9 @@ def supercell_calc_results(args):
                         defect_entry=de,
                         defect_symprec=args.defect_symprec,
                         angle_tolerance=args.angle_tolerance)
-                except IOError:
+                except IOError as e:
                     logger.warning(f"Parsing data in {d} failed.")
+                    logger.warning(e)
                     continue
 
             dft_results.to_json_file(filename=Path(d) / "dft_results.json")
@@ -748,12 +754,13 @@ def concentration(args):
     defect_concentration = DefectConcentration.from_calc_results(
         defect_energies=defect_energies,
         unitcell=unitcell,
-        round_magnetization=args.fmto)
+        round_magnetization=args.frac_mag_to_one)
 
     defect_concentration.calc_equilibrium_concentration(
         temperature=args.temperature, verbose=args.verbose)
 
     defect_concentration.calc_quenched_equilibrium_concentration(
+        temperature=args.quenched_temperature,
         verbose=args.verbose)
 
     print(defect_concentration)

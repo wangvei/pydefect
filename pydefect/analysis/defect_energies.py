@@ -489,15 +489,15 @@ class DefectEnergies(MSONable):
         ax.annotate("CBM", (self.band_gap, y_min * 0.9 + y_max * 0.1),
                     fontsize=fs["energy"], color='b')
 
+        if self.supercell_vbm > self.vbm + 0.1:
+            logger.critical(f"Supercell VBM {self.supercell_vbm} is higher than"
+                            f" unitcell VBM {self.vbm}.")
+        if self.supercell_cbm < self.cbm - 0.1:
+            logger.critical(f"Supercell CBM {self.supercell_cbm} is lower than "
+                            f"unitcell CBM {self.cbm}.")
+
         supercell_vbm = self.supercell_vbm - self.vbm
         supercell_cbm = self.supercell_cbm - self.vbm
-
-        if self.vbm > supercell_vbm + 0.01:
-            logger.critical(f"Supercell VBM {supercell_vbm} is higher than "
-                            f"unitcell VBM {self.vbm}.")
-        if self.cbm < supercell_cbm - 0.01:
-            logger.critical(f"Supercell CBM {supercell_cbm} is lower than "
-                            f"unitcell CBM {self.cbm}.")
 
         if supercell_vbm < - 0.01:
             plt.axvline(x=supercell_vbm, linewidth=1.0, linestyle='-', color='r')

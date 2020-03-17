@@ -101,7 +101,7 @@ def parse_args(args):
 
     # -- parent parser: angle_tolerance
     ang_tol_parser = argparse.ArgumentParser(
-        description="Angle tolerancew parser", add_help=False)
+        description="Angle tolerance parser", add_help=False)
     ang_tol_parser.add_argument(
         "--angle_tolerance", type=float, default=prec["angle_tolerance"],
         help="Set angle precision used for symmetry analysis.")
@@ -889,10 +889,13 @@ def parse_args(args):
         "-v", "--verbose", action="store_true",
         help="Show information on estimation of concentrations.")
     parser_concentration.add_argument(
-        "-t", "--temperature", type=float, nargs="+",
+        "-t", "--temperature", type=float,
         help="Temperature for calculating the Fermi level. When two "
              "temperatures are supplied, the first temperature is quenched to "
              "the second temperature.")
+    parser_concentration.add_argument(
+        "-qt", "--quenched_temperature", type=float, default=298,
+        help="Quenched temperature from the first temperature.")
 
     del c_defaults
 
