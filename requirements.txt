@@ -1,7 +1,7 @@
-scipy==1.4.1
+scipy
 vise
-numpy==1.18.1
-monty==3.0.2
-tqdm==4.40.2
-pymatgen==2020.1.28
-PyYAML==5.3
+numpy
+monty
+tqdm
+pymatgen
+PyYAML

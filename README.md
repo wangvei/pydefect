@@ -63,13 +63,13 @@ Files and directories included in pydefect distribution
   setup.py              : installation script
   requirements.txt      : list of required packages
 
-  /pydefect/analysis    : tools for VASP analysis especially for band figure and density of states
+  /pydefect/analysis    : analysis tools for point-defect calculations
   /pydefect/cli         : command line interfaces
-  /pydefect/core        : tools for drawing the chemical potential diagram
-  /pydefect/corrections : original custodian exention
-  /pydefect/database    : original custodian exention
+  /pydefect/core        : core modules
+  /pydefect/corrections : energy and eigenvalue correction related modules
+  /pydefect/database    : database related to atoms and symmetries
   /pydefect/input_maker : tools for generating VASP input files
-  /pydefect/test_files  : test files used mainly for unitests
+  /pydefect/test_files  : test files used mainly for unittests
   /pydefect/util        : useful tools 
 ~~~~
 
