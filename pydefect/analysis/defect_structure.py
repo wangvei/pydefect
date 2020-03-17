@@ -239,10 +239,11 @@ def defect_structure_matcher(d_list: List[DefectStructure],
                          if i not in inds]
             group[name].append(matches)
 
-    if pretty_print is False:
-        return group
+    return group
+    # if pretty_print is False:
+    #     return group
 
-    lines = []
-    for name, charges in group.items():
-        lines
+    # lines = []
+    # for name, charges in group.items():
+    #     lines
 
