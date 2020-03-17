@@ -1,28 +1,32 @@
-# README #
+![PyPI - License](https://img.shields.io/pypi/l/pydefect?color=blue)
+![PyPI - Python Version](https://img.shields.io/pypi/pyversions/pydefect)
+[![CircleCI](https://circleci.com/gh/kumagai-group/pydefect/tree/master.svg?style=shield)](https://circleci.com/gh/kumagai-group/pydefect/tree/master)
 
-This README would normally document whatever steps are necessary to get your application up and running.
 
-### What is this repository for? ###
+pydefect
+=========
+PyDefect is a robust, open-source Python library for point-defect calculations in non-metallic solids based on first-principle calculations. 
+PyDefect supposes to use the [VASP](https://www.vasp.at) code.
 
-* Automatic constructor of point-defect enveironment, and analyzer of vasp 
-  calculation results.
-* 0.2.0
-* [Learn Markdown](https://bitbucket.org/tutorials/markdowndemo)
+**Note: Units used in pydefect are eV for energy and angstrom for length following the vasp convention.**
 
-### How do I get set up? ###
+Installation instructions
+---------------------------------------------------------
+1. Requirements
+  - Python 3.6 or higher
+  - vise
+  - pymatgen
+  - scikit-image
+  - see requirements.txt for others
+  - Note that the `scikit-image` package is required to locate interstitials but can be omitted if this feature is not required.
 
-#### Installation using pip
+2. Latest stable version is released at PyPI repository, so one can download 
+it using `pip install pydefect`.
 
-After cloning the repository, it is possible to install `pydefect` using the python package manager pip.
-To do so, 
-run this command in the directory containing setup.py:
+3. After cloning the repository, it is possible to install `pydefect` using the python package manager pip.
+To do so, run this command in the directory containing setup.py:
 
 `pip install ./`
-
-This will install `pydefect` and any dependant packages
-not already have installed on your system. 
-
-Note that the `scikit-image` package is required to locate interstitials but can be omitted if this feature is not required.
 
 Sometimes errors will be given if a specific version of a package is not 
 installed. In this case try installing the exact versions that have been 
@@ -34,28 +38,68 @@ This will install the package versions listed in the requirements.txt file.
 To prevent interference with other programmes, it is advised that a package 
 management system like 
 [conda](https://docs.conda.io/projects/conda/en/latest/index.html) is used. 
-This allows you to install dependancies in a particular environment so that 
+This allows you to install dependencies in a particular environment so that 
 they can be managed and recorded more easily. The commands above can then be 
 executed in a conda environment (after installing pip in that environment).
 
-For more information on how dependancies are managed in this branch see this [blog post](https://medium.com/@boscacci/why-and-how-to-make-a-requirements-txt-f329c685181e).
+For more information on how dependencies are managed in this branch see this [blog post](https://medium.com/@boscacci/why-and-how-to-make-a-requirements-txt-f329c685181e).
 
+Executing this software
+---------------------------------------------------------
 
+1. Command line method
+  - execute ***pydefect -h*** for detailed description of available options
 
-* Summary of set up
-* Configuration
-* Dependencies
-* Database configuration
-* How to run tests
-* Deployment instructions
+2. Usage as a module
+  - pydefect can be imported as a python module
 
-### Contribution guidelines ###
+More information in the online manual at: https://kumagai-group.github.io/pydefect/
 
-* Writing tests
-* Code review
-* Other guidelines
+Files and directories included in pydefect distribution
+--------------------------------------------------------
+~~~
+  README                : introduction
+  LICENSE               : the MIT license 
+  setup.py              : installation script
+  requirements.txt      : list of required packages
 
-### Who do I talk to? ###
+  /pydefect/analysis    : tools for VASP analysis especially for band figure and density of states
+  /pydefect/cli         : command line interfaces
+  /pydefect/core        : tools for drawing the chemical potential diagram
+  /pydefect/corrections : original custodian exention
+  /pydefect/database    : original custodian exention
+  /pydefect/input_maker : tools for generating VASP input files
+  /pydefect/test_files  : test files used mainly for unitests
+  /pydefect/util        : useful tools 
+~~~~
 
-* Repo owner or admin
-* Other community or team contact
+License
+-----------------------
+Python code is licensed under the MIT License.
+
+Development notes
+-----------------
+### Bugs, requests and questions
+Please use the [Issue Tracker](https://github.com/kumagai-group/pydefect/issues) to report bugs, request features.
+
+### Code contributions
+Although PyDefect is free to use, we really appreciate if you help us to improve this library. 
+The simplest but most valuable contribution is to send the feature requests and bug reports.
+
+Please report any bugs and issues at PyDefect's [Github Issues page](https://github.com/oba-group/pydefect).
+Please use the ["Fork and Pull"](https://guides.github.com/activities/forking/) workflow to make contributions and stick as closely as possible to the following:
+
+- Code style follows [PEP8](http://www.python.org/dev/peps/pep-0008) and [Google's writing style](https://google.github.io/styleguide/pyguide.html).
+- Add unittests wherever possible including scripts for command line interfaces.
+
+### Tests
+Run the tests using `pytest pydefect`.
+We also use integrated testing on Github via circleCI.
+
+Contact info
+---------------------------------------------------------
+Yu Kumagai<br>
+yuuukuma@gmail.co.jp
+
+Tokyo Institute of Technology (Japan)
+
