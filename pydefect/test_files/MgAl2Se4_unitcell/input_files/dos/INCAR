@@ -1,0 +1,38 @@
+# algorithm
+ALGO  =  N
+
+# accuracy
+PREC    =  N
+LREAL   =  False
+LASPH   =  True
+NELM    =  100
+NELMIN  =  2
+EDIFF   =  1e-06
+
+# ionic relaxation
+ISIF    =   0
+EDIFFG  =  -0.003
+IBRION  =   2
+NSW     =   1
+
+# occupation
+ISMEAR  =  0
+SIGMA   =  0.1
+
+# IO control
+LWAVE   =  True
+LCHARG  =  False
+
+# analyzer
+NBANDS  =    44
+LORBIT  =    12
+NEDOS   =  4002
+EMAX    =    20
+EMIN    =   -20.01
+
+# dft parameter
+GGA  =  Ps
+
+# parallel
+KPAR  =  4
+

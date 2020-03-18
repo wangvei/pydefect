@@ -1,0 +1,4 @@
+mode: primitive_uniform, kpt density: 3, factor: 2, # kpts: 189
+0
+Gamma
+1 1 1
