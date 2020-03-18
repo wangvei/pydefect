@@ -21,16 +21,20 @@ class UnitcellDftResultsTest(PydefectTest):
     def test_static_dielectric_tensor(self):
         self.unitcell.set_static_dielectric_tensor_from_vasp(
             directory_path=self.unitcell_dir, outcar_name="dielectric_OUTCAR")
-        expected = [[6.072649, 0, 0], [0, 6.072649, 0], [0, 0, 5.643136]]
+
+        expected = \
+            [[51.24297, 0., 0.], [0., 51.24299, -0.], [0., -0., 19.32937]]
         actual = self.unitcell.static_dielectric_tensor
         self.assertArrayAlmostEqual(expected, actual, 5)
 
     def test_ionic_dielectric_tensor(self):
         self.unitcell.set_ionic_dielectric_tensor_from_vasp(
             directory_path=self.unitcell_dir, outcar_name="dielectric_OUTCAR")
-        expected = [[3.769646, 0, 0], [0, 3.769646, 0], [0, 0, 1.239479]]
+        expected = [[8.71950e+01, 0.00000e+00, 0.00000e+00],
+                    [0.00000e+00, 8.71942e+01, -6.70000e-05],
+                    [0.00000e+00, -6.70000e-05, 5.04341e+00]]
         actual = self.unitcell.ionic_dielectric_tensor
-        self.assertArrayAlmostEqual(expected, actual, 5)
+        self.assertArrayAlmostEqual(expected, actual, 4)
 
     def test_band_edge(self):
         self.unitcell.set_band_edge_from_vasp(
