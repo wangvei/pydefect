@@ -1,11 +1,11 @@
 i1:
   representative_coords:
-  - 0.125
-  - 0.125
-  - 0.125
+  - 0.25
+  - 0.25
+  - 0.25
   wyckoff: c
   site_symmetry: -43m
-  multiplicity: 64
+  multiplicity: 2
   coordination_distances:
     Mg:
     - 1.84
@@ -22,11 +22,11 @@ i1:
 i2:
   representative_coords:
   - 0
-  - 0.125
-  - 0.125
+  - 0
+  - 0.25
   wyckoff: d
   site_symmetry: m.mm
-  multiplicity: 192
+  multiplicity: 6
   coordination_distances:
     Mg:
     - 1.5

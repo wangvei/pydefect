@@ -5,6 +5,7 @@ from functools import reduce
 from itertools import permutations,groupby
 import operator
 from typing import Union, List, Optional, Tuple, Dict
+import numpy as np
 
 from monty.json import MontyEncoder, MSONable
 from monty.serialization import loadfn, dumpfn
@@ -880,8 +881,22 @@ class DefectInitialSetting(MSONable):
 
         return defect_set
 
-    def _inserted_set(self,
-                      inserted_elements: Union[List[str], Tuple[str]]) -> dict:
+    def _coords_unit_to_super(self, coords):
+        trans_mat = [[self.transformation_matrix[3 * i + j]
+                      for j in range(3)] for i in range(3)]
+        inv_trans_mat = np.linalg.inv(trans_mat)
+        # inv_trans_mat must be multiplied with coords from the right as the
+        # trans_mat is multiplied to the unitcell lattice vector from the left.
+        # see __mul__ of IStructure in pymatgen.
+        # x_u, x_s means the frac coordinates in unitcell and supercell,
+        # while a, b, c are the unitcell lattice vector.
+        # (a_u, b_u, c_u) . (a, b, c) = (a_s, b_s, c_s) . trans_mat . (a, b, c)
+        # (a_u, b_u, c_u) = (a_s, b_s, c_s) . trans_mat
+        # so, (a_s, b_s, c_s) = (a_u, b_u, c_u) . inv_trans_mat
+        return np.dot(coords, inv_trans_mat).tolist()
+
+    def _interstitial_set(self,
+                          inserted_elements: Union[List[str], Tuple[str]]) -> dict:
         """Helper method to create interstitial defect set. """
         defect_set = {}
         for interstitial_name, i in self.interstitials.items():
@@ -897,8 +912,8 @@ class DefectInitialSetting(MSONable):
                 extreme_charge = self.oxidation_states[ie]
                 charges = default_charge_set(extreme_charge)
                 changes_of_num_elements[ie] += 1
-                inserted_atom = [{"element": ie,
-                                  "coords": i.representative_coords}]
+                coords = self._coords_unit_to_super(i.representative_coords)
+                inserted_atom = [{"element": ie, "coords": coords}]
                 structure, inserted_atoms = \
                     insert_atoms(self.structure, inserted_atom)
 
@@ -986,7 +1001,7 @@ class DefectInitialSetting(MSONable):
 
         # interstitials
         inserted_elements = self.structure.symbol_set + tuple(self.dopants)
-        defects.update(self._inserted_set(inserted_elements=inserted_elements))
+        defects.update(self._interstitial_set(inserted_elements=inserted_elements))
 
         # complex defects
         defects.update(self._complex_set())

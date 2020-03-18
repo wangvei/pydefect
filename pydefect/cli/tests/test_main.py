@@ -180,7 +180,7 @@ class MainInterstitialTest(PydefectTest):
         # func is a pointer so need to point the same address.
         expected = Namespace(
             yaml=d["yaml_filename"],
-            dposcar=d["dposcar"],
+            uposcar=d["uposcar"],
             defect_in="defect.in",
             interstitial_coords=None,
             site_name=None,
@@ -196,7 +196,7 @@ class MainInterstitialTest(PydefectTest):
     def test_interstitial_w_options(self):
         actual = parse_args(["i",
                              "--yaml", "a",
-                             "--dposcar", "b",
+                             "--uposcar", "b",
                              "--defect_in", "c",
                              "-c", "0.1", "0.2", "0.3",
                              "--name", "d",
@@ -210,7 +210,7 @@ class MainInterstitialTest(PydefectTest):
                              ])
         expected = Namespace(
             yaml="a",
-            dposcar="b",
+            uposcar="b",
             defect_in="c",
             interstitial_coords=[0.1, 0.2, 0.3],
             site_name="d",

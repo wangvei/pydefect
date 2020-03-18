@@ -3,8 +3,7 @@
 import numpy as np
 from pydefect.util.structure_tools import (
     perturb_neighboring_atoms, get_min_distance, get_displacements,
-    defect_center_from_coords, distance_list,
-    create_saturated_interstitial_structure, get_neighboring_atom_indices,
+    defect_center_from_coords, distance_list, get_neighboring_atom_indices,
     num_equivalent_clusters, first_appearing_index, get_coordination_distances)
 from pymatgen.core.structure import Structure
 from pydefect.util.testing import PydefectTest
@@ -94,22 +93,6 @@ class DistanceListTest(PydefectTest):
         actual = distance_list(structure, coords)
         expected = [0.9195, 1.7607]
         self.assertArrayAlmostEqual(expected, actual, 4)
-
-
-class CreateSaturatedInterstitialStructureTest(PydefectTest):
-    def setUp(self):
-        self.structure = self.get_structure_by_name("MgO64atoms")
-
-    def test(self):
-        inserted_atom_coords = [[0.125, 0.125, 0.125]]
-        saturated_defect_structure, atom_indices, are_inserted = \
-            create_saturated_interstitial_structure(self.structure,
-                                                    inserted_atom_coords)
-        self.assertEqual(128, len(saturated_defect_structure))
-        self.assertArrayEqual(np.array(inserted_atom_coords[0]),
-                              saturated_defect_structure.frac_coords[64])
-        self.assertEqual([64], atom_indices)
-        self.assertEqual(True, are_inserted[0])
 
 
 class GetNeighboringAtomIndicesTest(PydefectTest):

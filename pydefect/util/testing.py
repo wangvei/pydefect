@@ -21,7 +21,7 @@ class PydefectTest(PymatgenTest):
 
     @classmethod
     def get_object_by_name(cls, method: Callable, names: Union[list, str]):
-        """ return cls by passing classmethod returning cls """
+        """Return cls by passing classmethod returning cls """
         if isinstance(names, str):
             names = [names]
 

@@ -142,10 +142,11 @@ def initial_setting(args):
     unitcell = supercells.unitcell
     if unitcell != structure:
         logger.warning(
-            "Unitcell is different from input structure, so generate UPOSCAR.")
-        supercells.to_uposcar(uposcar="UPOSCAR")
+            "Unitcell is different from input structure. See UPOSCAR.")
     else:
         logger.info("Input structure is the primitive cell.")
+
+    supercells.to_uposcar(uposcar="UPOSCAR")
 
     if not args.supercell_set:
         if args.most_isotropic:
@@ -194,10 +195,9 @@ def interstitial(args):
             interstitial_symprec=args.interstitial_symprec,
             angle_tolerance=args.angle_tolerance)
     else:
-        add_interstitials(uc_coords=args.interstitial_coords,
-                          dposcar=args.dposcar,
+        add_interstitials(coords_in_unitcell=args.interstitial_coords,
+                          uposcar=args.uposcar,
                           interstitials_yaml=args.yaml,
-                          defect_in_file=args.defect_in,
                           vicinage_radius=args.radius,
                           defect_symprec=args.defect_symprec,
                           angle_tolerance=args.angle_tolerance)

@@ -13,8 +13,8 @@ from pydefect.core.config import (
 from pydefect.database.symmetry import num_symmetry_operation
 from pydefect.util.logger import get_logger
 from pydefect.util.structure_tools import (
-    create_saturated_interstitial_structure, get_coordination_distances,
-    min_distance_from_coords)
+    get_coordination_distances, min_distance_from_coords)
+from pydefect.util.structure_tools import get_neighboring_atom_indices
 
 from pymatgen.analysis.defects.utils import ChargeDensityAnalyzer
 from pymatgen.core.periodic_table import DummySpecie
@@ -112,8 +112,7 @@ class InterstitialSiteSet(MSONable):
         """
         Args:
             structure (Structure):
-                Structure class object. Supercell used for defect
-                calculations.
+                Structure class object. Unitcell used for defect calculations.
             interstitial_sites (OrderedDict):
                 OrderedDict with keys of site names and values of
                 InterstitialSite objects.
@@ -142,8 +141,8 @@ class InterstitialSiteSet(MSONable):
     @property
     def coords(self) -> List[list]:
         """Return list of fractional coordinates of interstitial sites"""
-        return \
-            [v.representative_coords for v in self.interstitial_sites.values()]
+        return [v.representative_coords
+                for v in self.interstitial_sites.values()]
 
     @classmethod
     def from_dict(cls, d: dict):
@@ -161,12 +160,12 @@ class InterstitialSiteSet(MSONable):
 
     @classmethod
     def from_files(cls,
-                   dposcar: Union[str, Structure] = "DPOSCAR",
+                   uposcar: Union[str, Structure] = "UPOSCAR",
                    yaml_filename="interstitials.yaml"):
-        if isinstance(dposcar, str):
-            d = {"structure": Structure.from_file(dposcar)}
+        if isinstance(uposcar, str):
+            d = {"structure": Structure.from_file(uposcar)}
         else:
-            d = {"structure": dposcar}
+            d = {"structure": uposcar}
 
         with open(yaml_filename, "r") as f:
             d["interstitial_site_set"] = yaml.load(f, Loader=yaml.FullLoader)
@@ -174,19 +173,19 @@ class InterstitialSiteSet(MSONable):
         return cls.from_dict(d)
 
     def add_sites(self,
-                  frac_coords: list,
+                  added_coords: list,
                   vicinage_radius: float = 0.3,
                   defect_symprec: float = DEFECT_SYMMETRY_TOLERANCE,
                   angle_tolerance: float = ANGLE_TOL,
                   method: str = "manual") -> None:
-        """ Add interstitial sites
+        """Add interstitial sites
 
         Note that symprec must be the same as that used for
         DefectInitialSetting to keep the symmetry consistency such as
         point group, multiplicity and so on.
 
         Args:
-            frac_coords (list):
+            added_coords (list):
                 Added fractional coords in the self.structure.
             vicinage_radius (float):
                 Radius in which atoms are considered too close.
@@ -197,35 +196,64 @@ class InterstitialSiteSet(MSONable):
             method (str):
                 Name of the method that determine the interstitial sites.
         """
-        # Don't distinguish old and new interstitial coordinates for simplicity
-        total_coords = self.coords + frac_coords
-        saturated_structure, atom_indices, are_inserted = \
-            create_saturated_interstitial_structure(
-                structure=self.structure,
-                inserted_atom_coords=total_coords,
-                dist_tol=vicinage_radius,
-                symprec=defect_symprec,
-                angle_tolerance=angle_tolerance)
-
-        min_dist = min_distance_from_coords(self.structure, total_coords)
-        cutoff = round(min_dist * CUTOFF_FACTOR, 2)
-
+        saturated_structure = self.structure.copy()
+        saturated_structure.DISTANCE_TOLERANCE = vicinage_radius
         sga = SpacegroupAnalyzer(saturated_structure, defect_symprec,
                                  angle_tolerance)
-        symmetry_dataset = sga.get_symmetry_dataset()
-        num_symmop = len(sga.get_symmetry_operations())
+        symmops = sga.get_symmetry_operations()
 
-        i = 1
-        for (coord, ai, inserted) in \
-                zip(frac_coords, atom_indices, are_inserted):
-            if not inserted:
+        added_sites = []
+
+        def add_site(coordinates):
+            for symmop in symmops:
+                new_interstitial_coords = symmop.operate(coordinates[:])
+                try:
+                    # validate_proximity (bool):
+                    # Whether to check if inserted site is too close to an
+                    # existing site. Defaults to False. If it is caught,
+                    # ValueError is raised. For criterion, DISTANCE_TOLERANCE
+                    # set to Structure is used. Here, this is used such that
+                    # high-symmetric sites are reduced due to degeneracy.
+                    saturated_structure.append(DummySpecie(),
+                                               new_interstitial_coords,
+                                               validate_proximity=True)
+                except ValueError:
+                    pass
+            added_sites.append(len(saturated_structure) - 1)
+
+        for coord in self.coords:
+            add_site(coord)
+
+        for coord in added_coords:
+            neighboring_atom_indices, distances = \
+                get_neighboring_atom_indices(
+                    saturated_structure, coord, vicinage_radius)
+
+            if neighboring_atom_indices:
+                # If the inserted atom locates near other atoms within dist_tol,
+                # first neighbor atom is set as inserted_atom_index.
+                inserted_atom_index = neighboring_atom_indices[0]
+                specie = saturated_structure[inserted_atom_index].specie
+                if isinstance(specie, DummySpecie):
+                    specie = "another interstitial site"
+                logger.warning(
+                    f"Inserted position is too close to {specie}.\n  "
+                    f"The distance is {distances[0]:5.3f} A."
+                    f"Set smaller vicinage_radius if one wants to add the "
+                    f"site.")
+            else:
+                add_site(coord)
+
+        saturated_sga = SpacegroupAnalyzer(saturated_structure, defect_symprec,
+                                           angle_tolerance)
+        symmetry_dataset = saturated_sga.get_symmetry_dataset()
+        num_symmop = len(saturated_sga.get_symmetry_operations())
+
+        coords = self.coords + added_coords
+        for i, (coord, ai) in enumerate(zip(coords, added_sites), 1):
+            site_name = "i" + str(i)
+            if site_name in self.interstitial_sites:
                 continue
-            while True:
-                if "i" + str(i) in self.interstitial_sites:
-                    i += 1
-                else:
-                    site_name = "i" + str(i)
-                    break
             site_symmetry = symmetry_dataset["site_symmetry_symbols"][ai]
             wyckoff = symmetry_dataset["wyckoffs"][ai]
             # multiplicity is reduced by the number of symmetry operation
@@ -235,6 +263,9 @@ class InterstitialSiteSet(MSONable):
             # Note that saturated_structure includes other interstitial sites.
             defect_str = self.structure.copy()
             defect_str.append(DummySpecie(), coord)
+            min_dist = min_distance_from_coords(self.structure, coord)
+            cutoff = round(min_dist * CUTOFF_FACTOR, 2)
+
             coordination_distances = \
                 get_coordination_distances(structure=defect_str,
                                            atom_index=len(defect_str) - 1,

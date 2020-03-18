@@ -278,107 +278,11 @@ def min_distance_from_coords(structure: Structure, coords: np.array) -> float:
     return min(distance_list(structure, coords, remove_self=True))
 
 
-def create_saturated_interstitial_structure(
-        structure: Structure,
-        inserted_atom_coords: list,
-        dist_tol: float = 0.1,
-        symprec: float = SYMMETRY_TOLERANCE,
-        angle_tolerance: float = ANGLE_TOL) -> tuple:
-    """ generates the sublattice for it based on the structure's space group.
-
-    Original idea comes from pymatgen.
-    pymatgen.analysis.defects.core.create_saturated_interstitial_structure
-
-    Args:
-        structure (Structure):
-        inserted_atom_coords (list):
-            List of 3x1 fractional coords
-        dist_tol (float):
-            changing distance tolerance of saturated structure,
-            allowing for possibly overlapping sites
-            but ensuring space group is maintained
-        symprec (float):
-        angle_tolerance (float):
-
-    Returns:
-        saturated_defect_structure (Structure):
-            Saturated structure decorated with equivalent interstitial sites.
-        atom_indices (list):
-            The representative inserted atom indices.
-        are_inserted (list):
-            Show whether the inserted_atom_coords are inserted.
-        symmetry_dataset (dict):
-            Spglib style symmetry dataset with the various properties.
-                + number:
-                    International space group number
-                + international:
-                    International symbol
-                + hall:
-                    Hall symbol
-                + transformation_matrix:
-                    Transformation matrix from lattice of input cell to Bravais
-                    lattice L^bravais = L^original * Tmat
-                + origin shift:
-                    Origin shift in the setting of "Bravais lattice" rotations,
-                    translations: Rotation matrices and translation vectors.
-                    Space group operations are obtained by
-                    [(r,t) for r, t in zip(rotations, translations)]
-                + wyckoffs:
-                    Wyckoff letters
-    """
-    sga = SpacegroupAnalyzer(structure, symprec, angle_tolerance)
-    symmops = sga.get_symmetry_operations()
-    saturated_structure = structure.copy()
-    saturated_structure.DISTANCE_TOLERANCE = dist_tol
-
-    atom_indices = []
-    are_inserted = []
-    for i, coord in enumerate(inserted_atom_coords):
-        # Check whether the inserted atoms already exist.
-        neighboring_atom_indices, distances = \
-            get_neighboring_atom_indices(saturated_structure,
-                                         coord, dist_tol)
-
-        if neighboring_atom_indices:
-            are_inserted.append(False)
-            # If the inserted atom locates near other atoms within dist_tol,
-            # first neighbor atom is set as inserted_atom_index.
-            inserted_atom_index = neighboring_atom_indices[0]
-            specie = saturated_structure[inserted_atom_index].specie
-
-            logger.warning(f"Inserted position is too close to {specie}.\n  "
-                           f"The distance is {distances[0]:5.3f} A.")
-
-        else:
-            are_inserted.append(True)
-            # Get the last atom index to be inserted
-            inserted_atom_index = len(saturated_structure)
-            specie = DummySpecie()
-
-            for symmop in symmops:
-                new_interstitial_coords = symmop.operate(coord[:])
-                try:
-                    # validate_proximity (bool):
-                    # Whether to check if inserted site is too close to an
-                    # existing site. Defaults to False. If it is caught,
-                    # ValueError is raised. For criterion, DISTANCE_TOLERANCE
-                    # set to Structure is used. Here, this is used such that
-                    # high-symmetric sites are reduced due to degeneracy.
-                    saturated_structure.append(specie, new_interstitial_coords,
-                                               validate_proximity=True)
-                except ValueError:
-                    pass
-
-        atom_indices.append(inserted_atom_index)
-
-    return saturated_structure, atom_indices, are_inserted
-
-
 def get_neighboring_atom_indices(structure: Structure,
                                  coords: list,
                                  cutoff: float) -> Tuple[list, list]:
     """ Return the neighboring atom indices within the cutoff distance.
-   
+
     Args:
         structure (Structure): Input structure.
         coords (list): Fractional coordinates of a centering point

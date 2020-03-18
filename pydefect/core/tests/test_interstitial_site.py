@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 import tempfile
 from collections import OrderedDict
-from copy import deepcopy
 import filecmp
 from pathlib import Path
 
@@ -76,22 +75,22 @@ class InterstitialSiteSetTest(PydefectTest):
           cutoff: 2.37
           method: manual
         """
-        self.structure = self.get_structure_by_name("MgO64atoms")
+        self.structure = self.get_structure_by_name("MgO")
 
         i1 = InterstitialSite(
-            representative_coords=[0.125, 0.125, 0.125],
+            representative_coords=[0.25, 0.25, 0.25],
             wyckoff="c",
             site_symmetry="-43m",
-            multiplicity=64,
+            multiplicity=2,
             coordination_distances={"Mg": [1.84] * 4, "O": [1.84] * 4},
             cutoff=2.37,
             method="manual")
 
         i2 = InterstitialSite(
-            representative_coords=[0, 0.125, 0.125],
+            representative_coords=[0, 0, 0.25],
             wyckoff="d",
             site_symmetry="m.mm",
-            multiplicity=192,
+            multiplicity=6,
             coordination_distances={"Mg": [1.5] * 2 + [2.6] * 4,
                                     "O": [1.5] * 2 + [2.6] * 4},
             cutoff=2.37,
@@ -116,10 +115,10 @@ class InterstitialSiteSetTest(PydefectTest):
 
     def test_str(self):
         actual = str(self.interstitial_site_set.interstitial_sites["i1"])
-        expected = """representative coords: [0.125, 0.125, 0.125]
+        expected = """representative coords: [0.25, 0.25, 0.25]
 wyckoff: c
 site symmetry: -43m
-multiplicity: 64
+multiplicity: 2
 coordination distances: {'Mg': [1.84, 1.84, 1.84, 1.84], 'O': [1.84, 1.84, 1.84, 1.84]}
 cutoff: 2.37
 method: manual"""
@@ -127,29 +126,31 @@ method: manual"""
 
     def test_coords(self):
         actual = self.interstitial_site_set.coords
-        expected = [[0.125, 0.125, 0.125], [0, 0.125, 0.125]]
+        expected = [[0.25, 0.25, 0.25], [0, 0, 0.25]]
         self.assertEqual(expected, actual)
 
     def test_from_files(self):
         actual = InterstitialSiteSet.from_files(
-            dposcar=self.structure,
+            uposcar=self.structure,
             yaml_filename=parent / "expected_interstitials.yaml").as_dict()
         expected = self.interstitial_site_set.as_dict()
         self.assertEqual(expected, actual)
 
     def test_add(self):
-        coords = [[0.125, 0, 0]]
-        interstitial_set = deepcopy(self.interstitial_site_set)
-        interstitial_set.add_sites(frac_coords=coords)
+        added_coords = [[0.25, 0.25, 0.75]]
+        interstitial_set = self.interstitial_site_set
+        interstitial_set.add_sites(added_coords=added_coords)
         expected = InterstitialSite(
-            representative_coords=[0.125, 0, 0],
-            wyckoff="c",
-            site_symmetry="-43m",
-            multiplicity=64,
-            coordination_distances={"Mg": [1.05] + [2.35] * 4,
-                                    "O": [1.05] + [2.35] * 4},
-            cutoff=2.37,
+            representative_coords=[0.25, 0.25, 0.75],
+            wyckoff="e",
+            site_symmetry="4m.m",
+            multiplicity=6,
+            coordination_distances={"Mg": [1.06], "O": [1.06]},
+            cutoff=1.38,
             method="manual")
+
+        print(interstitial_set.interstitial_sites["i2"].as_dict())
+
         self.assertEqual(expected.as_dict(),
                          interstitial_set.interstitial_sites["i3"].as_dict())
 

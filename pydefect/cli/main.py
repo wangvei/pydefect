@@ -301,8 +301,8 @@ def parse_args(args):
         "--yaml", type=str, default=i_defaults["yaml_filename"],
         help="interstitial.yaml file name.")
     parser_interstitial.add_argument(
-        "--dposcar", type=str, default=i_defaults["dposcar"],
-        help="DPOSCAR-type file name.")
+        "--uposcar", type=str, default=i_defaults["uposcar"],
+        help="UPOSCAR-type file name.")
     parser_interstitial.add_argument(
         "--defect_in", default="defect.in", type=str,
         help="defect.in-type file name.")

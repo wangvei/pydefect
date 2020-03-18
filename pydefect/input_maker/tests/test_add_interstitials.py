@@ -12,11 +12,10 @@ class AddInterstitialsTest(PydefectTest):
     def test(self):
         copyfile(parent / "test_add_interstitials.yaml", "interstitials.yaml")
         add_interstitials(
-            uc_coords=[0.25, 0.25, 0.25],
+            coords_in_unitcell=[0.25, 0.25, 0.25],
             vicinage_radius=1.0,
-            dposcar=str(self.POSCARS_DIR / "POSCAR-MgO64atoms"),
-            interstitials_yaml=str("interstitials.yaml"),
-            defect_in_file=parent / "defect_unittest.in")
+            uposcar=str(self.POSCARS_DIR / "POSCAR-MgO"),
+            interstitials_yaml=str("interstitials.yaml"))
 
     def tearDown(self) -> None:
         try:
