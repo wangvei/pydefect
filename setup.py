@@ -11,8 +11,8 @@ module_dir = os.path.dirname(os.path.abspath(__file__))
 reqs_raw = open(os.path.join(module_dir, "requirements.txt")).read()
 reqs_list = [r.replace("==", "~=") for r in reqs_raw.split("\n")]
 
-with open("README.md", "r") as fh:
-    long_description = fh.read()
+#with open("README.md", "r") as fh:
+#    long_description = fh.read()
 
 setup(
     name='pydefect',
@@ -24,7 +24,6 @@ setup(
     license='MIT license',
     description="Integrated environment for first-principles point-defect "
                 "calculations using vasp",
-    long_description=long_description,
     classifiers=[
         'Programming Language :: Python :: 3.6',
         "License :: OSI Approved :: MIT License",
