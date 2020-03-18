@@ -1,12 +1,11 @@
 ![PyPI - License](https://img.shields.io/pypi/l/pydefect?color=blue)
 ![PyPI - Python Version](https://img.shields.io/pypi/pyversions/pydefect)
-[![CircleCI](https://circleci.com/gh/kumagai-group/pydefect/tree/master.svg?style=shield)](https://circleci.com/gh/kumagai-group/pydefect/tree/master)
-
+[![CircleCI](https://circleci.com/gh/kumagai-group/pydefect.svg?style=svg)](https://circleci.com/gh/kumagai-group/pydefect)
 
 pydefect
 =========
-PyDefect is a robust, open-source Python library for point-defect calculations in non-metallic solids based on first-principle calculations. 
-PyDefect supposes to use the [VASP](https://www.vasp.at) code.
+Pydefect is a robust, open-source Python library for point-defect calculations in non-metallic solids 
+based on first-principle calculations with the [VASP](https://www.vasp.at) code.
 
 **Note: Units used in pydefect are eV for energy and angstrom for length following the vasp convention.**
 
@@ -19,6 +18,7 @@ Installation instructions
   - scikit-image
   - see requirements.txt for others
   - Note that the `scikit-image` package is required to locate interstitials but can be omitted if this feature is not required.
+  
 
 2. Latest stable version is released at PyPI repository, so one can download 
 it using `pip install pydefect`.
@@ -45,7 +45,7 @@ executed in a conda environment (after installing pip in that environment).
 For more information on how dependencies are managed in this branch see this [blog post](https://medium.com/@boscacci/why-and-how-to-make-a-requirements-txt-f329c685181e).
 
 Executing this software
----------------------------------------------------------
+--------------------------
 
 1. Command line method
   - execute ***pydefect -h*** for detailed description of available options
@@ -78,12 +78,12 @@ License
 Python code is licensed under the MIT License.
 
 Development notes
------------------
+-------------------
 ### Bugs, requests and questions
 Please use the [Issue Tracker](https://github.com/kumagai-group/pydefect/issues) to report bugs, request features.
 
 ### Code contributions
-Although PyDefect is free to use, we really appreciate if you help us to improve this library. 
+Although pydefect is free to use, we sinserely appreciate if you help us to improve this library. 
 The simplest but most valuable contribution is to send the feature requests and bug reports.
 
 Please report any bugs and issues at PyDefect's [Github Issues page](https://github.com/oba-group/pydefect).
@@ -96,8 +96,13 @@ Please use the ["Fork and Pull"](https://guides.github.com/activities/forking/) 
 Run the tests using `pytest pydefect`.
 We also use integrated testing on Github via circleCI.
 
+Citing vise
+-------------
+If pydefect has been used in your research, please cite our Github repo
+until we have a publication!
+
 Contact info
----------------------------------------------------------
+--------------
 Yu Kumagai<br>
 yuuukuma@gmail.co.jp
 
