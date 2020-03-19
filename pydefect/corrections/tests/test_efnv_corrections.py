@@ -5,8 +5,9 @@ import numpy as np
 
 from pydefect.corrections.efnv_corrections import (
     calc_max_sphere_radius, create_lattice_set, calc_relative_potential,
-    Ewald, ExtendedFnvCorrection, point_charge_energy, calc_ewald_sum,
+    Ewald, ExtendedFnvCorrection, point_charge_energy,
     constants_for_anisotropic_ewald_sum)
+#from pydefect.corrections.calc_ewald_sum import calc_ewald_sum
 from pydefect.core.supercell_calc_results import SupercellCalcResults
 from pydefect.core.unitcell_calc_results import UnitcellCalcResults
 from pydefect.core.defect_entry import DefectEntry
@@ -88,8 +89,8 @@ class EwaldTest(PydefectTest):
     def test_json(self):
         tmp_file = tempfile.NamedTemporaryFile()
         self.ewald.to_json_file(tmp_file.name)
-        ewald_from_json = DefectEntry.load_json(tmp_file.name)
-        self.assertEqual(self.ewald.as_dict(), ewald_from_json.as_dict())
+        ewald_from_json = Ewald.load_json(tmp_file.name)
+        self.assertEqual(self.ewald.lattice, ewald_from_json.lattice)
 
     def test_optimize(self):
         expected = 11753
@@ -135,19 +136,19 @@ class ExtendedFnvCorrectionTest(PydefectTest):
 
         self.correction.manually_added_correction_energy = 0.1
 
-    def test_dict(self):
+    def test(self):
         d = self.correction.as_dict()
         from_dict = ExtendedFnvCorrection.from_dict(d).as_dict()
         self.assertEqual(d, from_dict)
 
-    def test_json(self):
+#    def test_json(self):
         tmp_file = tempfile.NamedTemporaryFile()
         self.correction.to_json_file(tmp_file.name)
         from_json = ExtendedFnvCorrection.load_json(tmp_file.name).as_dict()
         d = self.correction.as_dict()
         self.assertEqual(d.keys(), from_json.keys())
 
-    def test_compute_extended_fnv(self):
+#    def test_compute_extended_fnv(self):
         actual = self.correction.lattice_energy
         expected = -0.9734410724309901
         self.assertAlmostEqual(expected, actual, 3)
@@ -168,12 +169,12 @@ class ExtendedFnvCorrectionTest(PydefectTest):
         expected = 0.2263
         self.assertAlmostEqual(expected, actual, 7)
 
-    def test_manual_energy(self):
+#    def test_manual_energy(self):
         actual = self.correction.manually_added_correction_energy
         expected = 0.1
         self.assertAlmostEqual(expected, actual, 7)
 
-    def test_plot_distance_vs_potential(self):
+#    def test_plot_distance_vs_potential(self):
         actual = self.correction.max_sphere_radius
         expected = 8.419456 / 2
         self.assertAlmostEqual(actual, expected)

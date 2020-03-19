@@ -38,7 +38,7 @@ class VerticalTransitionEnergyCorrection(Correction, MSONable):
                  relative_potential: List[float],
                  pc_pot: List[float],
                  max_sphere_radius: float,
-                 ):
+                 ) -> None:
         """Calculate the correction energy for the vertical transition.
 
         [Gake, Kumagai, Freysoldt and Oba, PRB 101, 020102 (2020)] for details.

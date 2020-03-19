@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 import json
 from copy import deepcopy
-from functools import reduce
 from itertools import product, groupby
 from math import sqrt, pow, ceil
 from operator import itemgetter
@@ -11,12 +10,16 @@ import matplotlib.pyplot as plt
 import numpy as np
 from monty.json import MontyEncoder, MSONable
 from monty.serialization import loadfn
-from numpy import cos, sqrt, dot, cross, pi, exp, mean
+from numpy import sqrt, dot, cross, pi, mean
 from numpy.linalg import norm
+
+# import pyximport
+# pyximport.install()
 
 from pydefect.core.config import COLOR
 from pydefect.core.defect_entry import DefectEntry
 from pydefect.core.supercell_calc_results import SupercellCalcResults
+from pydefect.corrections.calc_ewald_sum import calc_ewald_sum
 from pydefect.corrections.corrections import Correction
 from pydefect.util.logger import get_logger
 
@@ -24,7 +27,6 @@ from pymatgen.core import Structure
 from pymatgen.core.lattice import Lattice
 
 from scipy.constants import elementary_charge, epsilon_0
-from scipy.special import erfc
 from scipy.stats import mstats
 
 """
@@ -121,7 +123,7 @@ class Ewald(MSONable):
 
     def __init__(self,
                  lattice: Lattice,
-                 dielectric_tensor: np.ndarray,
+                 dielectric_tensor: list,
                  ewald_param: float,
                  prod_cutoff_fwhm: float,
                  real_neighbor_lattices: list,
@@ -149,6 +151,9 @@ class Ewald(MSONable):
         self.lattice = lattice
         self.volume = lattice.volume
         self.reciprocal_lattice_matrix = self.lattice.reciprocal_lattice.matrix
+        if isinstance(dielectric_tensor, list):
+            self.dielectric_tensor = \
+                np.asarray(dielectric_tensor, dtype=np.float32)
         self.dielectric_tensor = dielectric_tensor
         self.ewald_param = ewald_param
         self.prod_cutoff_fwhm = prod_cutoff_fwhm
@@ -188,7 +193,7 @@ class Ewald(MSONable):
                           initial_ewald_param: float = None,
                           convergence: float = 1.05,
                           prod_cutoff_fwhm: float = 25.0):
-        """ Get optimized ewald parameter.
+        """Get optimized ewald parameter.
 
         Args:
             structure (Structure):
@@ -568,12 +573,12 @@ def calc_lattice_energy_and_pot(atomic_coords_without_defect: List[np.ndarray],
         shift = lattice.get_cartesian_coords(r - defect_center_coords)
 
         real_part, reciprocal_part = \
-            calc_ewald_sum(ewald=ewald,
+            calc_ewald_sum(ewald.dielectric_tensor,
+                           ewald.real_lattice_set(True, shift),
+                           ewald.reciprocal_lattice_set(),
                            mod_ewald_param=mod_ewald_param,
                            root_det_epsilon=root_det_epsilon,
-                           volume=volume,
-                           include_self=True,
-                           shift=shift)
+                           volume=volume)
 
         model_pot.append((real_part + reciprocal_part + diff_pot) * coeff)
     lattice_energy = point_charge_energy(charge, ewald, volume)
@@ -592,7 +597,12 @@ def point_charge_energy(charge: int,
     # Real part: sum erfc(ewald * sqrt(R * epsilon_inv * R))
     #                    / sqrt(det(epsilon)) / sqrt(R * epsilon_inv * R) [1/A]
     real_part, reciprocal_part = \
-        calc_ewald_sum(ewald, mod_ewald_param, root_det_epsilon, volume)
+        calc_ewald_sum(dielectric_tensor=ewald.dielectric_tensor,
+                       real_lattice_set=ewald.real_lattice_set(False),
+                       reciprocal_lattice_set=ewald.reciprocal_lattice_set(),
+                       mod_ewald_param=mod_ewald_param,
+                       root_det_epsilon=root_det_epsilon,
+                       volume=volume)
 
     det_epsilon = np.linalg.det(ewald.dielectric_tensor)
     self_pot = - mod_ewald_param / (2.0 * pi * sqrt(pi * det_epsilon))
@@ -600,37 +610,6 @@ def point_charge_energy(charge: int,
                       * coeff * charge / 2)
 
     return lattice_energy
-
-
-def calc_ewald_sum(ewald: "Ewald",
-                   mod_ewald_param: float,
-                   root_det_epsilon: np.ndarray,
-                   volume: float,
-                   include_self: bool = False,
-                   shift: np.ndarray = np.array([0, 0, 0])
-                   ) -> Tuple[float, float]:
-    """Return real and reciprocal Ewald summations at given parameters"""
-
-    epsilon_inv = np.linalg.inv(ewald.dielectric_tensor)
-    real_sum = 0
-    # Skip the potential caused by the defect itself
-    for v in ewald.real_lattice_set(include_self, shift):
-        root_r_inv_epsilon_r = np.sqrt(reduce(dot, [v.T, epsilon_inv, v]))
-        real_sum += \
-            erfc(mod_ewald_param * root_r_inv_epsilon_r) / root_r_inv_epsilon_r
-    real_part = real_sum / (4 * pi * root_det_epsilon)
-
-    # Ewald reciprocal part
-    # sum exp(-g * epsilon * g / (4 * ewald ** 2)) / g * epsilon * g [1/A]
-    reciprocal_sum = 0
-    for g in ewald.reciprocal_lattice_set():
-        g_epsilon_g = reduce(dot, [g.T, ewald.dielectric_tensor, g])
-        reciprocal_sum += \
-            (exp(- g_epsilon_g / 4.0 / mod_ewald_param ** 2)
-             / g_epsilon_g * cos(dot(g, np.zeros(3))))  # [A^2]
-    reciprocal_part = reciprocal_sum / volume
-
-    return real_part, reciprocal_part
 
 
 def constants_for_anisotropic_ewald_sum(charge: int,
