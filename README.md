@@ -1,6 +1,6 @@
 ![PyPI - License](https://img.shields.io/pypi/l/pydefect?color=blue)
 ![PyPI - Python Version](https://img.shields.io/pypi/pyversions/pydefect)
-[![CircleCI](https://circleci.com/gh/kumagai-group/pydefect.svg?style=svg)](https://circleci.com/gh/kumagai-group/pydefect)
+[![CircleCI](https://circleci.com/gh/kumagai-group/pydefect/tree/master.svg?style=shield)](https://circleci.com/gh/kumagai-group/pydefect/tree/master)
 
 pydefect
 =========

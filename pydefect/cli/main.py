@@ -315,11 +315,9 @@ def parse_args(args):
         help="Added interstitial site name.")
     parser_interstitial.add_argument(
         "--radius", type=float, default=i_defaults["vicinage_radius"],
-        help="Radius to judge whether too close atoms exist.")
-    parser_interstitial.add_argument(
-        "--force_add", action="store_true",
-        help="Set if the interstitial site is forcibly added, although it is "
-             "too close to other atoms.")
+        help="Radius to judge whether too close atoms exist. Set 0 if the "
+             "interstitial site is forcibly added, although it is too close to "
+             "other atoms.")
     parser_interstitial.add_argument(
         "--interstitial_symprec", type=float,
         default=i_defaults["interstitial_symprec"],
